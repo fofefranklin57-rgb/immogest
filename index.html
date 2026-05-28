@@ -1,0 +1,1561 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<!-- Google AdSense -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8065715770165014" crossorigin="anonymous"></script>
+<meta charset="UTF-8">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0E6AAF">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ImmoGest">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<title>ImmoGest v18</title>
+<link rel="stylesheet" href="app.css">
+
+
+<!-- ── SUPABASE CLIENT ── -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+</head>
+<body>
+
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen" style="display:none;position:relative;min-height:100vh;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;">
+
+  <!-- Background slideshow -->
+  <div id="auth-slides" style="position:absolute;inset:0;z-index:0;">
+    <div class="aslide" style="position:absolute;inset:0;opacity:1;transition:opacity 1.5s ease;background:url('https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1400&q=80') center/cover no-repeat;"></div>
+    <div class="aslide" style="position:absolute;inset:0;opacity:0;transition:opacity 1.5s ease;background:url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1400&q=80') center/cover no-repeat;"></div>
+    <div class="aslide" style="position:absolute;inset:0;opacity:0;transition:opacity 1.5s ease;background:url('https://images.unsplash.com/photo-1460317442991-0ec209397118?w=1400&q=80') center/cover no-repeat;"></div>
+  </div>
+
+  <!-- CSS auth styles -->
+
+  <!-- Dark overlay -->
+  <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg,rgba(5,15,30,0.88) 0%,rgba(10,25,50,0.78) 50%,rgba(5,15,30,0.88) 100%);"></div>
+
+  <!-- Main layout -->
+  <div id="auth-main-layout" style="position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;justify-content:space-between;padding:40px 6%;">
+
+    <!-- Left: Branding -->
+    <div id="auth-branding" style="flex:1;max-width:500px;color:white;padding-right:60px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:20px;">Cabinet CRAA · Gestion Immobilière</div>
+      <h1 style="font-size:52px;font-weight:900;line-height:1.05;margin:0 0 20px;letter-spacing:-2px;">ImmoGest</h1>
+      <p style="font-size:16px;line-height:1.8;color:rgba(255,255,255,0.7);margin-bottom:40px;max-width:380px;">
+        La plateforme complète de gestion immobilière du Cabinet CRAA. Locataires, encaissements, rapports et bien plus.
+      </p>
+      <div style="display:flex;gap:32px;">
+        <div><div style="font-size:26px;font-weight:800;color:#4f8ef7;">100%</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">Intégré</div></div>
+        <div><div style="font-size:26px;font-weight:800;color:#4f8ef7;">100%</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">Collaboratif</div></div>
+        <div><div style="font-size:26px;font-weight:800;color:#4f8ef7;">100%</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">Intuitif</div></div>
+      </div>
+    </div>
+
+    <!-- Right: Login panel -->
+    <div class="auth-form-box">
+
+      <!-- STEP 1: Choix du mode -->
+      <div id="auth-step-1" class="auth-step active">
+        <div style="text-align:center;margin-bottom:28px;">
+          <div style="margin-bottom:10px;display:flex;justify-content:center;"><svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="8" width="28" height="24" rx="2" fill="rgba(79,142,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="8" y="4" width="20" height="6" rx="1" fill="rgba(79,142,247,0.2)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="9" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="16" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="9" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="16" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="14" y="27" width="8" height="5" rx="1" fill="#4f8ef7" opacity=".9"/></svg></div>
+          <div style="font-size:20px;font-weight:800;color:#e8f0fe;letter-spacing:-.5px;">ImmoGest</div>
+          <div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:5px;letter-spacing:1px;text-transform:uppercase;">Cabinet CRAA</div>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:12px;">
+          <div class="auth-card-btn" style="border-radius:12px;" onclick="authGoStep('2-perso')">
+            <div style="margin-bottom:10px;display:flex;justify-content:center;"><svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="18" cy="11" r="6" fill="rgba(79,142,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><path d="M6 30c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="#4f8ef7" stroke-width="1.5" stroke-linecap="round" fill="rgba(79,142,247,0.1)"/></svg></div>
+            <div style="font-weight:700;font-size:13px;color:#e8f0fe;">Mode Personnel</div>
+            <div style="font-size:11px;color:rgba(232,240,254,0.5);margin-top:4px;line-height:1.4;">Propriétaires &amp; Locataires</div>
+          </div>
+          <div class="auth-card-btn" style="border-radius:12px;" onclick="authGoStep('2-ent')">
+            <div style="margin-bottom:10px;display:flex;justify-content:center;"><svg width="26" height="26" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="8" width="28" height="24" rx="2" fill="rgba(79,142,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="8" y="4" width="20" height="6" rx="1" fill="rgba(79,142,247,0.2)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="9" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="16" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="9" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="14" y="27" width="8" height="5" rx="1" fill="#4f8ef7" opacity=".9"/></svg></div>
+            <div style="font-weight:700;font-size:13px;color:#e8f0fe;">Mode Entreprise</div>
+            <div style="font-size:11px;color:rgba(232,240,254,0.5);margin-top:4px;line-height:1.4;">Équipe Cabinet CRAA</div>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:16px;font-size:10px;color:rgba(232,240,254,0.25);letter-spacing:1px;">ImmoGest v2.0 · Cabinet CRAA</div>
+      </div>
+
+      <!-- STEP 2A: Mode Personnel — choix role -->
+      <div id="auth-step-2-perso" class="auth-step">
+        <button class="auth-back-btn" onclick="authGoStep('1')">&#8592; Retour</button>
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="font-size:11px;font-weight:700;color:#4fa2f7;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Mode Personnel</div>
+          <div style="font-size:12px;color:rgba(200,223,248,0.45);">Vous êtes...</div>
+        </div>
+        <!-- Ligne 1 : Admin -->
+        <div style="margin-bottom:10px;">
+          <div class="auth-card-btn" style="display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px;" onclick="authGoStep('3-admin-perso')">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+              <circle cx="16" cy="10" r="5" fill="rgba(79,162,247,0.2)" stroke="#4fa2f7" stroke-width="1.5"/>
+              <path d="M16 6 L17.5 9.5 L21 10 L18.5 12.5 L19 16 L16 14.5 L13 16 L13.5 12.5 L11 10 L14.5 9.5 Z" fill="#4fa2f7" opacity=".7"/>
+              <path d="M6 28 C6 22 10 18 16 18 C22 18 26 22 26 28" stroke="#4fa2f7" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            </svg>
+            <div>
+              <div style="font-weight:700;font-size:13px;color:#e8f4ff;">Administrateur</div>
+              <div style="font-size:11px;color:rgba(200,223,248,0.45);margin-top:2px;">Accès complet — gestion de tout</div>
+            </div>
+          </div>
+        </div>
+        <!-- Ligne 2 : Proprio + Locataire -->
+        <div style="display:flex;gap:10px;">
+          <div class="auth-card-btn" style="border-radius:10px;" onclick="authGoStep('3-proprio')">
+            <div style="margin-bottom:8px;display:flex;justify-content:center;">
+              <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="13" r="7" fill="rgba(79,162,247,0.15)" stroke="#4fa2f7" stroke-width="1.5"/>
+                <circle cx="12" cy="13" r="3" fill="#4fa2f7" opacity=".5"/>
+                <path d="M17 18l9 9M22 21l2 2M24 19l2 2" stroke="#4fa2f7" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div style="font-weight:700;font-size:12px;color:#e8f4ff;">Propriétaire</div>
+            <div style="font-size:10px;color:rgba(200,223,248,0.45);margin-top:3px;">Gérez vos biens</div>
+          </div>
+          <div class="auth-card-btn" style="border-radius:10px;" onclick="authGoStep('3-locataire')">
+            <div style="margin-bottom:8px;display:flex;justify-content:center;">
+              <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 14L16 4l12 10v14a2 2 0 01-2 2H6a2 2 0 01-2-2V14z" fill="rgba(79,162,247,0.15)" stroke="#4fa2f7" stroke-width="1.5"/>
+                <rect x="12" y="20" width="8" height="10" rx="1" fill="#4fa2f7" opacity=".6"/>
+                <rect x="8" y="16" width="5" height="5" rx="1" fill="#4fa2f7" opacity=".5"/>
+                <rect x="19" y="16" width="5" height="5" rx="1" fill="#4fa2f7" opacity=".5"/>
+              </svg>
+            </div>
+            <div style="font-weight:700;font-size:12px;color:#e8f4ff;">Locataire</div>
+            <div style="font-size:10px;color:rgba(200,223,248,0.45);margin-top:3px;">Votre espace</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3 Admin Personnel -->
+      <div id="auth-step-3-admin-perso" class="auth-step">
+        <button class="auth-back-btn" onclick="authGoStep('2-perso')">&#8592; Retour</button>
+        <div style="text-align:center;margin-bottom:22px;">
+          <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto 10px;">
+            <circle cx="16" cy="10" r="5" fill="rgba(79,162,247,0.2)" stroke="#4fa2f7" stroke-width="1.5"/>
+            <path d="M16 6 L17.5 9.5 L21 10 L18.5 12.5 L19 16 L16 14.5 L13 16 L13.5 12.5 L11 10 L14.5 9.5 Z" fill="#4fa2f7" opacity=".8"/>
+            <path d="M6 28 C6 22 10 18 16 18 C22 18 26 22 26 28" stroke="#4fa2f7" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          </svg>
+          <div style="font-size:16px;font-weight:800;color:#e8f4ff;">Administrateur</div>
+          <div style="font-size:11px;color:rgba(200,223,248,0.4);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;">Mode Personnel</div>
+        </div>
+        <label class="auth-label" style="margin-bottom:6px;">MOT DE PASSE</label>
+        <input type="password" id="pwd-individuel" class="auth-input" placeholder="Mot de passe" style="margin-bottom:16px;"
+          onkeydown="if(event.key==='Enter')loginIndividuel()">
+        <button class="auth-btn-primary" onclick="loginIndividuel()">Accéder</button>
+        <div id="err-individuel" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;">Mot de passe incorrect</div>
+        <div style="text-align:center;margin-top:10px;font-size:11px;color:rgba(200,223,248,0.35);">Mot de passe par défaut : <strong style="color:rgba(200,223,248,0.6);">immo2024</strong></div>
+      </div>
+
+      <!-- STEP 3A: Login Proprietaire -->
+      <div id="auth-step-3-proprio" class="auth-step">
+        <button class="auth-back-btn" onclick="authGoStep('2-perso')">&#8592; Retour</button>
+        <div style="text-align:center;margin-bottom:22px;">
+          <div style="margin-bottom:8px;display:flex;justify-content:center;"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="13" r="7" fill="rgba(79,142,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><circle cx="12" cy="13" r="3" fill="#4f8ef7" opacity=".5"/><path d="M17 18l9 9M22 21l2 2M24 19l2 2" stroke="#4f8ef7" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          <div style="font-size:16px;font-weight:800;color:#e8f0fe;">Espace Propriétaire</div>
+          <div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:4px;letter-spacing:.5px;">MODE PERSONNEL</div>
+        </div>
+        <label style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.5px;display:block;margin-bottom:6px;">NUMÉRO DE TÉLÉPHONE</label>
+        <input type="tel" id="proprio-tel" class="auth-input" placeholder="Ex: 699 00 00 00" style="margin-bottom:12px;"
+          onkeydown="if(event.key==='Enter')document.getElementById('proprio-pwd').focus()">
+        <label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:6px;">MOT DE PASSE</label>
+        <input type="password" id="proprio-pwd" class="auth-input" placeholder="Mot de passe" style="margin-bottom:16px;"
+          onkeydown="if(event.key==='Enter')loginProprietaire()">
+        <button class="auth-btn-primary" onclick="loginProprietaire()">Accéder à mon espace</button>
+        <div id="err-proprio" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>
+        <div style="text-align:center;margin-top:10px;font-size:11px;color:#aaa;"><span style="color:rgba(232,240,254,0.35);">Mot de passe par défaut : <strong style="color:rgba(232,240,254,0.6);">craa</strong></span></div>
+      </div>
+
+      <!-- STEP 3B: Login Locataire -->
+      <div id="auth-step-3-locataire" class="auth-step">
+        <button class="auth-back-btn" onclick="authGoStep('2-perso')">&#8592; Retour</button>
+        <div style="text-align:center;margin-bottom:22px;">
+          <div style="margin-bottom:8px;display:flex;justify-content:center;"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 14L16 4l12 10v14a2 2 0 01-2 2H6a2 2 0 01-2-2V14z" fill="rgba(79,142,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="12" y="20" width="8" height="10" rx="1" fill="#4f8ef7" opacity=".6"/><rect x="8" y="16" width="5" height="5" rx="1" fill="#4f8ef7" opacity=".5"/><rect x="19" y="16" width="5" height="5" rx="1" fill="#4f8ef7" opacity=".5"/></svg></div>
+          <div style="font-size:16px;font-weight:800;color:#e8f0fe;">Espace Locataire</div>
+          <div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:4px;letter-spacing:.5px;">NUMÉRO + CODE PIN</div>
+        </div>
+        <label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:6px;">NUMÉRO DE TÉLÉPHONE</label>
+        <input type="tel" id="loc-tel-login" class="auth-input" placeholder="Ex: 699 00 00 00" style="margin-bottom:16px;"
+          onkeydown="if(event.key==='Enter')document.getElementById('loc-pin1').focus()">
+        <label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:6px;">CODE PIN</label>
+        <div class="pin-row">
+          <input type="password" id="loc-pin1" class="pin-box" maxlength="1" oninput="if(this.value)document.getElementById('loc-pin2').focus()">
+          <input type="password" id="loc-pin2" class="pin-box" maxlength="1" oninput="if(this.value)document.getElementById('loc-pin3').focus()">
+          <input type="password" id="loc-pin3" class="pin-box" maxlength="1" oninput="if(this.value)document.getElementById('loc-pin4').focus()">
+          <input type="password" id="loc-pin4" class="pin-box" maxlength="1" onkeydown="if(event.key==='Enter')loginLocataire()">
+        </div>
+        <button class="auth-btn-primary" onclick="loginLocataire()">Accéder à mon espace</button>
+        <div id="err-locataire" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>
+        <div style="text-align:center;margin-top:10px;font-size:11px;color:#aaa;"><span style="color:rgba(232,240,254,0.35);">PIN par défaut : <strong style="color:rgba(232,240,254,0.6);">craa</strong></span></div>
+      </div>
+
+      <!-- STEP 2B: Mode Entreprise -->
+      <div id="auth-step-2-ent" class="auth-step">
+        <button class="auth-back-btn" onclick="authGoStep('1')">&#8592; Retour</button>
+        <div style="text-align:center;margin-bottom:22px;">
+          <div style="margin-bottom:8px;display:flex;justify-content:center;"><svg width="26" height="26" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="8" width="28" height="24" rx="2" fill="rgba(79,142,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="8" y="4" width="20" height="6" rx="1" fill="rgba(79,142,247,0.2)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="9" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="16" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="9" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="14" y="27" width="8" height="5" rx="1" fill="#4f8ef7" opacity=".9"/></svg></div>
+          <div style="font-size:16px;font-weight:800;color:#e8f0fe;">Équipe Cabinet CRAA</div>
+          <div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:4px;letter-spacing:.5px;">ACCÈS PROFESSIONNEL</div>
+        </div>
+        <label style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.5px;display:block;margin-bottom:6px;">RÔLE</label>
+        <select id="role-selector" class="auth-input" style="margin-bottom:12px;background:rgba(255,255,255,0.08);color:#e8f0fe;cursor:pointer;"
+          onchange="window._authRole=this.value;document.getElementById('pin-section-new').style.display=this.value==='locataire'?'block':'none';document.getElementById('creds-section-new').style.display=this.value==='locataire'?'none':'block';">
+          <option value="admin">👑 Administrateur</option>
+          <option value="gestionnaire">🏘️ Gestionnaire</option>
+          <option value="comptable">📊 Comptable</option>
+          <option value="proprietaire">🏠 Propriétaire</option>
+          <option value="locataire">🔑 Locataire</option>
+        </select>
+        <div id="creds-section-new">
+          <label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:6px;">IDENTIFIANT</label>
+          <input type="text" id="ent-username" class="auth-input" placeholder="Nom d'utilisateur" style="margin-bottom:12px;"
+            onkeydown="if(event.key==='Enter')loginEntreprise()">
+          <label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:6px;">MOT DE PASSE</label>
+          <input type="password" id="ent-password" class="auth-input" placeholder="Mot de passe" style="margin-bottom:16px;"
+            onkeydown="if(event.key==='Enter')loginEntreprise()">
+        </div>
+        <div id="pin-section-new" style="display:none;">
+          <label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:8px;">NUMÉRO DE TÉLÉPHONE</label>
+          <input type="tel" id="loc-tel-login-ent" class="auth-input" placeholder="Ex: 699 00 00 00" style="margin-bottom:12px;">
+          <label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:8px;">CODE PIN</label>
+          <div class="pin-row">
+            <input type="password" id="pin1" class="pin-box" maxlength="1" oninput="if(this.value)document.getElementById('pin2').focus()">
+            <input type="password" id="pin2" class="pin-box" maxlength="1" oninput="if(this.value)document.getElementById('pin3').focus()">
+            <input type="password" id="pin3" class="pin-box" maxlength="1" oninput="if(this.value)document.getElementById('pin4').focus()">
+            <input type="password" id="pin4" class="pin-box" maxlength="1" onkeydown="if(event.key==='Enter')loginEntreprise()">
+          </div>
+        </div>
+        <button class="auth-btn-primary" onclick="loginEntreprise()">Se connecter</button>
+        <div id="err-entreprise" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;">Identifiant ou mot de passe incorrect</div>
+      </div>
+
+
+
+    </div><!-- end auth-form-box -->
+  </div><!-- end main layout -->
+</div>
+
+
+<div class="app-shell" id="app-shell" style="display:none;">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar-main" style="width:220px;min-width:160px;max-width:360px;position:relative;flex-shrink:0;">
+    <!-- Poignée de redimensionnement -->
+    <div id="sidebar-resizer" style="position:absolute;top:0;right:0;width:4px;height:100%;cursor:col-resize;background:transparent;z-index:10;transition:background .15s;" onmouseenter="this.style.background='rgba(255,255,255,0.3)'" onmouseleave="this.style.background='transparent'"></div>
+    <div class="sidebar-logo">
+      <div class="logo-text">🏢 ImmoGest</div>
+      <div class="logo-sub">Gestion immobilière</div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-section">Principal</div>
+      <div class="nav-item active" onclick="navigate('dashboard')"><span class="nav-icon">⊞</span> Tableau de bord</div>
+      <div class="nav-item" onclick="navigate('encaissements')"><span class="nav-icon">💰</span> Encaissements</div>
+      <div class="nav-item" onclick="navigate('relances')" id="nav-relances"><span class="nav-icon">🔔</span> Relances <span class="nav-badge" id="badge-relances">0</span></div>
+      <div class="nav-item" onclick="navigate('rapport')"><span class="nav-icon">📊</span> Rapports</div>
+      <div class="nav-item" onclick="navigate('statistiques')"><span class="nav-icon">📈</span> Statistiques</div>
+      <div class="nav-item" onclick="navigate('rapport-annuel')"><span class="nav-icon">📅</span> Rapport annuel</div>
+      <div class="nav-item" onclick="navigate('bibliotheque')"><span class="nav-icon">📚</span> Bibliothèque juridique</div>
+      <div class="nav-section" 
+           onclick="toggleSidebarImmeubles()" 
+           style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;">
+        Immeubles <span id="imm-toggle-icon">▾</span>
+      </div>
+      <div id="sidebar-immeubles"></div>
+      <div class="nav-section" 
+           onclick="toggleSidebarGestion()" 
+           style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;">
+        Gestion <span id="gest-toggle-icon">▾</span>
+      </div>
+      <div id="sidebar-gestion">
+        <div class="nav-item" onclick="navigate('locataires')"><span class="nav-icon">👤</span> Locataires</div>
+        <div class="nav-item" onclick="navigate('immeubles-config')"><span class="nav-icon">⚙</span> Gérer les immeubles</div>
+        <div class="nav-item" id="nav-parametres" onclick="navigate('parametres')"><span class="nav-icon">⚙️</span> Paramètres</div>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div id="sidebar-user-info" style="font-weight:600;color:rgba(255,255,255,0.9);margin-bottom:4px;"></div>
+      <div id="last-save" style="margin-top:2px;"></div>
+
+      <div onclick="navigate('archives')" style="margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;cursor:pointer;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.8);">
+        <span>🗄️ Archives</span>
+        <span id="badge-archives" class="nav-badge" style="display:none;background:#3498db;">0</span>
+      </div>
+      <div onclick="navigate('corbeille')" style="margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;cursor:pointer;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.8);">
+        <span>🗑️ Corbeille</span>
+        <span id="badge-corbeille" class="nav-badge" style="display:none;background:#e74c3c;">0</span>
+      </div>
+
+
+      <button onclick="showChangerMotDePasse(false)" style="margin-top:4px;width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:11px;cursor:pointer;font-family:var(--font);">
+        🔒 Changer mot de passe
+      </button>
+      <button id="btn-changer-nom" onclick="changerNomAdmin()" style="display:none;margin-top:4px;width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:11px;cursor:pointer;font-family:var(--font);">
+        ✏️ Modifier mon nom
+      </button>
+      <button onclick="logout()" style="margin-top:6px;width:100%;padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;">
+        ⏻ Se déconnecter
+      </button>
+      
+    </div>
+  </div>
+
+  <!-- Overlay sidebar mobile — DEPLOY17 -->
+  <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+
+  <!-- ══ BARRE NAV MOBILE — DEPLOY17 ══ -->
+  <nav id="mobile-bottom-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;background:#fff;border-top:1.5px solid #E2E8F0;box-shadow:0 -2px 12px rgba(0,0,0,.08);">
+    <div style="display:flex;justify-content:space-around;align-items:center;padding:6px 0 8px;">
+      <button onclick="navigate('dashboard')" id="mbn-dashboard" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;font-family:var(--font);color:var(--text3);font-size:10px;font-weight:600;transition:color .15s;">
+        <span style="font-size:20px;">⊞</span><span>Accueil</span>
+      </button>
+      <button onclick="navigate('encaissements')" id="mbn-encaissements" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;font-family:var(--font);color:var(--text3);font-size:10px;font-weight:600;transition:color .15s;">
+        <span style="font-size:20px;">💰</span><span>Caisse</span>
+      </button>
+      <button onclick="navigate('locataires')" id="mbn-locataires" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;font-family:var(--font);color:var(--text3);font-size:10px;font-weight:600;transition:color .15s;">
+        <span style="font-size:20px;">👤</span><span>Locataires</span>
+      </button>
+      <button onclick="navigate('rapport')" id="mbn-rapport" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;font-family:var(--font);color:var(--text3);font-size:10px;font-weight:600;transition:color .15s;">
+        <span style="font-size:20px;">📊</span><span>Rapports</span>
+      </button>
+      <button onclick="toggleSidebarMobile()" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;font-family:var(--font);color:var(--text3);font-size:10px;font-weight:600;transition:color .15s;">
+        <span style="font-size:20px;">☰</span><span>Menu</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button id="btn-hamburger" onclick="toggleSidebarMobile()" title="Menu">☰</button>
+        <div>
+          <div class="topbar-title" id="page-title">Tableau de bord</div>
+          <div class="topbar-sub" id="page-sub"></div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <select id="sel-mois" onchange="renderCurrent()" style="background:#F7FAFC;border:1px solid #CBD5E0;border-radius:var(--radius-sm);color:#1A202C;font-size:12px;padding:6px 10px;font-family:var(--font);">
+          <option value="0">Janvier</option><option value="1">Février</option><option value="2">Mars</option>
+          <option value="3">Avril</option><option value="4">Mai</option><option value="5">Juin</option>
+          <option value="6">Juillet</option><option value="7">Août</option><option value="8">Septembre</option>
+          <option value="9">Octobre</option><option value="10">Novembre</option><option value="11">Décembre</option>
+        </select>
+        <select id="sel-annee" onchange="renderCurrent()" style="background:#F7FAFC;border:1px solid #CBD5E0;border-radius:var(--radius-sm);color:#1A202C;font-size:12px;padding:6px 10px;font-family:var(--font);">
+          <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option>
+        </select>
+        <button class="btn btn-primary" id="topbar-main-btn" onclick="topbarAction()">＋ Nouveau</button>
+      </div>
+    </div>
+    <div class="content" id="content">
+
+<!-- ═══ PUBLICITÉS & MONÉTISATION v2.1 ═══ -->
+
+<!-- Bannière top dashboard -->
+<div id="ad-banner-top" class="ad-banner ad-banner-top" style="display:none;">
+  <div style="font-size:20px;margin-bottom:4px;">🏢</div>
+  <div style="font-weight:600;color:var(--text2);">Espace publicitaire - ImmoGest</div>
+  <div style="font-size:10px;margin-top:2px;">Votre publicité ici • contact@immogest.cm</div>
+</div>
+
+<!-- Bannière bottom liste -->
+<div id="ad-banner-bottom" class="ad-banner ad-banner-bottom" style="display:none;">
+  <div style="display:flex;gap:16px;align-items:center;justify-content:center;flex-wrap:wrap;">
+    <div style="text-align:center;"><div style="font-size:24px;">📱</div><div style="font-size:10px;">App Mobile</div></div>
+    <div style="text-align:center;"><div style="font-size:24px;">💼</div><div style="font-size:10px;">Pro Services</div></div>
+    <div style="text-align:center;"><div style="font-size:24px;">🏗️</div><div style="font-size:10px;">Construction</div></div>
+  </div>
+</div>
+
+<!-- Bannière sidebar -->
+<div id="ad-banner-sidebar" class="ad-banner ad-banner-sidebar" style="display:none;">
+  <div style="font-size:32px;margin-bottom:8px;">🎯</div>
+  <div style="font-weight:600;font-size:12px;color:var(--text2);margin-bottom:4px;">Ciblez les propriétaires</div>
+  <div style="font-size:10px;color:var(--text3);line-height:1.4;">Rejoignez plus de 500 gestionnaires immobiliers actifs sur ImmoGest</div>
+  <button style="margin-top:8px;padding:4px 12px;background:var(--accent);color:#fff;border:none;border-radius:99px;font-size:10px;cursor:pointer;font-family:var(--font);">En savoir plus</button>
+</div>
+
+<!-- Interstitielle -->
+<div id="ad-interstitial" class="ad-interstitial">
+  <div class="ad-inter-box">
+    <div class="ad-inter-timer" id="ad-inter-timer">5s</div>
+    <button class="ad-inter-close" onclick="closeInterstitial()">✕</button>
+    <div class="ad-inter-media">🎬</div>
+    <div class="ad-inter-title">Boostez votre productivité</div>
+    <div class="ad-inter-desc">Passez à ImmoGest Pro pour un accès illimité sans publicités et des fonctionnalités avancées.</div>
+    <button class="ad-inter-btn" onclick="showUpgradeModal();closeInterstitial();">🚀 Découvrir Pro</button>
+  </div>
+</div>
+
+<!-- Modal Upgrade / Paywall -->
+<div class="overlay" id="modal-upgrade">
+  <div class="modal" style="width:780px;max-width:98vw;padding:24px;">
+    <h3 style="text-align:center;margin-bottom:6px;">⭐ Choisissez votre plan</h3>
+    <div style="text-align:center;margin-bottom:20px;">
+      <span id="current-plan-badge" class="plan-badge plan-free">FREE</span>
+      <span style="font-size:12px;color:var(--text3);margin-left:8px;">Plan actuel</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+
+      <!-- Gratuit -->
+      <div class="pricing-card">
+        <div class="pricing-name">Gratuit</div>
+        <div class="pricing-price">0 <span>FCFA</span></div>
+        <div class="pricing-period">Pour toujours</div>
+        <ul class="pricing-features">
+          <li class="included">1 immeuble</li>
+          <li class="included">10 locataires</li>
+          <li class="included">2 utilisateurs</li>
+          <li class="included">Rapports PDF</li>
+          <li class="included">1 rapport Word/mois</li>
+          <li class="included">Fiche de suivi</li>
+          <li class="included">3 relances/mois</li>
+          <li class="not-included">Assistant IA</li>
+          <li class="not-included">Export données</li>
+          <li class="not-included">Publicités</li>
+        </ul>
+        <button class="btn" style="width:100%;margin-top:auto;" disabled>Plan actuel</button>
+      </div>
+
+      <!-- Starter -->
+      <div class="pricing-card recommended">
+        <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px;white-space:nowrap;">POPULAIRE</div>
+        <div class="pricing-name">Starter</div>
+        <div class="pricing-price">9 999 <span>FCFA/mois</span></div>
+        <div class="pricing-period">89 990 FCFA/an (2 mois offerts)</div>
+        <ul class="pricing-features">
+          <li class="included">3 immeubles</li>
+          <li class="included">50 locataires</li>
+          <li class="included">5 utilisateurs</li>
+          <li class="included">Rapports PDF + Word illimités</li>
+          <li class="included">Fiche de suivi</li>
+          <li class="included">Relances illimitées</li>
+          <li class="included">IA 10 msgs/jour</li>
+          <li class="not-included">Export données</li>
+          <li class="included">Sans publicité</li>
+        </ul>
+        <button class="btn btn-primary" style="width:100%;margin-top:auto;" onclick="startSubscription('starter')">🚀 Passer à Starter</button>
+      </div>
+
+      <!-- Pro -->
+      <div class="pricing-card" style="border-color:var(--purple);position:relative;">
+        <div class="pricing-name" style="color:var(--purple);">Pro</div>
+        <div class="pricing-price">19 999 <span>FCFA/mois</span></div>
+        <div class="pricing-period">179 990 FCFA/an (2 mois offerts)</div>
+        <ul class="pricing-features">
+          <li class="included">10 immeubles</li>
+          <li class="included">Locataires illimités</li>
+          <li class="included">15 utilisateurs</li>
+          <li class="included">Rapports PDF + Word illimités</li>
+          <li class="included">Fiche de suivi</li>
+          <li class="included">Relances illimitées</li>
+          <li class="included">IA illimitée</li>
+          <li class="included">Export données</li>
+          <li class="included">Sans publicité</li>
+          <li class="included">Support prioritaire</li>
+        </ul>
+        <button class="btn btn-primary" style="width:100%;margin-top:auto;background:var(--purple);border-color:var(--purple);" onclick="startSubscription('pro')">💼 Passer à Pro</button>
+      </div>
+
+      <!-- Entreprise -->
+      <div class="pricing-card">
+        <div class="pricing-name">Entreprise</div>
+        <div class="pricing-price">29 999 <span>FCFA/mois</span></div>
+        <div class="pricing-period">269 990 FCFA/an (2 mois offerts)</div>
+        <ul class="pricing-features">
+          <li class="included">Immeubles illimités</li>
+          <li class="included">Locataires illimités</li>
+          <li class="included">Utilisateurs illimités</li>
+          <li class="included">Tout inclus</li>
+          <li class="included">IA illimitée</li>
+          <li class="included">Export données</li>
+          <li class="included">Sans publicité</li>
+          <li class="included">Support dédié</li>
+        </ul>
+        <button class="btn btn-primary" style="width:100%;margin-top:auto;" onclick="startSubscription('entreprise')">🏢 Entreprise</button>
+      </div>
+    </div>
+
+    <div style="background:var(--bg4);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text3);margin-top:16px;text-align:center;">
+      💳 Paiement par MTN MoMo · Orange Money · Virement · Contactez-nous au <strong>+237 676 52 89 17</strong>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModals()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Paiement Abonnement -->
+<div class="overlay" id="modal-paiement-abonnement">
+  <div class="modal">
+    <h3>💳 Paiement de l'abonnement</h3>
+    <div id="sub-summary" style="background:var(--bg3);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px;font-size:13px;"></div>
+
+    <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Mode de paiement</div>
+    <div class="payment-methods">
+      <div class="payment-method selected" onclick="selectPaymentMethod(this,'mtn')" id="pay-mtn">
+        <div class="payment-method-icon">📱</div>
+        <div class="payment-method-name">MTN Mobile Money</div>
+        <div class="payment-method-fee">Frais: 1%</div>
+      </div>
+      <div class="payment-method" onclick="selectPaymentMethod(this,'orange')" id="pay-orange">
+        <div class="payment-method-icon">🟠</div>
+        <div class="payment-method-name">Orange Money</div>
+        <div class="payment-method-fee">Frais: 1%</div>
+      </div>
+      <div class="payment-method" onclick="selectPaymentMethod(this,'wave')" id="pay-wave">
+        <div class="payment-method-icon">🌊</div>
+        <div class="payment-method-name">Wave</div>
+        <div class="payment-method-fee">Frais: 0%</div>
+      </div>
+      <div class="payment-method" onclick="selectPaymentMethod(this,'card')" id="pay-card">
+        <div class="payment-method-icon">💳</div>
+        <div class="payment-method-name">Carte Visa/Mastercard</div>
+        <div class="payment-method-fee">Frais: 2.5%</div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Téléphone (pour Mobile Money)</label>
+        <input type="tel" id="pay-phone" placeholder="6XX XXX XXX">
+      </div>
+      <div class="form-group">
+        <label>Durée</label>
+        <select id="pay-duree">
+          <option value="1">1 mois</option>
+          <option value="3">3 mois (-5%)</option>
+          <option value="6">6 mois (-10%)</option>
+          <option value="12" selected>12 mois (-17%)</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="pay-total" style="text-align:center;font-size:18px;font-weight:700;color:var(--accent);margin:12px 0;"></div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModals()">Annuler</button>
+      <button class="btn btn-primary" onclick="processPayment()">💳 Payer maintenant</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Récompense Vidéo -->
+<div id="reward-overlay" class="reward-overlay">
+  <div class="reward-box">
+    <div class="reward-icon">🎁</div>
+    <div class="reward-title">Débloquer temporairement</div>
+    <div class="reward-desc">Regardez une courte vidéo pour débloquer cette fonctionnalité Pro pendant 24h.</div>
+    <button class="reward-btn" onclick="playRewardAd()">▶ Regarder la vidéo</button>
+    <button class="btn btn-ghost" style="margin-top:8px;width:100%;" onclick="closeRewardAd()">Non merci</button>
+  </div>
+</div>
+
+<!-- Promo Toast -->
+<div id="promo-toast" class="promo-toast">
+  <div class="promo-toast-title">🚀 Passez à Pro !</div>
+  <div class="promo-toast-desc">Profitez de 14 jours gratuits avec toutes les fonctionnalités avancées.</div>
+  <button class="promo-toast-btn" onclick="showUpgradeModal();hidePromoToast();">Essayer gratuitement</button>
+</div>
+
+</div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="overlay" id="modal-locataire">
+  <div class="modal">
+    <h3 id="modal-loc-title">👤 Nouveau locataire</h3>
+    <input type="hidden" id="loc-id">
+    <div class="form-row">
+      <div class="form-group"><label>Nom complet *</label><input type="text" id="loc-nom" placeholder="Nom Prénom"></div>
+      <div class="form-group"><label>Téléphone</label><input type="text" id="loc-tel" placeholder="6XX XXX XXX"></div>
+    </div>
+    <div class="form-group"><label>Immeuble *</label><select id="loc-imm"></select></div>
+    <div class="form-row">
+      <div class="form-group"><label>N° local (ex: A1, S2)</label><input type="text" id="loc-appt" placeholder="A1"></div>
+      <div class="form-group"><label>Type</label>
+        <select id="loc-type">
+          <option value="appartement">Appartement</option>
+          <option value="studio">Studio</option>
+          <option value="chambre">Chambre</option>
+          <option value="commerce">Commerce</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Loyer mensuel (FCFA) *</label><input type="number" id="loc-loyer" placeholder="80000" oninput="calcMoisDus()"></div>
+      <div class="form-group"><label>Caution (FCFA)</label><input type="number" id="loc-caution" placeholder="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Date d'entrée</label>
+        <input type="date" id="loc-entree" oninput="autoJourPaiement()">
+      </div>
+      <div class="form-group">
+        <label>Jour de paiement mensuel</label>
+        <select id="loc-jour-paiement">
+          <option value="1">01 du mois</option><option value="2">02 du mois</option>
+          <option value="3">03 du mois</option><option value="4">04 du mois</option>
+          <option value="5">05 du mois</option><option value="6">06 du mois</option>
+          <option value="7">07 du mois</option><option value="8">08 du mois</option>
+          <option value="9">09 du mois</option><option value="10">10 du mois</option>
+          <option value="11">11 du mois</option><option value="12">12 du mois</option>
+          <option value="13">13 du mois</option><option value="14">14 du mois</option>
+          <option value="15">15 du mois</option><option value="16">16 du mois</option>
+          <option value="17">17 du mois</option><option value="18">18 du mois</option>
+          <option value="19">19 du mois</option><option value="20">20 du mois</option>
+          <option value="21">21 du mois</option><option value="22">22 du mois</option>
+          <option value="23">23 du mois</option><option value="24">24 du mois</option>
+          <option value="25">25 du mois</option><option value="26">26 du mois</option>
+          <option value="27">27 du mois</option><option value="28">28 du mois</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Arriérés (FCFA)</label>
+        <input type="number" id="loc-reste" value="0" min="0" oninput="calcMoisDus()">
+      </div>
+      <div class="form-group">
+        <label>Mois dus (calcul auto)</label>
+        <input type="number" id="loc-mois-dus" value="0" min="0" oninput="calcResteFromMois()" style="background:var(--bg2);">
+      </div>
+    </div>
+    <div class="form-group"><label>Observations</label><textarea id="loc-obs" rows="2" placeholder="Notes..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModals()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveLocataire()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-paiement">
+  <div class="modal">
+    <h3>💳 Enregistrer un paiement</h3>
+    <div class="form-group"><label>Immeuble</label><select id="pay-imm" onchange="updatePayLoc()"></select></div>
+    <div class="form-group"><label>Locataire *</label><select id="pay-loc"></select></div>
+    <div class="form-row">
+      <div class="form-group"><label>Date du versement *</label><input type="date" id="pay-date"></div>
+      <div class="form-group"><label>Montant versé (FCFA) *</label><input type="number" id="pay-montant" placeholder="80000"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Type</label>
+        <select id="pay-type"><option value="loyer">Loyer</option><option value="autre">Autre</option></select>
+      </div>
+      <div class="form-group"><label>Mode de paiement</label>
+        <select id="pay-mode"><option value="especes">Espèces</option><option value="virement">Virement</option><option value="mobile">Mobile Money</option><option value="cheque">Chèque</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>Note</label><input type="text" id="pay-note" placeholder="Note optionnelle..."></div>
+    <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:10px;background:#FFF8E1;border-radius:8px;border:1px solid #FFD54F;">
+      <input type="checkbox" id="pay-remis-bailleur" style="width:18px;height:18px;cursor:pointer;">
+      <label for="pay-remis-bailleur" style="font-weight:700;color:#E65100;cursor:pointer;margin:0;">💰 Remis au bailleur directement</label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="savePaiement()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-immeuble">
+  <div class="modal">
+    <h3 id="modal-imm-title">🏢 Nouvel immeuble</h3>
+    <input type="hidden" id="imm-id">
+    <div class="form-group"><label>Nom de l'immeuble *</label><input type="text" id="imm-nom-immeuble" placeholder="Ex: Résidence Les Bougainvillées"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Nom du propriétaire *</label><input type="text" id="imm-nom" placeholder="Nom complet du propriétaire"></div>
+      <div class="form-group"><label>Téléphone propriétaire *</label><input type="text" id="imm-tel-proprio" placeholder="Ex: 699000000"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Ville *</label><input type="text" id="imm-ville" placeholder="Douala"></div>
+      <div class="form-group"><label>Quartier</label><input type="text" id="imm-quartier" placeholder="Makepe..."></div>
+    </div>
+    <div class="form-group"><label>Couleur</label>
+      <input type="color" id="imm-couleur" value="#4f8ef7" style="height:38px;cursor:pointer;">
+    </div>
+    <div class="form-group">
+      <label>Commission Cabinet</label>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <select id="imm-commission-type" style="width:140px;padding:8px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
+          <option value="forfait">Forfait (FCFA)</option>
+          <option value="pct">Pourcentage (%)</option>
+        </select>
+        <input type="number" id="imm-commission-valeur" placeholder="0" min="0" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-top:4px;">Ex: 50000 pour 50 000 F forfait, ou 5 pour 5%</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveImmeuble()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-rapport">
+  <div class="modal" style="width:860px;max-width:97vw;max-height:93vh;display:flex;flex-direction:column;padding:0;overflow:hidden;">
+    <!-- Toolbar -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2);">
+      <div style="font-size:15px;font-weight:600;" id="preview-title">📄 Aperçu du rapport</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm" onclick="copyRapport()">📋 Copier texte</button>
+        <button class="btn btn-primary btn-sm" id="preview-dl-btn" onclick="previewDownload()">⬇ Télécharger .docx</button>
+        <button class="btn btn-ghost btn-sm" onclick="closeModals()">✕ Fermer</button>
+      </div>
+    </div>
+    <!-- Preview area -->
+    <div style="flex:1;overflow-y:auto;background:#EDF2F7;padding:24px;">
+      <div id="rapport-preview-html" style="background:#fff;max-width:780px;margin:0 auto;padding:32px 36px;box-shadow:0 2px 20px rgba(0,0,0,.15);border-radius:4px;font-family:Calibri,sans-serif;font-size:13px;color:#333;line-height:1.5;"></div>
+    </div>
+    <!-- Text fallback (hidden) -->
+    <div id="rapport-content" style="display:none;"></div>
+  </div>
+</div>
+
+
+<!-- MODAL LIBÉRATION -->
+<div class="overlay" id="modal-liberation">
+  <div class="modal">
+    <h3>🚪 Libérer un local</h3>
+    <input type="hidden" id="lib-loc-id">
+    <div class="alert alert-yellow">⚠️ Le locataire sera archivé avec son historique. Le local sera marqué comme libre.</div>
+    <div id="lib-info" style="background:var(--bg3);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px;font-size:13px;"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Date de sortie *</label><input type="date" id="lib-date"></div>
+      <div class="form-group"><label>Solde final (FCFA)</label><input type="number" id="lib-solde" placeholder="0"></div>
+    </div>
+    <div class="form-group"><label>Motif de départ</label>
+      <select id="lib-motif">
+        <option value="fin_bail">Fin de bail</option>
+        <option value="resiliation">Résiliation volontaire</option>
+        <option value="expulsion">Expulsion</option>
+        <option value="deces">Décès</option>
+        <option value="autre">Autre</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Observations</label><textarea id="lib-obs" rows="2" placeholder="Notes de départ..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModals()">Annuler</button>
+      <button class="btn btn-orange" onclick="confirmerLiberation()">🚪 Libérer le local</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOUVEAU LOCATAIRE APRÈS LIBÉRATION -->
+<div class="overlay" id="modal-nouveau-apres-lib">
+  <div class="modal">
+    <h3>🆕 Nouveau locataire</h3>
+    <input type="hidden" id="nal-iid">
+    <input type="hidden" id="nal-appt">
+    <input type="hidden" id="nal-type">
+    <div class="progress-steps">
+      <div class="step active">1. Infos</div>
+      <div class="step">2. Loyer</div>
+      <div class="step">3. Caution</div>
+    </div>
+    <div class="alert alert-green" id="nal-local-info">Local disponible</div>
+    <div class="form-row">
+      <div class="form-group"><label>Nom complet *</label><input type="text" id="nal-nom" placeholder="Nom Prénom"></div>
+      <div class="form-group"><label>Téléphone</label><input type="text" id="nal-tel" placeholder="6XX XXX XXX"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Date d'entrée *</label><input type="date" id="nal-entree"></div>
+      <div class="form-group"><label>Loyer mensuel (FCFA) *</label><input type="number" id="nal-loyer" placeholder="80000"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Caution (FCFA)</label><input type="number" id="nal-caution" placeholder="0"></div>
+      <div class="form-group"><label>Mois payés d'avance</label><input type="number" id="nal-avance" placeholder="0" min="0"></div>
+    </div>
+    <div class="form-group"><label>Observations</label><textarea id="nal-obs" rows="2"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModals()">Ignorer</button>
+      <button class="btn btn-primary" onclick="saveNouveauApresLib()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL HISTORIQUE LOCAL -->
+<div class="overlay" id="modal-historique-local">
+  <div class="modal modal-lg">
+    <h3 id="hist-local-title">📋 Historique du local</h3>
+    <div id="hist-local-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModals()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GÉNÉRATION DOCX -->
+<div class="overlay" id="modal-gen-docx">
+  <div class="modal">
+    <h3 id="docx-modal-title">📄 Générer document Word</h3>
+    <div id="docx-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModals()">Annuler</button>
+      <button class="btn btn-primary" id="docx-gen-btn">⬇ Télécharger .docx</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL DÉCLARATION PAIEMENT LOCATAIRE -->
+<div class="overlay" id="modal-declaration-paiement">
+  <div class="modal">
+    <h3>💳 Déclarer un paiement</h3>
+    <div class="alert alert-yellow" style="margin-bottom:14px;">⏳ Votre paiement sera validé par le comptable avant émission du reçu.</div>
+    <input type="hidden" id="decl-loc-id">
+    <!-- Mode de paiement -->
+    <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Mode de paiement</div>
+    <div class="pay-mode-grid">
+      <div class="pay-mode-btn selected" onclick="selectPayMode(this,'mtn')" id="mode-mtn">
+        <div class="pay-mode-icon">📱</div>
+        <div class="pay-mode-label">Mobile Money MTN</div>
+      </div>
+      <div class="pay-mode-btn" onclick="selectPayMode(this,'orange')" id="mode-orange">
+        <div class="pay-mode-icon">🟠</div>
+        <div class="pay-mode-label">Orange Money</div>
+      </div>
+      <div class="pay-mode-btn" onclick="selectPayMode(this,'virement')" id="mode-virement">
+        <div class="pay-mode-icon">🏦</div>
+        <div class="pay-mode-label">Virement bancaire</div>
+      </div>
+      <div class="pay-mode-btn" onclick="selectPayMode(this,'depot')" id="mode-depot">
+        <div class="pay-mode-icon">💰</div>
+        <div class="pay-mode-label">Dépôt bancaire</div>
+      </div>
+      <div class="pay-mode-btn" onclick="selectPayMode(this,'especes')" id="mode-especes" style="grid-column:1/-1;">
+        <div class="pay-mode-icon">💵</div>
+        <div class="pay-mode-label">Espèces (déposé au cabinet)</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Montant (FCFA) *</label>
+        <input type="number" id="decl-montant" placeholder="Ex: 80000">
+      </div>
+      <div class="form-group">
+        <label>Date du paiement *</label>
+        <input type="date" id="decl-date">
+      </div>
+    </div>
+    <div style="display:flex;gap:0;background:var(--bg3);border-radius:8px;padding:3px;margin-bottom:12px;">
+      <button onclick="window._declMode='mois';document.getElementById('decl-mode-mois').style.display='block';document.getElementById('decl-mode-periode').style.display='none';this.style.background='var(--bg2)';this.style.color='var(--accent)';this.nextElementSibling.style.background='transparent';this.nextElementSibling.style.color='var(--text3)';"
+        style="flex:1;padding:7px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--font);background:var(--bg2);color:var(--accent);">
+        📅 Mois unique
+      </button>
+      <button onclick="window._declMode='periode';document.getElementById('decl-mode-mois').style.display='none';document.getElementById('decl-mode-periode').style.display='block';this.style.background='var(--bg2)';this.style.color='var(--accent)';this.previousElementSibling.style.background='transparent';this.previousElementSibling.style.color='var(--text3)';"
+        style="flex:1;padding:7px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--font);background:transparent;color:var(--text3);">
+        📆 Période
+      </button>
+    </div>
+
+    <!-- Mois unique -->
+    <div id="decl-mode-mois">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Mois concerné *</label>
+          <select id="decl-mois">
+            <option value="0">Janvier</option><option value="1">Février</option>
+            <option value="2">Mars</option><option value="3">Avril</option>
+            <option value="4">Mai</option><option value="5">Juin</option>
+            <option value="6">Juillet</option><option value="7">Août</option>
+            <option value="8">Septembre</option><option value="9">Octobre</option>
+            <option value="10">Novembre</option><option value="11">Décembre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Année *</label>
+          <select id="decl-annee">
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026" selected>2026</option>
+            <option value="2027">2027</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Période -->
+    <div id="decl-mode-periode" style="display:none;">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Mois de début *</label>
+          <select id="decl-mois-deb">
+            <option value="0">Janvier</option><option value="1">Février</option>
+            <option value="2">Mars</option><option value="3">Avril</option>
+            <option value="4">Mai</option><option value="5">Juin</option>
+            <option value="6">Juillet</option><option value="7">Août</option>
+            <option value="8">Septembre</option><option value="9">Octobre</option>
+            <option value="10">Novembre</option><option value="11">Décembre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Année début *</label>
+          <select id="decl-annee-deb">
+            <option value="2024">2024</option><option value="2025">2025</option>
+            <option value="2026" selected>2026</option><option value="2027">2027</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Mois de fin *</label>
+          <select id="decl-mois-fin">
+            <option value="0">Janvier</option><option value="1">Février</option>
+            <option value="2">Mars</option><option value="3">Avril</option>
+            <option value="4">Mai</option><option value="5">Juin</option>
+            <option value="6">Juillet</option><option value="7">Août</option>
+            <option value="8">Septembre</option><option value="9">Octobre</option>
+            <option value="10">Novembre</option><option value="11">Décembre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Année fin *</label>
+          <select id="decl-annee-fin">
+            <option value="2024">2024</option><option value="2025">2025</option>
+            <option value="2026" selected>2026</option><option value="2027">2027</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="decl-ref-group" class="form-group" style="display:none;">
+      <label>Référence / Numéro de transaction</label>
+      <input type="text" id="decl-ref" placeholder="Ex: TXN123456789">
+    </div>
+    <div class="form-group">
+      <label>Observations</label>
+      <textarea id="decl-obs" rows="2" placeholder="Informations complémentaires..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModals()">Annuler</button>
+      <button class="btn btn-primary" onclick="soumettreDeclaration()">📤 Soumettre</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VALIDATION COMPTABLE -->
+<div class="overlay" id="modal-validation-paiement">
+  <div class="modal modal-lg">
+    <h3>✅ Valider un paiement</h3>
+    <input type="hidden" id="val-decl-id">
+    <div id="val-decl-info" style="background:var(--bg3);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Montant validé (FCFA) *</label>
+        <input type="number" id="val-montant">
+      </div>
+      <div class="form-group">
+        <label>Date comptable *</label>
+        <input type="date" id="val-date">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Note comptable</label>
+      <textarea id="val-note" rows="2" placeholder="Observations..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModals()">Annuler</button>
+      <button class="btn btn-danger btn-sm" onclick="rejeterDeclaration()">✗ Rejeter</button>
+      <button class="btn btn-primary" onclick="validerDeclaration()">✅ Valider et émettre reçu</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL GESTION PERMISSIONS -->
+<div class="overlay" id="modal-permissions">
+  <div class="modal modal-lg">
+    <h3>🔑 Gestion des droits</h3>
+    <input type="hidden" id="perm-user-id">
+    <div id="perm-user-info" style="background:var(--bg3);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;"></div>
+
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">
+      Les droits par défaut sont définis par le rôle. Vous pouvez accorder ou retirer des droits spécifiques à cet utilisateur.
+    </div>
+
+    <div id="perm-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;"></div>
+
+    <div style="background:var(--yellow-bg);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--yellow);margin-bottom:16px;">
+      ⚠️ Les modifications prennent effet à la prochaine connexion de l'utilisateur.
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModals()">Annuler</button>
+      <button class="btn btn-danger btn-sm" onclick="reinitialiserPermissions()" style="margin-right:auto;">↺ Réinitialiser</button>
+      <button class="btn btn-primary" onclick="sauvegarderPermissions()">💾 Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL CHANGER MOT DE PASSE -->
+<div class="overlay" id="modal-changer-pwd">
+  <div class="modal" style="max-width:420px;">
+    <h3 id="pwd-modal-title">🔒 Changer mon mot de passe</h3>
+    <div id="pwd-modal-alert" class="alert alert-yellow" style="margin-bottom:16px;display:none;">
+      🔐 Première connexion — Veuillez définir votre propre mot de passe avant de continuer.
+    </div>
+    <div class="form-group">
+      <label>Mot de passe actuel</label>
+      <input type="password" id="pwd-actuel" placeholder="Mot de passe actuel">
+    </div>
+    <div class="form-group">
+      <label>Nouveau mot de passe</label>
+      <input type="password" id="pwd-nouveau" placeholder="Minimum 6 caractères"
+        oninput="checkPwdStrength(this.value)">
+      <!-- Strength bar -->
+      <div style="margin-top:6px;height:4px;border-radius:99px;background:var(--border);overflow:hidden;">
+        <div id="pwd-strength-bar" style="height:100%;width:0%;border-radius:99px;transition:all .3s;background:var(--red);"></div>
+      </div>
+      <div id="pwd-strength-label" style="font-size:10px;color:var(--text3);margin-top:3px;"></div>
+    </div>
+    <div class="form-group">
+      <label>Confirmer le nouveau mot de passe</label>
+      <input type="password" id="pwd-confirm" placeholder="Répétez le nouveau mot de passe">
+    </div>
+    <div class="auth-error-box" id="pwd-error" style="margin-bottom:12px;">
+      <span>⚠️</span> <span id="pwd-error-msg"></span>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="pwd-cancel-btn" onclick="closeModals()">Annuler</button>
+      <button class="btn btn-primary" onclick="sauvegarderMotDePasse()">💾 Changer le mot de passe</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL APERCU RECU -->
+<div class="overlay" id="modal-apercu-recu">
+  <div class="modal" style="width:700px;max-width:97vw;max-height:93vh;display:flex;flex-direction:column;padding:0;overflow:hidden;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2);">
+      <div style="font-size:15px;font-weight:600;" id="recu-preview-title">🧾 Reçu de paiement</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary btn-sm" id="recu-dl-btn">⬇ Télécharger PDF</button>
+        <button class="btn btn-ghost btn-sm" onclick="closeModals()">✕ Fermer</button>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;background:#f0f0f0;padding:20px;">
+      <div id="recu-preview-content" style="background:#fff;max-width:600px;margin:0 auto;padding:32px;box-shadow:0 2px 16px rgba(0,0,0,.15);border-radius:4px;font-family:Calibri,sans-serif;font-size:13px;color:#333;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="docx.bundle.js"></script>
+<script src="js/app.js"></script>
+
+<!-- Context menu for locaux -->
+<div id="ctx-menu" style="position:fixed;display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:9999;min-width:180px;padding:6px 0;font-size:13px;">
+  <div id="ctx-menu-items"></div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODULE NOTIFICATIONS PUSH - ImmoGest v2.1                     -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<script id="sw-code" type="text/template" style="display:none;">
+// Service Worker pour ImmoGest - Notifications Push
+const CACHE_NAME = 'immogest-v1';
+const STATIC_ASSETS = [
+  '/',
+  '/index.html'
+];
+
+// Installation du Service Worker
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(STATIC_ASSETS);
+    })
+  );
+  self.skipWaiting();
+});
+
+// Activation du Service Worker
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => caches.delete(name))
+      );
+    })
+  );
+  self.clients.claim();
+});
+
+// Gestion des push notifications
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  try {
+    const data = event.data.json();
+    const title = data.title || 'ImmoGest';
+    const options = {
+      body: data.body || 'Nouvelle notification',
+      icon: data.icon || 'https://cdn-icons-png.flaticon.com/512/263/263115.png',
+      badge: data.badge || 'https://cdn-icons-png.flaticon.com/512/263/263115.png',
+      tag: data.tag || 'immogest-default',
+      requireInteraction: data.requireInteraction || false,
+      actions: data.actions || [
+        { action: 'open', title: 'Ouvrir' },
+        { action: 'close', title: 'Fermer' }
+      ],
+      data: {
+        url: data.url || '/',
+        ...data.extraData
+      }
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(title, options)
+    );
+  } catch (error) {
+    // Fallback si les données ne sont pas en JSON
+    event.waitUntil(
+      self.registration.showNotification('ImmoGest', {
+        body: event.data.text(),
+        icon: 'https://cdn-icons-png.flaticon.com/512/263/263115.png'
+      })
+    );
+  }
+});
+
+// Clic sur une notification
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const notificationData = event.notification.data || {};
+  const urlToOpen = notificationData.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // Chercher si une fenêtre est déjà ouverte
+        for (const client of clientList) {
+          if (client.url === urlToOpen && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // Sinon ouvrir une nouvelle fenêtre
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
+  );
+});
+
+// Fermeture de notification via action
+self.addEventListener('notificationclose', (event) => {
+  console.log('Notification fermée:', event.notification.tag);
+});
+
+// Interception des requêtes fetch (cache-first strategy)
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request);
+    })
+  );
+});
+</script>
+
+<script src="js/push-module.js"></script>
+
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODULE PUBLICITÉS & ABONNEMENTS - ImmoGest v2.1              -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<script src="js/monetisation.js"></script>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 🤖 IMMOGEST AI SERVICE v1.0 -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/ai-service.js"></script>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 🤖 PORTAIL LOCATAIRE v1.0 -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="overlay" id="modal-portail-locataire" style="z-index: 10000;">
+  <div class="modal" style="width: 900px; max-width: 98vw; max-height: 95vh; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+    <!-- Header du modal -->
+    <div style="display:flex; justify-content:space-between; align-items:center; padding: 14px 20px; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, #0E6AAF 0%, #0a4a7a 100%); color: #fff; flex-shrink: 0;">
+      <div style="font-size: 16px; font-weight: 700;">🏠 Espace Locataire</div>
+      <button class="btn btn-ghost btn-sm" onclick="closePortailLocataire()" style="color: #fff; border-color: rgba(255,255,255,0.3);">✕ Fermer</button>
+    </div>
+    <!-- Contenu scrollable -->
+    <div style="flex: 1; overflow-y: auto; background: var(--bg);">
+
+
+<!-- Header -->
+<div class="tenant-header">
+  <h1>🏠 ImmoGest Espace Locataire</h1>
+  <div class="user-info">
+    <div class="avatar">👤</div>
+    <div>
+      <div style="font-weight: 700;" id="tenant-name">–</div>
+      <div style="font-size: 13px; opacity: 0.8;" id="tenant-sub">–</div>
+    </div>
+  </div>
+</div>
+
+<!-- Navigation -->
+<div class="tenant-nav">
+  <button class="active" onclick="showTab('dashboard')">📊 Tableau de bord</button>
+  <button onclick="showTab('payment')">💳 Paiement</button>
+  <button onclick="showTab('maintenance')">🔧 Maintenance</button>
+  <button onclick="showTab('chat')">💬 Messages</button>
+  <button onclick="showTab('documents')">📄 Documents</button>
+  <button onclick="showTab('notifications')">🔔 Notifications</button>
+</div>
+
+<!-- Tab: Dashboard -->
+<div id="tab-dashboard" class="tab-content">
+  <div class="dashboard-grid">
+    <div class="stat-card">
+      <div class="stat-value" id="dashboard-rent">–</div>
+      <div class="stat-label">Loyer mensuel</div>
+      <div class="stat-trend" id="dashboard-rent-trend">–</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="dashboard-balance" style="">–</div>
+      <div class="stat-label">Solde courant</div>
+      <div class="stat-trend" id="dashboard-balance-trend">–</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="dashboard-lease">–</div>
+      <div class="stat-label">Mois restants sur le bail</div>
+      <div class="stat-trend" id="dashboard-lease-trend">–</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="dashboard-requests">–</div>
+      <div class="stat-label">Demandes en cours</div>
+      <div class="stat-trend">–</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📈 Historique des paiements</div>
+    <div id="payment-history"></div>
+  </div>
+</div>
+
+<!-- Tab: Payment (7. Paiement Mobile Money) -->
+<div id="tab-payment" class="tab-content" style="display:none;">
+  <div class="card">
+    <div class="card-title">💳 Effectuer un paiement</div>
+    
+    <div class="form-group" style="margin-bottom: 20px;">
+      <label>Montant à payer</label>
+      <input type="number" id="pay-amount" value="85000" style="font-size: 24px; font-weight: 700; color: var(--primary);">
+    </div>
+
+    <div style="font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 12px;">Choisir le mode de paiement</div>
+    <div class="momo-grid">
+      <div class="momo-btn" onclick="selectMomo(this, 'mtn')">
+        <div class="icon">
+          <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+            <circle cx="26" cy="26" r="26" fill="#FFCC00"/>
+            <text x="26" y="22" text-anchor="middle" font-size="10" font-weight="900" font-family="Arial,sans-serif" fill="#00338D">MTN</text>
+            <text x="26" y="34" text-anchor="middle" font-size="7" font-family="Arial,sans-serif" fill="#00338D">Mobile Money</text>
+          </svg>
+        </div>
+        <div class="name">MTN Mobile Money</div>
+      </div>
+      <div class="momo-btn" onclick="selectMomo(this, 'orange')">
+        <div class="icon">
+          <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+            <circle cx="26" cy="26" r="26" fill="#FF6600"/>
+            <rect x="10" y="18" width="32" height="16" rx="3" fill="#fff"/>
+            <text x="26" y="30" text-anchor="middle" font-size="9" font-weight="900" font-family="Arial,sans-serif" fill="#FF6600">orange</text>
+          </svg>
+        </div>
+        <div class="name">Orange Money</div>
+      </div>
+      <div class="momo-btn" onclick="selectMomo(this, 'wave')">
+        <div class="icon">
+          <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+            <circle cx="26" cy="26" r="26" fill="#1BA7E2"/>
+            <text x="26" y="24" text-anchor="middle" font-size="11" font-weight="900" font-family="Arial,sans-serif" fill="#fff">Wave</text>
+            <path d="M14 32 Q20 28 26 32 Q32 36 38 32" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="name">Wave</div>
+      </div>
+    </div>
+
+    <!-- Numéro Cabinet affiché selon opérateur choisi -->
+    <div id="momo-cabinet-info" style="display:none;margin:16px 0;padding:14px 16px;border-radius:10px;background:linear-gradient(135deg,#e8f5e9,#f1f8e9);border:1.5px solid #66BB6A;">
+      <div style="font-size:11px;font-weight:700;color:#388E3C;margin-bottom:4px;">📲 NUMÉRO DU CABINET</div>
+      <div id="momo-cabinet-number" style="font-size:22px;font-weight:900;color:#1B5E20;letter-spacing:2px;"></div>
+      <div style="font-size:11px;color:#558B2F;margin-top:4px;">Envoyez le montant exact à ce numéro, puis déclarez le paiement ci-dessous.</div>
+    </div>
+
+    <div class="form-group">
+      <label>Numéro de téléphone</label>
+      <input type="tel" id="pay-phone" placeholder="6XX XXX XXX">
+    </div>
+
+    <button class="btn btn-success" style="width: 100%; margin-top: 16px;" onclick="processPayment()">
+      🔒 Payer maintenant
+    </button>
+
+    <div style="margin-top: 20px; padding: 16px; background: #F7FAFC; border-radius: 8px; font-size: 13px; color: var(--text2);">
+      <strong>🔒 Sécurisé</strong> • Votre transaction est chiffrée<br>
+      <strong>⚡ Instantané</strong> • Confirmation sous 30 secondes<br>
+      <strong>🧾 Reçu</strong> • Envoyé automatiquement par email
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Maintenance (8. Soumission Maintenance) -->
+<div id="tab-maintenance" class="tab-content" style="display:none;">
+  <div class="card">
+    <div class="card-title">🔧 Nouvelle demande de maintenance</div>
+    <form class="maintenance-form" onsubmit="submitMaintenance(event)">
+      <div class="form-group">
+        <label>Type de problème</label>
+        <select id="maint-type" required>
+          <option value="">Sélectionner...</option>
+          <option value="plumbing">🚿 Plomberie</option>
+          <option value="electric">⚡ Électricité</option>
+          <option value="appliance">🔌 Électroménager</option>
+          <option value="lock">🔐 Serrurerie</option>
+          <option value="paint">🎨 Peinture</option>
+          <option value="other">📦 Autre</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label>Description détaillée</label>
+        <textarea id="maint-desc" placeholder="Décrivez le problème en détail..." required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Photos / Vidéos</label>
+        <div class="photo-upload" onclick="document.getElementById('maint-files').click()">
+          <div style="font-size: 48px;">📷</div>
+          <div style="font-weight: 600; margin-top: 8px;">Cliquez pour ajouter des photos</div>
+          <div style="font-size: 12px; color: var(--text2); margin-top: 4px;">Jusqu'à 5 fichiers (max 10Mo)</div>
+        </div>
+        <input type="file" id="maint-files" multiple accept="image/*,video/*" style="display: none;" onchange="handleFileSelect(this)">
+        <div id="file-preview" style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Autorisation d'accès</label>
+        <select id="maint-access">
+          <option value="present">Je serai présent</option>
+          <option value="key">Laisser la clé au gardien</option>
+          <option value="code">Donner le code porte</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%;">📤 Soumettre la demande</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 Historique des demandes</div>
+    <div id="maint-history"></div>
+  </div>
+</div>
+
+<!-- Tab: Chat (9. Messagerie Directe) -->
+<div id="tab-chat" class="tab-content" style="display:none;">
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 16px; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; gap: 12px;">
+      <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700;">G</div>
+      <div>
+        <div style="font-weight: 700;">Gestionnaire ImmoGest</div>
+        <div style="font-size: 12px; color: var(--success);">● En ligne</div>
+      </div>
+    </div>
+    
+    <div class="chat-container">
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-bubble received">Bonjour ! Comment puis-je vous aider aujourd'hui ?</div>
+      </div>
+      <div class="chat-input">
+        <input type="text" id="chat-message" placeholder="Écrivez votre message..." onkeypress="if(event.key==='Enter')sendMessage()">
+        <button class="btn btn-primary" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Documents (10. Documents Personnels) -->
+<div id="tab-documents" class="tab-content" style="display:none;">
+  <div class="card">
+    <div class="card-title">📄 Mes documents</div>
+    <div class="doc-list" id="doc-list"><div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">Chargement…</div></div>
+  </div>
+</div>
+
+<!-- Tab: Notifications (11. Notifications Push) -->
+<div id="tab-notifications" class="tab-content" style="display:none;">
+  <div class="card">
+    <div class="card-title">🔔 Notifications</div>
+    <div class="notif-list" id="notif-list">
+      <div class="notif-item">
+        <div class="icon">📋</div>
+        <div class="content">
+          <div class="title">Quittance disponible</div>
+          <div class="desc">Votre quittance d'avril 2026 est disponible</div>
+          <div class="time">Il y a 2 jours</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Voice Command Button (6. Commandes Vocales) -->
+<button class="voice-btn" id="voice-btn" onclick="toggleVoice()">🎤</button>
+
+<script src="js/portail-locataire.js"></script>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<!-- Modal Portail Propriétaire -->
+<div class="overlay" id="modal-portail-proprietaire">
+  <div class="modal" style="width:980px;max-width:98vw;max-height:95vh;padding:0;overflow:hidden;display:flex;flex-direction:column;">
+    <div id="modal-portail-proprietaire-content" style="flex:1;overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- ═══ ASSISTANT IA FLOTTANT v2 ═══ -->
+
+<button id="ai-float-btn" onclick="toggleAIChat()" title="Assistant IA ImmoGest" style="display:none;">
+  <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6L17 21H7l1.3-6A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/><circle cx="9" cy="9" r="1" fill="#fff" stroke="none"/><circle cx="15" cy="9" r="1" fill="#fff" stroke="none"/><path d="M9 13s1 2 3 2 3-2 3-2"/></svg>
+</button>
+
+<div id="ai-chat-panel">
+  <!-- Header -->
+  <div style="padding:13px 16px;background:linear-gradient(135deg,#0e6aaf,#6b46c1);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6L17 21H7l1.3-6A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/><circle cx="9" cy="9" r="1" fill="#fff" stroke="none"/><circle cx="15" cy="9" r="1" fill="#fff" stroke="none"/><path d="M9 13s1 2 3 2 3-2 3-2"/></svg>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;">Assistant ImmoGest</div>
+        <div id="ai-status-dot" style="font-size:10px;opacity:0.85;display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#4ade80;display:inline-block;"></span>En ligne · IA connectée</div>
+      </div>
+    </div>
+    <button onclick="toggleAIChat()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+  </div>
+
+  <!-- Messages -->
+  <div id="ai-chat-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--bg3);">
+    <div class="ai-msg-bot">
+      <div class="ai-avatar"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6L17 21H7l1.3-6A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/><circle cx="9" cy="9" r="1" fill="#fff" stroke="none"/><circle cx="15" cy="9" r="1" fill="#fff" stroke="none"/></svg></div>
+      <div class="ai-bubble-bot">Bonjour ! Je suis votre assistant ImmoGest.<br>Je connais vos immeubles, locataires et paiements en temps réel. Posez-moi n'importe quelle question ou choisissez une action rapide ⬇️</div>
+    </div>
+  </div>
+
+  <!-- Quick chips -->
+  <div style="padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;background:var(--bg2);flex-shrink:0;">
+    <button class="ai-chip" onclick="aiQuickAction('impayés')" style="background:var(--red-bg);color:var(--red);border-color:var(--red);">⚠️ Impayés</button>
+    <button class="ai-chip" onclick="aiQuickAction('anomalies')" style="background:rgba(107,70,193,.1);color:#6b46c1;border-color:#6b46c1;">📊 Anomalies</button>
+    <button class="ai-chip" onclick="aiQuickAction('performance')" style="background:var(--green-bg);color:var(--green);border-color:var(--green);">📈 Performance</button>
+    <button class="ai-chip" onclick="aiQuickAction('relances')" style="background:var(--yellow-bg);color:var(--yellow);border-color:var(--yellow);">📩 Relances</button>
+  </div>
+
+  <!-- Input -->
+  <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--bg2);flex-shrink:0;">
+    <input type="text" id="ai-input" placeholder="Posez votre question…"
+      style="flex:1;padding:9px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;font-family:var(--font);background:var(--bg);color:var(--text);outline:none;transition:border .15s;"
+      onfocus="this.style.borderColor='#0e6aaf'" onblur="this.style.borderColor=''"
+      onkeydown="if(event.key==='Enter')sendAIMessage()">
+    <button onclick="sendAIMessage()" id="ai-send-btn"
+      style="width:38px;height:38px;background:linear-gradient(135deg,#0e6aaf,#6b46c1);color:#fff;border:none;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Modal: Suggestion changement PIN -->
+<div class="overlay" id="modal-pin-suggest">
+  <div class="modal" style="max-width:360px;text-align:center;">
+    <div style="font-size:40px;margin-bottom:12px;">🔐</div>
+    <h3 style="margin-bottom:8px;">Bienvenue !</h3>
+    <p style="font-size:13px;color:var(--text3);margin-bottom:20px;line-height:1.6;">
+      Nous vous conseillons de changer votre PIN pour plus de sécurité.
+    </p>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="document.getElementById('modal-pin-suggest').classList.remove('open')">Plus tard</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="confirmChangePIN()">Changer mon PIN</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Changer PIN -->
+<div class="overlay" id="modal-change-pin">
+  <div class="modal" style="max-width:320px;text-align:center;">
+    <h3 style="margin-bottom:16px;">🔑 Nouveau PIN</h3>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:16px;">Choisissez un nouveau code PIN à 4 chiffres</p>
+    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:20px;">
+      <input type="password" id="new-pin1" maxlength="1" oninput="if(this.value)document.getElementById('new-pin2').focus()" style="width:56px;height:56px;text-align:center;font-size:24px;font-weight:700;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;background:var(--bg);">
+      <input type="password" id="new-pin2" maxlength="1" oninput="if(this.value)document.getElementById('new-pin3').focus()" style="width:56px;height:56px;text-align:center;font-size:24px;font-weight:700;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;background:var(--bg);">
+      <input type="password" id="new-pin3" maxlength="1" oninput="if(this.value)document.getElementById('new-pin4').focus()" style="width:56px;height:56px;text-align:center;font-size:24px;font-weight:700;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;background:var(--bg);">
+      <input type="password" id="new-pin4" maxlength="1" onkeydown="if(event.key==='Enter')saveNewPIN()" style="width:56px;height:56px;text-align:center;font-size:24px;font-weight:700;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;background:var(--bg);">
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="document.getElementById('modal-change-pin').classList.remove('open')">Annuler</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveNewPIN()">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Réinitialisation PIN -->
+<div class="overlay" id="modal-pin-reset">
+  <div class="modal" style="max-width:360px;">
+    <h3 style="margin-bottom:16px;">🔓 PIN oublié ?</h3>
+    <p style="font-size:13px;color:var(--text3);margin-bottom:16px;line-height:1.6;">
+      Entrez votre numéro de téléphone. Votre gestionnaire sera notifié et vous enverra un nouveau PIN via WhatsApp.
+    </p>
+    <div class="form-group">
+      <label>Numéro de téléphone</label>
+      <input type="tel" id="reset-tel" placeholder="6XX XXX XXX" class="form-control">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="document.getElementById('modal-pin-reset').classList.remove('open')">Annuler</button>
+      <button class="btn btn-primary" onclick="demanderReinitialisationPIN(document.getElementById('reset-tel').value)">Envoyer la demande</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- PWA Service Worker Registration -->
+<script>
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js')
+      .then(function(reg) {
+        console.log('[PWA] Service Worker enregistré:', reg.scope);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err);
+      });
+  });
+}
+</script>
+</body>
+</html>

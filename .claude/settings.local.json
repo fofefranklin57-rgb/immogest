@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-Content \"C:\\\\immogest\\\\index.html\")",
+      "Bash(Select-Object -Skip 2880 -First 40)",
+      "PowerShell(\\(Get-Content \"C:\\\\immogest\\\\index.html\"\\).Count)",
+      "PowerShell($lines = Get-Content \"C:\\\\immogest\\\\index.html\"; $i=0; foreach\\($l in $lines\\){ $i++; if\\($l -match 'Chart\\\\.js v4|chartjs|chart\\\\.js' -and $i -gt 2800\\){ Write-Host \"$i`: $l\"; if\\($i -gt 2900\\){break} } })",
+      "PowerShell($l = Get-Content \"C:\\\\immogest\\\\index.html\"; Write-Host \"=== Lignes 1-20 ===\"; $l[0..19] | ForEach-Object { $i=[array]::IndexOf\\($l,$_\\)+1; \"$i`: $_\" })",
+      "mcp__Desktop_Commander__read_file",
+      "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\immogest\\\\js\")"
+    ]
+  }
+}
