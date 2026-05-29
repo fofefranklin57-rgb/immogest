@@ -424,6 +424,20 @@ function loadDashboard() {
       }).join('');
     }
   }
+  // Pub AdSense dans le portail (selon plan du cabinet)
+  if (typeof injectAdPortail === 'function') {
+    setTimeout(function() { injectAdPortail('tab-dashboard'); }, 500);
+  }
+
+  // OneSignal: associer le locataire + demander permission
+  if (typeof loginOneSignal === 'function' && l) {
+    loginOneSignal('loc_' + l.id, {
+      role:   'locataire',
+      loc_id: String(l.id),
+      imm_id: String(l.iid || '')
+    });
+    setTimeout(requestNotificationPermission, 2000);
+  }
 }
 
 // Initialisation

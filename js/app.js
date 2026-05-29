@@ -310,6 +310,8 @@ function renderCurrent() {
   else if (currentPage === 'parametres') renderParametres();
   else if (currentPage === 'signalements') renderSignalements();
   updateSidebarBadges();
+  // Injecter les pubs AdSense après chaque rendu
+  if (typeof injectAdsInContent === 'function') setTimeout(injectAdsInContent, 100);
 }
 
 function buildSidebar() {
@@ -1456,6 +1458,10 @@ function savePaiement() {
     DATA.paiements.filter(p => p.locId === locId).forEach(p => savePaiementToSupabase(p));
     const loc = DATA.locataires.find(l => l.id === locId);
     if (loc) saveLocataireToSupabase(loc);
+  }
+  // Notifier le locataire via OneSignal
+  if (typeof notifPaiementRecu === 'function' && l) {
+    notifPaiementRecu(l, montant);
   }
   closeModals();
   // If on rapport immeuble page, refresh it
@@ -4297,6 +4303,16 @@ function initApp() {
   setInterval(saveData, 30000);
   // Badge signalements
   setTimeout(_updateBadgeSignalements, 500);
+
+  // OneSignal: associer l'utilisateur connecté
+  if (typeof loginOneSignal === 'function' && SESSION) {
+    loginOneSignal(SESSION.userId, {
+      role:    SESSION.role,
+      version: SESSION.version || 'individuel'
+    });
+    // Demander la permission de notification 3s après la connexion
+    setTimeout(requestNotificationPermission, 3000);
+  }
 }
 
 function applyNavPermissions() {
@@ -6115,10 +6131,45 @@ function renderParametres() {
         ✅ Activer CinetPay
       </button>
     </div>
+
+    <!-- Section OneSignal -->
+    <div class="card" style="max-width:520px;margin-top:16px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <div style="width:36px;height:36px;background:#E8244D;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🔔</div>
+        <div>
+          <div class="card-title" style="margin:0;">OneSignal — Notifications push</div>
+          <div id="onesignal-status-badge" style="font-size:11px;margin-top:2px;"></div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">
+        Envoie des notifications gratuites à tes locataires et propriétaires (loyers, rappels, confirmations).
+        Crée un compte gratuit sur <strong>onesignal.com</strong> → New App → Web App.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="form-group">
+          <label style="font-size:12px;font-weight:700;">App ID <span style="color:var(--text3);font-weight:400;">(Settings → Keys & IDs)</span></label>
+          <input type="text" id="onesignal-appid" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box;">
+        </div>
+        <div class="form-group">
+          <label style="font-size:12px;font-weight:700;">REST API Key <span style="color:var(--text3);font-weight:400;">(pour envoyer des notifs)</span></label>
+          <input type="password" id="onesignal-restkey" placeholder="os_v2_..."
+            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box;">
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:16px;padding:12px;" onclick="saveOneSignalKeys()">
+        🔔 Activer les notifications
+      </button>
+      <button class="btn btn-ghost" style="width:100%;margin-top:8px;padding:10px;font-size:12px;" onclick="notifTousImpayés()">
+        ⚠️ Envoyer rappel à tous les locataires impayés
+      </button>
+    </div>
   `;
 
   // Afficher le statut CinetPay actuel
   _updateCinetPayStatusBadge();
+  // Afficher le statut OneSignal actuel
+  if (typeof _updateOneSignalStatusBadge === 'function') _updateOneSignalStatusBadge();
 }
 
 
@@ -8293,7 +8344,7 @@ function renderPortailProprietaire(immeubles, tab) {
     </div>
 
     <!-- Content -->
-    <div style="flex:1;overflow-y:auto;padding:16px;background:var(--bg);">`;
+    <div id="proprio-portal-content" style="flex:1;overflow-y:auto;padding:16px;background:var(--bg);">`;
 
   // ── TAB: DASHBOARD ──────────────────────────────────────────────────────
   if (tab === 'dashboard') {
@@ -8470,13 +8521,24 @@ function renderPortailProprietaire(immeubles, tab) {
   html += `</div></div>`;
   
   const modalInner = modal.querySelector('.modal');
-  if (modalInner) modalInner.innerHTML = html;
+  if (modalInner) {
+    modalInner.innerHTML = html;
+    // Injecter pub AdSense dans le portail proprio
+    if (typeof injectAdPortail === 'function') {
+      setTimeout(function() { injectAdPortail('proprio-portal-content'); }, 500);
+    }
+  }
 }
 
 function openPortailProprietaire() {
   const immeubles = getVisibleImmeubles ? getVisibleImmeubles() : DATA.immeubles;
   renderPortailProprietaire(immeubles, 'dashboard');
   document.getElementById('modal-portail-proprietaire').classList.add('open');
+  // OneSignal: associer le propriétaire
+  if (typeof loginOneSignal === 'function' && SESSION && SESSION.role === 'proprietaire') {
+    loginOneSignal('pro_' + SESSION.userId, { role: 'proprietaire' });
+    setTimeout(requestNotificationPermission, 2000);
+  }
 }
 
 function closePortailProprietaire() {

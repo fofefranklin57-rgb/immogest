@@ -537,6 +537,23 @@ document.addEventListener('DOMContentLoaded', () => {
    ═══════════════════════════════════════════════════════════════ */
 
 // ══════════════════════════════════════════════════════════════
+// ██  CONFIGURATION ADSENSE — À PERSONNALISER  ██
+// ══════════════════════════════════════════════════════════════
+const ADSENSE_CONFIG = {
+  clientId:  'ca-pub-8065715770165014',  // ← ton Publisher ID
+  // Ad Unit IDs — créer dans AdSense > Annonces > Par bloc d'annonce
+  slots: {
+    banner:    '',           // ID bannière responsive (FREE) — à créer
+    inArticle: '2449818958', // In-article — STARTER/PRO discret
+    sidebar:   '',           // optionnel
+  },
+  // Auto Ads : Google place automatiquement (plus simple, recommandé pour FREE)
+  autoAds: true
+};
+// Pour ajouter les IDs : AdSense → Annonces → Par bloc d'annonce → copier l'ID numérique
+// ══════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════
 // ██  CONFIGURATION PAIEMENT IMMOGEST — À PERSONNALISER  ██
 // ══════════════════════════════════════════════════════════════
 // Ces numéros sont affichés aux clients qui veulent payer leur
@@ -766,28 +783,8 @@ function applyPlan() {
     badge.textContent = planLabel;
   }
 
-  if (isFreePlan()) {
-    // Gratuit : toutes les pubs visibles (bannières top/bottom/sidebar + interstitielle + native)
-    document.querySelectorAll('.ad-banner').forEach(el => el.style.display = 'flex');
-  } else if (isProPlan() || isBusinessPlan()) {
-    // Pro / Business : bannière discrète en bas seulement, pas d'interstitielle ni native
-    const top  = document.getElementById('ad-banner-top');
-    const side = document.getElementById('ad-banner-sidebar');
-    const bot  = document.getElementById('ad-banner-bottom');
-    if (top)  top.style.display  = 'none';
-    if (side) side.style.display = 'none';
-    if (bot) {
-      bot.style.display = 'flex';
-      bot.style.opacity = '0.55';
-      bot.style.fontSize = '11px';
-      bot.style.padding = '4px 12px';
-      bot.style.minHeight = '0';
-    }
-    document.querySelectorAll('.ad-banner-native').forEach(el => el.style.display = 'none');
-  } else {
-    // Enterprise : aucune pub
-    document.querySelectorAll('.ad-banner, .ad-banner-native').forEach(el => el.style.display = 'none');
-  }
+  // Appliquer la stratégie publicitaire selon le plan
+  _applyAdsStrategy(MONETISATION.plan);
 
   // Mettre à jour le badge dans la topbar
   updatePlanBadge();
@@ -825,30 +822,70 @@ function updatePlanBadge() {
 }
 
 // ── PUBLICITÉS ──
-function startAds() {
-  if (!isFreePlan()) return;
-
-  // Afficher bannières
-  const topBanner = document.getElementById('ad-banner-top');
-  const bottomBanner = document.getElementById('ad-banner-bottom');
-  const sidebarBanner = document.getElementById('ad-banner-sidebar');
-
-  if (topBanner) topBanner.style.display = 'flex';
-  if (bottomBanner) bottomBanner.style.display = 'flex';
-  if (sidebarBanner) sidebarBanner.style.display = 'flex';
-
-  // Rotation des bannières toutes les 30s
-  setInterval(() => rotateBanners(), 30000);
+// ── AdSense reel — ca-pub-8065715770165014
+var _adsenseLoaded = false;
+function _loadAdsenseScript(cb) {
+  if (_adsenseLoaded) { if (cb) cb(); return; }
+  if (document.querySelector('script[data-adsense]')) { _adsenseLoaded=true; if (cb) cb(); return; }
+  var s=document.createElement('script');
+  s.async=true; s.setAttribute('data-adsense','1'); s.setAttribute('crossorigin','anonymous');
+  s.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+ADSENSE_CONFIG.clientId;
+  s.onload=function(){ _adsenseLoaded=true; if(cb) cb(); };
+  s.onerror=function(){ console.warn('[AdSense] Bloque (AdBlock ?)'); };
+  document.head.appendChild(s);
 }
 
-function rotateBanners() {
-  if (!isFreePlan()) return;
-  const banners = document.querySelectorAll('.ad-banner');
-  banners.forEach(banner => {
-    // Simuler le refresh
-    banner.style.opacity = '0.5';
-    setTimeout(() => banner.style.opacity = '1', 300);
-  });
+function _createAdUnit(id, slot, format, fullWidth, isInArticle) {
+  var el=document.getElementById(id); if (!el) return;
+  el.innerHTML='';
+  var ins=document.createElement('ins');
+  ins.className='adsbygoogle';
+  ins.style.cssText = isInArticle ? 'display:block;text-align:center;' : 'display:block;';
+  ins.setAttribute('data-ad-client', ADSENSE_CONFIG.clientId);
+  if (slot) ins.setAttribute('data-ad-slot', slot);
+  if (isInArticle) {
+    ins.setAttribute('data-ad-layout', 'in-article');
+    ins.setAttribute('data-ad-format', 'fluid');
+  } else {
+    ins.setAttribute('data-ad-format', format||'auto');
+    if (fullWidth) ins.setAttribute('data-full-width-responsive','true');
+  }
+  el.appendChild(ins);
+  try { (window.adsbygoogle=window.adsbygoogle||[]).push({}); } catch(e) {}
+}
+
+function _applyAdsStrategy(plan) {
+  if (plan==='gratuit') {
+    _loadAdsenseScript(function() {
+      if (ADSENSE_CONFIG.autoAds) {
+        try { (window.adsbygoogle=window.adsbygoogle||[]).push({
+          google_ad_client: ADSENSE_CONFIG.clientId, enable_page_level_ads: true
+        }); } catch(e) {}
+      }
+    });
+    _scheduleInterstitiel();
+  } else if (plan==='starter'||plan==='pro') {
+    _removeAutoAds();
+    if (ADSENSE_CONFIG.slots.inArticle) _loadAdsenseScript(null);
+  } else {
+    _removeAutoAds(); _removeAdsenseScript();
+  }
+}
+function _removeAdsenseScript() { var s=document.querySelector('script[data-adsense]'); if(s){s.remove();_adsenseLoaded=false;} }
+function _removeAutoAds() { document.querySelectorAll('ins.adsbygoogle').forEach(function(el){el.remove();}); }
+function _scheduleInterstitiel() {
+  var today=new Date().toDateString();
+  if (localStorage.getItem('immogest_inter_day')!==today) {
+    localStorage.setItem('immogest_inter_day',today);
+    localStorage.setItem('immogest_inter_count','0');
+  }
+  var count=parseInt(localStorage.getItem('immogest_inter_count')||'0');
+  if (count>=2) return;
+  setTimeout(function() {
+    if (!isFreePlan()) return;
+    showInterstitial();
+    localStorage.setItem('immogest_inter_count',String(count+1));
+  }, 3*60*1000);
 }
 
 // Interstitielle
@@ -887,26 +924,55 @@ function closeInterstitial() {
   if (inter) inter.classList.remove('open');
 }
 
-// Publicité native (dans les listes)
-function insertNativeAd(container, position = 'middle') {
-  if (!isFreePlan()) return;
+// Injecter AdSense dans #content apres chaque renderCurrent()
+function injectAdsInContent() {
+  var plan=(typeof MONETISATION!=='undefined')?MONETISATION.plan:'gratuit';
+  if (plan==='entreprise') return;
+  var content=document.getElementById('content'); if (!content) return;
+  content.querySelectorAll('.adsense-injected').forEach(function(el){el.remove();});
 
-  const ad = document.createElement('div');
-  ad.className = 'ad-banner-native';
-  ad.innerHTML = `
-    <div class="ad-native-img">🏢</div>
-    <div class="ad-native-content">
-      <div class="ad-native-title">Gérez vos biens comme un pro</div>
-      <div class="ad-native-desc">Passez à ImmoGest Pro pour débloquer toutes les fonctionnalités avancées.</div>
-      <div class="ad-native-cta" onclick="showUpgradeModal()">En savoir plus →</div>
-    </div>
-  `;
-
-  if (position === 'middle' && container.children.length > 2) {
-    container.insertBefore(ad, container.children[Math.floor(container.children.length / 2)]);
-  } else {
-    container.appendChild(ad);
+  if (plan==='gratuit' && ADSENSE_CONFIG.slots.banner) {
+    var topAd=document.createElement('div');
+    topAd.className='adsense-injected'; topAd.id='ad-slot-top';
+    topAd.style.cssText='margin:0 0 12px 0;text-align:center;min-height:90px;';
+    content.insertBefore(topAd, content.firstChild);
+    _loadAdsenseScript(function(){_createAdUnit('ad-slot-top',ADSENSE_CONFIG.slots.banner,'horizontal',true);});
+    var botAd=document.createElement('div');
+    botAd.className='adsense-injected'; botAd.id='ad-slot-bottom';
+    botAd.style.cssText='margin:12px 0 0 0;text-align:center;min-height:90px;';
+    content.appendChild(botAd);
+    _loadAdsenseScript(function(){_createAdUnit('ad-slot-bottom',ADSENSE_CONFIG.slots.banner,'horizontal',true);});
+  } else if ((plan==='starter'||plan==='pro') && ADSENSE_CONFIG.slots.inArticle) {
+    var midAd=document.createElement('div');
+    midAd.className='adsense-injected'; midAd.id='ad-slot-native';
+    midAd.style.cssText='margin:16px 0;';
+    var kids=Array.from(content.children);
+    var mid=Math.max(1,Math.floor(kids.length/2));
+    if (kids[mid]) content.insertBefore(midAd,kids[mid]); else content.appendChild(midAd);
+    _loadAdsenseScript(function(){_createAdUnit('ad-slot-native',ADSENSE_CONFIG.slots.inArticle,'fluid',false,true);});
   }
+}
+
+// Portail locataire/proprietaire — pub discrete
+function injectAdPortail(containerId) {
+  var plan=(typeof MONETISATION!=='undefined')?MONETISATION.plan:'gratuit';
+  if (plan==='entreprise') return;
+  var slot=plan==='gratuit'?(ADSENSE_CONFIG.slots.banner||ADSENSE_CONFIG.slots.inArticle):ADSENSE_CONFIG.slots.inArticle;
+  if (!slot) return;
+  var container=document.getElementById(containerId); if (!container) return;
+  var adDiv=document.createElement('div');
+  adDiv.style.cssText='margin:12px auto;text-align:center;';
+  container.appendChild(adDiv);
+  _loadAdsenseScript(function() {
+    var ins=document.createElement('ins');
+    ins.className='adsbygoogle'; ins.style.display='block';
+    ins.setAttribute('data-ad-client',ADSENSE_CONFIG.clientId);
+    ins.setAttribute('data-ad-slot',slot);
+    ins.setAttribute('data-ad-format',plan==='gratuit'?'auto':'fluid');
+    ins.setAttribute('data-full-width-responsive','true');
+    adDiv.appendChild(ins);
+    try{(window.adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}
+  });
 }
 
 // Récompense vidéo
