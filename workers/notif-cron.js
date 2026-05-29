@@ -1,23 +1,35 @@
 // ═══════════════════════════════════════════════════════════════
-// IMMOGEST — Cloudflare Worker Cron
-// Rappels automatiques loyers impayés via OneSignal
+// IMMOGEST — Cloudflare Worker
+// - Cron : rappels loyers via OneSignal
+// - POST /pay    : init paiement CinetPay (credentials sécurisés)
+// - POST /notify : webhook CinetPay (confirmation paiement)
+// - GET  /test-notifs, /health
 // ═══════════════════════════════════════════════════════════════
-// Déploiement : wrangler deploy
-// Crons configurés dans wrangler.toml
-// ═══════════════════════════════════════════════════════════════
+
+const ALLOWED_ORIGIN = 'https://immogest-34w.pages.dev';
 
 export default {
 
-  // ── Cron trigger (planifié) ──────────────────────────────────
   async scheduled(event, env, ctx) {
     ctx.waitUntil(runCron(event.cron, env));
   },
 
-  // ── Requête HTTP (pour tester manuellement) ──────────────────
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // GET /test-notifs → déclenche manuellement
+    // CORS preflight
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: corsHeaders(request) });
+    }
+
+    if (url.pathname === '/pay' && request.method === 'POST') {
+      return handlePaymentInit(request, env);
+    }
+
+    if (url.pathname === '/notify' && request.method === 'POST') {
+      return handlePaymentNotify(request, env);
+    }
+
     if (url.pathname === '/test-notifs') {
       const result = await runCron('manual', env);
       return new Response(JSON.stringify(result, null, 2), {
@@ -25,19 +37,100 @@ export default {
       });
     }
 
-    // GET /health → vérification
     if (url.pathname === '/health') {
       return new Response(JSON.stringify({ status: 'ok', time: new Date().toISOString() }), {
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    return new Response('ImmoGest Notif Worker', { status: 200 });
+    return new Response('ImmoGest Worker', { status: 200 });
   }
 };
 
 // ══════════════════════════════════════════════════════════════
-// LOGIQUE PRINCIPALE
+// CINETPAY — Initialisation paiement
+// ══════════════════════════════════════════════════════════════
+async function handlePaymentInit(request, env) {
+  try {
+    const body = await request.json();
+    const { transactionId, amount, designation, firstName, lastName, email, phone } = body;
+
+    if (!transactionId || !amount || !designation) {
+      return jsonResponse({ ok: false, error: 'Paramètres manquants' }, 400, request);
+    }
+
+    // 1. Authentification CinetPay → access_token
+    const authResp = await fetch('https://api.cinetpay.net/v1/oauth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key:      env.CINETPAY_API_KEY,
+        api_password: env.CINETPAY_API_PASSWORD
+      })
+    });
+    const authData = await authResp.json();
+    if (authData.code !== 200 || !authData.access_token) {
+      console.error('[CinetPay] Auth échouée:', JSON.stringify(authData));
+      return jsonResponse({ ok: false, error: 'Authentification CinetPay échouée', details: authData }, 500, request);
+    }
+
+    // 2. Initialiser le paiement
+    const payResp = await fetch('https://api.cinetpay.net/v1/payment', {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${authData.access_token}`
+      },
+      body: JSON.stringify({
+        currency:               'XAF',
+        merchant_transaction_id: transactionId,
+        amount:                 amount,
+        lang:                   'fr',
+        designation:            designation,
+        client_email:           email || 'client@immogest.cm',
+        client_first_name:      firstName || 'Client',
+        client_last_name:       lastName  || 'ImmoGest',
+        client_phone_number:    phone || '',
+        success_url: 'https://immogest-34w.pages.dev/?payment=success',
+        failed_url:  'https://immogest-34w.pages.dev/?payment=failed',
+        notify_url:  'https://immogest1.fofefranklin57.workers.dev/notify'
+      })
+    });
+    const payData = await payResp.json();
+
+    if (payData.code === 200 && payData.payment_url) {
+      return jsonResponse({
+        ok:             true,
+        payment_url:    payData.payment_url,
+        transaction_id: payData.transaction_id
+      }, 200, request);
+    }
+
+    console.error('[CinetPay] Init paiement échouée:', JSON.stringify(payData));
+    return jsonResponse({ ok: false, error: 'Initialisation paiement échouée', details: payData }, 500, request);
+
+  } catch (e) {
+    console.error('[CinetPay] Exception /pay:', e.message);
+    return jsonResponse({ ok: false, error: e.message }, 500, request);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// CINETPAY — Webhook notification paiement
+// ══════════════════════════════════════════════════════════════
+async function handlePaymentNotify(request, env) {
+  try {
+    const body = await request.json();
+    console.log('[CinetPay] Notify reçu:', JSON.stringify(body));
+    // Extensible : mise à jour Supabase ici si besoin
+    return new Response('OK', { status: 200 });
+  } catch (e) {
+    return new Response('Error', { status: 400 });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// CRON — Rappels loyers
 // ══════════════════════════════════════════════════════════════
 async function runCron(cronExpr, env) {
   const log = [];
@@ -47,26 +140,23 @@ async function runCron(cronExpr, env) {
 
   log.push(`[${now.toISOString()}] Cron déclenché : ${cronExpr}`);
 
-  // Vérifier que les variables d'environnement sont configurées
   const missing = [];
-  if (!env.SUPABASE_URL)      missing.push('SUPABASE_URL');
-  if (!env.SUPABASE_KEY)      missing.push('SUPABASE_KEY');
-  if (!env.ONESIGNAL_APP_ID)  missing.push('ONESIGNAL_APP_ID');
+  if (!env.SUPABASE_URL)       missing.push('SUPABASE_URL');
+  if (!env.SUPABASE_KEY)       missing.push('SUPABASE_KEY');
+  if (!env.ONESIGNAL_APP_ID)   missing.push('ONESIGNAL_APP_ID');
   if (!env.ONESIGNAL_REST_KEY) missing.push('ONESIGNAL_REST_KEY');
   if (missing.length > 0) {
     log.push(`⚠️ Variables manquantes : ${missing.join(', ')}`);
     return { ok: false, missing, log };
   }
-  log.push(`✅ Variables OK (${4 - missing.length}/4 configurées)`);
+  log.push(`✅ Variables OK (4/4 configurées)`);
 
-  // 1. Rappel mensuel — 1er du mois : notifier TOUS les locataires actifs
   if (jourDuMois === 1 || cronExpr === 'monthly') {
     log.push('→ 1er du mois : rappel loyer mensuel');
     const result = await notifRappelMensuel(env, mois);
     log.push(`   ${result.sent}/${result.total} notifications envoyées`);
   }
 
-  // 2. Rappel quotidien — locataires en retard (reste > 0)
   const result = await notifImpayes(env);
   log.push(`→ Impayés : ${result.sent}/${result.total} notifications envoyées`);
 
@@ -74,18 +164,12 @@ async function runCron(cronExpr, env) {
   return { ok: true, log };
 }
 
-// ══════════════════════════════════════════════════════════════
-// RAPPEL 1er DU MOIS — tous les locataires actifs
-// ══════════════════════════════════════════════════════════════
 async function notifRappelMensuel(env, moisLabel) {
-  // Récupérer tous les locataires actifs (pas libres)
   const locataires = await querySupabase(env,
     `locataires?statut=neq.libre&actif=eq.true&select=id,nom,loyer,immeuble_id`
   );
-
   if (!locataires || locataires.length === 0) return { sent: 0, total: 0 };
 
-  // Récupérer les immeubles pour les noms
   const immeubles = await querySupabase(env, `immeubles?select=id,nom`);
   const immMap = {};
   (immeubles || []).forEach(i => { immMap[i.id] = i.nom; });
@@ -100,24 +184,17 @@ async function notifRappelMensuel(env, moisLabel) {
       `Votre loyer de ${montant} FCFA est dû pour ${moisLabel}${nomImm}.`
     );
     if (ok) sent++;
-    await sleep(100); // éviter le rate limiting
+    await sleep(100);
   }
-
   return { sent, total: locataires.length };
 }
 
-// ══════════════════════════════════════════════════════════════
-// RAPPEL QUOTIDIEN — locataires en retard
-// ══════════════════════════════════════════════════════════════
 async function notifImpayes(env) {
-  // Locataires avec reste > 0 et statut impayé
   const locataires = await querySupabase(env,
     `locataires?statut=eq.impay%C3%A9&reste=gt.0&actif=eq.true&select=id,nom,loyer,reste,immeuble_id`
   );
-
   if (!locataires || locataires.length === 0) return { sent: 0, total: 0 };
 
-  // Récupérer les immeubles
   const immeubles = await querySupabase(env, `immeubles?select=id,nom`);
   const immMap = {};
   (immeubles || []).forEach(i => { immMap[i.id] = i.nom; });
@@ -134,15 +211,12 @@ async function notifImpayes(env) {
     if (ok) sent++;
     await sleep(100);
   }
-
   return { sent, total: locataires.length };
 }
 
 // ══════════════════════════════════════════════════════════════
 // HELPERS
 // ══════════════════════════════════════════════════════════════
-
-// Requête Supabase REST API
 async function querySupabase(env, path) {
   try {
     const resp = await fetch(`${env.SUPABASE_URL}/rest/v1/${path}`, {
@@ -157,13 +231,12 @@ async function querySupabase(env, path) {
       return null;
     }
     return await resp.json();
-  } catch(e) {
+  } catch (e) {
     console.error('querySupabase error:', e.message);
     return null;
   }
 }
 
-// Envoyer une notification OneSignal
 async function sendOneSignalNotif(env, externalId, title, message) {
   try {
     const resp = await fetch('https://onesignal.com/api/v1/notifications', {
@@ -173,26 +246,45 @@ async function sendOneSignalNotif(env, externalId, title, message) {
         'Authorization': `Basic ${env.ONESIGNAL_REST_KEY}`
       },
       body: JSON.stringify({
-        app_id:           env.ONESIGNAL_APP_ID,
-        include_aliases:  { external_id: [externalId] },
-        target_channel:   'push',
-        headings:         { fr: title, en: title },
-        contents:         { fr: message, en: message },
-        url:              'https://immogest-34w.pages.dev/'
+        app_id:          env.ONESIGNAL_APP_ID,
+        include_aliases: { external_id: [externalId] },
+        target_channel:  'push',
+        headings:        { fr: title, en: title },
+        contents:        { fr: message, en: message },
+        url:             'https://immogest-34w.pages.dev/'
       })
     });
     const json = await resp.json();
     if (json.errors && json.errors.length > 0) {
-      // "No subscribers" n'est pas une vraie erreur
       if (json.errors[0]?.includes('No subscribers')) return true;
       console.error('OneSignal error for', externalId, ':', json.errors);
       return false;
     }
     return true;
-  } catch(e) {
+  } catch (e) {
     console.error('sendOneSignalNotif error:', e.message);
     return false;
   }
+}
+
+function corsHeaders(request) {
+  const origin = request ? request.headers.get('Origin') : ALLOWED_ORIGIN;
+  return {
+    'Access-Control-Allow-Origin':  origin || ALLOWED_ORIGIN,
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age':       '86400'
+  };
+}
+
+function jsonResponse(data, status, request) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      ...corsHeaders(request)
+    }
+  });
 }
 
 function sleep(ms) {
