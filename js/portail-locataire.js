@@ -469,7 +469,7 @@ function addTenantPortalLink() {
 // Ajouter le lien uniquement pour les locataires connectés
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
-    if (window.SESSION && window.SESSION.role === 'locataire') addTenantPortalLink();
+    if (typeof SESSION !== 'undefined' && SESSION && SESSION.role === 'locataire') addTenantPortalLink();
   }, 1000);
 });
 

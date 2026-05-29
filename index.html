@@ -337,6 +337,13 @@
         </div>
       </div>
       <div class="topbar-actions">
+        <!-- Badge plan — toujours présent, mis à jour par updatePlanBadge() -->
+        <span id="topbar-plan-badge"
+              class="plan-badge plan-free"
+              onclick="showUpgradeModal()"
+              title="Plan FREE — Cliquez pour voir les offres"
+              style="cursor:pointer;margin-right:4px;">FREE ▲</span>
+
         <select id="sel-mois" onchange="renderCurrent()" style="background:#F7FAFC;border:1px solid #CBD5E0;border-radius:var(--radius-sm);color:#1A202C;font-size:12px;padding:6px 10px;font-family:var(--font);">
           <option value="0">Janvier</option><option value="1">Février</option><option value="2">Mars</option>
           <option value="3">Avril</option><option value="4">Mai</option><option value="5">Juin</option>
@@ -350,8 +357,11 @@
       </div>
     </div>
     <div class="content" id="content">
+</div>
+  </div>
+</div>
 
-<!-- ═══ PUBLICITÉS & MONÉTISATION v2.1 ═══ -->
+<!-- ═══ PUBLICITÉS & MONÉTISATION v2.1 — HORS #content ═══ -->
 
 <!-- Bannière top dashboard -->
 <div id="ad-banner-top" class="ad-banner ad-banner-top" style="display:none;">
@@ -425,7 +435,7 @@
         <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px;white-space:nowrap;">POPULAIRE</div>
         <div class="pricing-name">Starter</div>
         <div class="pricing-price">9 999 <span>FCFA/mois</span></div>
-        <div class="pricing-period">89 990 FCFA/an (2 mois offerts)</div>
+        <div class="pricing-period">99 900 FCFA/an (2 mois offerts)</div>
         <ul class="pricing-features">
           <li class="included">3 immeubles</li>
           <li class="included">50 locataires</li>
@@ -444,7 +454,7 @@
       <div class="pricing-card" style="border-color:var(--purple);position:relative;">
         <div class="pricing-name" style="color:var(--purple);">Pro</div>
         <div class="pricing-price">19 999 <span>FCFA/mois</span></div>
-        <div class="pricing-period">179 990 FCFA/an (2 mois offerts)</div>
+        <div class="pricing-period">199 900 FCFA/an (2 mois offerts)</div>
         <ul class="pricing-features">
           <li class="included">10 immeubles</li>
           <li class="included">Locataires illimités</li>
@@ -460,11 +470,11 @@
         <button class="btn btn-primary" style="width:100%;margin-top:auto;background:var(--purple);border-color:var(--purple);" onclick="startSubscription('pro')">💼 Passer à Pro</button>
       </div>
 
-      <!-- Entreprise -->
+      <!-- Agence -->
       <div class="pricing-card">
-        <div class="pricing-name">Entreprise</div>
+        <div class="pricing-name">Agence</div>
         <div class="pricing-price">29 999 <span>FCFA/mois</span></div>
-        <div class="pricing-period">269 990 FCFA/an (2 mois offerts)</div>
+        <div class="pricing-period">299 900 FCFA/an (2 mois offerts)</div>
         <ul class="pricing-features">
           <li class="included">Immeubles illimités</li>
           <li class="included">Locataires illimités</li>
@@ -473,14 +483,15 @@
           <li class="included">IA illimitée</li>
           <li class="included">Export données</li>
           <li class="included">Sans publicité</li>
-          <li class="included">Support dédié</li>
+          <li class="included">Support dédié 24h</li>
+          <li class="included">Portail locataire</li>
         </ul>
-        <button class="btn btn-primary" style="width:100%;margin-top:auto;" onclick="startSubscription('entreprise')">🏢 Entreprise</button>
+        <button class="btn btn-primary" style="width:100%;margin-top:auto;" onclick="startSubscription('entreprise')">🏢 Agence</button>
       </div>
     </div>
 
-    <div style="background:var(--bg4);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text3);margin-top:16px;text-align:center;">
-      💳 Paiement par MTN MoMo · Orange Money · Virement · Contactez-nous au <strong>+237 676 52 89 17</strong>
+    <div id="upgrade-modal-contact" style="background:var(--bg4);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text3);margin-top:16px;text-align:center;">
+      💳 Paiement par MTN MoMo · Orange Money · Virement
     </div>
 
     <div class="modal-footer">
@@ -499,23 +510,23 @@
     <div class="payment-methods">
       <div class="payment-method selected" onclick="selectPaymentMethod(this,'mtn')" id="pay-mtn">
         <div class="payment-method-icon">📱</div>
-        <div class="payment-method-name">MTN Mobile Money</div>
-        <div class="payment-method-fee">Frais: 1%</div>
+        <div class="payment-method-name">MTN MoMo</div>
+        <div class="payment-method-fee">6 73 95 00 19</div>
       </div>
       <div class="payment-method" onclick="selectPaymentMethod(this,'orange')" id="pay-orange">
         <div class="payment-method-icon">🟠</div>
         <div class="payment-method-name">Orange Money</div>
-        <div class="payment-method-fee">Frais: 1%</div>
-      </div>
-      <div class="payment-method" onclick="selectPaymentMethod(this,'wave')" id="pay-wave">
-        <div class="payment-method-icon">🌊</div>
-        <div class="payment-method-name">Wave</div>
-        <div class="payment-method-fee">Frais: 0%</div>
+        <div class="payment-method-fee">6 90 40 99 29</div>
       </div>
       <div class="payment-method" onclick="selectPaymentMethod(this,'card')" id="pay-card">
         <div class="payment-method-icon">💳</div>
-        <div class="payment-method-name">Carte Visa/Mastercard</div>
-        <div class="payment-method-fee">Frais: 2.5%</div>
+        <div class="payment-method-name">Carte prépayée</div>
+        <div class="payment-method-fee">Visa / Mastercard</div>
+      </div>
+      <div class="payment-method" onclick="selectPaymentMethod(this,'whatsapp')" id="pay-whatsapp">
+        <div class="payment-method-icon">💬</div>
+        <div class="payment-method-name">WhatsApp</div>
+        <div class="payment-method-fee">Discuter d'abord</div>
       </div>
     </div>
 
@@ -539,7 +550,7 @@
 
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModals()">Annuler</button>
-      <button class="btn btn-primary" onclick="processPayment()">💳 Payer maintenant</button>
+      <button class="btn btn-primary" id="btn-pay-abonnement" onclick="processPaymentAbonnement()">💳 Payer maintenant</button>
     </div>
   </div>
 </div>
@@ -560,10 +571,6 @@
   <div class="promo-toast-title">🚀 Passez à Pro !</div>
   <div class="promo-toast-desc">Profitez de 14 jours gratuits avec toutes les fonctionnalités avancées.</div>
   <button class="promo-toast-btn" onclick="showUpgradeModal();hidePromoToast();">Essayer gratuitement</button>
-</div>
-
-</div>
-  </div>
 </div>
 
 <!-- MODALS -->
@@ -1176,6 +1183,7 @@ self.addEventListener('fetch', (event) => {
 <!-- ═══════════════════════════════════════════════════════════════ -->
 
 <script src="js/monetisation.js"></script>
+<script src="js/cinetpay.js"></script>
 
 
 <!-- ═══════════════════════════════════════════════════════════ -->

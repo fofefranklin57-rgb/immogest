@@ -6081,9 +6081,85 @@ function renderParametres() {
         💾 Enregistrer les numéros
       </button>
     </div>
+
+    <!-- Section CinetPay -->
+    <div class="card" style="max-width:520px;margin-top:16px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <div style="width:36px;height:36px;background:#FF6B00;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#fff;">CP</div>
+        <div>
+          <div class="card-title" style="margin:0;">CinetPay — Paiement automatique</div>
+          <div id="cinetpay-status-badge" style="font-size:11px;margin-top:2px;"></div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">
+        Colle ici tes clés API CinetPay (reçues par email après activation du compte).
+        Les abonnements seront payés automatiquement sans manipulation manuelle.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="form-group">
+          <label style="font-size:12px;font-weight:700;">API Key</label>
+          <input type="text" id="cinetpay-apikey" placeholder="Coller votre API Key ici"
+            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box;">
+        </div>
+        <div class="form-group">
+          <label style="font-size:12px;font-weight:700;">Site ID</label>
+          <input type="text" id="cinetpay-siteid" placeholder="Coller votre Site ID ici"
+            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box;">
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+          <input type="checkbox" id="cinetpay-production" style="width:16px;height:16px;">
+          <span>Activer le mode <strong>PRODUCTION</strong> (décoché = mode TEST)</span>
+        </label>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:16px;padding:12px;" onclick="saveCinetPayKeys()">
+        ✅ Activer CinetPay
+      </button>
+    </div>
   `;
+
+  // Afficher le statut CinetPay actuel
+  _updateCinetPayStatusBadge();
 }
 
+
+function saveCinetPayKeys() {
+  var apikey = (document.getElementById('cinetpay-apikey')?.value || '').trim();
+  var siteid = (document.getElementById('cinetpay-siteid')?.value || '').trim();
+  var prod   = document.getElementById('cinetpay-production')?.checked || false;
+
+  if (!apikey || !siteid) {
+    showToast('Veuillez entrer l\'API Key et le Site ID', 'error');
+    return;
+  }
+  if (typeof activerCinetPay === 'function') {
+    activerCinetPay(apikey, siteid, prod);
+    _updateCinetPayStatusBadge();
+  } else {
+    showToast('Module CinetPay non chargé — rechargez la page', 'error');
+  }
+}
+
+function _updateCinetPayStatusBadge() {
+  var badge = document.getElementById('cinetpay-status-badge');
+  if (!badge) return;
+  var configured = (typeof cinetpayEstConfigured === 'function') && cinetpayEstConfigured();
+  var mode = (typeof CINETPAY_CONFIG !== 'undefined') ? CINETPAY_CONFIG.mode : '';
+  if (configured) {
+    badge.innerHTML = '<span style="color:#10b981;font-weight:700;">● Actif</span> — mode ' +
+      (mode === 'PRODUCTION'
+        ? '<span style="color:#10b981;font-weight:700;">PRODUCTION</span>'
+        : '<span style="color:#F59E0B;font-weight:700;">TEST</span>');
+    // Pré-remplir les champs
+    var keyEl  = document.getElementById('cinetpay-apikey');
+    var siteEl = document.getElementById('cinetpay-siteid');
+    var prodEl = document.getElementById('cinetpay-production');
+    if (keyEl  && CINETPAY_CONFIG.apikey)  keyEl.value  = CINETPAY_CONFIG.apikey;
+    if (siteEl && CINETPAY_CONFIG.site_id) siteEl.value = CINETPAY_CONFIG.site_id;
+    if (prodEl) prodEl.checked = (mode === 'PRODUCTION');
+  } else {
+    badge.innerHTML = '<span style="color:var(--text3);">○ Non configuré — en attente des clés</span>';
+  }
+}
 
 function sauvegarderNomAdmin() {
   if (!SESSION) return;
@@ -6828,21 +6904,25 @@ function renderArchives() {
     if (permanentes.length === 0) {
       html += `<div class="empty"><div class="empty-icon">🗄️</div><div class="empty-text">Aucune archive permanente</div></div>`;
     } else {
-      html += `<div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Locataires supprimés dont le délai en corbeille a expiré. Consultation uniquement.</div>`;
+      html += `<div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Historique permanent des locataires. Le score de fiabilité est calculé sur la base des paiements et incidents.</div>`;
       html += `<div class="card"><div class="table-wrap"><table class="tbl">
         <thead><tr>
           <th>Nom</th><th>Immeuble</th><th>Local</th><th>Loyer</th>
-          <th>Supprimé le</th><th>Archivé le</th>
+          <th>Score</th><th>Supprimé le</th><th>Archivé le</th>
         </tr></thead><tbody>`;
 
       permanentes.slice().sort((a,b)=>(b._archivedAt||'').localeCompare(a._archivedAt||'')).forEach(l => {
         const im = DATA.immeubles.find(i => i.id === l.iid);
         const searchData = (l.nom + ' ' + (im?im.nom:'') + ' ' + (l.appt||'')).toLowerCase();
+        const scoreHtml = typeof getScoreDisplay === 'function'
+          ? getScoreDisplay(l.score || 100)
+          : (l.score || 100) + '/100';
         html += `<tr class="arch-perm-row" data-search="${searchData}">
           <td style="font-weight:600;">${l.nom}</td>
           <td style="font-size:12px;">${im ? `<span style="color:${im.col};">●</span> ${im.nom}` : '–'}</td>
           <td>${localBadge(l.appt)}</td>
           <td class="td-amount">${fmt(l.loyer||0)}</td>
+          <td style="font-size:12px;text-align:center;">${scoreHtml}</td>
           <td style="font-size:11px;color:var(--text3);">${l._deletedAt ? new Date(l._deletedAt).toLocaleDateString('fr-FR') : '–'}</td>
           <td style="font-size:11px;color:var(--text3);">${l._archivedAt ? new Date(l._archivedAt).toLocaleDateString('fr-FR') : '–'}</td>
         </tr>`;

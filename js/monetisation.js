@@ -22,8 +22,8 @@ const MonetizationModule = {
     // Limites Freemium
     freemium: {
       maxImmeublesFree: 1,
-      maxLocatairesFree: 45,
-      maxRapportsFree: 5,
+      maxLocatairesFree: 10,
+      maxRapportsFree: 3,
       enableAdsFree: true,
       enableExportFree: false,
       enableMultiUserFree: false,
@@ -169,7 +169,7 @@ const MonetizationModule = {
         </div>
         <div style="display:flex;gap:10px;flex-direction:column;">
           <button onclick="MonetizationModule.showUpgradeModal();document.getElementById('ad-interstitial').remove();" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">
-            Passer à Pro - 2 990 FCFA/mois
+            Voir les plans — dès 9 999 FCFA/mois
           </button>
           <button onclick="document.getElementById('ad-interstitial').remove()" style="width:100%;padding:10px;background:transparent;color:var(--text3);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;">
             Continuer avec publicités
@@ -434,7 +434,7 @@ const MonetizationModule = {
           </div>
 
           <div style="background:var(--yellow-bg);border:1px solid var(--yellow);border-radius:6px;padding:10px;margin-top:12px;font-size:11px;color:var(--yellow);">
-            ⚠️ Vous allez recevoir une demande de validation sur votre téléphone. Confirmez le paiement de <strong>2 990 FCFA</strong> pour activer ImmoGest Pro.
+            ⚠️ Vous allez recevoir une demande de validation sur votre téléphone. Confirmez le paiement pour activer votre abonnement ImmoGest.
           </div>
         </div>
         <div class="modal-footer">
@@ -536,6 +536,25 @@ document.addEventListener('DOMContentLoaded', () => {
    Système Freemium - Pubs + Abonnements
    ═══════════════════════════════════════════════════════════════ */
 
+// ══════════════════════════════════════════════════════════════
+// ██  CONFIGURATION PAIEMENT IMMOGEST — À PERSONNALISER  ██
+// ══════════════════════════════════════════════════════════════
+// Ces numéros sont affichés aux clients qui veulent payer leur
+// abonnement ImmoGest. C'est TON compte où tu reçois l'argent.
+// (Ce n'est PAS les numéros du cabinet — ceux-là sont dans
+//  Paramètres > Mobile Money et servent aux loyers locataires)
+// ══════════════════════════════════════════════════════════════
+const IMMOGEST_PAIEMENT = {
+  mtn:    '6 73 95 00 19',              // MTN Mobile Money
+  orange: '6 90 40 99 29',             // Orange Money
+  wave:   '',                          // Wave (pas encore disponible)
+  whatsapp: '237690409929',            // WhatsApp (numéro Orange sans +/espace)
+  telephone: '+237 690 40 99 29',      // Numéro affiché (WhatsApp Orange)
+  email: 'fofefranklin57@gmail.com',   // Email de contact
+  nom:   'ImmoGest Cameroun'           // Nom affiché dans les instructions
+};
+// ══════════════════════════════════════════════════════════════
+
 // ── CONFIGURATION MONÉTISATION ──
 // ═══════════════════════════════════════════════════════════
 // PLANS IMMOGEST — 4 niveaux
@@ -592,9 +611,9 @@ const MONETISATION = {
   },
   pricing: {
     gratuit:    { mensuel: 0,     annuel: 0      },
-    starter:    { mensuel: 9999,  annuel: 89990  },
-    pro:        { mensuel: 19999, annuel: 179990 },
-    entreprise: { mensuel: 29999, annuel: 269990 }
+    starter:    { mensuel: 9999,  annuel: 99900  },
+    pro:        { mensuel: 19999, annuel: 199900 },
+    entreprise: { mensuel: 29999, annuel: 299900 }
   }
 };
 
@@ -686,8 +705,8 @@ function initMonetisation() {
   }
 
   // Vérifier abonnement depuis Supabase si connecté
-  if (window.SESSION && window.SESSION.username) {
-    _sb.from('abonnements').select('plan,statut,date_fin').eq('user_id', window.SESSION.username).single()
+  if (SESSION && SESSION.username) {
+    _sb.from('abonnements').select('plan,statut,date_fin').eq('user_id', SESSION.username).single()
       .then(({ data }) => {
         if (data && data.statut === 'actif') {
           const fin = data.date_fin ? new Date(data.date_fin) : null;
@@ -717,7 +736,7 @@ function initMonetisation() {
 }
 
 function saveMonetisation() {
-  localStorage.setItem('immoget_monetisation', JSON.stringify({
+  localStorage.setItem('immogest_monetisation', JSON.stringify({
     plan: MONETISATION.plan,
     trialEnd: MONETISATION.trialEnd,
     usage: MONETISATION.usage
@@ -735,14 +754,14 @@ function isTrialActive()    { return false; } // Trial supprimé — plans direc
 function applyPlan() {
   const badge = document.getElementById('current-plan-badge');
   if (badge) {
-    const planClass = MONETISATION.plan === 'gratuit' ? 'plan-free'
-      : MONETISATION.plan === 'premium'    ? 'plan-pro'
-      : MONETISATION.plan === 'business'   ? 'plan-pro'
+    const planClass = MONETISATION.plan === 'gratuit'    ? 'plan-free'
+      : MONETISATION.plan === 'starter'    ? 'plan-starter'
+      : MONETISATION.plan === 'pro'        ? 'plan-pro'
       : 'plan-enterprise';
-    const planLabel = MONETISATION.plan === 'gratuit'  ? (isTrialActive() ? 'ESSAI' : 'FREE')
-      : MONETISATION.plan === 'premium'   ? 'PRO'
-      : MONETISATION.plan === 'business'  ? 'BUSINESS'
-      : 'ENTERPRISE';
+    const planLabel = MONETISATION.plan === 'gratuit'    ? 'FREE'
+      : MONETISATION.plan === 'starter'   ? 'STARTER'
+      : MONETISATION.plan === 'pro'       ? 'PRO'
+      : 'AGENCE';
     badge.className = 'plan-badge ' + planClass;
     badge.textContent = planLabel;
   }
@@ -775,38 +794,34 @@ function applyPlan() {
 }
 
 function updatePlanBadge() {
-  // Badge plan visible uniquement pour admin/gestionnaire/comptable
-  if (SESSION && (SESSION.role === 'locataire' || SESSION.role === 'proprietaire')) {
-    const existing = document.getElementById('topbar-plan-badge');
-    if (existing) existing.remove();
+  var badge = document.getElementById('topbar-plan-badge');
+  if (!badge) return;
+
+  // Masquer pour locataire / propriétaire
+  if (typeof SESSION !== 'undefined' && SESSION &&
+      (SESSION.role === 'locataire' || SESSION.role === 'proprietaire')) {
+    badge.style.visibility = 'hidden';
     return;
   }
-  const topbar = document.querySelector('.topbar-actions');
-  if (!topbar) return;
 
-  let badge = document.getElementById('topbar-plan-badge');
-  if (!badge) {
-    badge = document.createElement('span');
-    badge.id = 'topbar-plan-badge';
-    badge.style.cssText = 'margin-right:8px;cursor:pointer;';
-    badge.onclick = showUpgradeModal;
-    topbar.insertBefore(badge, topbar.firstChild);
-  }
+  var plan = (typeof MONETISATION !== 'undefined') ? MONETISATION.plan : 'gratuit';
 
-  const planLabel = MONETISATION.plan === 'gratuit' ? (isTrialActive() ? 'ESSAI' : 'FREE')
-    : MONETISATION.plan === 'premium'  ? 'PRO'
-    : MONETISATION.plan === 'business' ? 'BIZ'
-    : 'ENT';
-  const planClass = MONETISATION.plan === 'gratuit' ? 'plan-free'
-    : MONETISATION.plan === 'premium'  ? 'plan-pro'
-    : MONETISATION.plan === 'business' ? 'plan-pro'
-    : 'plan-enterprise';
-  badge.className = 'plan-badge ' + planClass;
-  badge.textContent = planLabel;
+  var planLabel = plan === 'starter'   ? 'STARTER'
+                : plan === 'pro'       ? 'PRO'
+                : plan === 'entreprise' ? 'AGENCE'
+                : 'FREE ▲';
+  var planClass = plan === 'starter'    ? 'plan-starter'
+                : plan === 'pro'        ? 'plan-pro'
+                : plan === 'entreprise' ? 'plan-enterprise'
+                : 'plan-free';
 
-  if (isFreePlan()) {
-    badge.innerHTML += ' <span style="font-size:9px;opacity:0.7;">▲</span>';
-  }
+  badge.className     = 'plan-badge ' + planClass;
+  badge.textContent   = planLabel;
+  badge.style.visibility = 'visible';
+  badge.style.display    = 'inline-flex';
+  badge.title = (plan === 'gratuit')
+    ? 'Plan FREE — Cliquez pour voir les offres'
+    : 'Abonnement ' + planLabel + ' actif';
 }
 
 // ── PUBLICITÉS ──
@@ -1000,10 +1015,33 @@ function renderUsageCounter(type, current, limit) {
 // ── PAYWALL & CONVERSION ──
 function showUpgradeModal() {
   // Le modal d'upgrade ne concerne pas les locataires ni les proprios
-  if (SESSION && (SESSION.role === 'locataire' || SESSION.role === 'proprietaire')) return;
-  document.getElementById('modal-upgrade').classList.add('open');
-  // Tracker
-  console.log('[Monetisation] Upgrade modal ouvert');
+  if (typeof SESSION !== 'undefined' && SESSION &&
+      (SESSION.role === 'locataire' || SESSION.role === 'proprietaire')) return;
+  var modal = document.getElementById('modal-upgrade');
+  if (!modal) { console.warn('[ImmoGest] modal-upgrade introuvable'); return; }
+
+  // Injecter le numéro de contact depuis IMMOGEST_PAIEMENT
+  var contactEl = document.getElementById('upgrade-modal-contact');
+  if (contactEl && typeof IMMOGEST_PAIEMENT !== 'undefined') {
+    contactEl.innerHTML =
+      '💳 Paiement par MTN MoMo · Orange Money · Virement &nbsp;·&nbsp; ' +
+      'Contactez-nous au <strong>' + IMMOGEST_PAIEMENT.telephone + '</strong>';
+  }
+
+  // Mettre à jour le badge du plan actuel
+  var currentBadge = document.getElementById('current-plan-badge');
+  if (currentBadge && typeof MONETISATION !== 'undefined') {
+    var p = MONETISATION.plan;
+    currentBadge.className = 'plan-badge ' +
+      (p === 'starter' ? 'plan-starter' : p === 'pro' ? 'plan-pro' :
+       p === 'entreprise' ? 'plan-enterprise' : 'plan-free');
+    currentBadge.textContent =
+      p === 'starter' ? 'STARTER' : p === 'pro' ? 'PRO' :
+      p === 'entreprise' ? 'AGENCE' : 'FREE';
+  }
+
+  modal.classList.add('open');
+  console.log('[Monetisation] Upgrade modal ouvert — plan:', MONETISATION.plan);
 }
 
 function showPaywall(message, feature) {
@@ -1043,6 +1081,11 @@ function selectPaymentMethod(el, method) {
   document.querySelectorAll('.payment-method').forEach(e => e.classList.remove('selected'));
   el.classList.add('selected');
   selectedPaymentMethod = method;
+  // Afficher/cacher le champ téléphone selon le mode
+  var phoneRow = document.querySelector('#pay-phone')?.closest('.form-row');
+  if (phoneRow) {
+    phoneRow.style.display = (method === 'mtn' || method === 'orange') ? '' : 'none';
+  }
   calculateTotal();
 }
 
@@ -1051,6 +1094,17 @@ function startSubscription(plan) {
   const planInfo = PLANS[plan];
   if (!planInfo) return;
 
+  // ── Si CinetPay est configuré → paiement automatique direct ──
+  if (typeof cinetpayEstConfigured === 'function' && cinetpayEstConfigured()) {
+    // Fermer le modal upgrade et lancer CinetPay directement
+    var upgradeModal = document.getElementById('modal-upgrade');
+    if (upgradeModal) upgradeModal.classList.remove('open');
+    var duree = 1; // durée par défaut 1 mois — CinetPay affiche les options
+    payerAvecCinetPay(plan, duree);
+    return;
+  }
+
+  // ── Sinon → flux manuel (MoMo + WhatsApp) ──
   const modal = document.getElementById('modal-paiement-abonnement');
   const summary = document.getElementById('sub-summary');
   if (summary) {
@@ -1059,6 +1113,14 @@ function startSubscription(plan) {
       <div style="color:var(--text3);font-size:12px;">${planInfo.price.toLocaleString()} FCFA/mois • Annulation à tout moment</div>
     `;
   }
+
+  // Réinitialiser : sélectionner MTN par défaut, afficher champ téléphone
+  selectedPaymentMethod = 'mtn';
+  document.querySelectorAll('.payment-method').forEach(e => e.classList.remove('selected'));
+  var payMtn = document.getElementById('pay-mtn');
+  if (payMtn) payMtn.classList.add('selected');
+  var phoneRow = document.querySelector('#pay-phone')?.closest('.form-row');
+  if (phoneRow) phoneRow.style.display = '';
 
   document.getElementById('modal-upgrade').classList.remove('open');
   if (modal) modal.classList.add('open');
@@ -1089,6 +1151,198 @@ function calculateTotal() {
   }
 }
 
+
+// ── PAIEMENT ABONNEMENT (flux complet) ──────────────────────
+
+function processPaymentAbonnement() {
+  var planInfo = PLANS[selectedPlan] || PLANS.starter;
+  var dureeEl  = document.getElementById('pay-duree');
+  var phoneEl  = document.getElementById('pay-phone');
+  var duree    = dureeEl ? parseInt(dureeEl.value) : 1;
+  var phone    = phoneEl ? phoneEl.value.trim() : '';
+
+  // Calcul montant avec réduction
+  var monthly  = planInfo.price;
+  var discount = duree === 3 ? 0.05 : duree === 6 ? 0.10 : duree === 12 ? 0.17 : 0;
+  var total    = Math.round(monthly * duree * (1 - discount));
+
+  var isMobile    = selectedPaymentMethod === 'mtn' || selectedPaymentMethod === 'orange';
+  var isCard      = selectedPaymentMethod === 'card';
+  var isWhatsApp  = selectedPaymentMethod === 'whatsapp';
+
+  // Validation numéro pour Mobile Money
+  if (isMobile && (!phone || phone.replace(/\D/g, '').length < 9)) {
+    if (typeof showToast === 'function') showToast('Veuillez entrer votre numéro de téléphone', 'error');
+    return;
+  }
+
+  // Fermer le modal de sélection
+  var modal = document.getElementById('modal-paiement-abonnement');
+  if (modal) modal.classList.remove('open');
+
+  // ─ Numéros ImmoGest (configurés dans IMMOGEST_PAIEMENT) ─
+  var P = (typeof IMMOGEST_PAIEMENT !== 'undefined') ? IMMOGEST_PAIEMENT : {
+    mtn: '6 73 95 00 19', orange: '6 90 40 99 29', whatsapp: '237690409929',
+    telephone: '+237 690 40 99 29', email: 'fofefranklin57@gmail.com', nom: 'ImmoGest'
+  };
+
+  var methodNames = { mtn: 'MTN Mobile Money', orange: 'Orange Money', card: 'Carte prépayée', whatsapp: 'WhatsApp' };
+  var methodIcons = { mtn: '📱', orange: '🟠', card: '💳', whatsapp: '💬' };
+
+  // ─ WhatsApp : ouvrir directement sans modal ─
+  if (isWhatsApp) {
+    var waText = encodeURIComponent(
+      'Bonjour, je souhaite souscrire au plan *' + planInfo.label + '* d\'ImmoGest' +
+      ' pour ' + duree + ' mois (' + total.toLocaleString('fr-FR') + ' FCFA). Comment procéder ?'
+    );
+    window.open('https://wa.me/' + P.whatsapp + '?text=' + waText, '_blank');
+    return;
+  }
+
+  // ─ Construire le modal d'instructions ─
+  var overlay = document.createElement('div');
+  overlay.className = 'overlay open';
+  overlay.id = 'modal-paiement-confirm';
+  overlay.style.zIndex = '10005';
+
+  var instructionsHtml = '';
+
+  if (isMobile) {
+    var numero = P[selectedPaymentMethod] || P.mtn;
+    instructionsHtml =
+      '<div style="background:linear-gradient(135deg,#e8f5e9,#f1f8e9);border:1.5px solid #66BB6A;border-radius:10px;padding:16px;margin:16px 0;text-align:center;">' +
+        '<div style="font-size:11px;font-weight:700;color:#388E3C;margin-bottom:6px;">📲 ENVOYEZ CE MONTANT À CE NUMÉRO</div>' +
+        '<div style="font-size:30px;font-weight:900;color:#1B5E20;letter-spacing:3px;margin-bottom:4px;">' + numero + '</div>' +
+        '<div style="font-size:22px;font-weight:800;color:#2e7d32;margin-bottom:4px;">' + total.toLocaleString('fr-FR') + ' FCFA</div>' +
+        '<div style="font-size:11px;color:#558B2F;">Via ' + methodNames[selectedPaymentMethod] + '</div>' +
+      '</div>' +
+      '<div style="background:var(--yellow-bg);border:1px solid var(--yellow);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.8;">' +
+        '<strong>Étapes :</strong><br>' +
+        '1. Ouvrez ' + methodNames[selectedPaymentMethod] + ' sur votre téléphone<br>' +
+        '2. Envoyez <strong>' + total.toLocaleString('fr-FR') + ' FCFA</strong> au <strong>' + numero + '</strong><br>' +
+        '3. Copiez la référence de transaction<br>' +
+        '4. Cliquez <strong>"J\'ai payé"</strong> ci-dessous' +
+      '</div>';
+
+  } else if (isCard) {
+    // Carte prépayée (Visa/Mastercard, MoMo Card, Orange Card...)
+    instructionsHtml =
+      '<div style="background:linear-gradient(135deg,#e8eaf6,#f3f4ff);border:1.5px solid #5C6BC0;border-radius:10px;padding:16px;margin:16px 0;text-align:center;">' +
+        '<div style="font-size:32px;margin-bottom:6px;">💳</div>' +
+        '<div style="font-size:20px;font-weight:800;color:#283593;margin-bottom:4px;">' + total.toLocaleString('fr-FR') + ' FCFA</div>' +
+        '<div style="font-size:11px;color:#5C6BC0;">Carte Visa · Mastercard · MoMo Card · Orange Card</div>' +
+      '</div>' +
+      '<div style="background:var(--bg3);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.8;">' +
+        '✅ Les cartes prépayées <strong>MTN MoMo Card</strong> et <strong>Orange Card</strong> sont acceptées.<br>' +
+        'Envoyez-nous la preuve de paiement par WhatsApp ou email :<br><br>' +
+        '<strong>📞 ' + P.telephone + '</strong> (WhatsApp)<br>' +
+        '<strong>✉️ ' + P.email + '</strong>' +
+      '</div>';
+  }
+
+  var hasConfirmBtn = isMobile || isCard;
+
+  overlay.innerHTML =
+    '<div class="modal" style="max-width:460px;">' +
+      '<h3 style="margin-bottom:4px;">' + methodIcons[selectedPaymentMethod] + ' ' + methodNames[selectedPaymentMethod] + '</h3>' +
+      '<div style="font-size:12px;color:var(--text3);margin-bottom:12px;">' +
+        'Plan <strong>' + planInfo.label + '</strong> · ' + duree + ' mois' +
+      '</div>' +
+      instructionsHtml +
+      (isMobile ?
+        '<div class="form-group" style="margin-bottom:12px;">' +
+          '<label>Référence de transaction (facultatif)</label>' +
+          '<input type="text" id="pay-ref-transaction" placeholder="Ex: MP250529.1234.XXXXXX" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:var(--font);box-sizing:border-box;">' +
+        '</div>' : '') +
+      '<div class="modal-footer">' +
+        '<button class="btn btn-ghost" onclick="this.closest(\'.overlay\').remove()">Annuler</button>' +
+        (isMobile ?
+          '<button class="btn btn-primary" id="btn-confirmer-paiement" onclick="_confirmerPaiementAbonnement(\'' + selectedPlan + '\',' + duree + ')">✅ J\'ai payé</button>' :
+          '<button class="btn btn-primary" style="background:#25D366;border-color:#25D366;" onclick="window.open(\'https://wa.me/' + P.whatsapp + '\',\'_blank\');this.closest(\'.overlay\').remove();">💬 Envoyer la preuve</button>'
+        ) +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+}
+
+function _confirmerPaiementAbonnement(plan, duree) {
+  var btn = document.getElementById('btn-confirmer-paiement');
+  var ref = (document.getElementById('pay-ref-transaction') ? document.getElementById('pay-ref-transaction').value : '').trim();
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Enregistrement...'; }
+
+  // Enregistrer la demande en attente
+  var sub = {
+    plan:      plan,
+    duree:     duree,
+    provider:  selectedPaymentMethod,
+    phone:     (document.getElementById('pay-phone') ? document.getElementById('pay-phone').value : ''),
+    ref:       ref || ('SUB-' + Date.now()),
+    statut:    'en_attente',
+    date:      new Date().toISOString(),
+    expiry:    new Date(Date.now() + duree * 30 * 86400000).toISOString()
+  };
+
+  localStorage.setItem('immogest_subscription_pending', JSON.stringify(sub));
+
+  // Simulation d'activation immédiate (à remplacer par validation admin réelle)
+  setTimeout(function() {
+    // Fermer modal instructions
+    var overlay = document.getElementById('modal-paiement-confirm');
+    if (overlay) overlay.remove();
+
+    // Activer le plan
+    MONETISATION.plan = plan;
+    localStorage.setItem('immogest_subscription', JSON.stringify({
+      tier:      plan,
+      provider:  sub.provider,
+      ref:       sub.ref,
+      startDate: sub.date,
+      expiryDate: sub.expiry
+    }));
+    saveMonetisation();
+    applyPlan();
+    updatePlanBadge();
+
+    // Annuler le trial
+    localStorage.removeItem('immogest_trial');
+    var trialBanner = document.getElementById('trial-countdown-banner');
+    if (trialBanner) trialBanner.remove();
+
+    // Supprimer widget usage
+    renderUsageWidget();
+
+    // Message succès
+    _showAbonnementSuccess(plan, duree);
+  }, 1500);
+}
+
+function _showAbonnementSuccess(plan, duree) {
+  var planInfo = PLANS[plan] || PLANS.starter;
+  var overlay = document.createElement('div');
+  overlay.className = 'overlay open';
+  overlay.style.zIndex = '10006';
+  overlay.innerHTML =
+    '<div class="modal" style="max-width:400px;text-align:center;">' +
+      '<div style="font-size:60px;margin-bottom:12px;">🎉</div>' +
+      '<h3 style="color:var(--green);margin-bottom:8px;">Abonnement activé !</h3>' +
+      '<p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:16px;">' +
+        'Bienvenue en <strong>' + planInfo.label + '</strong> !<br>' +
+        'Votre abonnement est actif pour <strong>' + duree + ' mois</strong>.' +
+      '</p>' +
+      '<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--text2);">' +
+        '✓ Publicités supprimées<br>' +
+        '✓ Toutes les fonctionnalités débloquées<br>' +
+        '✓ Score locataire activé<br>' +
+        (plan === 'pro' || plan === 'entreprise' ? '✓ Export PDF/Word illimité<br>' : '') +
+      '</div>' +
+      '<div class="modal-footer">' +
+        '<button class="btn btn-primary" style="width:100%;" onclick="this.closest(\'.overlay\').remove();location.reload();">Commencer !</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
 
 // ── HOOKS SUR FONCTIONNALITÉS EXISTANTES ──
 
@@ -1160,6 +1414,309 @@ window.navigate = function(page, immId) {
 // ── INITIALISATION AU DÉMARRAGE ──
 document.addEventListener('DOMContentLoaded', function() {
   // Attendre que l'app soit initialisée
-  setTimeout(initMonetisation, 500);
+  setTimeout(function() {
+    if (typeof SESSION !== "undefined") { initMonetisation(); }
+    else { setTimeout(initMonetisation, 1500); }
+  }, 500);
 });
+
+
+// ═══════════════════════════════════════════════════════════════
+// STRATÉGIES DE CONVERSION — v3.1
+// 1. Widget usage sidebar  2. Essai 14 jours  3. Score verrouillé
+// 4. Bannière archives     5. Rappels hebdo
+// ═══════════════════════════════════════════════════════════════
+
+
+// ─── 1. WIDGET USAGE DANS LE SIDEBAR ────────────────────────
+function renderUsageWidget() {
+  if (!isFreePlan()) {
+    // Supprimer le widget si plan payant
+    const old = document.getElementById('usage-widget');
+    if (old) old.remove();
+    return;
+  }
+
+  const footer = document.querySelector('.sidebar-footer');
+  if (!footer) return;
+
+  let widget = document.getElementById('usage-widget');
+  if (!widget) {
+    widget = document.createElement('div');
+    widget.id = 'usage-widget';
+    footer.insertBefore(widget, footer.firstChild);
+  }
+
+  const immeubles  = (typeof DATA !== 'undefined' && DATA.immeubles)  ? DATA.immeubles.length : 0;
+  const locataires = (typeof DATA !== 'undefined' && DATA.locataires) ? DATA.locataires.filter(function(l){ return l.s !== 'libre'; }).length : 0;
+  const maxImm = 1, maxLoc = 10;
+
+  const pImm = Math.min(100, (immeubles / maxImm) * 100);
+  const pLoc = Math.min(100, (locataires / maxLoc) * 100);
+
+  const cImm = pImm >= 100 ? '#e74c3c' : pImm >= 80 ? '#f39c12' : 'rgba(255,255,255,0.35)';
+  const cLoc = pLoc >= 100 ? '#e74c3c' : pLoc >= 80 ? '#f39c12' : 'rgba(255,255,255,0.35)';
+
+  const urgence = pImm >= 100 || pLoc >= 100;
+  const proche  = !urgence && (pImm >= 80 || pLoc >= 80);
+
+  widget.style.cssText = 'margin-bottom:10px;padding:10px 12px;background:rgba(255,255,255,0.06);border-radius:8px;border:1px solid ' + (urgence ? 'rgba(231,76,60,0.4)' : 'rgba(255,255,255,0.1)') + ';';
+
+  widget.innerHTML =
+    '<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Utilisation · Plan FREE</div>' +
+
+    '<div style="margin-bottom:6px;">' +
+      '<div style="display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:3px;">' +
+        '<span>Immeubles</span>' +
+        '<span style="color:' + cImm + ';font-weight:600;">' + immeubles + '/' + maxImm + '</span>' +
+      '</div>' +
+      '<div style="height:4px;background:rgba(255,255,255,0.1);border-radius:99px;overflow:hidden;">' +
+        '<div style="height:100%;width:' + pImm + '%;background:' + cImm + ';border-radius:99px;transition:width .4s;"></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div style="margin-bottom:8px;">' +
+      '<div style="display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:3px;">' +
+        '<span>Locataires</span>' +
+        '<span style="color:' + cLoc + ';font-weight:600;">' + locataires + '/' + maxLoc + '</span>' +
+      '</div>' +
+      '<div style="height:4px;background:rgba(255,255,255,0.1);border-radius:99px;overflow:hidden;">' +
+        '<div style="height:100%;width:' + pLoc + '%;background:' + cLoc + ';border-radius:99px;transition:width .4s;"></div>' +
+      '</div>' +
+    '</div>' +
+
+    (urgence ?
+      '<button onclick="showUpgradeModal()" style="width:100%;padding:6px;background:#e74c3c;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">⚠ Limite atteinte — S\'abonner</button>' :
+    proche ?
+      '<button onclick="showUpgradeModal()" style="width:100%;padding:6px;background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">⬆ Passer à Starter</button>' :
+      '<div style="font-size:10px;color:rgba(255,255,255,0.35);text-align:center;cursor:pointer;" onclick="showUpgradeModal()">Voir les plans →</div>'
+    );
+}
+
+
+// ─── 2. ESSAI 14 JOURS ──────────────────────────────────────
+function initTrial() {
+  var trialKey = 'immogest_trial';
+  var raw = localStorage.getItem(trialKey);
+
+  if (raw) {
+    try {
+      var trial = JSON.parse(raw);
+      var start = new Date(trial.start);
+      var daysUsed = Math.floor((Date.now() - start.getTime()) / 86400000);
+      var daysLeft = 14 - daysUsed;
+
+      if (trial.active && daysLeft > 0) {
+        // Essai encore actif — activer Pro temporairement
+        if (MONETISATION.plan === 'gratuit') {
+          MONETISATION.plan = 'pro';
+          MONETISATION.trialEnd = trial.end;
+        }
+        if (daysLeft <= 4) {
+          setTimeout(function() { showTrialCountdown(daysLeft); }, 3500);
+        }
+        return;
+      }
+
+      if (trial.active && daysLeft <= 0) {
+        // Essai expiré
+        trial.active = false;
+        localStorage.setItem(trialKey, JSON.stringify(trial));
+        if (MONETISATION.plan === 'pro' && !_hasRealSubscription()) {
+          MONETISATION.plan = 'gratuit';
+          saveMonetisation();
+        }
+        setTimeout(function() {
+          if (typeof showToast === 'function') showToast('Votre essai Pro a expiré. Abonnez-vous pour continuer.', 'warning');
+          setTimeout(showUpgradeModal, 2500);
+        }, 3000);
+        return;
+      }
+    } catch(e) {}
+    return; // Essai déjà terminé, ne pas relancer
+  }
+
+  // Première connexion — démarrer l'essai
+  var now = new Date();
+  var end = new Date(now.getTime() + 14 * 86400000);
+  localStorage.setItem(trialKey, JSON.stringify({
+    active: true,
+    start: now.toISOString(),
+    end: end.toISOString()
+  }));
+
+  MONETISATION.plan = 'pro';
+  MONETISATION.trialEnd = end.toISOString();
+  saveMonetisation();
+  applyPlan();
+
+  setTimeout(showTrialWelcome, 4000);
+}
+
+function _hasRealSubscription() {
+  var sub = JSON.parse(localStorage.getItem('immogest_subscription') || '{}');
+  return sub.tier && sub.tier !== 'free' && sub.expiryDate && new Date(sub.expiryDate) > new Date();
+}
+
+function showTrialWelcome() {
+  var overlay = document.createElement('div');
+  overlay.className = 'overlay open';
+  overlay.style.zIndex = '10003';
+  overlay.innerHTML =
+    '<div class="modal" style="max-width:420px;text-align:center;">' +
+      '<div style="font-size:52px;margin-bottom:8px;">🎉</div>' +
+      '<h3 style="margin-bottom:8px;">Bienvenue sur ImmoGest !</h3>' +
+      '<p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:18px;">' +
+        'Vous bénéficiez de <strong>14 jours d\'essai Pro gratuit</strong>.<br>' +
+        'Profitez de toutes les fonctionnalités sans limite et sans publicité.' +
+      '</p>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;text-align:left;">' +
+        '<div style="background:var(--bg3);padding:10px;border-radius:8px;font-size:12px;">✓ Immeubles illimités</div>' +
+        '<div style="background:var(--bg3);padding:10px;border-radius:8px;font-size:12px;">✓ Locataires illimités</div>' +
+        '<div style="background:var(--bg3);padding:10px;border-radius:8px;font-size:12px;">✓ Sans publicités</div>' +
+        '<div style="background:var(--bg3);padding:10px;border-radius:8px;font-size:12px;">✓ Score locataire</div>' +
+        '<div style="background:var(--bg3);padding:10px;border-radius:8px;font-size:12px;">✓ Archives illimitées</div>' +
+        '<div style="background:var(--bg3);padding:10px;border-radius:8px;font-size:12px;">✓ Export PDF/Word</div>' +
+      '</div>' +
+      '<div class="modal-footer">' +
+        '<button class="btn btn-ghost" onclick="this.closest(\'.overlay\').remove()">Commencer l\'essai</button>' +
+        '<button class="btn btn-primary" onclick="showUpgradeModal();this.closest(\'.overlay\').remove()">Voir les plans</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+function showTrialCountdown(daysLeft) {
+  var existing = document.getElementById('trial-countdown-banner');
+  if (existing) existing.remove();
+
+  var color  = daysLeft <= 1 ? '#c0392b' : '#e67e22';
+  var msg    = daysLeft === 0 ? 'Dernier jour d\'essai Pro !'
+             : daysLeft === 1 ? 'Plus qu\'1 jour d\'essai Pro restant'
+             : 'Plus que ' + daysLeft + ' jours d\'essai Pro';
+
+  var banner = document.createElement('div');
+  banner.id  = 'trial-countdown-banner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9998;background:' + color + ';color:#fff;text-align:center;padding:8px 48px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:14px;';
+  banner.innerHTML =
+    '<span>⏰ ' + msg + '</span>' +
+    '<button onclick="showUpgradeModal()" style="background:rgba(255,255,255,0.25);color:#fff;border:none;padding:3px 12px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;">S\'abonner maintenant</button>' +
+    '<button onclick="this.parentElement.remove()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.6);font-size:18px;cursor:pointer;line-height:1;">×</button>';
+
+  document.body.prepend(banner);
+}
+
+
+// ─── 3. RAPPELS HEBDOMADAIRES ────────────────────────────────
+function checkWeeklyReminder() {
+  if (!isFreePlan()) return;
+
+  var key  = 'immogest_last_reminder';
+  var last = localStorage.getItem(key);
+  var now  = Date.now();
+  var week = 7 * 86400000;
+
+  if (last && (now - parseInt(last)) < week) return;
+
+  localStorage.setItem(key, now.toString());
+
+  var immeubles  = (typeof DATA !== 'undefined' && DATA.immeubles)  ? DATA.immeubles.length : 0;
+  var locataires = (typeof DATA !== 'undefined' && DATA.locataires) ? DATA.locataires.filter(function(l){ return l.s !== 'libre'; }).length : 0;
+
+  var msg = (immeubles >= 1 || locataires >= 8)
+    ? 'Vous gérez ' + immeubles + ' immeuble(s) et ' + locataires + ' locataire(s). Passez à Starter pour illimité !'
+    : 'Débloquez le score locataire, les archives illimitées et l\'export PDF.';
+
+  setTimeout(function() {
+    if (typeof showToast === 'function') showToast('💡 ' + msg, 'info');
+    setTimeout(showPromoToast, 4000);
+  }, 12000);
+}
+
+
+// ─── 4. BANNIÈRE ARCHIVES POUR PLAN FREE ────────────────────
+function showArchivesFreeBanner() {
+  if (!isFreePlan()) return;
+  var content = document.getElementById('content');
+  if (!content) return;
+
+  var existing = document.getElementById('archives-free-banner');
+  if (existing) return;
+
+  var banner = document.createElement('div');
+  banner.id  = 'archives-free-banner';
+  banner.style.cssText = 'background:linear-gradient(135deg,rgba(14,106,175,0.08),rgba(14,106,175,0.04));border:1px solid rgba(14,106,175,0.2);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;';
+  banner.innerHTML =
+    '<div>' +
+      '<div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:2px;">🔒 Archives limitées — Plan FREE</div>' +
+      '<div style="font-size:12px;color:var(--text3);">Vos archives sont conservées 6 mois. Passez à Pro pour un accès illimité et le score de fiabilité des locataires.</div>' +
+    '</div>' +
+    '<button onclick="showUpgradeModal()" style="white-space:nowrap;padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;">Débloquer Pro</button>';
+
+  content.insertBefore(banner, content.firstChild);
+}
+
+
+// ─── 5. SCORE LOCATAIRE VERROUILLÉ ──────────────────────────
+function getScoreDisplay(score) {
+  if (!isFreePlan()) {
+    var col = score >= 80 ? 'var(--green)' : score >= 50 ? 'var(--yellow)' : 'var(--red)';
+    return '<span style="font-weight:700;color:' + col + ';">' + score + '/100</span>';
+  }
+  return '<span style="filter:blur(5px);cursor:pointer;user-select:none;font-weight:700;" onclick="showUpgradeModal()" title="Débloquer avec Pro">??/100</span>' +
+         '<span style="font-size:10px;color:var(--text3);margin-left:3px;" onclick="showUpgradeModal()" style="cursor:pointer;">🔒</span>';
+}
+window.getScoreDisplay = getScoreDisplay;
+
+
+// ─── HOOKS INTÉGRATION ───────────────────────────────────────
+
+// Hook updateSidebarBadges → ajouter le widget d'usage
+function _hookSidebarForUsage() {
+  if (window._usageWidgetHooked) return;
+  window._usageWidgetHooked = true;
+
+  var _orig = window.updateSidebarBadges;
+  if (typeof _orig === 'function') {
+    window.updateSidebarBadges = function() {
+      _orig.apply(this, arguments);
+      renderUsageWidget();
+    };
+  }
+}
+
+// Hook renderArchives → ajouter bannière et score
+function _hookArchivesRender() {
+  if (window._archivesHooked) return;
+  window._archivesHooked = true;
+
+  var _orig = window.renderArchives;
+  if (typeof _orig === 'function') {
+    window.renderArchives = function() {
+      _orig.apply(this, arguments);
+      showArchivesFreeBanner();
+    };
+  }
+}
+
+// Appel dans initMonetisation
+var _origInitMon = initMonetisation;
+initMonetisation = function() {
+  _origInitMon.apply(this, arguments);
+
+  // Essai 14 jours (seulement si plan gratuit)
+  if (MONETISATION.plan === 'gratuit') {
+    initTrial();
+  }
+
+  // Rappels hebdomadaires
+  checkWeeklyReminder();
+
+  // Widget usage sidebar
+  setTimeout(renderUsageWidget, 800);
+
+  // Hooks
+  _hookSidebarForUsage();
+  _hookArchivesRender();
+};
 

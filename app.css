@@ -884,9 +884,29 @@ tr.row-new td { background: rgba(46,204,138,.04); }
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
-.plan-free { background: var(--yellow-bg); color: var(--yellow); }
-.plan-pro { background: rgba(14,106,175,.15); color: var(--accent); }
+.plan-free    { background: var(--yellow-bg); color: var(--yellow); }
+.plan-starter { background: rgba(16,185,129,.15); color: #10b981; }
+.plan-pro     { background: rgba(14,106,175,.15); color: var(--accent); }
 .plan-enterprise { background: var(--purple-bg); color: var(--purple); }
+
+/* ── Trial countdown banner ── */
+#trial-countdown-banner {
+  animation: slideDown .4s ease;
+}
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+/* ── Usage widget sidebar ── */
+#usage-widget {
+  transition: border-color .3s;
+}
+
+/* ── Archives free banner ── */
+#archives-free-banner {
+  animation: fadeIn .3s ease;
+}
 .limit-bar {
   background: var(--bg4);
   border-radius: 99px;
