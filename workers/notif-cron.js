@@ -47,6 +47,18 @@ async function runCron(cronExpr, env) {
 
   log.push(`[${now.toISOString()}] Cron déclenché : ${cronExpr}`);
 
+  // Vérifier que les variables d'environnement sont configurées
+  const missing = [];
+  if (!env.SUPABASE_URL)      missing.push('SUPABASE_URL');
+  if (!env.SUPABASE_KEY)      missing.push('SUPABASE_KEY');
+  if (!env.ONESIGNAL_APP_ID)  missing.push('ONESIGNAL_APP_ID');
+  if (!env.ONESIGNAL_REST_KEY) missing.push('ONESIGNAL_REST_KEY');
+  if (missing.length > 0) {
+    log.push(`⚠️ Variables manquantes : ${missing.join(', ')}`);
+    return { ok: false, missing, log };
+  }
+  log.push(`✅ Variables OK (${4 - missing.length}/4 configurées)`);
+
   // 1. Rappel mensuel — 1er du mois : notifier TOUS les locataires actifs
   if (jourDuMois === 1 || cronExpr === 'monthly') {
     log.push('→ 1er du mois : rappel loyer mensuel');

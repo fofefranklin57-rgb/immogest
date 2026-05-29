@@ -2,7 +2,7 @@
 # ImmoGest — Configuration Cloudflare Workers
 # ═══════════════════════════════════════════════════════════════
 
-name = "immogest-notif-cron"
+name = "immogest1"
 main = "workers/notif-cron.js"
 compatibility_date = "2024-09-23"
 
@@ -15,10 +15,7 @@ crons = [
 
 # ── Variables d'environnement ────────────────────────────────
 [vars]
-ONESIGNAL_APP_ID  = "8a3857ab-64cc-4a62-9916-ce46b4768dac"
+ONESIGNAL_APP_ID   = "8a3857ab-64cc-4a62-9916-ce46b4768dac"
 ONESIGNAL_REST_KEY = "os_v2_app_ri4fpk3ezrfgfgiwzzdli5unvsmcdap4mq6u3u57p5bgfvkr2alcj4wfxcmkwuow2spwn6fwnaqlccmw2gnmckfeuxuki32g4275sfq"
-SUPABASE_URL      = "https://uggxfmwpttfsfcirmeqx.supabase.co"
-
-# ── Secret à définir séparément (clé anon Supabase) ──────────
-# Commande : wrangler secret put SUPABASE_KEY
-# Valeur   : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZ3hmbXdwdHRmc2ZjaXJtZXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNTA4MjIsImV4cCI6MjA5NDYyNjgyMn0.l8iYlJHOt6evNlBQ3zRskZasn_J2BjAUs1l2vKOZNvY
+SUPABASE_URL       = "https://uggxfmwpttfsfcirmeqx.supabase.co"
+SUPABASE_KEY       = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZ3hmbXdwdHRmc2ZjaXJtZXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNTA4MjIsImV4cCI6MjA5NDYyNjgyMn0.l8iYlJHOt6evNlBQ3zRskZasn_J2BjAUs1l2vKOZNvY"
