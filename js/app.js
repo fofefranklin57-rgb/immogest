@@ -3660,6 +3660,7 @@ function changerNomAdmin() {
 }
 
 function logout() {
+  if (typeof logoutOneSignal === 'function') logoutOneSignal();
   clearSession();
   location.reload();
 }

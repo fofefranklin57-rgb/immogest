@@ -1332,9 +1332,9 @@ function processPaymentAbonnement() {
   document.body.appendChild(overlay);
 }
 
-function _confirmerPaiementAbonnement(plan, duree) {
+function _confirmerPaiementAbonnement(plan, duree, txId) {
   var btn = document.getElementById('btn-confirmer-paiement');
-  var ref = (document.getElementById('pay-ref-transaction') ? document.getElementById('pay-ref-transaction').value : '').trim();
+  var ref = txId || (document.getElementById('pay-ref-transaction') ? document.getElementById('pay-ref-transaction').value : '').trim();
 
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Enregistrement...'; }
 
