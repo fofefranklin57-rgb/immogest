@@ -2,17 +2,19 @@
 // CINETPAY INTEGRATION — ImmoGest v1.0
 // Passerelle de paiement pour les abonnements
 // ═══════════════════════════════════════════════════════════════
-// Remplis CINETPAY_CONFIG avec tes clés quand tu les reçois par email
+// API Key configurée ✅
+// site_id : à remplir après passage en production CinetPay
+//   → dashboard CinetPay → Caisses → Immogest → ID numérique
 // ═══════════════════════════════════════════════════════════════
 
 const CINETPAY_CONFIG = {
-  apikey:   'VOTRE_APIKEY',     // ← coller ici quand reçu
-  site_id:  'VOTRE_SITE_ID',    // ← coller ici quand reçu
-  mode:     'TEST',             // 'TEST' d'abord, puis 'PRODUCTION' après vérification
+  apikey:   'sk_live_BOpPKiNhCGFy', // ✅ clé API configurée
+  site_id:  '',                      // ← à remplir après passage en production
+  mode:     'TEST',                  // 'TEST' → 'PRODUCTION' après vérification
   currency: 'XAF',
-  channels: 'ALL',              // MTN + Orange + Carte
+  channels: 'ALL',                   // MTN + Orange + Carte
   lang:     'fr',
-  notify_url: 'https://immogest-34w.pages.dev/notify', // webhook (optionnel sans backend)
+  notify_url: 'https://immogest-34w.pages.dev/notify',
   return_url:  'https://immogest-34w.pages.dev/',
   cancel_url:  'https://immogest-34w.pages.dev/'
 };
@@ -57,9 +59,10 @@ function loadCinetPaySDK(callback) {
 // ══════════════════════════════════════════════════════════════
 function cinetpayEstConfigured() {
   return CINETPAY_CONFIG.apikey  !== 'VOTRE_APIKEY' &&
-         CINETPAY_CONFIG.site_id !== 'VOTRE_SITE_ID' &&
          CINETPAY_CONFIG.apikey  !== '' &&
+         CINETPAY_CONFIG.site_id !== 'VOTRE_SITE_ID' &&
          CINETPAY_CONFIG.site_id !== '';
+  // Retourne false tant que site_id n'est pas rempli → affiche paiement manuel
 }
 
 // ══════════════════════════════════════════════════════════════
