@@ -8056,92 +8056,148 @@ function _addAITyping() {
 
 function _buildDataContext() {
   const role = SESSION ? SESSION.role : 'admin';
+  const now  = new Date();
+  const dateStr = now.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  const plan = (typeof MONETISATION !== 'undefined') ? (MONETISATION.plan || 'FREE').toUpperCase() : 'FREE';
 
-  // Locataire : seulement ses propres données
+  // ── Locataire : ses données personnelles uniquement ──
   if (role === 'locataire') {
     const l = DATA.locataires.find(x => x.id === SESSION.locId);
     if (!l) return 'DONNÉES : Locataire introuvable';
-    const im = DATA.immeubles.find(i => i.id === l.iid);
-    const pays = DATA.paiements.filter(p => p.locId === l.id);
+    const im   = DATA.immeubles.find(i => i.id === l.iid);
+    const pays = (DATA.paiements || []).filter(p => p.locId === l.id).sort((a,b) => new Date(b.date)-new Date(a.date));
     const totalPaye = pays.reduce((s,p)=>s+p.montant,0);
-    return `DONNÉES LOCATAIRE :
-Nom : ${l.nom} | Local : ${l.appt||'–'} | Immeuble : ${im?im.nom:'–'}
-Loyer mensuel : ${l.loyer.toLocaleString('fr-FR')} FCFA
-Situation : ${l.reste>0?'Impayé — '+l.reste.toLocaleString('fr-FR')+' FCFA dus':'À jour'}
-Total payé historique : ${totalPaye.toLocaleString('fr-FR')} FCFA
+    const dernier = pays[0] ? new Date(pays[0].date).toLocaleDateString('fr-FR')+' — '+pays[0].montant.toLocaleString('fr-FR')+' FCFA' : 'Aucun enregistré';
+    const histo = pays.slice(0,3).map(p=>`  ${new Date(p.date).toLocaleDateString('fr-FR')} : ${p.montant.toLocaleString('fr-FR')} FCFA`).join('\n') || '  Aucun';
+    return `DATE : ${dateStr}
 
-INSTRUCTION : Réponds UNIQUEMENT avec ces chiffres. Rien d'autre.`;
+DONNÉES LOCATAIRE :
+Nom : ${l.nom}
+Local : ${l.appt||'–'} | Immeuble : ${im?im.nom:'–'}${im&&im.ville?' ('+im.ville+')':''}
+Loyer mensuel : ${l.loyer.toLocaleString('fr-FR')} FCFA
+Situation : ${l.reste>0 ? '⚠️ IMPAYÉ — '+l.reste.toLocaleString('fr-FR')+' FCFA ('+Math.round(l.reste/l.loyer)+' mois)' : '✅ À jour'}
+Caution versée : ${(l.caution||0).toLocaleString('fr-FR')} FCFA
+Dernier paiement : ${dernier}
+Historique (3 derniers paiements) :
+${histo}
+Total cumulé payé : ${totalPaye.toLocaleString('fr-FR')} FCFA`;
   }
 
-  // Propriétaire : seulement ses immeubles
+  // ── Propriétaire : ses immeubles uniquement ──
   if (role === 'proprietaire') {
     const immsIds = SESSION.immeubles || [];
     const imms = DATA.immeubles.filter(i => immsIds.includes(i.id));
-    const locs = DATA.locataires.filter(l => l.s !== 'libre' && immsIds.includes(l.iid));
-    const totalImp = locs.reduce((s,l)=>s+Math.max(0,l.reste||0),0);
-    const nbImp = locs.filter(l=>(l.reste||0)>0).length;
-    const taux = locs.length ? Math.round((locs.length-nbImp)/locs.length*100) : 0;
-    return `DONNÉES PROPRIÉTAIRE (ses immeubles uniquement) :
-Immeubles : ${imms.length} | Locataires actifs : ${locs.length} | Taux de recouvrement : ${taux}%
-Impayés totaux : ${totalImp.toLocaleString('fr-FR')} FCFA sur ${nbImp} locataires
+    const detail = imms.map(im => {
+      const locs = DATA.locataires.filter(l => l.s !== 'libre' && l.iid === im.id);
+      const imp  = locs.filter(l => (l.reste||0) > 0);
+      const totalLoyers = locs.reduce((s,l)=>s+l.loyer,0);
+      const totalImpImm  = imp.reduce((s,l)=>s+l.reste,0);
+      const lignes = imp.sort((a,b)=>b.reste-a.reste)
+        .map(l=>`    • ${l.nom} (${l.appt||'?'}) : ${l.reste.toLocaleString('fr-FR')} FCFA — ${Math.round(l.reste/l.loyer)} mois`).join('\n') || '    Aucun impayé';
+      return `${im.nom}${im.ville?' ('+im.ville+')':''} :
+  ${locs.length} locataires | Loyers cumulés : ${totalLoyers.toLocaleString('fr-FR')} FCFA/mois
+  Impayés : ${imp.length} locataires — ${totalImpImm.toLocaleString('fr-FR')} FCFA
+${lignes}`;
+    }).join('\n\n');
+    const totalLocs = imms.reduce((s,im)=>s+DATA.locataires.filter(l=>l.s!=='libre'&&l.iid===im.id).length,0);
+    const totalImpAll = DATA.locataires.filter(l=>immsIds.includes(l.iid)).reduce((s,l)=>s+Math.max(0,l.reste||0),0);
+    return `DATE : ${dateStr}
 
-INSTRUCTION : Réponds UNIQUEMENT avec ces chiffres. Rien d'autre.`;
+DONNÉES PROPRIÉTAIRE :
+Immeubles : ${imms.length} | Locataires actifs : ${totalLocs}
+Total impayés : ${totalImpAll.toLocaleString('fr-FR')} FCFA
+
+DÉTAIL PAR IMMEUBLE :
+${detail}`;
   }
 
-  // Admin / Gestionnaire / Comptable : données complètes
-  const actifs = DATA.locataires.filter(l => l.s !== 'libre');
-  const totalImp = actifs.reduce((s,l) => s + Math.max(0, l.reste||0), 0);
-  const nbImp = actifs.filter(l => (l.reste||0) > 0).length;
-  const taux = actifs.length ? Math.round((actifs.length - nbImp) / actifs.length * 100) : 0;
-  const parImm = DATA.immeubles.map(im => {
-    const locs = DATA.locataires.filter(l => l.iid === im.id && l.s !== 'libre');
-    const imp  = locs.filter(l => (l.reste||0) > 0);
-    return `• ${im.nom} (${im.ville}) : ${locs.length} locataires, ${imp.length} impayés, total dû ${imp.reduce((s,l)=>s+l.reste,0).toLocaleString('fr-FR')} FCFA`;
+  // ── Admin / Gestionnaire / Comptable : données complètes ──
+  const actifs   = DATA.locataires.filter(l => l.s !== 'libre');
+  const libres   = DATA.locataires.filter(l => l.s === 'libre');
+  const totalImp = actifs.reduce((s,l)=>s+Math.max(0,l.reste||0),0);
+  const nbImp    = actifs.filter(l=>(l.reste||0)>0).length;
+  const taux     = actifs.length ? Math.round((actifs.length-nbImp)/actifs.length*100) : 0;
+
+  const critiques = actifs.filter(l=>l.loyer>0&&l.reste>=l.loyer*3)
+    .sort((a,b)=>b.reste-a.reste).slice(0,8)
+    .map(l=>{const im=DATA.immeubles.find(i=>i.id===l.iid);return `  • ${l.nom} (${im?im.nom.split(' ')[0]:'?'} ${l.appt||''}) : ${l.reste.toLocaleString('fr-FR')} FCFA — ${Math.round(l.reste/l.loyer)} mois`;}).join('\n');
+
+  const parImm = DATA.immeubles.map(im=>{
+    const locs=DATA.locataires.filter(l=>l.iid===im.id&&l.s!=='libre');
+    const imp=locs.filter(l=>(l.reste||0)>0);
+    const commission = im.commissionType==='pct'?`${im.commissionValeur}%`:`${(im.commissionValeur||0).toLocaleString('fr-FR')} FCFA`;
+    return `  • ${im.nom}${im.ville?' ('+im.ville+')':''} : ${locs.length} loc., ${imp.length} impayés, ${imp.reduce((s,l)=>s+l.reste,0).toLocaleString('fr-FR')} FCFA dus | Commission: ${commission}`;
   }).join('\n');
-  const top5 = [...actifs].filter(l=>(l.reste||0)>0).sort((a,b)=>b.reste-a.reste).slice(0,5)
-    .map(l=>`  - ${l.nom} (${(DATA.immeubles.find(i=>i.id===l.iid)||{}).nom||''} ${l.appt||''}) : ${l.reste.toLocaleString('fr-FR')} FCFA`).join('\n');
-  return `DONNÉES IMMOGEST EN TEMPS RÉEL :
-Immeubles : ${DATA.immeubles.length} | Locataires actifs : ${actifs.length} | Taux de recouvrement : ${taux}%
+
+  const moisCourant=now.getMonth(), annee=now.getFullYear();
+  const paiementsMois=(DATA.paiements||[]).filter(p=>{const d=new Date(p.date);return d.getMonth()===moisCourant&&d.getFullYear()===annee;});
+  const totalMois=paiementsMois.reduce((s,p)=>s+p.montant,0);
+
+  return `DATE : ${dateStr} | PLAN : ${plan}
+
+DONNÉES GLOBALES :
+${DATA.immeubles.length} immeubles | ${actifs.length} locataires actifs | ${libres.length} locaux libres
+Taux de recouvrement : ${taux}%
 Impayés totaux : ${totalImp.toLocaleString('fr-FR')} FCFA sur ${nbImp} locataires
+Encaissements ce mois (${now.toLocaleDateString('fr-FR',{month:'long'})}) : ${totalMois.toLocaleString('fr-FR')} FCFA (${paiementsMois.length} versements)
 
 PAR IMMEUBLE :
 ${parImm}
 
-TOP 5 DÉBITEURS :
-${top5 || '  Aucun'}`;
+LOCATAIRES CRITIQUES (≥3 mois) :
+${critiques||'  Aucun'}`;
 }
 
 async function _callAnthropicAI(userMsg) {
   const btn   = document.getElementById('ai-send-btn');
   const input = document.getElementById('ai-input');
-  if (btn) btn.disabled = true;
+  if (btn)   btn.disabled   = true;
   if (input) input.disabled = true;
   const typing = _addAITyping();
   _aiHistory.push({ role: 'user', content: userMsg });
   if (_aiHistory.length > 20) _aiHistory = _aiHistory.slice(-20);
   try {
     const role = SESSION ? SESSION.role : 'admin';
+    const nom  = SESSION ? SESSION.nom  : 'Utilisateur';
     let systemPrompt;
     if (role === 'locataire') {
-      systemPrompt = `Tu es l'assistant IA de ImmoGest pour le locataire. RÈGLE ABSOLUE : tu réponds UNIQUEMENT avec les statistiques de CE locataire fournies ci-dessous. Peu importe la question posée, tu donnes SEULEMENT ces chiffres, rien d'autre. Tu n'inventes rien, tu ne donnes aucune info sur d'autres locataires ou l'immeuble en général. Réponds en français avec du HTML simple. 100 mots max.\n\n${_buildDataContext()}`;
+      systemPrompt = `Tu es l'assistant IA de ImmoGest. Tu parles à ${nom}, locataire.
+Tu n'as accès qu'aux données de CE locataire. Tu ne connais pas les autres locataires.
+Tu peux : expliquer sa situation, conseiller sur la régularisation d'un impayé, expliquer les délais et procédures, répondre aux questions sur son bail et ses paiements.
+Sois bienveillant, clair et pratique. Réponds en français avec du HTML simple (strong, br). 150 mots max.
+
+${_buildDataContext()}`;
     } else if (role === 'proprietaire') {
-      systemPrompt = `Tu es l'assistant IA de ImmoGest pour le propriétaire. RÈGLE ABSOLUE : tu réponds UNIQUEMENT avec les statistiques de SES immeubles fournies ci-dessous. Peu importe la question posée, tu donnes SEULEMENT ces chiffres. Tu n'inventes rien, tu ne donnes aucune info sur d'autres propriétaires. Réponds en français avec du HTML simple. 150 mots max.\n\n${_buildDataContext()}`;
+      systemPrompt = `Tu es l'assistant IA de ImmoGest pour ${nom}, propriétaire.
+Tu n'as accès qu'aux données de SES immeubles. Tu ne connais pas les autres propriétaires.
+Tu peux : analyser ses impayés, suggérer des actions de recouvrement, analyser la performance de ses biens, conseiller sur la gestion locative.
+Sois direct et actionnable. Réponds en français avec du HTML simple. 200 mots max.
+
+${_buildDataContext()}`;
+    } else if (role === 'comptable') {
+      systemPrompt = `Tu es l'assistant IA de ImmoGest pour ${nom}, comptable du Cabinet CRAA.
+Tu as accès à toutes les données financières du portefeuille.
+Tu peux : analyser les flux d'encaissements, calculer les commissions, identifier les anomalies comptables, préparer des synthèses financières.
+Sois précis et chiffré. Réponds en français avec du HTML simple. 300 mots max.
+
+${_buildDataContext()}`;
     } else {
-      systemPrompt = `Tu es l'assistant IA intégré à ImmoGest, une application de gestion immobilière pour le Cabinet CRAA au Cameroun. Réponds en français, de façon concise et actionnable. Utilise du HTML simple (strong, br) pour la mise en forme. 250 mots max.\n\n${_buildDataContext()}`;
+      const roleLabel = role === 'gestionnaire' ? 'gestionnaire' : 'administrateur';
+      systemPrompt = `Tu es l'assistant IA de ImmoGest pour ${nom}, ${roleLabel} du Cabinet CRAA au Cameroun.
+Tu as accès à toutes les données du portefeuille immobilier en temps réel.
+Tu peux : analyser les impayés, identifier des tendances, suggérer des priorités d'action, générer des synthèses, conseiller sur la stratégie de recouvrement.
+Sois concis, actionnable et base-toi sur les données réelles ci-dessous. HTML simple (strong, br, ul/li). 300 mots max.
+
+${_buildDataContext()}`;
     }
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('https://immogest1.fofefranklin57.workers.dev/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 500,
-        system: systemPrompt,
-        messages: _aiHistory
-      })
+      body: JSON.stringify({ system: systemPrompt, messages: _aiHistory, max_tokens: 600 })
     });
     if (typing) typing.remove();
-    if (!resp.ok) throw new Error('API ' + resp.status);
     const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'AI indisponible');
     const answer = (data.content && data.content[0] && data.content[0].text) || 'Désolé, pas de réponse.';
     _aiHistory.push({ role: 'assistant', content: answer });
     _addAIBubble('assistant', answer);
@@ -8149,29 +8205,59 @@ async function _callAnthropicAI(userMsg) {
     if (typing) typing.remove();
     _addAIBubble('assistant', _localFallback(userMsg));
   } finally {
-    if (btn) btn.disabled = false;
+    if (btn)   btn.disabled   = false;
     if (input) { input.disabled = false; input.focus(); }
   }
 }
 
 function _localFallback(query) {
-  const q = query.toLowerCase();
-  const actifs = DATA.locataires.filter(l => l.s !== 'libre');
-  const totalImp = actifs.reduce((s,l) => s + Math.max(0, l.reste||0), 0);
-  const nbImp = actifs.filter(l => (l.reste||0) > 0).length;
-  const taux = actifs.length ? Math.round((actifs.length - nbImp) / actifs.length * 100) : 0;
+  const q    = query.toLowerCase();
+  const role = SESSION ? SESSION.role : 'admin';
+
+  // ── Locataire : sa situation uniquement ──
+  if (role === 'locataire') {
+    const l = DATA.locataires.find(x => x.id === SESSION.locId);
+    if (!l) return 'Impossible de trouver vos informations.';
+    const im = DATA.immeubles.find(i => i.id === l.iid);
+    if (l.reste > 0) {
+      const nbMois = Math.round(l.reste / l.loyer);
+      return `📋 <strong>Votre situation</strong><br>Local : ${l.appt||'–'} — ${im?im.nom:'–'}<br>Loyer mensuel : <strong>${l.loyer.toLocaleString('fr-FR')} FCFA</strong><br>⚠️ Solde dû : <strong>${l.reste.toLocaleString('fr-FR')} FCFA</strong> (${nbMois} mois)<br><br>Pour régulariser, contactez le Cabinet CRAA par WhatsApp.`;
+    }
+    return `✅ <strong>Votre situation</strong><br>Local : ${l.appt||'–'} — ${im?im.nom:'–'}<br>Loyer : <strong>${l.loyer.toLocaleString('fr-FR')} FCFA/mois</strong><br>Situation : <strong>À jour ✓</strong>`;
+  }
+
+  // ── Propriétaire : ses immeubles uniquement ──
+  if (role === 'proprietaire') {
+    const immsIds = SESSION.immeubles || [];
+    const locs = DATA.locataires.filter(l => l.s !== 'libre' && immsIds.includes(l.iid));
+    const imp  = locs.filter(l => (l.reste||0) > 0);
+    const totalImp = imp.reduce((s,l)=>s+l.reste,0);
+    const taux = locs.length ? Math.round((locs.length-imp.length)/locs.length*100) : 0;
+    if (q.includes('impay') || q.includes('relance')) {
+      return `⚠️ <strong>Impayés — vos immeubles</strong><br>${imp.length} locataires | ${totalImp.toLocaleString('fr-FR')} FCFA<br><br>${imp.sort((a,b)=>b.reste-a.reste).slice(0,6).map(l=>`• ${l.nom} : ${l.reste.toLocaleString('fr-FR')} FCFA`).join('<br>')}`;
+    }
+    return `📊 <strong>Vos immeubles</strong><br>${locs.length} locataires actifs | Recouvrement : <strong>${taux}%</strong><br>Impayés : <strong>${totalImp.toLocaleString('fr-FR')} FCFA</strong> (${imp.length} loc.)`;
+  }
+
+  // ── Admin / Gestionnaire / Comptable : tout ──
+  const actifs   = DATA.locataires.filter(l => l.s !== 'libre');
+  const totalImp = actifs.reduce((s,l)=>s+Math.max(0,l.reste||0),0);
+  const nbImp    = actifs.filter(l=>(l.reste||0)>0).length;
+  const taux     = actifs.length ? Math.round((actifs.length-nbImp)/actifs.length*100) : 0;
   if (q.includes('impay') || q.includes('relance')) {
-    const byImm = DATA.immeubles.map(im => {
-      const locs = DATA.locataires.filter(l => l.iid===im.id && (l.reste||0)>0);
-      return {nom: im.nom.split(' ')[0], total: locs.reduce((s,l)=>s+l.reste,0), nb: locs.length};
-    }).filter(x=>x.nb>0).sort((a,b)=>b.total-a.total);
+    const byImm = DATA.immeubles.map(im=>{const locs=DATA.locataires.filter(l=>l.iid===im.id&&(l.reste||0)>0);return{nom:im.nom.split(' ')[0],total:locs.reduce((s,l)=>s+l.reste,0),nb:locs.length};}).filter(x=>x.nb>0).sort((a,b)=>b.total-a.total);
     return `⚠️ <strong>Impayés : ${fmtShort(totalImp)}</strong> sur ${nbImp} locataires<br><br>${byImm.map(x=>`• ${x.nom} : ${fmtShort(x.total)} (${x.nb} loc.)`).join('<br>')}`;
   }
-  if (q.includes('anomal')) {
-    const a = actifs.filter(l => l.reste > l.loyer * 5);
-    return a.length ? `📊 <strong>${a.length} anomalie(s) :</strong><br>${a.map(l=>`⚠️ ${l.nom} : ${fmtShort(l.reste)}`).join('<br>')}` : '✅ Aucune anomalie critique.';
+  if (q.includes('anomal') || q.includes('critiqu')) {
+    const a = actifs.filter(l=>l.loyer>0&&l.reste>=l.loyer*4);
+    return a.length ? `🚨 <strong>${a.length} cas critiques (≥4 mois) :</strong><br>${a.sort((x,y)=>y.reste-x.reste).slice(0,6).map(l=>`⚠️ ${l.nom} : ${fmtShort(l.reste)}`).join('<br>')}` : '✅ Aucune anomalie critique.';
   }
-  return `📈 <strong>Résumé</strong><br>• ${actifs.length} locataires actifs<br>• Recouvrement : <strong>${taux}%</strong><br>• Impayés : <strong>${fmtShort(totalImp)} FCFA</strong>`;
+  if (q.includes('performa') || q.includes('taux') || q.includes('résumé') || q.includes('resume') || q.includes('bilan')) {
+    const now2=new Date();
+    const paiementsMois=(DATA.paiements||[]).filter(p=>{const d=new Date(p.date);return d.getMonth()===now2.getMonth()&&d.getFullYear()===now2.getFullYear();});
+    return `📈 <strong>Performance globale</strong><br>• ${actifs.length} locataires actifs<br>• Recouvrement : <strong>${taux}%</strong><br>• Impayés : <strong>${fmtShort(totalImp)}</strong> (${nbImp} loc.)<br>• Encaissements ce mois : <strong>${fmtShort(paiementsMois.reduce((s,p)=>s+p.montant,0))}</strong>`;
+  }
+  return `📊 <strong>Résumé ImmoGest</strong><br>• ${actifs.length} locataires | Recouvrement : <strong>${taux}%</strong><br>• Impayés : <strong>${fmtShort(totalImp)} FCFA</strong> sur ${nbImp} loc.`;
 }
 
 function toggleActionMenu(btn) {
