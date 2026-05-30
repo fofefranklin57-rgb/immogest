@@ -946,9 +946,7 @@ function injectAdsInContent() {
     var midAd=document.createElement('div');
     midAd.className='adsense-injected'; midAd.id='ad-slot-native';
     midAd.style.cssText='margin:16px 0;';
-    var kids=Array.from(content.children);
-    var mid=Math.max(1,Math.floor(kids.length/2));
-    if (kids[mid]) content.insertBefore(midAd,kids[mid]); else content.appendChild(midAd);
+    content.appendChild(midAd);
     _loadAdsenseScript(function(){_createAdUnit('ad-slot-native',ADSENSE_CONFIG.slots.inArticle,'fluid',false,true);});
   }
 }
