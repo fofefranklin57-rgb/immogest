@@ -415,10 +415,6 @@ function loadDashboard() {
       }).join('');
     }
   }
-  // Pub AdSense dans le portail (selon plan du cabinet)
-  if (typeof injectAdPortail === 'function') {
-    setTimeout(function() { injectAdPortail('tab-dashboard'); }, 500);
-  }
 
   // OneSignal: associer le locataire + demander permission
   if (typeof loginOneSignal === 'function' && l) {

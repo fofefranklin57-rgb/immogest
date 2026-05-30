@@ -314,8 +314,6 @@ function renderCurrent() {
   else if (currentPage === 'parametres') renderParametres();
   else if (currentPage === 'signalements') renderSignalements();
   updateSidebarBadges();
-  // Injecter les pubs AdSense après chaque rendu
-  if (typeof injectAdsInContent === 'function') setTimeout(injectAdsInContent, 100);
 }
 
 function buildSidebar() {
@@ -8614,10 +8612,6 @@ function renderPortailProprietaire(immeubles, tab) {
   const modalInner = modal.querySelector('.modal');
   if (modalInner) {
     modalInner.innerHTML = html;
-    // Injecter pub AdSense dans le portail proprio
-    if (typeof injectAdPortail === 'function') {
-      setTimeout(function() { injectAdPortail('proprio-portal-content'); }, 500);
-    }
   }
 }
 

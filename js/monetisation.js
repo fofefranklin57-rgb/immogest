@@ -1,30 +1,14 @@
 ﻿// ═══════════════════════════════════════════════════════════════
-// MODULE PUBLICITÉS & MONÉTISATION - ImmoGest v2.1
+// MONÉTISATION — ImmoGest v3
 // ═══════════════════════════════════════════════════════════════
 
 const MonetizationModule = {
-  // Configuration
+  // Configuration limites Freemium
   config: {
-    // AdSense (Web)
-    adsenseClientId: 'ca-pub-8065715770165014', // Remplacer par vrai ID
-    adsenseSlots: {
-      banner: '1234567890',
-      sidebar: '0987654321',
-      interstitial: '1122334455'
-    },
-    // AdMob (Mobile PWA)
-    admobAppId: 'ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY',
-    admobUnits: {
-      banner: 'ca-app-pub-XXXXXXXXXXXXXXXX/ZZZZZZZZZZ',
-      interstitial: 'ca-app-pub-XXXXXXXXXXXXXXXX/WWWWWWWWWW',
-      rewarded: 'ca-app-pub-XXXXXXXXXXXXXXXX/QQQQQQQQQQ'
-    },
-    // Limites Freemium
     freemium: {
       maxImmeublesFree: 1,
       maxLocatairesFree: 10,
       maxRapportsFree: 3,
-      enableAdsFree: true,
       enableExportFree: false,
       enableMultiUserFree: false,
       enableCloudSyncFree: false
@@ -33,186 +17,19 @@ const MonetizationModule = {
 
   // État
   currentTier: 'free', // 'free', 'pro', 'enterprise'
-  adsEnabled: true,
-  adBlockDetected: false,
-  revenueToday: 0,
-  impressionsToday: 0,
 
   // Initialisation
   init: function() {
-    this.detectAdBlock();
     this.loadCurrentTier();
-    this.injectAdContainers();
     this.updateUI();
-    this.trackPageViews();
-
     console.log('[Monetization] Module initialisé - Tier:', this.currentTier);
   },
 
-  // Détecter AdBlock
-  detectAdBlock: function() {
-    return new Promise((resolve) => {
-      const testAd = document.createElement('div');
-      testAd.innerHTML = '&nbsp;';
-      testAd.className = 'adsbox';
-      testAd.style.position = 'absolute';
-      testAd.style.left = '-9999px';
-      document.body.appendChild(testAd);
-
-      setTimeout(() => {
-        this.adBlockDetected = testAd.offsetHeight === 0;
-        testAd.remove();
-
-        if (this.adBlockDetected) {
-          console.warn('[Monetization] AdBlock détecté');
-          this.showAdBlockMessage();
-        }
-        resolve(this.adBlockDetected);
-      }, 100);
-    });
-  },
-
-  // Charger le tier depuis localStorage ou backend
+  // Charger le tier depuis localStorage
   loadCurrentTier: function() {
     const saved = localStorage.getItem('immogest_subscription_tier');
     if (saved) {
       this.currentTier = saved;
-      this.adsEnabled = (saved === 'free');
-    }
-
-    // Vérifier les limites du tier actuel
-    this.enforceTierLimits();
-  },
-
-  // Injecter les conteneurs de publicités
-  injectAdContainers: function() {
-    if (!this.adsEnabled || this.currentTier !== 'free') return;
-
-    // 1. Bannière top (sous la topbar)
-    const topbar = document.querySelector('.topbar');
-    if (topbar && !document.getElementById('ad-banner-top')) {
-      const bannerDiv = document.createElement('div');
-      bannerDiv.id = 'ad-banner-top';
-      bannerDiv.className = 'ad-container';
-      bannerDiv.innerHTML = `
-        <div class="ad-label">Publicité</div>
-        <div class="ad-slot" id="adsense-banner-top" style="min-height:90px;background:var(--bg3);display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border);">
-          <span style="font-size:11px;color:var(--text3);">Espace publicitaire - <a href="#" onclick="MonetizationModule.showUpgradeModal()" style="color:var(--accent);">Passer Pro pour retirer</a></span>
-        </div>
-      `;
-      topbar.parentNode.insertBefore(bannerDiv, topbar.nextSibling);
-    }
-
-    // 2. Sidebar ad (dans la sidebar)
-    const sidebar = document.querySelector('.sidebar');
-    if (sidebar && !document.getElementById('ad-sidebar')) {
-      const sidebarAd = document.createElement('div');
-      sidebarAd.id = 'ad-sidebar';
-      sidebarAd.className = 'ad-container';
-      sidebarAd.innerHTML = `
-        <div class="ad-label">Publicité</div>
-        <div class="ad-slot" style="padding:10px;background:var(--bg3);border-top:1px solid rgba(255,255,255,0.1);">
-          <div style="width:100%;height:250px;background:linear-gradient(135deg,var(--accent),var(--green));border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:16px;">
-            <div style="font-size:14px;font-weight:700;margin-bottom:8px;">✨ Passez à ImmoGest Pro</div>
-            <div style="font-size:11px;opacity:0.9;margin-bottom:12px;">Sans publicités + Fonctionnalités illimitées</div>
-            <button onclick="MonetizationModule.showUpgradeModal()" style="background:#fff;color:var(--accent);border:none;padding:6px 14px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;">Découvrir</button>
-          </div>
-        </div>
-      `;
-      const sidebarNav = sidebar.querySelector('.sidebar-nav');
-      if (sidebarNav) {
-        sidebarNav.appendChild(sidebarAd);
-      }
-    }
-
-    // 3. Interstitial (modal pub toutes les X actions)
-    this.setupInterstitialTrigger();
-  },
-
-  // Déclencher interstitial toutes les N actions
-  setupInterstitialTrigger: function() {
-    let actionCount = parseInt(localStorage.getItem('immogest_action_count') || '0');
-
-    // Hook sur les actions principales
-    const actions = ['savePaiement', 'saveLocataire', 'saveImmeuble', 'generateReport'];
-    actions.forEach(action => {
-      const original = window[action];
-      if (original) {
-        window[action] = function(...args) {
-          actionCount++;
-          localStorage.setItem('immogest_action_count', actionCount);
-
-          // Toutes les 10 actions, afficher interstitial
-          if (actionCount % 10 === 0 && MonetizationModule.currentTier === 'free') {
-            MonetizationModule.showInterstitial();
-          }
-
-          return original.apply(this, args);
-        };
-      }
-    });
-  },
-
-  // Afficher l'interstitial
-  showInterstitial: function() {
-    const overlay = document.createElement('div');
-    overlay.id = 'ad-interstitial';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);';
-    overlay.innerHTML = `
-      <div style="background:#fff;border-radius:16px;padding:32px;max-width:420px;width:90%;text-align:center;position:relative;">
-        <button onclick="document.getElementById('ad-interstitial').remove()" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);">✕</button>
-        <div style="font-size:13px;color:var(--text3);margin-bottom:16px;text-transform:uppercase;letter-spacing:1px;">Publicité</div>
-        <div style="width:100%;height:300px;background:var(--bg3);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:20px;">
-          <div style="font-size:48px;margin-bottom:12px;">🏢</div>
-          <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px;">ImmoGest Pro</div>
-          <div style="font-size:13px;color:var(--text2);padding:0 20px;">Gérez illimitément vos biens sans interruption publicitaire</div>
-        </div>
-        <div style="display:flex;gap:10px;flex-direction:column;">
-          <button onclick="MonetizationModule.showUpgradeModal();document.getElementById('ad-interstitial').remove();" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">
-            Voir les plans — dès 9 999 FCFA/mois
-          </button>
-          <button onclick="document.getElementById('ad-interstitial').remove()" style="width:100%;padding:10px;background:transparent;color:var(--text3);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;">
-            Continuer avec publicités
-          </button>
-        </div>
-        <div style="margin-top:12px;font-size:10px;color:var(--text3);">Fermeture possible dans <span id="ad-timer">5</span>s</div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-
-    // Compte à rebours
-    let timer = 5;
-    const timerInterval = setInterval(() => {
-      timer--;
-      const timerEl = document.getElementById('ad-timer');
-      if (timerEl) timerEl.textContent = timer;
-      if (timer <= 0) {
-        clearInterval(timerInterval);
-        const closeBtn = overlay.querySelector('button[onclick*="remove()"]');
-        if (closeBtn) closeBtn.style.display = 'block';
-      }
-    }, 1000);
-  },
-
-  // Message AdBlock
-  showAdBlockMessage: function() {
-    const toast = document.createElement('div');
-    toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--yellow-bg);border:1px solid var(--yellow);color:var(--yellow);padding:12px 20px;border-radius:8px;font-size:12px;z-index:9999;max-width:400px;text-align:center;';
-    toast.innerHTML = '⚠️ AdBlock détecté. Les publicités nous aident à maintenir ImmoGest gratuit. <a href="#" onclick="MonetizationModule.showUpgradeModal()" style="color:var(--accent);font-weight:600;">Passez Pro</a> pour une expérience sans pubs.';
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 8000);
-  },
-
-  // Appliquer les limites du tier
-  enforceTierLimits: function() {
-    const limits = this.config.freemium;
-
-    if (this.currentTier === 'free') {
-      // Limiter le nombre d'immeubles
-      const immeubles = DATA.immeubles || [];
-      if (immeubles.length > limits.maxImmeublesFree) {
-        this.showLimitModal('immeubles', limits.maxImmeublesFree);
-      }
     }
   },
 
@@ -255,16 +72,9 @@ const MonetizationModule = {
 
   // Mettre à jour l'interface selon le tier
   updateUI: function() {
-    // Masquer/afficher les publicités
-    const adContainers = document.querySelectorAll('.ad-container');
-    adContainers.forEach(container => {
-      container.style.display = (this.currentTier === 'free' && this.adsEnabled) ? 'block' : 'none';
-    });
-
-    // Mettre à jour le badge dans la topbar
     const tierBadge = document.getElementById('tier-badge');
     if (tierBadge) {
-      tierBadge.innerHTML = this.currentTier === 'free' 
+      tierBadge.innerHTML = this.currentTier === 'free'
         ? '<span class="badge badge-yellow">FREE</span>'
         : '<span class="badge badge-green">PRO</span>';
     }
@@ -273,27 +83,12 @@ const MonetizationModule = {
   // Changer de tier
   setTier: function(tier) {
     this.currentTier = tier;
-    this.adsEnabled = (tier === 'free');
     localStorage.setItem('immogest_subscription_tier', tier);
     this.updateUI();
 
     // Recharger la page pour appliquer les changements
     showToast(`Passage à la version ${tier.toUpperCase()} effectué !`, 'success');
     setTimeout(() => location.reload(), 1500);
-  },
-
-  // Tracking simple (analytics)
-  trackPageViews: function() {
-    let views = parseInt(localStorage.getItem('immogest_page_views') || '0');
-    views++;
-    localStorage.setItem('immogest_page_views', views);
-
-    // Toutes les 50 vues, suggérer l'upgrade
-    if (views % 50 === 0 && this.currentTier === 'free') {
-      setTimeout(() => {
-        this.showUpgradeModal('Vous utilisez beaucoup ImmoGest !', 'Passez à Pro pour une expérience optimale sans limites ni publicités.');
-      }, 3000);
-    }
   },
 
   // Afficher le modal de mise à niveau
@@ -531,30 +326,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-/* ═══════════════════════════════════════════════════════════════
-   MONÉTISATION & PUBLICITÉS v2.1
-   Système Freemium - Pubs + Abonnements
-   ═══════════════════════════════════════════════════════════════ */
-
 // ══════════════════════════════════════════════════════════════
-// ██  CONFIGURATION ADSENSE — À PERSONNALISER  ██
-// ══════════════════════════════════════════════════════════════
-const ADSENSE_CONFIG = {
-  clientId:  'ca-pub-8065715770165014',  // ← ton Publisher ID
-  // Ad Unit IDs — créer dans AdSense > Annonces > Par bloc d'annonce
-  slots: {
-    banner:    '',           // ID bannière responsive (FREE) — à créer
-    inArticle: '2449818958', // In-article — STARTER/PRO discret
-    sidebar:   '',           // optionnel
-  },
-  // Auto Ads : Google place automatiquement (plus simple, recommandé pour FREE)
-  autoAds: true
-};
-// Pour ajouter les IDs : AdSense → Annonces → Par bloc d'annonce → copier l'ID numérique
-// ══════════════════════════════════════════════════════════════
-
-// ══════════════════════════════════════════════════════════════
-// ██  CONFIGURATION PAIEMENT IMMOGEST — À PERSONNALISER  ██
+// ██  CONFIGURATION PAIEMENT IMMOGEST  ██
 // ══════════════════════════════════════════════════════════════
 // Ces numéros sont affichés aux clients qui veulent payer leur
 // abonnement ImmoGest. C'est TON compte où tu reçois l'argent.
@@ -743,9 +516,7 @@ function initMonetisation() {
   // Appliquer le plan
   applyPlan();
 
-  // Publicités uniquement en gratuit
   if (isFreePlan()) {
-    _applyAdsStrategy('gratuit');
     setTimeout(() => showPromoToast(), 30000);
   }
 
@@ -783,10 +554,6 @@ function applyPlan() {
     badge.textContent = planLabel;
   }
 
-  // Appliquer la stratégie publicitaire selon le plan
-  _applyAdsStrategy(MONETISATION.plan);
-
-  // Mettre à jour le badge dans la topbar
   updatePlanBadge();
 }
 
@@ -819,245 +586,6 @@ function updatePlanBadge() {
   badge.title = (plan === 'gratuit')
     ? 'Plan FREE — Cliquez pour voir les offres'
     : 'Abonnement ' + planLabel + ' actif';
-}
-
-// ── PUBLICITÉS ──
-// ── AdSense reel — ca-pub-8065715770165014
-var _adsenseLoaded = false;
-function _loadAdsenseScript(cb) {
-  if (_adsenseLoaded) { if (cb) cb(); return; }
-  if (document.querySelector('script[data-adsense]')) { _adsenseLoaded=true; if (cb) cb(); return; }
-  var s=document.createElement('script');
-  s.async=true; s.setAttribute('data-adsense','1'); s.setAttribute('crossorigin','anonymous');
-  s.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+ADSENSE_CONFIG.clientId;
-  s.onload=function(){ _adsenseLoaded=true; if(cb) cb(); };
-  s.onerror=function(){ console.warn('[AdSense] Bloque (AdBlock ?)'); };
-  document.head.appendChild(s);
-}
-
-function _createAdUnit(id, slot, format, fullWidth, isInArticle) {
-  var el=document.getElementById(id); if (!el) return;
-  el.innerHTML='';
-  var ins=document.createElement('ins');
-  ins.className='adsbygoogle';
-  ins.style.cssText = isInArticle ? 'display:block;text-align:center;' : 'display:block;';
-  ins.setAttribute('data-ad-client', ADSENSE_CONFIG.clientId);
-  if (slot) ins.setAttribute('data-ad-slot', slot);
-  if (isInArticle) {
-    ins.setAttribute('data-ad-layout', 'in-article');
-    ins.setAttribute('data-ad-format', 'fluid');
-  } else {
-    ins.setAttribute('data-ad-format', format||'auto');
-    if (fullWidth) ins.setAttribute('data-full-width-responsive','true');
-  }
-  el.appendChild(ins);
-  try { (window.adsbygoogle=window.adsbygoogle||[]).push({}); } catch(e) {}
-}
-
-function _applyAdsStrategy(plan) {
-  if (plan==='gratuit') {
-    _loadAdsenseScript(function() {
-      if (ADSENSE_CONFIG.autoAds) {
-        try { (window.adsbygoogle=window.adsbygoogle||[]).push({
-          google_ad_client: ADSENSE_CONFIG.clientId, enable_page_level_ads: true
-        }); } catch(e) {}
-      }
-    });
-    _scheduleInterstitiel();
-  } else if (plan==='starter'||plan==='pro') {
-    _removeAutoAds();
-    if (ADSENSE_CONFIG.slots.inArticle) _loadAdsenseScript(null);
-  } else {
-    _removeAutoAds(); _removeAdsenseScript();
-  }
-}
-function _removeAdsenseScript() { var s=document.querySelector('script[data-adsense]'); if(s){s.remove();_adsenseLoaded=false;} }
-function _removeAutoAds() { document.querySelectorAll('ins.adsbygoogle').forEach(function(el){el.remove();}); }
-function _scheduleInterstitiel() {
-  var today=new Date().toDateString();
-  if (localStorage.getItem('immogest_inter_day')!==today) {
-    localStorage.setItem('immogest_inter_day',today);
-    localStorage.setItem('immogest_inter_count','0');
-  }
-  var count=parseInt(localStorage.getItem('immogest_inter_count')||'0');
-  if (count>=2) return;
-  setTimeout(function() {
-    if (!isFreePlan()) return;
-    showInterstitial();
-    localStorage.setItem('immogest_inter_count',String(count+1));
-  }, 3*60*1000);
-}
-
-// Interstitielle
-function showInterstitial(trigger = 'action') {
-  if (!isFreePlan()) return false;
-  if (MONETISATION.usage.interstitials_today >= MONETISATION.ads.interstitielle_max_jour) return false;
-
-  const inter = document.getElementById('ad-interstitial');
-  if (!inter) return false;
-
-  MONETISATION.usage.interstitials_today++;
-  saveMonetisation();
-
-  inter.classList.add('open');
-
-  // Timer 5 secondes
-  let seconds = 5;
-  const timerEl = document.getElementById('ad-inter-timer');
-  const timer = setInterval(() => {
-    seconds--;
-    if (timerEl) timerEl.textContent = seconds + 's';
-    if (seconds <= 0) {
-      clearInterval(timer);
-      if (timerEl) timerEl.textContent = '✕';
-    }
-  }, 1000);
-
-  // Auto-close après 8s
-  setTimeout(() => closeInterstitial(), 8000);
-
-  return true;
-}
-
-function closeInterstitial() {
-  const inter = document.getElementById('ad-interstitial');
-  if (inter) inter.classList.remove('open');
-}
-
-// Injecter AdSense dans #content apres chaque renderCurrent()
-function injectAdsInContent() {
-  var plan=(typeof MONETISATION!=='undefined')?MONETISATION.plan:'gratuit';
-  if (plan==='entreprise') return;
-  var content=document.getElementById('content'); if (!content) return;
-  content.querySelectorAll('.adsense-injected').forEach(function(el){el.remove();});
-
-  if (plan==='gratuit' && ADSENSE_CONFIG.slots.banner) {
-    var topAd=document.createElement('div');
-    topAd.className='adsense-injected'; topAd.id='ad-slot-top';
-    topAd.style.cssText='margin:0 0 12px 0;text-align:center;min-height:90px;';
-    content.insertBefore(topAd, content.firstChild);
-    _loadAdsenseScript(function(){_createAdUnit('ad-slot-top',ADSENSE_CONFIG.slots.banner,'horizontal',true);});
-    var botAd=document.createElement('div');
-    botAd.className='adsense-injected'; botAd.id='ad-slot-bottom';
-    botAd.style.cssText='margin:12px 0 0 0;text-align:center;min-height:90px;';
-    content.appendChild(botAd);
-    _loadAdsenseScript(function(){_createAdUnit('ad-slot-bottom',ADSENSE_CONFIG.slots.banner,'horizontal',true);});
-  } else if ((plan==='starter'||plan==='pro') && ADSENSE_CONFIG.slots.inArticle) {
-    var midAd=document.createElement('div');
-    midAd.className='adsense-injected'; midAd.id='ad-slot-native';
-    midAd.style.cssText='margin:16px 0;';
-    content.appendChild(midAd);
-    _loadAdsenseScript(function(){_createAdUnit('ad-slot-native',ADSENSE_CONFIG.slots.inArticle,'fluid',false,true);});
-  }
-}
-
-// Portail locataire/proprietaire — pub discrete
-function injectAdPortail(containerId) {
-  var plan=(typeof MONETISATION!=='undefined')?MONETISATION.plan:'gratuit';
-  if (plan==='entreprise') return;
-  var slot=plan==='gratuit'?(ADSENSE_CONFIG.slots.banner||ADSENSE_CONFIG.slots.inArticle):ADSENSE_CONFIG.slots.inArticle;
-  if (!slot) return;
-  var container=document.getElementById(containerId); if (!container) return;
-  var adDiv=document.createElement('div');
-  adDiv.style.cssText='margin:12px auto;text-align:center;';
-  container.appendChild(adDiv);
-  _loadAdsenseScript(function() {
-    var ins=document.createElement('ins');
-    ins.className='adsbygoogle'; ins.style.display='block';
-    ins.setAttribute('data-ad-client',ADSENSE_CONFIG.clientId);
-    ins.setAttribute('data-ad-slot',slot);
-    ins.setAttribute('data-ad-format',plan==='gratuit'?'auto':'fluid');
-    ins.setAttribute('data-full-width-responsive','true');
-    adDiv.appendChild(ins);
-    try{(window.adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}
-  });
-}
-
-// Récompense vidéo
-function showRewardAd(feature) {
-  const overlay = document.getElementById('reward-overlay');
-  if (overlay) overlay.classList.add('open');
-  window._rewardFeature = feature;
-}
-
-function closeRewardAd() {
-  const overlay = document.getElementById('reward-overlay');
-  if (overlay) overlay.classList.remove('open');
-  window._rewardFeature = null;
-}
-
-function playRewardAd() {
-  if (MONETISATION.usage.reward_ads_today >= 3) {
-    showToast('Limite journalière atteinte. Revenez demain !');
-    closeRewardAd();
-    return;
-  }
-
-  // Simuler la vidéo
-  const btn = document.querySelector('.reward-btn');
-  if (btn) {
-    btn.textContent = '⏳ Lecture en cours...';
-    btn.disabled = true;
-  }
-
-  setTimeout(() => {
-    MONETISATION.usage.reward_ads_today++;
-    saveMonetisation();
-
-    // Débloquer la fonctionnalité temporairement
-    if (window._rewardFeature) {
-      window._rewardUnlocked = {
-        feature: window._rewardFeature,
-        expires: Date.now() + 24 * 60 * 60 * 1000 // 24h
-      };
-      showToast('✅ Fonctionnalité débloquée pour 24h !');
-    }
-
-    closeRewardAd();
-    if (btn) {
-      btn.textContent = '▶ Regarder la vidéo';
-      btn.disabled = false;
-    }
-  }, 3000);
-}
-
-function isRewardUnlocked(feature) {
-  if (!window._rewardUnlocked) return false;
-  if (window._rewardUnlocked.feature !== feature) return false;
-  if (Date.now() > window._rewardUnlocked.expires) {
-    window._rewardUnlocked = null;
-    return false;
-  }
-  return true;
-}
-
-// ── LIMITES FREEMIUM ──
-function checkLimit(type, currentCount) {
-  // Choisir les limites selon le plan actif
-  const limits = isBusinessPlan() ? MONETISATION.limits_business : MONETISATION.limits;
-  let limit = null;
-  let label = '';
-
-  switch(type) {
-    case 'immeubles': limit = limits.immeubles_max; label = 'immeubles'; break;
-    case 'locataires': limit = limits.locataires_max; label = 'locataires'; break;
-    case 'rapports_pdf': limit = limits.rapports_pdf_mois; label = 'rapports PDF ce mois'; break;
-    case 'utilisateurs': limit = limits.utilisateurs; label = 'utilisateurs'; break;
-  }
-
-  if (limit === null) return { allowed: true };
-
-  const remaining = limit - currentCount;
-  const percent = (currentCount / limit) * 100;
-
-  return {
-    allowed: remaining > 0 || isProPlan() || isEnterprisePlan(),
-    limit,
-    current: currentCount,
-    remaining: Math.max(0, remaining),
-    percent,
-    label
-  };
 }
 
 function showLimitWarning(check) {
@@ -1117,7 +645,6 @@ function showPaywall(message, feature) {
     <div class="paywall-desc">${message}</div>
     <div style="display:flex;gap:8px;justify-content:center;">
       <button class="paywall-btn" onclick="showUpgradeModal()">🚀 Passer à Pro</button>
-      <button class="btn btn-ghost" onclick="showRewardAd('${feature}')">🎁 Regarder une pub</button>
     </div>
   `;
   content.insertBefore(paywall, content.firstChild);
@@ -1410,36 +937,6 @@ function _showAbonnementSuccess(plan, duree) {
 
 // ── HOOKS SUR FONCTIONNALITÉS EXISTANTES ──
 
-// Hook sur l\'ajout d\'immeuble
-const originalSaveImmeuble = window.saveImmeuble;
-window.saveImmeuble = function() {
-  const immeubles = JSON.parse(localStorage.getItem('immogest_immeubles') || '[]');
-  const check = checkLimit('immeubles', immeubles.length);
-
-  if (!check.allowed && !isRewardUnlocked('immeubles')) {
-    showPaywall('Vous avez atteint la limite de 1 immeuble en version gratuite.', 'immeubles');
-    return;
-  }
-
-  showLimitWarning(check);
-  if (originalSaveImmeuble) originalSaveImmeuble();
-};
-
-// Hook sur l'ajout de locataire
-const originalSaveLocataire = window.saveLocataire;
-window.saveLocataire = function() {
-  const locataires = JSON.parse(localStorage.getItem('immogest_locataires') || '[]');
-  const check = checkLimit('locataires', locataires.length);
-
-  if (!check.allowed && !isRewardUnlocked('locataires')) {
-    showPaywall('Vous avez atteint la limite de 45 locataires en version gratuite.', 'locataires');
-    return;
-  }
-
-  showLimitWarning(check);
-  if (originalSaveLocataire) originalSaveLocataire();
-};
-
 // Hook sur export PDF
 const originalPreviewDownload = window.previewDownload;
 window.previewDownload = function() {
@@ -1448,31 +945,13 @@ window.previewDownload = function() {
 
   const check = checkLimit('rapports_pdf', MONETISATION.usage.rapports_pdf_this_month);
 
-  if (!check.allowed && !isRewardUnlocked('rapports_pdf')) {
+  if (!check.allowed) {
     showPaywall('Vous avez atteint la limite de 3 rapports PDF ce mois.', 'rapports_pdf');
-    // Bloquer le téléchargement
     return;
   }
 
   showLimitWarning(check);
-
-  // Afficher interstitielle avant export
-  if (isFreePlan()) {
-    showInterstitial('export_pdf');
-  }
-
   if (originalPreviewDownload) originalPreviewDownload();
-};
-
-// Hook sur changement de page (interstitielle)
-const _monetizationNavigate = window.navigate;
-window.navigate = function(page, immId) {
-  // Afficher interstitielle aléatoirement
-  if (isFreePlan() && Math.random() <0.15) {
-    showInterstitial('changement_page');
-  }
-
-  if (_monetizationNavigate) _monetizationNavigate(page, immId);
 };
 
 // ── INITIALISATION AU DÉMARRAGE ──
