@@ -188,16 +188,7 @@ async function requestNotificationPermission() {
 }
 
 function subscribeToPush() {
-  // En production: enregistrement Service Worker + subscription Push API
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready.then(registration => {
-      if (!registration || !registration.pushManager) return;
-      registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: 'YOUR_VAPID_KEY'
-      }).catch(e => console.warn('[Push] Subscribe non disponible:', e.message));
-    }).catch(e => console.warn('[Push] SW ready non disponible:', e.message));
-  }
+  // Push géré par OneSignal SDK — pas de souscription manuelle nécessaire
 }
 
 // 6. Commandes Vocales
