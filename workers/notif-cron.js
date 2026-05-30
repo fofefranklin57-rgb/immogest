@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 // IMMOGEST — Cloudflare Worker
 // - Cron : rappels loyers via OneSignal
+// - POST /ai     : proxy Anthropic API (clé sécurisée côté serveur)
 // - POST /pay    : init paiement CinetPay (credentials sécurisés)
 // - POST /notify : webhook CinetPay (confirmation paiement)
 // - GET  /test-notifs, /health
@@ -28,6 +29,10 @@ export default {
 
     if (url.pathname === '/notify' && request.method === 'POST') {
       return handlePaymentNotify(request, env);
+    }
+
+    if (url.pathname === '/ai' && request.method === 'POST') {
+      return handleAI(request, env);
     }
 
     if (url.pathname === '/test-notifs') {
@@ -126,6 +131,60 @@ async function handlePaymentNotify(request, env) {
     return new Response('OK', { status: 200 });
   } catch (e) {
     return new Response('Error', { status: 400 });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// ANTHROPIC AI — Proxy sécurisé
+// ══════════════════════════════════════════════════════════════
+async function handleAI(request, env) {
+  try {
+    // Vérification origine
+    const origin = request.headers.get('Origin');
+    if (origin && origin !== ALLOWED_ORIGIN) {
+      return jsonResponse({ ok: false, error: 'Origine non autorisée' }, 403, request);
+    }
+
+    if (!env.ANTHROPIC_API_KEY) {
+      console.error('[AI] ANTHROPIC_API_KEY manquante');
+      return jsonResponse({ ok: false, error: 'Clé API IA non configurée' }, 500, request);
+    }
+
+    const body = await request.json();
+    const { system, messages, max_tokens } = body;
+
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return jsonResponse({ ok: false, error: 'Paramètres invalides' }, 400, request);
+    }
+
+    // Appel Anthropic — modèle Haiku (rapide + économique)
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type':      'application/json',
+        'x-api-key':         env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model:      'claude-haiku-4-5',
+        max_tokens: max_tokens || 600,
+        system:     system || '',
+        messages:   messages.slice(-10)   // limiter l'historique à 10 tours
+      })
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      console.error('[AI] Erreur Anthropic:', JSON.stringify(data));
+      return jsonResponse({ ok: false, error: data.error?.message || 'Erreur API Anthropic' }, resp.status, request);
+    }
+
+    return jsonResponse({ ok: true, content: data.content }, 200, request);
+
+  } catch (e) {
+    console.error('[AI] Exception:', e.message);
+    return jsonResponse({ ok: false, error: e.message }, 500, request);
   }
 }
 
