@@ -81,8 +81,10 @@ function _mapPaiement(r) {
     id:      r.id,
     locId:   r.locataire_id,
     iid:     null,
-    mois:    r.mois,
+    mois:    r.mois,    // 1-12 (Supabase)
     annee:   r.annee,
+    moisC:   r.mois !== undefined ? r.mois - 1 : undefined, // 0-11 (compatibilité app)
+    anneeC:  r.annee,
     montant: r.montant || 0,
     date:    r.date_paiement || '',
     mode:    r.mode_paiement || 'espèces',

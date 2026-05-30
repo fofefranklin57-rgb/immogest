@@ -183,14 +183,18 @@ function actifs() { return DATA.locataires.filter(l => l.s !== 'libre'); }
 
 function paiementsDuMois(m, a, iidFilter) {
   return DATA.paiements.filter(p => {
-    // Match by payment date (when money was actually received)
-    // OR by moisC/anneeC for backwards compatibility
     let match = false;
     if (p.date) {
       const d = new Date(p.date);
-      if (d.getMonth() === m && d.getFullYear() === a) match = true;
-    } else if (p.moisC === m && p.anneeC === a) {
-      match = true;
+      if (!isNaN(d) && d.getMonth() === m && d.getFullYear() === a) match = true;
+    }
+    // Supabase : mois 1-12, annee 4 chiffres
+    if (!match && p.mois !== undefined && p.annee !== undefined) {
+      if (p.mois === m + 1 && p.annee === a) match = true;
+    }
+    // Ancienne structure locale : moisC 0-11, anneeC
+    if (!match && p.moisC !== undefined && p.anneeC !== undefined) {
+      if (p.moisC === m && p.anneeC === a) match = true;
     }
     if (!match) return false;
     if (iidFilter !== undefined) {
@@ -387,7 +391,7 @@ function renderDashboard() {
     const tot = locs.reduce((s,l)=>s+l.loyer,0);
     const rest = locs.reduce((s,l)=>s+l.reste,0);
     const nbP = locs.filter(l=>l.s==='payé').length;
-    const tx = locs.length&&tot ? Math.round((tot-rest)/tot*100) : 0;
+    const tx = locs.length ? Math.round(nbP/locs.length*100) : 0;
     const has = locs.length > 0;
     html += `<div class="imm-card" onclick="navigate('immeuble',${im.id})" oncontextmenu="showCtxImm(event,${im.id})">
       <div class="imm-card-accent" style="background:${im.col};"></div>
