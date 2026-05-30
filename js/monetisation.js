@@ -745,7 +745,7 @@ function initMonetisation() {
 
   // Publicités uniquement en gratuit
   if (isFreePlan()) {
-    startAds();
+    _applyAdsStrategy('gratuit');
     setTimeout(() => showPromoToast(), 30000);
   }
 
