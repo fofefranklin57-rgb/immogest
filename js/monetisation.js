@@ -495,7 +495,7 @@ function initMonetisation() {
   }
 
   // Vérifier abonnement depuis Supabase si connecté
-  if (SESSION && SESSION.username) {
+  if (typeof SESSION !== 'undefined' && SESSION && SESSION.username) {
     _sb.from('abonnements').select('plan,statut,date_fin').eq('user_id', SESSION.username).single()
       .then(({ data }) => {
         if (data && data.statut === 'actif') {
