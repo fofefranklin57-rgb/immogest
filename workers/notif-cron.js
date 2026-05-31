@@ -403,7 +403,7 @@ async function handleWaImpayesPage(request, env) {
       `Bonjour ${loc.nom},\n\nNous vous rappelons que votre loyer est en souffrance.\n` +
       `Montant dû : *${montant} FCFA* (${moisDus} mois)\n` +
       `Immeuble : ${nomImm}\n\n` +
-      `Merci de régulariser dans les meilleurs délais.\n\nCordialement,\nCabinet CRAA ImmoGest`
+      `Merci de régulariser dans les meilleurs délais.\n\nCordialement,\nImmoGest`
     );
     const hasPhone = telWa.length >= 12;
     const btnHtml = hasPhone
@@ -449,7 +449,7 @@ async function handleWaImpayesPage(request, env) {
     ? '<div style="text-align:center;padding:40px;color:#718096;font-size:16px;">✅ Aucun impayé aujourd\'hui !</div>'
     : lignes
   }
-  <div style="text-align:center;font-size:12px;color:#a0aec0;margin-top:20px;">ImmoGest — Cabinet CRAA</div>
+  <div style="text-align:center;font-size:12px;color:#a0aec0;margin-top:20px;">ImmoGest</div>
 </body>
 </html>`;
 

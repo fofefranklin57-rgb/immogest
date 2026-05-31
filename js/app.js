@@ -2615,10 +2615,12 @@ async function genDocxRapportMensuel(iidFilter) {
     ImageRun, Header, Footer, TabStopType, TabStopPosition
   } = window.docx;
 
-  // ── Logos ──────────────────────────────────────────────────────────────
-  const b64ToArr = s => { const b=atob(s); const a=new Uint8Array(b.length); for(let i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return a; };
-  const logo1Buf = b64ToArr("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");
-  const logo2Buf = b64ToArr("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");
+  // ── Logo configurable (URL depuis Paramètres Cabinet) ──────────────────
+  const _logoUrl = _cabInfo().logo_url;
+  let logoBuf = null;
+  if (_logoUrl) {
+    try { logoBuf = await fetch(_logoUrl).then(r => r.arrayBuffer()); } catch(e) {}
+  }
 
   // ── Brand ───────────────────────────────────────────────────────────────
   const BLUE='0E6AAF',BLUE_L='D6E9F6',PINK='F8CACB',WHITE='FFFFFF';
@@ -2706,7 +2708,7 @@ async function genDocxRapportMensuel(iidFilter) {
         width:{size:9926,type:WidthType.DXA},columnWidths:[700,5500,3726],
         rows:[new TableRow({children:[
           new TableCell({
-            children:[new Paragraph({children:[new ImageRun({data:logo1Buf,transformation:{width:48,height:38},type:'png'})],spacing:{after:0}})],
+            children:[new Paragraph({children:logoBuf?[new ImageRun({data:logoBuf,transformation:{width:48,height:38},type:'png'})]:[],spacing:{after:0}})],
             borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.SINGLE,size:6,color:BLUE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE}},
             verticalAlign:VerticalAlign.CENTER,margins:{top:0,bottom:60,left:0,right:60}
           }),
@@ -3376,7 +3378,7 @@ async function genDocxPlainte(locId) {
         mkP("Monsieur le Procureur de la République,", {bold:true, spacing:240}),
 
         mkP([
-          r("Le Cabinet de Recouvrement et d\u2019Avocats Associ\u00e9s (CRAA), agissant pour le compte de "),
+          r(_cabInfo().nom+", agissant pour le compte de "),
           r(im.nom,{bold:true}),
           r(", propri\u00e9taire de l\u2019immeuble sis au quartier "),
           r(im.quartier||im.ville,{bold:true}),
@@ -3494,12 +3496,8 @@ const AUTH_KEY = 'immogest_auth';
 const DEFAULT_USERS = [
   // Individuel — admin uniquement (proprios et locataires créés dynamiquement)
   { id:'ind1', version:'individuel', role:'admin', nom:'Administrateur', password:'immo2024', immeubles:[], customPerms:{} },
-  // Entreprise — comptes de démo
+  // Entreprise — compte admin uniquement (propriétaires et locataires créés par l'admin)
   { id:'adm1', version:'entreprise', role:'admin',         nom:'Administrateur',    username:'admin',        password:'admin2024',  immeubles:[], pin:null, customPerms:{} },
-  // ges1 et cpt1 supprimés — n'existent qu'en mode entreprise, créés manuellement par l'admin
-  { id:'pro1', version:'entreprise', role:'proprietaire',  nom:'TIWA Herve Francis',username:'tiwa',  tel:'',  password:'tiwa2024',   immeubles:[0], pin:null, customPerms:{}, mustChangePassword:true },
-  { id:'pro2', version:'entreprise', role:'proprietaire',  nom:'Ibrahim',           username:'ibrahim', tel:'',  password:'ibra2024',   immeubles:[2], pin:null, customPerms:{}, mustChangePassword:true },
-  { id:'loc1', version:'entreprise', role:'locataire',     nom:'BINDZI EVOUNA Thomas', username:'bindzi',   password:null, immeubles:[2], locId:17, pin:'1234', customPerms:{} },
 ];
 
 let USERS = [];
@@ -3522,6 +3520,7 @@ function loadUsers() {
     } else {
       USERS = JSON.parse(JSON.stringify(DEFAULT_USERS));
       localStorage.setItem('immogest_users_v6', JSON.stringify(USERS));
+      window._firstLaunch = true;
     }
     // PURGE PERMANENTE mode individuel : lire la session directement dans localStorage
     // car SESSION n'est pas encore chargé à ce stade
@@ -3767,6 +3766,33 @@ function startSession(user, version) {
   var aib = document.getElementById('ai-float-btn');
   if (aib) aib.style.display = 'flex';
   initApp();
+  if (window._firstLaunch) {
+    window._firstLaunch = false;
+    setTimeout(_showBienvenueModal, 600);
+  }
+}
+
+function _showBienvenueModal() {
+  const overlay = document.createElement('div');
+  overlay.id = 'bienvenue-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML = `
+    <div style="background:var(--bg2);border-radius:16px;padding:28px 24px;max-width:420px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.3);text-align:center;">
+      <div style="font-size:40px;margin-bottom:12px;">🏢</div>
+      <div style="font-size:18px;font-weight:700;color:var(--text1);margin-bottom:8px;">Bienvenue sur ImmoGest !</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.5;">
+        Pour personnaliser vos documents (reçus, contrats, rapports), commencez par configurer l'identité de votre cabinet.
+      </p>
+      <button onclick="document.getElementById('bienvenue-overlay').remove();navigateTo('parametres')"
+        style="width:100%;padding:12px;background:#0E6AAF;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;font-family:var(--font);">
+        ⚙️ Configurer mon cabinet
+      </button>
+      <button onclick="document.getElementById('bienvenue-overlay').remove()"
+        style="width:100%;padding:10px;background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:10px;font-size:13px;cursor:pointer;font-family:var(--font);">
+        Plus tard
+      </button>
+    </div>`;
+  document.body.appendChild(overlay);
 }
 
 
@@ -3879,7 +3905,8 @@ async function genQuittance(payId) {
     return r.trim();
   }
 
-  const refNum = "CRAA/" + (isQuittance?"QU":"RE") + "/" + new Date().getFullYear() + "/" + String(payId).padStart(4,"0");
+  const _cabPfx = (_cabInfo().nom||'IMG').replace(/[^A-Z0-9]/gi,'').toUpperCase().slice(0,4)||'IMG';
+  const refNum = _cabPfx + "/" + (isQuittance?"QU":"RE") + "/" + new Date().getFullYear() + "/" + String(payId).padStart(4,"0");
 
   const doc = new Document({
     styles:{default:{document:{run:{font:"Calibri",size:22}}}},
@@ -3902,7 +3929,7 @@ async function genQuittance(payId) {
         new Table({
           width:{size:9506,type:WidthType.DXA},columnWidths:[3000,6506],
           rows:[
-            new TableRow({children:[mkCell("Bailleur / Gestionnaire",{bg:BLUE_L,bold:true,color:BLUE,size:20}),mkCell("Cabinet CRAA – "+im.nom,{bold:true,size:20})]}),
+            new TableRow({children:[mkCell("Bailleur / Gestionnaire",{bg:BLUE_L,bold:true,color:BLUE,size:20}),mkCell(_cabInfo().nom+" – "+im.nom,{bold:true,size:20})]}),
             new TableRow({children:[mkCell("Locataire",{bg:BLUE_L,bold:true,color:BLUE,size:20}),mkCell(l.nom,{size:20})]}),
             new TableRow({children:[mkCell("Local",{bg:BLUE_L,bold:true,color:BLUE,size:20}),mkCell((l.appt||"–")+" – "+im.nom+" – "+im.ville,{size:20})]}),
             new TableRow({children:[mkCell(isQuittance?"Mois concerné":"Date versement",{bg:BLUE_L,bold:true,color:BLUE,size:20}),mkCell(isQuittance?MNOMS[p.moisC]+" "+p.anneeC:p.date.split("-").reverse().join("/"),{size:20})]}),
@@ -3928,7 +3955,7 @@ async function genQuittance(payId) {
         new Paragraph({
           children:[new TextRun({text:isQuittance
             ? "Le bailleur soussigné certifie avoir reçu de "+l.nom+" la somme de "+fmtN(p.montant)+" FCFA au titre du loyer du local "+( l.appt||"–")+" pour le mois de "+MNOMS[p.moisC]+" "+p.anneeC+". Ce paiement solde le loyer du mois concerné."
-            : "Le Cabinet CRAA certifie avoir reçu de "+l.nom+" la somme de "+fmtN(p.montant)+" FCFA en date du "+p.date.split("-").reverse().join("/")+". Ce reçu vaut preuve de paiement.",
+            : _cabInfo().nom+" certifie avoir reçu de "+l.nom+" la somme de "+fmtN(p.montant)+" FCFA en date du "+p.date.split("-").reverse().join("/")+". Ce reçu vaut preuve de paiement.",
             size:22,font:"Calibri",color:DGRAY})],
           alignment:AlignmentType.JUSTIFIED,spacing:{after:500}
         }),
@@ -3941,7 +3968,7 @@ async function genQuittance(payId) {
             new TableCell({
               children:[
                 new Paragraph({children:[new TextRun({text:"Le Gestionnaire / Bailleur",bold:true,size:20,color:BLUE,font:"Calibri"})],spacing:{after:80}}),
-                new Paragraph({children:[new TextRun({text:"Cabinet CRAA",size:18,color:GRAY,font:"Calibri",italics:true})],spacing:{after:400}}),
+                new Paragraph({children:[new TextRun({text:_cabInfo().nom,size:18,color:GRAY,font:"Calibri",italics:true})],spacing:{after:400}}),
                 new Paragraph({border:{bottom:{style:BorderStyle.SINGLE,size:4,color:BLUE}},spacing:{before:480,after:0}}),
               ],
               borders:noBorder,margins:{top:200,left:0,right:160,bottom:0}
@@ -3959,7 +3986,7 @@ async function genQuittance(payId) {
 
         new Paragraph({children:[],spacing:{after:300}}),
         new Paragraph({
-          children:[new TextRun({text:"Document g\u00e9n\u00e9r\u00e9 le "+dateAuj+" par ImmoGest \u00b7 CRAA",size:16,color:"BBBBBB",italics:true,font:"Calibri"})],
+          children:[new TextRun({text:"Document g\u00e9n\u00e9r\u00e9 le "+dateAuj+" par ImmoGest \u00b7 "+_cabInfo().nom,size:16,color:"BBBBBB",italics:true,font:"Calibri"})],
           alignment:AlignmentType.CENTER
         }),
       ],
@@ -4077,7 +4104,7 @@ function _renderTabCabinet(users) {
       + '</tr>';
   });
   return '<div class="card">'
-    + '<div class="card-header"><div class="card-title">Équipe Cabinet CRAA</div>'
+    + '<div class="card-header"><div class="card-title">Équipe ' + _cabInfo().nom + '</div>'
     + '<button class="btn btn-primary btn-sm" onclick="_openUserModal(null,\'cabinet\')">＋ Ajouter</button></div>'
     + '<div class="table-wrap"><table class="tbl">'
     + '<thead><tr><th>Nom</th><th>Rôle</th><th>Identifiant</th><th>Immeubles assignés</th><th>Statut</th><th></th></tr></thead>'
@@ -4987,7 +5014,7 @@ function renderLocataireDashboard() {
   ${(DATA.settings&&DATA.settings.momo&&(DATA.settings.momo.mtn||DATA.settings.momo.orange||DATA.settings.momo.wave))?`
   <div class="card" style="margin-top:16px;">
     <div class="card-header"><div class="card-title">📱 Payer par Mobile Money</div></div>
-    <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">Numéros officiels du Cabinet CRAA pour vos paiements :</p>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">Numéros officiels du cabinet pour vos paiements :</p>
     <div style="display:flex;flex-direction:column;gap:10px;">
       ${DATA.settings.momo.mtn?`<div style="display:flex;align-items:center;gap:12px;padding:12px;background:#FFFDE7;border-radius:10px;border:1.5px solid #FFCC00;">
         <span style="font-size:22px;">📱</span>
@@ -5144,7 +5171,8 @@ function previewRecu(payId) {
 
   const fmtN  = n => Number(n||0).toLocaleString('fr-FR');
   const today = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
-  const receiptId = p.receiptId || (d ? d.receiptId : null) || ('CRAA-'+new Date().getFullYear()+'-'+String(payId).padStart(5,'0'));
+  const _pfxRec = (_cabInfo().nom||'IMG').replace(/[^A-Z0-9]/gi,'').toUpperCase().slice(0,4)||'IMG';
+  const receiptId = p.receiptId || (d ? d.receiptId : null) || (_pfxRec+'-'+new Date().getFullYear()+'-'+String(payId).padStart(5,'0'));
   const modeLabels = {mtn:'Mobile Money MTN',orange:'Orange Money',virement:'Virement bancaire',depot:'Dépôt bancaire direct',especes:'Espèces'};
 
   function enToutesLettres(n) {
@@ -6216,6 +6244,11 @@ function renderParametres() {
           <label>Slogan / Mention (optionnel)</label>
           <input type="text" id="cab-slogan" value="${cab.slogan||''}" placeholder="Votre patrimoine, notre priorité" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
         </div>
+        <div class="form-group">
+          <label>URL du logo (optionnel)</label>
+          <input type="url" id="cab-logo-url" value="${cab.logo_url||''}" placeholder="https://exemple.com/logo.png" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
+          <span style="font-size:11px;color:var(--text3);">Affiché dans l'en-tête des rapports DOCX. Format PNG ou JPG recommandé.</span>
+        </div>
       </div>
       <button class="btn btn-primary" style="width:100%;margin-top:16px;padding:12px;" onclick="saveParametresCabinet()">
         💾 Enregistrer les infos cabinet
@@ -6355,7 +6388,7 @@ function sauvegarderNomAdmin() {
   showToast('Nom mis à jour : ' + nom, 'green');
 }
 
-// Retourne les infos cabinet avec fallback CRAA si non configuré
+// Retourne les infos cabinet (avec valeurs par défaut si non configuré)
 function _cabInfo() {
   const cab = (DATA.settings && DATA.settings.cabinet) || {};
   return {
@@ -6367,6 +6400,7 @@ function _cabInfo() {
     email:   cab.email   || '',
     rccm:    cab.rccm    || '',
     slogan:  cab.slogan  || '',
+    logo_url: cab.logo_url || '',
     ligne1() { return [this.rccm ? 'RCCM ' + this.rccm : '', this.nom].filter(Boolean).join('  ·  '); },
     ligne2() { return [this.adresse, this.ville].filter(Boolean).join(', '); },
     tels()   { return [this.tel1, this.tel2].filter(Boolean).join('  /  '); },
@@ -6382,8 +6416,9 @@ function saveParametresCabinet() {
     tel1:    (document.getElementById('cab-tel1').value    || '').trim(),
     tel2:    (document.getElementById('cab-tel2').value    || '').trim(),
     email:   (document.getElementById('cab-email').value   || '').trim(),
-    rccm:    (document.getElementById('cab-rccm').value    || '').trim(),
-    slogan:  (document.getElementById('cab-slogan').value  || '').trim(),
+    rccm:     (document.getElementById('cab-rccm').value     || '').trim(),
+    slogan:   (document.getElementById('cab-slogan').value   || '').trim(),
+    logo_url: (document.getElementById('cab-logo-url').value || '').trim(),
   };
   saveData();
   showToast('Infos cabinet enregistrées ✓', 'green');
@@ -8377,7 +8412,7 @@ function _localFallback(query) {
     const im = DATA.immeubles.find(i => i.id === l.iid);
     if (l.reste > 0) {
       const nbMois = Math.round(l.reste / l.loyer);
-      return `📋 <strong>Votre situation</strong><br>Local : ${l.appt||'–'} — ${im?im.nom:'–'}<br>Loyer mensuel : <strong>${l.loyer.toLocaleString('fr-FR')} FCFA</strong><br>⚠️ Solde dû : <strong>${l.reste.toLocaleString('fr-FR')} FCFA</strong> (${nbMois} mois)<br><br>Pour régulariser, contactez le Cabinet CRAA par WhatsApp.`;
+      return `📋 <strong>Votre situation</strong><br>Local : ${l.appt||'–'} — ${im?im.nom:'–'}<br>Loyer mensuel : <strong>${l.loyer.toLocaleString('fr-FR')} FCFA</strong><br>⚠️ Solde dû : <strong>${l.reste.toLocaleString('fr-FR')} FCFA</strong> (${nbMois} mois)<br><br>Pour régulariser, contactez votre gestionnaire par WhatsApp.`;
     }
     return `✅ <strong>Votre situation</strong><br>Local : ${l.appt||'–'} — ${im?im.nom:'–'}<br>Loyer : <strong>${l.loyer.toLocaleString('fr-FR')} FCFA/mois</strong><br>Situation : <strong>À jour ✓</strong>`;
   }

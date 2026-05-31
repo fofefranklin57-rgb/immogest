@@ -1,7 +1,7 @@
 {
-  "name": "ImmoGest — Cabinet CRAA",
+  "name": "ImmoGest",
   "short_name": "ImmoGest",
-  "description": "Gestion immobilière Cabinet CRAA — Locataires, encaissements, rapports",
+  "description": "Plateforme de gestion immobilière — Locataires, encaissements, rapports",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
