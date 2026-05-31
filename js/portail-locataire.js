@@ -10,6 +10,7 @@ function showTab(tab) {
   document.querySelectorAll('.tenant-nav button').forEach(b => b.classList.remove('active'));
   event.target.classList.add('active');
   currentTab = tab;
+  if (tab === 'maintenance') loadMaintHistory();
 }
 
 // 7. Paiement Mobile Money
@@ -119,29 +120,74 @@ function handleFileSelect(input) {
 
 async function submitMaintenance(e) {
   e.preventDefault();
-  
-  const data = {
-    type: document.getElementById('maint-type').value,
-    description: document.getElementById('maint-desc').value,
-    access: document.getElementById('maint-access').value,
-    files: document.getElementById('maint-files').files,
-    tenantId: 'TENANT_001',
-    date: new Date().toISOString()
-  };
-
-  // Simulation envoi
   const btn = e.target.querySelector('button[type="submit"]');
   btn.innerHTML = '⏳ Envoi...';
   btn.disabled = true;
 
-  setTimeout(() => {
-    alert('✅ Demande de maintenance soumise !\nN° ticket: MAINT-' + Date.now());
+  const loc = _getLocataireConnecte();
+  const locId = loc ? loc.id : null;
+  const immId = loc ? loc.iid : null;
+
+  const row = {
+    locataire_id: locId,
+    immeuble_id: immId,
+    type: document.getElementById('maint-type').value,
+    description: document.getElementById('maint-desc').value,
+    acces: document.getElementById('maint-access').value,
+    statut: 'nouveau'
+  };
+
+  const result = await insertMaintenance(row);
+  if (result) {
     e.target.reset();
     document.getElementById('file-preview').innerHTML = '';
-    document.querySelector('.photo-upload').classList.remove('has-files');
+    const pu = document.querySelector('.photo-upload');
+    if (pu) pu.classList.remove('has-files');
     btn.innerHTML = '📤 Soumettre la demande';
     btn.disabled = false;
-  }, 1500);
+    // Afficher confirmation avec vrai numéro de ticket
+    const ticketShort = result.id.slice(0,8).toUpperCase();
+    document.getElementById('maint-history').insertAdjacentHTML('afterbegin',
+      renderMaintCard(result, ticketShort));
+    alert('✅ Demande soumise !\nN° ticket : MAINT-' + ticketShort);
+  } else {
+    alert('❌ Erreur lors de l\'envoi. Vérifiez votre connexion.');
+    btn.innerHTML = '📤 Soumettre la demande';
+    btn.disabled = false;
+  }
+}
+
+function renderMaintCard(m, ticketShort) {
+  const statutColors = { nouveau: '#e74c3c', en_cours: '#f39c12', resolu: '#27ae60' };
+  const statutLabels = { nouveau: 'Nouveau', en_cours: 'En cours', resolu: 'Résolu' };
+  const sc = statutColors[m.statut] || '#999';
+  const dateStr = m.date_soumission ? new Date(m.date_soumission).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR');
+  return `<div style="border:1px solid var(--border,#ddd);border-left:4px solid ${sc};border-radius:10px;padding:12px;margin-bottom:10px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+      <div>
+        <div style="font-weight:600;font-size:14px;">${m.type}</div>
+        <div style="font-size:12px;color:#666;margin-top:2px;">📅 ${dateStr} · N° MAINT-${ticketShort || m.id.slice(0,8).toUpperCase()}</div>
+        <div style="font-size:13px;margin-top:6px;">${m.description}</div>
+        ${m.note_gestionnaire ? `<div style="font-size:12px;color:#0E6AAF;margin-top:6px;background:#EBF5FB;padding:6px 10px;border-radius:6px;">💬 ${m.note_gestionnaire}</div>` : ''}
+      </div>
+      <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${sc}22;color:${sc};">${statutLabels[m.statut] || m.statut}</span>
+    </div>
+  </div>`;
+}
+
+async function loadMaintHistory() {
+  const loc = _getLocataireConnecte();
+  const locId = loc ? loc.id : null;
+  if (!locId) return;
+  const histDiv = document.getElementById('maint-history');
+  if (!histDiv) return;
+  histDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#999;">⏳ Chargement...</div>';
+  const items = await loadMaintenancesByLocataire(locId);
+  if (!items || items.length === 0) {
+    histDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#999;">Aucune demande pour l\'instant</div>';
+    return;
+  }
+  histDiv.innerHTML = items.map(m => renderMaintCard(m)).join('');
 }
 
 // 9. Chat

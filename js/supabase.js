@@ -93,6 +93,101 @@ function _mapPaiement(r) {
   };
 }
 
+// ── Helpers Maintenance ───────────────────────────────────────
+async function loadMaintenances() {
+  try {
+    const { data, error } = await _sb.from('maintenances').select('*').order('date_soumission', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch(e) {
+    console.warn('loadMaintenances error:', e.message || e);
+    return [];
+  }
+}
+
+async function loadMaintenancesByLocataire(locataireId) {
+  try {
+    const { data, error } = await _sb.from('maintenances').select('*')
+      .eq('locataire_id', locataireId).order('date_soumission', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch(e) {
+    console.warn('loadMaintenancesByLocataire error:', e.message || e);
+    return [];
+  }
+}
+
+async function insertMaintenance(row) {
+  try {
+    const { data, error } = await _sb.from('maintenances').insert(row).select().single();
+    if (error) throw error;
+    return data;
+  } catch(e) {
+    console.warn('insertMaintenance error:', e.message || e);
+    return null;
+  }
+}
+
+async function updateMaintenanceStatut(id, statut, note) {
+  try {
+    const upd = { statut };
+    if (note !== undefined) upd.note_gestionnaire = note;
+    if (statut === 'resolu') upd.date_resolution = new Date().toISOString();
+    const { error } = await _sb.from('maintenances').update(upd).eq('id', id);
+    if (error) throw error;
+    return true;
+  } catch(e) {
+    console.warn('updateMaintenanceStatut error:', e.message || e);
+    return false;
+  }
+}
+
+// ── Helpers État des lieux ────────────────────────────────────
+async function loadEtatsLieux() {
+  try {
+    const { data, error } = await _sb.from('etats_lieux').select('*').order('date_etat', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch(e) {
+    console.warn('loadEtatsLieux error:', e.message || e);
+    return [];
+  }
+}
+
+async function loadEtatsLieuxByLocataire(locataireId) {
+  try {
+    const { data, error } = await _sb.from('etats_lieux').select('*')
+      .eq('locataire_id', locataireId).order('date_etat', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch(e) {
+    console.warn('loadEtatsLieuxByLocataire error:', e.message || e);
+    return [];
+  }
+}
+
+async function insertEtatLieux(row) {
+  try {
+    const { data, error } = await _sb.from('etats_lieux').insert(row).select().single();
+    if (error) throw error;
+    return data;
+  } catch(e) {
+    console.warn('insertEtatLieux error:', e.message || e);
+    return null;
+  }
+}
+
+async function updateEtatLieux(id, fields) {
+  try {
+    const { error } = await _sb.from('etats_lieux').update(fields).eq('id', id);
+    if (error) throw error;
+    return true;
+  } catch(e) {
+    console.warn('updateEtatLieux error:', e.message || e);
+    return false;
+  }
+}
+
 // ── loadDataFromSupabase ──────────────────────────────────────
 async function loadDataFromSupabase() {
   try {

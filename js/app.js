@@ -218,6 +218,19 @@ function closeModals() {
   document.querySelectorAll('.overlay').forEach(o => o.classList.remove('open'));
 }
 
+function closeModal() { closeModals(); }
+
+function showModal(html, opts) {
+  const inner = document.getElementById('modal-generic-inner');
+  const overlay = document.getElementById('modal-generic');
+  if (!inner || !overlay) return;
+  inner.style.width = (opts && opts.wide) ? '760px' : '480px';
+  inner.style.maxWidth = '98vw';
+  document.getElementById('modal-generic-body').innerHTML = html;
+  closeModals();
+  overlay.classList.add('open');
+}
+
 // ============================================================
 // NAVIGATION
 // ============================================================
@@ -313,6 +326,7 @@ function renderCurrent() {
   else if (currentPage === 'immeubles-config') renderImmeublesConfig();
   else if (currentPage === 'parametres') renderParametres();
   else if (currentPage === 'signalements') renderSignalements();
+  else if (currentPage === 'maintenance-edl') renderMaintenanceEdl();
   updateSidebarBadges();
 }
 
@@ -8699,4 +8713,439 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   // else show auth screen (already visible by default)
 });
+
+// ══════════════════════════════════════════════════════════════
+// PAGE MAINTENANCE & ÉTAT DES LIEUX
+// ══════════════════════════════════════════════════════════════
+let _maintEdlTab = 'maintenance'; // 'maintenance' | 'edl'
+let _maintData = [];
+let _edlData = [];
+
+async function renderMaintenanceEdl() {
+  document.getElementById('page-title').textContent = 'Maintenance & État des lieux';
+  document.getElementById('topbar-main-btn').style.display = 'none';
+  document.getElementById('page-sub').textContent = 'Chargement...';
+  const content = document.getElementById('content');
+  content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text3);">⏳ Chargement...</div>`;
+
+  const [maintenances, edls] = await Promise.all([loadMaintenances(), loadEtatsLieux()]);
+  _maintData = maintenances;
+  _edlData = edls;
+
+  const nbNouv = maintenances.filter(m => m.statut === 'nouveau').length;
+  const badge = document.getElementById('badge-maintenance');
+  if (badge) { badge.textContent = nbNouv; badge.style.display = nbNouv > 0 ? 'flex' : 'none'; }
+
+  document.getElementById('page-sub').textContent =
+    `${maintenances.length} demande(s) · ${edls.length} état(s) des lieux`;
+
+  _renderMaintenanceEdlContent();
+}
+
+function _renderMaintenanceEdlContent() {
+  const content = document.getElementById('content');
+  const tabStyle = (t) => `padding:10px 20px;border:none;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:600;border-bottom:3px solid ${_maintEdlTab===t?'var(--primary)':'transparent'};color:${_maintEdlTab===t?'var(--primary)':'var(--text2)'};background:none;transition:all .2s;`;
+
+  let html = `
+    <div style="display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;">
+      <button style="${tabStyle('maintenance')}" onclick="switchMaintEdlTab('maintenance')">🔧 Demandes de maintenance</button>
+      <button style="${tabStyle('edl')}" onclick="switchMaintEdlTab('edl')">📋 État des lieux</button>
+    </div>`;
+
+  if (_maintEdlTab === 'maintenance') {
+    html += _renderMaintenanceTab();
+  } else {
+    html += _renderEdlTab();
+  }
+
+  content.innerHTML = html;
+}
+
+function switchMaintEdlTab(tab) {
+  _maintEdlTab = tab;
+  _renderMaintenanceEdlContent();
+}
+
+// ── Onglet Maintenance ────────────────────────────────────────
+function _renderMaintenanceTab() {
+  const statutColors = { nouveau: '#e74c3c', en_cours: '#f39c12', resolu: '#27ae60' };
+  const statutLabels = { nouveau: '🔴 Nouveau', en_cours: '🟠 En cours', resolu: '✅ Résolu' };
+  const typeLabels = {
+    plomberie: '🚿 Plomberie', electricite: '⚡ Électricité', serrure: '🔐 Serrure/porte',
+    toiture: '🏠 Toiture/fissure', climatisation: '❄️ Climatisation', peinture: '🎨 Peinture',
+    nuisibles: '🐜 Nuisibles', autre: '📝 Autre'
+  };
+
+  const nbNouv = _maintData.filter(m => m.statut === 'nouveau').length;
+  const nbEnCours = _maintData.filter(m => m.statut === 'en_cours').length;
+  const nbResolu = _maintData.filter(m => m.statut === 'resolu').length;
+
+  let html = `<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+    <button class="btn btn-sm" onclick="filterMaint('tous',this)" style="background:var(--primary);color:#fff;border-color:var(--primary);" id="mf-tous">Tous (${_maintData.length})</button>
+    <button class="btn btn-sm" id="mf-nouveau" onclick="filterMaint('nouveau',this)">🔴 Nouveaux (${nbNouv})</button>
+    <button class="btn btn-sm" id="mf-en_cours" onclick="filterMaint('en_cours',this)">🟠 En cours (${nbEnCours})</button>
+    <button class="btn btn-sm" id="mf-resolu" onclick="filterMaint('resolu',this)">✅ Résolus (${nbResolu})</button>
+  </div>`;
+
+  if (_maintData.length === 0) {
+    return html + '<div class="card"><div style="text-align:center;padding:40px;color:var(--text3);">🎉 Aucune demande de maintenance</div></div>';
+  }
+
+  html += '<div id="maint-list">';
+  _maintData.forEach(m => {
+    const loc = DATA.locataires.find(l => l.id === m.locataire_id);
+    const im = DATA.immeubles.find(i => i.id === m.immeuble_id);
+    const sc = statutColors[m.statut] || '#999';
+    const sl = statutLabels[m.statut] || m.statut;
+    const tl = typeLabels[m.type] || m.type;
+    const dateStr = m.date_soumission ? new Date(m.date_soumission).toLocaleDateString('fr-FR') : '–';
+
+    html += `<div class="card maint-card" data-statut="${m.statut}" style="margin-bottom:12px;border-left:4px solid ${sc};">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+        <div style="flex:1;min-width:200px;">
+          <div style="font-weight:700;font-size:14px;">${tl}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:3px;">
+            ${loc ? loc.nom : '–'} · ${loc ? loc.appt : ''} · ${im ? im.nom : '–'}
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">📅 ${dateStr}</div>
+          <div style="font-size:13px;margin-top:8px;color:var(--text1);">${m.description}</div>
+          ${m.note_gestionnaire ? `<div style="font-size:12px;color:#0E6AAF;margin-top:6px;background:#EBF5FB;padding:6px 10px;border-radius:6px;">💬 ${m.note_gestionnaire}</div>` : ''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${sc}22;color:${sc};">${sl}</span>
+          <button class="btn btn-sm" onclick="openMaintModal('${m.id}')" style="font-size:12px;">✏️ Gérer</button>
+        </div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function filterMaint(statut, btn) {
+  document.querySelectorAll('#maint-list .maint-card').forEach(c => {
+    c.style.display = statut === 'tous' || c.dataset.statut === statut ? 'block' : 'none';
+  });
+  document.querySelectorAll('[id^="mf-"]').forEach(b => {
+    b.style.background = ''; b.style.color = ''; b.style.borderColor = '';
+  });
+  btn.style.background = 'var(--primary)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--primary)';
+}
+
+function openMaintModal(id) {
+  const m = _maintData.find(x => x.id === id);
+  if (!m) return;
+  const loc = DATA.locataires.find(l => l.id === m.locataire_id);
+  const im = DATA.immeubles.find(i => i.id === m.immeuble_id);
+  const typeLabels = {
+    plomberie: '🚿 Plomberie', electricite: '⚡ Électricité', serrure: '🔐 Serrure/porte',
+    toiture: '🏠 Toiture/fissure', climatisation: '❄️ Climatisation', peinture: '🎨 Peinture',
+    nuisibles: '🐜 Nuisibles', autre: '📝 Autre'
+  };
+  showModal(`
+    <h3 style="margin:0 0 16px;">🔧 Demande de maintenance</h3>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">
+      <b>${typeLabels[m.type] || m.type}</b> — ${loc ? loc.nom : '–'} (${loc ? loc.appt : ''}) — ${im ? im.nom : '–'}
+    </div>
+    <div style="background:var(--bg2);padding:12px;border-radius:8px;margin-bottom:16px;font-size:13px;">${m.description}</div>
+    <div class="form-group">
+      <label>Statut</label>
+      <select id="maint-modal-statut" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
+        <option value="nouveau" ${m.statut==='nouveau'?'selected':''}>🔴 Nouveau</option>
+        <option value="en_cours" ${m.statut==='en_cours'?'selected':''}>🟠 En cours</option>
+        <option value="resolu" ${m.statut==='resolu'?'selected':''}>✅ Résolu</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Note gestionnaire</label>
+      <textarea id="maint-modal-note" rows="3" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);resize:vertical;" placeholder="Intervention prévue le...">${m.note_gestionnaire || ''}</textarea>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveMaintStatut('${m.id}')">💾 Enregistrer</button>
+    </div>
+  `);
+}
+
+async function saveMaintStatut(id) {
+  const statut = document.getElementById('maint-modal-statut').value;
+  const note = document.getElementById('maint-modal-note').value.trim();
+  const ok = await updateMaintenanceStatut(id, statut, note);
+  if (ok) {
+    const m = _maintData.find(x => x.id === id);
+    if (m) { m.statut = statut; m.note_gestionnaire = note; if (statut==='resolu') m.date_resolution = new Date().toISOString(); }
+    closeModal();
+    showToast('Demande mise à jour ✓', 'green');
+    _renderMaintenanceEdlContent();
+  } else {
+    showToast('Erreur lors de la mise à jour', 'red');
+  }
+}
+
+// ── Onglet État des lieux ─────────────────────────────────────
+function _renderEdlTab() {
+  const typeLabels = { entree: '🟢 Entrée', sortie: '🔴 Sortie' };
+
+  let html = `<div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+    <button class="btn btn-primary" onclick="openNewEdlModal()">+ Nouvel état des lieux</button>
+  </div>`;
+
+  if (_edlData.length === 0) {
+    return html + '<div class="card"><div style="text-align:center;padding:40px;color:var(--text3);">📋 Aucun état des lieux enregistré</div></div>';
+  }
+
+  html += '<div>';
+  _edlData.forEach(edl => {
+    const loc = DATA.locataires.find(l => l.id === edl.locataire_id);
+    const im = DATA.immeubles.find(i => i.id === edl.immeuble_id);
+    const tl = typeLabels[edl.type] || edl.type;
+    const dateStr = edl.date_etat ? new Date(edl.date_etat).toLocaleDateString('fr-FR') : '–';
+    const cautionInfo = edl.type === 'sortie' ? `
+      <div style="margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;">
+        <span>Caution totale : <b>${Number(edl.caution_totale||0).toLocaleString('fr-FR') + ' FCFA'}</b></span>
+        <span style="color:#e74c3c;">Retenue : <b>${Number(edl.caution_retenue||0).toLocaleString('fr-FR') + ' FCFA'}</b></span>
+        <span style="color:#27ae60;">Rendue : <b>${Number(edl.caution_rendue||0).toLocaleString('fr-FR') + ' FCFA'}</b></span>
+      </div>` : '';
+
+    html += `<div class="card" style="margin-bottom:12px;border-left:4px solid ${edl.type==='entree'?'#27ae60':'#e74c3c'};">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:14px;">${tl} — ${loc ? loc.nom : '–'}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:3px;">${loc ? loc.appt : ''} · ${im ? im.nom : '–'} · 📅 ${dateStr}</div>
+          ${cautionInfo}
+          ${edl.observations ? `<div style="font-size:12px;color:var(--text2);margin-top:6px;">📝 ${edl.observations}</div>` : ''}
+          <div style="font-size:11px;margin-top:6px;color:${edl.signe?'#27ae60':'#e67e22'};">${edl.signe ? '✅ Signé' : '⏳ Non signé'}</div>
+        </div>
+        <button class="btn btn-sm" onclick="openEdlDetail('${edl.id}')">👁 Détail</button>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+const EDL_PIECES_DEFAUT = [
+  { nom: 'Salon', etat: '', observations: '' },
+  { nom: 'Cuisine', etat: '', observations: '' },
+  { nom: 'Chambre 1', etat: '', observations: '' },
+  { nom: 'Chambre 2', etat: '', observations: '' },
+  { nom: 'Salle de bain', etat: '', observations: '' },
+  { nom: 'WC', etat: '', observations: '' },
+  { nom: 'Entrée/Couloir', etat: '', observations: '' },
+  { nom: 'Terrasse/Balcon', etat: '', observations: '' },
+];
+
+function openNewEdlModal() {
+  const locsActifs = DATA.locataires.filter(l => l.s !== 'libre');
+  if (locsActifs.length === 0) {
+    showToast('Aucun locataire actif', 'red'); return;
+  }
+
+  const locsOptions = locsActifs.map(l => {
+    const im = DATA.immeubles.find(i => i.id === l.iid);
+    return `<option value="${l.id}" data-iid="${l.iid}" data-caution="${l.caution||0}">${l.nom} — ${l.appt} (${im ? im.nom : ''})</option>`;
+  }).join('');
+
+  const piecesRows = EDL_PIECES_DEFAUT.map((p, i) => `
+    <tr>
+      <td style="padding:6px 8px;font-size:13px;white-space:nowrap;">${p.nom}</td>
+      <td style="padding:4px;"><select id="edl-etat-${i}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-family:var(--font);font-size:12px;">
+        <option value="">–</option>
+        <option value="bon">Bon état</option>
+        <option value="usage">Usure normale</option>
+        <option value="degrade">Dégradé</option>
+        <option value="manquant">Manquant</option>
+      </select></td>
+      <td style="padding:4px;"><input id="edl-obs-${i}" type="text" placeholder="Observations..." style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-family:var(--font);font-size:12px;"></td>
+    </tr>`).join('');
+
+  showModal(`
+    <h3 style="margin:0 0 16px;">📋 Nouvel état des lieux</h3>
+    <div class="form-group">
+      <label>Locataire *</label>
+      <select id="edl-locataire" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);" onchange="onEdlLocChange()">
+        <option value="">Sélectionner...</option>
+        ${locsOptions}
+      </select>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div class="form-group" style="flex:1;min-width:140px;">
+        <label>Type *</label>
+        <select id="edl-type" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);" onchange="onEdlTypeChange()">
+          <option value="entree">🟢 Entrée</option>
+          <option value="sortie">🔴 Sortie</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:1;min-width:140px;">
+        <label>Date *</label>
+        <input type="date" id="edl-date" value="${new Date().toISOString().slice(0,10)}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
+      </div>
+    </div>
+
+    <div id="edl-caution-section" style="display:none;">
+      <div style="background:#FEF9E7;border:1px solid #f39c12;border-radius:8px;padding:12px;margin-bottom:12px;">
+        <div style="font-weight:700;font-size:13px;margin-bottom:8px;">💰 Gestion de la caution</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <div class="form-group" style="flex:1;min-width:120px;">
+            <label style="font-size:12px;">Caution versée (FCFA)</label>
+            <input type="number" id="edl-caution-totale" value="0" min="0" onfocus="this.select()" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-family:var(--font);" oninput="calcEdlCaution()">
+          </div>
+          <div class="form-group" style="flex:1;min-width:120px;">
+            <label style="font-size:12px;">Retenue (dégâts, FCFA)</label>
+            <input type="number" id="edl-caution-retenue" value="0" min="0" onfocus="this.select()" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-family:var(--font);" oninput="calcEdlCaution()">
+          </div>
+          <div class="form-group" style="flex:1;min-width:120px;">
+            <label style="font-size:12px;">À rembourser (FCFA)</label>
+            <input type="number" id="edl-caution-rendue" value="0" min="0" onfocus="this.select()" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-family:var(--font);" readonly style="background:var(--bg2);">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="font-weight:600;font-size:13px;margin-bottom:8px;">🏠 État par pièce</div>
+    <div style="overflow-x:auto;margin-bottom:12px;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr style="background:var(--bg2);font-size:12px;">
+          <th style="padding:6px 8px;text-align:left;">Pièce</th>
+          <th style="padding:6px 8px;text-align:left;min-width:130px;">État</th>
+          <th style="padding:6px 8px;text-align:left;min-width:160px;">Observations</th>
+        </tr></thead>
+        <tbody>${piecesRows}</tbody>
+      </table>
+    </div>
+
+    <div class="form-group">
+      <label>Observations générales</label>
+      <textarea id="edl-observations" rows="2" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);resize:vertical;" placeholder="Remarques globales..."></textarea>
+    </div>
+    <div class="form-group" style="display:flex;align-items:center;gap:10px;">
+      <input type="checkbox" id="edl-signe" style="width:16px;height:16px;">
+      <label for="edl-signe" style="margin:0;font-size:13px;cursor:pointer;">Document signé par les deux parties</label>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveEdl()">💾 Enregistrer</button>
+    </div>
+  `, { wide: true });
+}
+
+function onEdlLocChange() {
+  const sel = document.getElementById('edl-locataire');
+  const opt = sel.options[sel.selectedIndex];
+  const caution = opt ? (parseFloat(opt.dataset.caution) || 0) : 0;
+  const totInput = document.getElementById('edl-caution-totale');
+  if (totInput && caution > 0) totInput.value = caution;
+  calcEdlCaution();
+}
+
+function onEdlTypeChange() {
+  const type = document.getElementById('edl-type').value;
+  const sec = document.getElementById('edl-caution-section');
+  if (sec) sec.style.display = type === 'sortie' ? 'block' : 'none';
+}
+
+function calcEdlCaution() {
+  const tot = parseFloat(document.getElementById('edl-caution-totale').value) || 0;
+  const ret = parseFloat(document.getElementById('edl-caution-retenue').value) || 0;
+  const rendue = document.getElementById('edl-caution-rendue');
+  if (rendue) rendue.value = Math.max(0, tot - ret);
+}
+
+async function saveEdl() {
+  const locId = document.getElementById('edl-locataire').value;
+  const type = document.getElementById('edl-type').value;
+  const date = document.getElementById('edl-date').value;
+  if (!locId || !date) { showToast('Locataire et date requis', 'red'); return; }
+
+  const loc = DATA.locataires.find(l => l.id === locId);
+  const pieces = EDL_PIECES_DEFAUT.map((p, i) => ({
+    nom: p.nom,
+    etat: document.getElementById('edl-etat-' + i)?.value || '',
+    observations: document.getElementById('edl-obs-' + i)?.value || ''
+  }));
+
+  const row = {
+    locataire_id: locId,
+    immeuble_id: loc ? loc.iid : null,
+    type,
+    date_etat: date,
+    pieces: JSON.stringify(pieces),
+    observations: document.getElementById('edl-observations').value.trim(),
+    signe: document.getElementById('edl-signe').checked,
+    caution_totale: type === 'sortie' ? (parseFloat(document.getElementById('edl-caution-totale').value) || 0) : 0,
+    caution_retenue: type === 'sortie' ? (parseFloat(document.getElementById('edl-caution-retenue').value) || 0) : 0,
+    caution_rendue: type === 'sortie' ? (parseFloat(document.getElementById('edl-caution-rendue').value) || 0) : 0,
+  };
+
+  const btn = document.querySelector('#modal-container .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳...'; }
+
+  const result = await insertEtatLieux(row);
+  if (result) {
+    _edlData.unshift(result);
+    closeModal();
+    showToast('État des lieux enregistré ✓', 'green');
+    _renderMaintenanceEdlContent();
+  } else {
+    showToast('Erreur lors de l\'enregistrement', 'red');
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Enregistrer'; }
+  }
+}
+
+function openEdlDetail(id) {
+  const edl = _edlData.find(e => e.id === id);
+  if (!edl) return;
+  const loc = DATA.locataires.find(l => l.id === edl.locataire_id);
+  const im = DATA.immeubles.find(i => i.id === edl.immeuble_id);
+  const pieces = typeof edl.pieces === 'string' ? JSON.parse(edl.pieces || '[]') : (edl.pieces || []);
+  const etatLabels = { bon: '✅ Bon état', usage: '🟡 Usure normale', degrade: '🔴 Dégradé', manquant: '⚠️ Manquant', '': '–' };
+
+  const piecesHtml = pieces.filter(p => p.etat).map(p =>
+    `<tr><td style="padding:6px 8px;font-size:13px;">${p.nom}</td>
+     <td style="padding:6px 8px;font-size:12px;">${etatLabels[p.etat] || p.etat}</td>
+     <td style="padding:6px 8px;font-size:12px;color:var(--text2);">${p.observations || '–'}</td></tr>`
+  ).join('');
+
+  const cautionHtml = edl.type === 'sortie' ? `
+    <div style="background:#FEF9E7;border:1px solid #f39c12;border-radius:8px;padding:12px;margin:12px 0;">
+      <b>💰 Caution</b><br>
+      <div style="display:flex;gap:20px;margin-top:8px;font-size:13px;flex-wrap:wrap;">
+        <span>Versée : <b>${Number(edl.caution_totale||0).toLocaleString('fr-FR') + ' FCFA'}</b></span>
+        <span style="color:#e74c3c;">Retenue : <b>${Number(edl.caution_retenue||0).toLocaleString('fr-FR') + ' FCFA'}</b></span>
+        <span style="color:#27ae60;">Remboursée : <b>${Number(edl.caution_rendue||0).toLocaleString('fr-FR') + ' FCFA'}</b></span>
+      </div>
+    </div>` : '';
+
+  showModal(`
+    <h3 style="margin:0 0 16px;">📋 État des lieux — ${edl.type === 'entree' ? '🟢 Entrée' : '🔴 Sortie'}</h3>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">
+      ${loc ? loc.nom : '–'} · ${loc ? loc.appt : ''} · ${im ? im.nom : '–'} · 📅 ${edl.date_etat ? new Date(edl.date_etat).toLocaleDateString('fr-FR') : '–'}
+    </div>
+    ${cautionHtml}
+    ${piecesHtml ? `<table style="width:100%;border-collapse:collapse;margin-bottom:12px;">
+      <thead><tr style="background:var(--bg2);font-size:12px;">
+        <th style="padding:6px 8px;text-align:left;">Pièce</th>
+        <th style="padding:6px 8px;text-align:left;">État</th>
+        <th style="padding:6px 8px;text-align:left;">Observations</th>
+      </tr></thead><tbody>${piecesHtml}</tbody></table>` : ''}
+    ${edl.observations ? `<div style="font-size:13px;margin-bottom:12px;"><b>Observations :</b> ${edl.observations}</div>` : ''}
+    <div style="font-size:12px;color:${edl.signe?'#27ae60':'#e67e22'};">${edl.signe ? '✅ Signé par les deux parties' : '⏳ Non signé'}</div>
+    ${!edl.signe ? `<div style="margin-top:12px;text-align:right;">
+      <button class="btn btn-primary" onclick="signerEdl('${edl.id}')">✍️ Marquer comme signé</button>
+    </div>` : ''}
+  `, { wide: true });
+}
+
+async function signerEdl(id) {
+  const ok = await updateEtatLieux(id, { signe: true });
+  if (ok) {
+    const edl = _edlData.find(e => e.id === id);
+    if (edl) edl.signe = true;
+    closeModal();
+    showToast('État des lieux signé ✓', 'green');
+    _renderMaintenanceEdlContent();
+  } else {
+    showToast('Erreur', 'red');
+  }
+}
 
