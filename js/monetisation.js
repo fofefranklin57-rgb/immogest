@@ -685,15 +685,6 @@ function startSubscription(plan) {
   const planInfo = PLANS[plan];
   if (!planInfo) return;
 
-  // ── Si CinetPay est configuré → paiement automatique direct ──
-  if (typeof cinetpayEstConfigured === 'function' && cinetpayEstConfigured()) {
-    // Fermer le modal upgrade et lancer CinetPay directement
-    var upgradeModal = document.getElementById('modal-upgrade');
-    if (upgradeModal) upgradeModal.classList.remove('open');
-    var duree = 1; // durée par défaut 1 mois — CinetPay affiche les options
-    payerAvecCinetPay(plan, duree);
-    return;
-  }
 
   // ── Sinon → flux manuel (MoMo + WhatsApp) ──
   const modal = document.getElementById('modal-paiement-abonnement');

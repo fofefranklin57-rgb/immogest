@@ -6101,38 +6101,19 @@ function renderParametres() {
       </button>
     </div>
 
-    <!-- Section CinetPay -->
+    <!-- Section Campay -->
     <div class="card" style="max-width:520px;margin-top:16px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-        <div style="width:36px;height:36px;background:#FF6B00;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#fff;">CP</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div style="width:36px;height:36px;background:linear-gradient(135deg,#FFC107,#FF8F00);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">💳</div>
         <div>
-          <div class="card-title" style="margin:0;">CinetPay — Paiement automatique</div>
-          <div id="cinetpay-status-badge" style="font-size:11px;margin-top:2px;"></div>
+          <div class="card-title" style="margin:0;">Campay — Paiements MTN & Orange</div>
+          <div style="font-size:11px;color:var(--green);margin-top:2px;">✅ Actif — USSD push automatique</div>
         </div>
       </div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">
-        Colle ici tes clés API CinetPay (reçues par email après activation du compte).
-        Les abonnements seront payés automatiquement sans manipulation manuelle.
+      <p style="font-size:12px;color:var(--text2);margin:0;">
+        Les abonnements ImmoGest sont payés automatiquement via MTN Mobile Money et Orange Money.
+        Le client reçoit une demande USSD sur son téléphone et confirme avec son PIN.
       </p>
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <div class="form-group">
-          <label style="font-size:12px;font-weight:700;">API Key</label>
-          <input type="text" id="cinetpay-apikey" placeholder="Coller votre API Key ici"
-            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box;">
-        </div>
-        <div class="form-group">
-          <label style="font-size:12px;font-weight:700;">Site ID</label>
-          <input type="text" id="cinetpay-siteid" placeholder="Coller votre Site ID ici"
-            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box;">
-        </div>
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
-          <input type="checkbox" id="cinetpay-production" style="width:16px;height:16px;">
-          <span>Activer le mode <strong>PRODUCTION</strong> (décoché = mode TEST)</span>
-        </label>
-      </div>
-      <button class="btn btn-primary" style="width:100%;margin-top:16px;padding:12px;" onclick="saveCinetPayKeys()">
-        ✅ Activer CinetPay
-      </button>
     </div>
 
     <!-- Section OneSignal -->
@@ -6169,51 +6150,11 @@ function renderParametres() {
     </div>
   `;
 
-  // Afficher le statut CinetPay actuel
-  _updateCinetPayStatusBadge();
   // Afficher le statut OneSignal actuel
   if (typeof _updateOneSignalStatusBadge === 'function') _updateOneSignalStatusBadge();
 }
 
 
-function saveCinetPayKeys() {
-  var apikey = (document.getElementById('cinetpay-apikey')?.value || '').trim();
-  var siteid = (document.getElementById('cinetpay-siteid')?.value || '').trim();
-  var prod   = document.getElementById('cinetpay-production')?.checked || false;
-
-  if (!apikey || !siteid) {
-    showToast('Veuillez entrer l\'API Key et le Site ID', 'error');
-    return;
-  }
-  if (typeof activerCinetPay === 'function') {
-    activerCinetPay(apikey, siteid, prod);
-    _updateCinetPayStatusBadge();
-  } else {
-    showToast('Module CinetPay non chargé — rechargez la page', 'error');
-  }
-}
-
-function _updateCinetPayStatusBadge() {
-  var badge = document.getElementById('cinetpay-status-badge');
-  if (!badge) return;
-  var configured = (typeof cinetpayEstConfigured === 'function') && cinetpayEstConfigured();
-  var mode = (typeof CINETPAY_CONFIG !== 'undefined') ? CINETPAY_CONFIG.mode : '';
-  if (configured) {
-    badge.innerHTML = '<span style="color:#10b981;font-weight:700;">● Actif</span> — mode ' +
-      (mode === 'PRODUCTION'
-        ? '<span style="color:#10b981;font-weight:700;">PRODUCTION</span>'
-        : '<span style="color:#F59E0B;font-weight:700;">TEST</span>');
-    // Pré-remplir les champs
-    var keyEl  = document.getElementById('cinetpay-apikey');
-    var siteEl = document.getElementById('cinetpay-siteid');
-    var prodEl = document.getElementById('cinetpay-production');
-    if (keyEl  && CINETPAY_CONFIG.apikey)  keyEl.value  = CINETPAY_CONFIG.apikey;
-    if (siteEl && CINETPAY_CONFIG.site_id) siteEl.value = CINETPAY_CONFIG.site_id;
-    if (prodEl) prodEl.checked = (mode === 'PRODUCTION');
-  } else {
-    badge.innerHTML = '<span style="color:var(--text3);">○ Non configuré — en attente des clés</span>';
-  }
-}
 
 function sauvegarderNomAdmin() {
   if (!SESSION) return;
