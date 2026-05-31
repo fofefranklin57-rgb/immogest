@@ -4747,10 +4747,10 @@ function _openUserModal(userId, tabContext) {
     '<input id="mu-nom" class="auth-input" style="margin-bottom:12px;" value="' + (u ? u.nom : '') + '" placeholder="Nom complet">' +
     '<label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:6px;">RÔLE</label>' +
     '<select id="mu-role" class="auth-input" style="margin-bottom:12px;background:var(--bg4);" onchange="_muToggleFields()">' +
-    (SESSION&&SESSION.version!=='individuel' ? '<option value="gestionnaire"' + (u&&u.role==='gestionnaire'?' selected':'') + '>Gestionnaire</option>' : '') +
-    (SESSION&&SESSION.version!=='individuel' ? '<option value="comptable"' + (u&&u.role==='comptable'?' selected':'') + '>Comptable</option>' : '') +
-    '<option value="proprietaire"' + (u&&u.role==='proprietaire'?' selected':'') + '>Propriétaire</option>' +
-    '<option value="locataire"' + (u&&u.role==='locataire'?' selected':'') + '>Locataire</option>' +
+    (SESSION&&SESSION.version!=='individuel' ? '<option value="gestionnaire"' + (u ? (u.role==='gestionnaire'?' selected':'') : (tabContext==='cabinet'?' selected':'')) + '>Gestionnaire</option>' : '') +
+    (SESSION&&SESSION.version!=='individuel' ? '<option value="comptable"'    + (u ? (u.role==='comptable'   ?' selected':'') : '') + '>Comptable</option>' : '') +
+    '<option value="proprietaire"' + (u ? (u.role==='proprietaire'?' selected':'') : (tabContext==='proprios'?' selected':'')) + '>Propriétaire</option>' +
+    '<option value="locataire"'    + (u ? (u.role==='locataire'   ?' selected':'') : (tabContext==='locataires'?' selected':'')) + '>Locataire</option>' +
     '</select>' +
     '<div id="mu-tel-row">' +
     '<label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:6px;">NUMÉRO DE TÉLÉPHONE</label>' +
@@ -4921,8 +4921,8 @@ function initApp() {
     renderDashboard();
   }
 
-  saveData();
-  setInterval(saveData, 30000);
+  _saveDataNow();
+  setInterval(_saveDataNow, 30000);
   // Badge signalements
   setTimeout(_updateBadgeSignalements, 500);
   // Badge messagerie
@@ -6331,13 +6331,21 @@ function loadData() {
   }
 }
 
-function saveData() {
+var _saveDataTimer = null;
+function saveData(immediate) {
+  if (immediate) {
+    _saveDataNow();
+  } else {
+    clearTimeout(_saveDataTimer);
+    _saveDataTimer = setTimeout(_saveDataNow, 800);
+  }
+}
+function _saveDataNow() {
   try {
     if (!DATA.declarations)       DATA.declarations = [];
     if (!DATA.archives)           DATA.archives = [];
     if (!DATA.archivesPermanentes) DATA.archivesPermanentes = [];
     DATA._version = DATA_VERSION;
-    // Use separate storage for individuel mode
     const storeKey = SESSION && SESSION.version === 'individuel' ? STORE_KEY_IND : 'immogest_data';
     localStorage.setItem(storeKey, JSON.stringify(DATA));
     const el = document.getElementById('last-save');
