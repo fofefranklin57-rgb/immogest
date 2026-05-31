@@ -4758,7 +4758,7 @@ function _openUserModal(userId, tabContext) {
     '</div>' +
     '<div id="mu-pwd-row">' +
     '<label class="auth-label" style="margin-bottom:6px;">' + (isEdit ? 'NOUVEAU MOT DE PASSE (laisser vide = inchangé)' : 'MOT DE PASSE (défaut: immo1234)') + '</label>' +
-    '<input id="mu-pwd" class="auth-input" type="password" style="margin-bottom:12px;" placeholder="' + (isEdit ? 'Laisser vide pour conserver' 'immo1234') + '">' +
+    '<input id="mu-pwd" class="auth-input" type="password" style="margin-bottom:12px;" placeholder="' + (isEdit ? 'Laisser vide pour conserver' : 'immo1234') + '">' +
     '</div>' +
     '<div id="mu-pin-row" style="display:none;">' +
     '<label style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.5px;display:block;margin-bottom:6px;">CODE PIN (défaut: immo1234)</label>' +
