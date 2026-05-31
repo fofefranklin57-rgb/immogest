@@ -315,6 +315,7 @@ function renderCurrent() {
   else if (currentPage === 'relances') renderRelances();
   else if (currentPage === 'rapport') renderRapportPage();
   else if (currentPage === 'statistiques') renderStatistiques();
+  else if (currentPage === 'messagerie') renderMessagerie();
   else if (currentPage === 'rapport-annuel') renderRapportAnnuelPage();
   else if (currentPage === 'utilisateurs') renderUtilisateurs();
   else if (currentPage === 'bibliotheque') renderBibliotheque();
@@ -4460,6 +4461,8 @@ function initApp() {
   setInterval(saveData, 30000);
   // Badge signalements
   setTimeout(_updateBadgeSignalements, 500);
+  // Badge messagerie
+  setTimeout(_refreshBadgeMessagerie, 1000);
 
   // OneSignal: associer l'utilisateur connecté
   if (typeof loginOneSignal === 'function' && SESSION) {
@@ -6578,6 +6581,7 @@ function _filterImmConfig() {
 }
 
 function renderStatistiques() {
+  if (SESSION && SESSION.role === 'proprietaire') { renderStatistiquesProprietaire(); return; }
   document.getElementById('page-title').textContent = 'Statistiques';
   document.getElementById('page-sub').textContent = 'Analyses par immeuble';
   document.getElementById('topbar-main-btn').textContent = '📄 Exporter';
@@ -6792,6 +6796,302 @@ function renderStatistiques() {
     row.addEventListener('touchend',  function() { clearTimeout(_lt); }, { passive: true });
     row.addEventListener('touchmove', function() { clearTimeout(_lt); }, { passive: true });
   });
+}
+
+// ============================================================
+// STATISTIQUES PROPRIÉTAIRE
+// ============================================================
+function renderStatistiquesProprietaire() {
+  document.getElementById('page-title').textContent = 'Mes Statistiques';
+  document.getElementById('page-sub').textContent = 'Revenus & occupation';
+  const tb = document.getElementById('topbar-main-btn');
+  if (tb) { tb.textContent = ''; tb.style.display = 'none'; }
+
+  const mesImm = getVisibleImmeubles();
+  const m = gM(), a = gA();
+  const mPrec = m === 0 ? 11 : m - 1;
+  const aPrec = m === 0 ? a - 1 : a;
+  const MNOMS_L = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+
+  const tousLocs   = mesImm.flatMap(im => DATA.locataires.filter(l => l.iid === im.id && l.s !== 'libre'));
+  const totalAtt   = tousLocs.reduce((s, l) => s + l.loyer, 0);
+  const totalReste = tousLocs.reduce((s, l) => s + l.reste, 0);
+  const nbLibres   = mesImm.flatMap(im => DATA.locataires.filter(l => l.iid === im.id && l.s === 'libre')).length;
+  const txOccup    = (tousLocs.length + nbLibres) > 0 ? Math.round(tousLocs.length / (tousLocs.length + nbLibres) * 100) : 0;
+
+  function encPour(mo, an) {
+    return (DATA.paiements || []).filter(p => {
+      const l = DATA.locataires.find(x => x.id === (p.locataire_id || p.locId));
+      return l && mesImm.some(im => im.id === l.iid) && p.mois === mo && p.annee === an && p.type !== 'caution';
+    }).reduce((s, p) => s + p.montant, 0);
+  }
+
+  const encMois = encPour(m, a);
+  const encPrec = encPour(mPrec, aPrec);
+  const delta   = encPrec > 0 ? Math.round((encMois - encPrec) / encPrec * 100) : null;
+  const deltaStr   = delta !== null ? (delta >= 0 ? `▲ +${delta}%` : `▼ ${delta}%`) : '–';
+  const deltaColor = delta !== null && delta >= 0 ? 'var(--green)' : 'var(--red)';
+
+  let html = `<div class="metrics-grid" style="margin-bottom:20px;">
+    <div class="metric-card">
+      <div class="metric-label">Encaissé ${MNOMS_L[m]}</div>
+      <div class="metric-value green" style="font-size:17px;">${fmtShort(encMois)}</div>
+      <div class="metric-sub" style="color:${deltaColor}">${deltaStr} vs ${MNOMS_L[mPrec]}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Loyers attendus / mois</div>
+      <div class="metric-value" style="font-size:17px;">${fmtShort(totalAtt)}</div>
+      <div class="metric-sub">${tousLocs.length} locataire(s) actif(s)</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Impayés cumulés</div>
+      <div class="metric-value red" style="font-size:17px;">${fmtShort(totalReste)}</div>
+      <div class="metric-sub">${tousLocs.filter(l=>l.reste>0).length} en retard</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Taux d'occupation</div>
+      <div class="metric-value accent">${txOccup}%</div>
+      <div class="metric-sub">${tousLocs.length} occupé(s) · ${nbLibres} libre(s)</div>
+    </div>
+  </div>`;
+
+  html += `<div class="card" style="margin-bottom:20px;"><div class="card-header"><div class="card-title">Détail par immeuble</div></div>
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><th>Immeuble</th><th>Locataires</th><th>Occupation</th><th>Attendu/mois</th><th>Encaissé ${MNOMS_L[m]}</th><th>Impayés</th><th>Taux paiement</th></tr></thead>
+    <tbody>`;
+
+  mesImm.forEach(im => {
+    const locs   = DATA.locataires.filter(l => l.iid === im.id && l.s !== 'libre');
+    const lib    = DATA.locataires.filter(l => l.iid === im.id && l.s === 'libre').length;
+    const total  = locs.length + lib;
+    const txO    = total > 0 ? Math.round(locs.length / total * 100) : 0;
+    const att    = locs.reduce((s, l) => s + l.loyer, 0);
+    const reste  = locs.reduce((s, l) => s + l.reste, 0);
+    const nbAJour = locs.filter(l => l.s === 'payé').length;
+    const txP    = locs.length > 0 ? Math.round(nbAJour / locs.length * 100) : 0;
+    const encIm  = encPour(m, a); // simplified — per-immeuble would need locId cross-ref
+    html += `<tr>
+      <td style="font-weight:600;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${im.col};margin-right:6px;"></span>${im.nom}</td>
+      <td style="text-align:center;">${locs.length}</td>
+      <td><div style="display:flex;align-items:center;gap:6px;"><div style="flex:1;height:6px;background:var(--bg4);border-radius:3px;"><div style="width:${txO}%;height:100%;background:${im.col};border-radius:3px;"></div></div><span style="font-size:11px;min-width:28px;">${txO}%</span></div></td>
+      <td class="td-amount">${fmt(att)}</td>
+      <td class="td-amount green">${(()=>{const e=(DATA.paiements||[]).filter(p=>{const l=DATA.locataires.find(x=>x.id===(p.locataire_id||p.locId));return l&&l.iid===im.id&&p.mois===m&&p.annee===a&&p.type!=='caution';}).reduce((s,p)=>s+p.montant,0);return e>0?fmt(e):'–';})()}</td>
+      <td class="td-amount ${reste>0?'red':''}">${reste>0?fmt(reste):'–'}</td>
+      <td><span class="badge ${txP===100?'badge-green':txP>=50?'badge-yellow':'badge-red'}">${txP}%</span></td>
+    </tr>`;
+  });
+
+  html += `</tbody></table></div></div>`;
+
+  const labels6 = [], enc6 = [], att6 = [];
+  for (let i = 5; i >= 0; i--) {
+    let mo = m - i, an = a;
+    if (mo < 0) { mo += 12; an--; }
+    labels6.push(MNOMS_L[mo]);
+    att6.push(DATA.locataires.filter(l => mesImm.some(im => im.id === l.iid) && l.s !== 'libre').reduce((s, l) => s + l.loyer, 0));
+    enc6.push(encPour(mo, an));
+  }
+
+  html += `<div class="card"><div class="card-header"><div class="card-title">Évolution encaissements — 6 mois</div></div>
+    <div class="chart-wrap"><canvas id="chart-proprio"></canvas></div></div>`;
+
+  document.getElementById('content').innerHTML = html;
+
+  if (window._chartProprio) window._chartProprio.destroy();
+  const ctx = document.getElementById('chart-proprio');
+  if (ctx) window._chartProprio = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels6,
+      datasets: [
+        { label: 'Attendu', data: att6, backgroundColor: 'rgba(14,106,175,.25)', borderColor: 'rgba(14,106,175,.6)', borderWidth: 1.5, borderRadius: 4 },
+        { label: 'Encaissé', data: enc6, backgroundColor: 'rgba(46,204,138,.7)', borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, position: 'top', labels: { color: '#9196a8', font: { size: 11 }, boxWidth: 10 } } },
+      scales: {
+        x: { ticks: { color: '#9196a8', font: { size: 11 } }, grid: { color: '#2e3040' } },
+        y: { ticks: { color: '#9196a8', font: { size: 11 }, callback: v => (v/1000).toFixed(0)+'k' }, grid: { color: '#2e3040' } }
+      }
+    }
+  });
+}
+
+// ============================================================
+// MESSAGERIE INTERNE
+// ============================================================
+let _msgTab = 'recus';
+
+async function renderMessagerie() {
+  document.getElementById('page-title').textContent = 'Messagerie';
+  document.getElementById('page-sub').textContent = 'Échanges internes';
+  const tb = document.getElementById('topbar-main-btn');
+  if (tb) { tb.textContent = '✉️ Nouveau message'; tb.style.display = 'flex'; tb.onclick = () => _openNewMessageModal(); }
+
+  document.getElementById('content').innerHTML = `<div style="text-align:center;padding:40px;color:var(--text3);">Chargement…</div>`;
+
+  const [recus, envoyes] = await Promise.all([_msgChargerRecus(), _msgChargerEnvoyes()]);
+  const nonLus = recus.filter(m => !m.lu).length;
+  _updateBadgeMessagerie(nonLus);
+
+  const tabStyle = t => t === _msgTab
+    ? 'padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;background:#0E6AAF;color:#fff;'
+    : 'padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;background:transparent;color:var(--text2);';
+
+  let html = `<div style="display:flex;background:var(--bg4);border-radius:10px;padding:4px;margin-bottom:20px;gap:4px;">
+    <button style="${tabStyle('recus')}" onclick="window._msgTab='recus';renderMessagerie();">📥 Reçus ${nonLus>0?`<span style="background:rgba(255,255,255,0.25);padding:1px 7px;border-radius:99px;font-size:11px;margin-left:4px;">${nonLus}</span>`:''}</button>
+    <button style="${tabStyle('envoyes')}" onclick="window._msgTab='envoyes';renderMessagerie();">📤 Envoyés <span style="background:rgba(255,255,255,0.25);padding:1px 7px;border-radius:99px;font-size:11px;margin-left:4px;">${envoyes.length}</span></button>
+  </div>`;
+
+  const msgs = _msgTab === 'recus' ? recus : envoyes;
+  if (msgs.length === 0) {
+    html += `<div class="card" style="text-align:center;padding:48px 24px;color:var(--text3);">
+      <div style="font-size:36px;margin-bottom:12px;">💬</div>
+      <div style="font-size:14px;">${_msgTab==='recus'?'Aucun message reçu':'Aucun message envoyé'}</div>
+    </div>`;
+  } else {
+    html += `<div style="display:flex;flex-direction:column;gap:10px;">`;
+    msgs.forEach(msg => {
+      const nonLu = !msg.lu && _msgTab === 'recus';
+      const dt = new Date(msg.date_envoi).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      html += `<div class="card" onclick="_msgOuvrir('${msg.id}')" style="cursor:pointer;${nonLu?'border-left:3px solid #0E6AAF;':''}padding:14px 16px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div style="flex:1;min-width:0;">
+            ${nonLu?`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#0E6AAF;margin-right:6px;"></span>`:''}
+            <span style="font-weight:${nonLu?'700':'600'};font-size:14px;color:var(--text1);">${msg.sujet||'(sans sujet)'}</span>
+            <div style="font-size:12px;color:var(--text3);margin-top:3px;">${_msgTab==='recus'?'De : '+(msg.de_nom||msg.de_user_id):'À : '+(msg.pour_nom||msg.pour_user_id)}</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${(msg.corps||'').slice(0,120)}…</div>
+          </div>
+          <div style="font-size:11px;color:var(--text3);white-space:nowrap;flex-shrink:0;">${dt}</div>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+  document.getElementById('content').innerHTML = html;
+}
+
+async function _msgChargerRecus() {
+  try {
+    const { data, error } = await _sb.from('messages_internes').select('*').eq('pour_user_id', SESSION.userId).order('date_envoi', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch(e) { return []; }
+}
+
+async function _msgChargerEnvoyes() {
+  try {
+    const { data, error } = await _sb.from('messages_internes').select('*').eq('de_user_id', SESSION.userId).order('date_envoi', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch(e) { return []; }
+}
+
+async function _msgOuvrir(id) {
+  const { data: msgs } = await _sb.from('messages_internes').select('*').eq('id', id).limit(1);
+  const msg = msgs && msgs[0];
+  if (!msg) return;
+  if (!msg.lu && msg.pour_user_id === SESSION.userId) {
+    await _sb.from('messages_internes').update({ lu: true }).eq('id', id);
+  }
+  const dt = new Date(msg.date_envoi).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const sujetEsc = (msg.sujet||'').replace(/'/g,"\\'");
+  const deIdEsc  = (msg.de_user_id||'').replace(/'/g,"\\'");
+  const deNomEsc = (msg.de_nom||'').replace(/'/g,"\\'");
+  showModal(`<div style="max-width:520px;">
+    <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px;">${msg.sujet||'(sans sujet)'}</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:4px;">De : <strong>${msg.de_nom||msg.de_user_id}</strong> → À : <strong>${msg.pour_nom||msg.pour_user_id}</strong></div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">${dt}</div>
+    <hr style="border:none;border-top:1px solid var(--border);margin-bottom:16px;">
+    <div style="font-size:14px;color:var(--text1);line-height:1.7;white-space:pre-wrap;">${msg.corps}</div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-primary" onclick="closeModal();_openReplyModal('${deIdEsc}','${deNomEsc}','${sujetEsc}')">↩ Répondre</button>
+      <button class="btn" onclick="closeModal();renderMessagerie()">✕ Fermer</button>
+    </div>
+  </div>`);
+}
+
+function _openNewMessageModal() {
+  const destOptions = USERS.filter(u => u.id !== SESSION.userId && u.version === 'entreprise')
+    .map(u => `<option value="${u.id}|||${u.nom}">${u.nom} (${u.role})</option>`).join('');
+  if (!destOptions) { showToast('Aucun autre utilisateur disponible', 'red'); return; }
+  showModal(`<div style="max-width:480px;">
+    <div style="font-weight:700;font-size:16px;margin-bottom:16px;">✉️ Nouveau message</div>
+    <div class="form-group" style="margin-bottom:12px;"><label>Destinataire</label>
+      <select id="msg-dest" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);background:var(--bg4);">${destOptions}</select>
+    </div>
+    <div class="form-group" style="margin-bottom:12px;"><label>Sujet</label>
+      <input type="text" id="msg-sujet" placeholder="Sujet du message" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
+    </div>
+    <div class="form-group" style="margin-bottom:16px;"><label>Message</label>
+      <textarea id="msg-corps" rows="5" placeholder="Votre message…" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);resize:vertical;box-sizing:border-box;"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary" style="flex:1;" onclick="_msgEnvoyer()">📤 Envoyer</button>
+      <button class="btn" onclick="closeModal()">Annuler</button>
+    </div>
+  </div>`);
+}
+
+function _openReplyModal(destId, destNom, sujetOriginal) {
+  const sujet = sujetOriginal.startsWith('Re:') ? sujetOriginal : 'Re: ' + sujetOriginal;
+  const destOptions = USERS.filter(u => u.version === 'entreprise')
+    .map(u => `<option value="${u.id}|||${u.nom}" ${u.id===destId?'selected':''}>${u.nom} (${u.role})</option>`).join('');
+  showModal(`<div style="max-width:480px;">
+    <div style="font-weight:700;font-size:16px;margin-bottom:16px;">↩ Répondre</div>
+    <div class="form-group" style="margin-bottom:12px;"><label>Destinataire</label>
+      <select id="msg-dest" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);background:var(--bg4);">${destOptions}</select>
+    </div>
+    <div class="form-group" style="margin-bottom:12px;"><label>Sujet</label>
+      <input type="text" id="msg-sujet" value="${sujet.replace(/"/g,'&quot;')}" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
+    </div>
+    <div class="form-group" style="margin-bottom:16px;"><label>Message</label>
+      <textarea id="msg-corps" rows="5" placeholder="Votre réponse…" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);resize:vertical;box-sizing:border-box;"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary" style="flex:1;" onclick="_msgEnvoyer()">📤 Envoyer</button>
+      <button class="btn" onclick="closeModal()">Annuler</button>
+    </div>
+  </div>`);
+}
+
+async function _msgEnvoyer() {
+  const destVal = document.getElementById('msg-dest').value;
+  const [pourId, pourNom] = destVal.split('|||');
+  const sujet  = (document.getElementById('msg-sujet').value || '').trim();
+  const corps  = (document.getElementById('msg-corps').value || '').trim();
+  if (!corps) { showToast('Le message ne peut pas être vide', 'red'); return; }
+  try {
+    const { error } = await _sb.from('messages_internes').insert([{
+      de_user_id: SESSION.userId, de_nom: SESSION.nom,
+      pour_user_id: pourId, pour_nom: pourNom,
+      sujet, corps, lu: false
+    }]);
+    if (error) throw error;
+    closeModal();
+    showToast('Message envoyé ✓', 'green');
+    _msgTab = 'envoyes';
+    renderMessagerie();
+  } catch(e) { showToast('Erreur : ' + (e.message || e), 'red'); }
+}
+
+function _updateBadgeMessagerie(n) {
+  const badge = document.getElementById('badge-messagerie');
+  if (!badge) return;
+  badge.textContent = n;
+  badge.style.display = n > 0 ? 'inline-block' : 'none';
+}
+
+async function _refreshBadgeMessagerie() {
+  if (!SESSION) return;
+  try {
+    const { count } = await _sb.from('messages_internes')
+      .select('id', { count: 'exact', head: true })
+      .eq('pour_user_id', SESSION.userId).eq('lu', false);
+    _updateBadgeMessagerie(count || 0);
+  } catch(e) {}
 }
 
 // ============================================================
