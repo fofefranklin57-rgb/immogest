@@ -301,6 +301,9 @@
       <button id="btn-changer-nom" onclick="changerNomAdmin()" style="display:none;margin-top:4px;width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:11px;cursor:pointer;font-family:var(--font);">
         ✏️ Modifier mon nom
       </button>
+      <button id="btn-theme-toggle" onclick="toggleTheme()" style="margin-top:4px;width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:11px;cursor:pointer;font-family:var(--font);">
+        🌙 Mode sombre
+      </button>
       <button onclick="logout()" style="margin-top:6px;width:100%;padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;">
         ⏻ Se déconnecter
       </button>
@@ -1066,6 +1069,7 @@
 <script src="js/app.js"></script>
 
 <!-- Context menu for locaux -->
+
 <div id="ctx-menu" style="position:fixed;display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:9999;min-width:180px;padding:6px 0;font-size:13px;">
   <div id="ctx-menu-items"></div>
 </div>
@@ -1263,8 +1267,20 @@ self.addEventListener('fetch', (event) => {
     </div>
   </div>
 
+  <div class="card" style="margin-bottom:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div class="card-title">📊 Paiements — 12 derniers mois</div>
+      <div id="dashboard-chart-legend" style="font-size:11px;color:var(--text3);"></div>
+    </div>
+    <div id="dashboard-chart" style="display:flex;align-items:flex-end;gap:6px;height:80px;"></div>
+    <div id="dashboard-chart-labels" style="display:flex;gap:6px;margin-top:4px;"></div>
+  </div>
+
   <div class="card">
-    <div class="card-title">📈 Historique des paiements</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div class="card-title">📋 Historique complet</div>
+      <div id="dashboard-hist-count" style="font-size:11px;color:var(--text3);"></div>
+    </div>
     <div id="payment-history"></div>
   </div>
 </div>

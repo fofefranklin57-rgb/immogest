@@ -4213,6 +4213,70 @@ function logout() {
   location.reload();
 }
 
+// ── THEME SOMBRE/CLAIR ────────────────────────────────────────────────────────
+function _applyTheme(theme) {
+  if (theme === 'dark') {
+    document.body.classList.add('dark');
+  } else {
+    document.body.classList.remove('dark');
+  }
+  var btn = document.getElementById('btn-theme-toggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️ Mode clair' : '🌙 Mode sombre';
+}
+
+function toggleTheme() {
+  var current = (DATA.settings && DATA.settings.theme) || 'light';
+  var next = current === 'dark' ? 'light' : 'dark';
+  if (!DATA.settings) DATA.settings = {};
+  DATA.settings.theme = next;
+  _applyTheme(next);
+  saveData();
+}
+
+// ── NOTIFICATION CIBLÉE ───────────────────────────────────────────────────────
+function notifCiblee(locId) {
+  var l = DATA.locataires.find(function(x){ return x.id === locId; });
+  if (!l) return;
+  window._notifCibleeLocId = locId;
+  showModal(`
+    <div style="font-size:15px;font-weight:700;margin-bottom:14px;">🔔 Envoyer une notification</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:14px;">Destinataire : <strong>${l.nom}</strong></div>
+    <label style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;">Type</label>
+    <select id="notif-ciblee-type" onchange="document.getElementById('notif-ciblee-custom-row').style.display=this.value==='custom'?'block':'none'"
+      style="width:100%;margin:6px 0 12px;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font);background:var(--bg);">
+      <option value="retard">⚠️ Loyer en retard</option>
+      <option value="rappel">🏠 Rappel de loyer du mois</option>
+      <option value="custom">✏️ Message personnalisé</option>
+    </select>
+    <div id="notif-ciblee-custom-row" style="display:none;margin-bottom:12px;">
+      <label style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;">Message</label>
+      <textarea id="notif-ciblee-custom" rows="3" placeholder="Votre message…"
+        style="width:100%;margin-top:6px;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font);resize:vertical;background:var(--bg);color:var(--text);"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button onclick="closeModals()" class="btn btn-ghost" style="flex:1;">Annuler</button>
+      <button onclick="envoyerNotifCiblee()" class="btn btn-primary" style="flex:1;">🔔 Envoyer</button>
+    </div>
+  `);
+}
+
+async function envoyerNotifCiblee() {
+  var locId = window._notifCibleeLocId;
+  var l = DATA.locataires.find(function(x){ return x.id === locId; });
+  if (!l) return;
+  var type = document.getElementById('notif-ciblee-type').value;
+  var custom = (document.getElementById('notif-ciblee-custom') || {}).value || '';
+  custom = custom.trim();
+  var ok = false;
+  if (type === 'rappel')      ok = await notifRappelLoyer(l);
+  else if (type === 'retard') ok = await notifLoyerEnRetard(l);
+  else if (type === 'custom' && custom) {
+    ok = await sendOneSignalNotif('loc_' + l.id, '🏠 ImmoGest', custom, { type: 'custom' });
+  }
+  closeModals();
+  showToast(ok ? '🔔 Notification envoyée à ' + l.nom : '❌ Échec envoi (locataire non abonné aux notifs ?)', ok ? 'green' : 'red');
+}
+
 // ── USER CHIP in topbar ───────────────────────────────────────────────────────
 function renderUserChip() {
   if (!SESSION) return;
@@ -4815,6 +4879,7 @@ function initApp() {
   });
   // Load data
   loadData();
+  _applyTheme((DATA.settings && DATA.settings.theme) || 'light');
   document.getElementById('sel-mois').value = new Date().getMonth();
   document.getElementById('sel-annee').value = new Date().getFullYear();
 
@@ -8342,6 +8407,7 @@ function showCtxMenu(e, locId, iid, isLibre) {
       '<div class="ctx-item" onclick="ctxModifierLocataire()">📝 Modifier</div>' +
       '<div class="ctx-item" onclick="ctxPaiement()">💳 Enregistrer paiement</div>' +
       '<div class="ctx-item" onclick="ctxFicheSuivi()">📊 Fiche de suivi</div>' +
+      '<div class="ctx-item" onclick="notifCiblee(_ctxLocId);hideCtxMenu()">🔔 Envoyer notification</div>' +
       '<div class="ctx-sep"></div>' +
       '<div class="ctx-item ctx-danger" onclick="ctxSupprimerLocataire()">🗑️ Supprimer locataire</div>' +
       '<div class="ctx-item ctx-danger" onclick="ctxSupprimerLocal()">🗑️ Supprimer le local</div>';
@@ -8359,6 +8425,7 @@ function showCtxLoc(e, locId) {
     '<div class="ctx-item" onclick="editLocataire(' + locId + ');hideCtxMenu()">📝 Modifier</div>' +
     '<div class="ctx-item" onclick="openModalPaiement(' + (l?l.iid:0) + ',' + locId + ');hideCtxMenu()">💳 Paiement</div>' +
     '<div class="ctx-item" onclick="ouvrirFicheSuivi(' + locId + ');hideCtxMenu()">📊 Fiche de suivi</div>' +
+    '<div class="ctx-item" onclick="notifCiblee(' + locId + ');hideCtxMenu()">🔔 Envoyer notification</div>' +
     '<div class="ctx-sep"></div>' +
     '<div class="ctx-item ctx-danger" onclick="supprimerLocataire(' + locId + ');hideCtxMenu()">🗑️ Supprimer</div>';
   _posCtxMenu(e);

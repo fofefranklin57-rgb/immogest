@@ -416,13 +416,48 @@ function loadDashboard() {
   const reqEl = document.getElementById('dashboard-requests');
   if (reqEl) reqEl.textContent = '–';
 
+  // ── Graphique 12 mois ──
+  const chartEl = document.getElementById('dashboard-chart');
+  const chartLabels = document.getElementById('dashboard-chart-labels');
+  const chartLegend = document.getElementById('dashboard-chart-legend');
+  if (chartEl) {
+    const now = new Date();
+    const months = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({ m: d.getMonth(), y: d.getFullYear(), label: MNOMS[d.getMonth()].slice(0,3) });
+    }
+    const totals = months.map(mo => {
+      return pays.filter(p => p.moisC === mo.m && p.anneeC === mo.y)
+                 .reduce((s, p) => s + (p.montant || 0), 0);
+    });
+    const maxVal = Math.max(...totals, l.loyer || 1);
+    const loyer = l.loyer || 0;
+    chartEl.innerHTML = totals.map((t, i) => {
+      const pct = Math.round((t / maxVal) * 100);
+      const color = t === 0 ? 'var(--red-bg)' : t >= loyer ? 'var(--green)' : 'var(--yellow)';
+      const border = t === 0 ? '1px solid var(--red)' : 'none';
+      return `<div title="${months[i].label} ${months[i].y} : ${t.toLocaleString('fr-FR')} FCFA" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <div style="width:100%;background:${color};border:${border};border-radius:4px 4px 0 0;height:${Math.max(pct,2)}%;min-height:${t>0?'4px':'2px'};transition:height .3s;"></div>
+      </div>`;
+    }).join('');
+    chartLabels.innerHTML = months.map((mo, i) => {
+      const isCurrent = mo.m === now.getMonth() && mo.y === now.getFullYear();
+      return `<div style="flex:1;text-align:center;font-size:9px;color:${isCurrent?'var(--accent)':'var(--text3)'};font-weight:${isCurrent?'700':'400'};">${mo.label}</div>`;
+    }).join('');
+    const totalAnnee = totals.reduce((s,t)=>s+t,0);
+    if (chartLegend) chartLegend.textContent = 'Total : ' + totalAnnee.toLocaleString('fr-FR') + ' FCFA';
+  }
+
   // ── Historique paiements ──
+  const histCount = document.getElementById('dashboard-hist-count');
+  if (histCount) histCount.textContent = pays.length + ' paiement(s)';
   const hist = document.getElementById('payment-history');
   if (hist) {
     if (!pays.length) {
       hist.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;">Aucun paiement enregistré</div>';
     } else {
-      hist.innerHTML = pays.slice(0,12).map(p => {
+      hist.innerHTML = pays.map(p => {
         const label = (p.type==='caution'?'Caution':'Loyer') + ' — ' + MNOMS[p.moisC] + ' ' + p.anneeC;
         const modeIcon = {mtn:'📱',orange:'🟠',wave:'🌊',especes:'💵',virement:'🏦',cheque:'📝'}[p.mode]||'💰';
         return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;">
