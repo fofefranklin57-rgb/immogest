@@ -341,7 +341,7 @@ async function notifRappelMensuel(env, moisLabel) {
 
 async function notifImpayes(env) {
   const locataires = await querySupabase(env,
-    `locataires?statut=eq.impay%C3%A9&reste=gt.0&actif=eq.true&select=id,nom,tel,whatsapp,loyer,reste,immeuble_id`
+    `locataires?statut=eq.impay%C3%A9&reste=gt.0&select=id,nom,telephone,whatsapp,loyer,reste,immeuble_id`
   );
   if (!locataires || locataires.length === 0) return { sent: 0, total: 0 };
 
@@ -381,7 +381,7 @@ async function notifImpayes(env) {
 // ══════════════════════════════════════════════════════════════
 async function handleWaImpayesPage(request, env) {
   const locataires = await querySupabase(env,
-    `locataires?statut=eq.impay%C3%A9&reste=gt.0&actif=eq.true&select=id,nom,tel,whatsapp,loyer,reste,immeuble_id`
+    `locataires?statut=eq.impay%C3%A9&reste=gt.0&select=id,nom,telephone,whatsapp,loyer,reste,immeuble_id`
   );
   const immeubles = await querySupabase(env, `immeubles?select=id,nom`);
   const immMap = {};
@@ -395,8 +395,8 @@ async function handleWaImpayesPage(request, env) {
     const montant = (loc.reste || 0).toLocaleString('fr-FR');
     const nomImm  = immMap[loc.immeuble_id] || 'Immeuble';
     // Priorité : numéro WhatsApp dédié, sinon téléphone
-    const rawNum  = (loc.whatsapp || loc.tel || '').replace(/\D/g, '');
-    const tel     = loc.tel ? loc.tel.replace(/\D/g, '') : '';
+    const rawNum  = (loc.whatsapp || loc.telephone || '').replace(/\D/g, '');
+    const tel     = (loc.telephone || '').replace(/\D/g, '');
     const telWa   = rawNum ? (rawNum.startsWith('237') ? rawNum : '237' + rawNum) : '';
     const moisDus = loc.loyer > 0 ? Math.round(loc.reste / loc.loyer) : '?';
     const msg     = encodeURIComponent(

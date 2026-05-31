@@ -52,7 +52,7 @@ function _mapImmeuble(r) {
   };
 }
 
-// Schéma locataires : id, immeuble_id, nom, telephone, appt, type_local,
+// Schéma locataires : id, immeuble_id, nom, telephone, whatsapp, appt, type_local,
 //                     loyer, reste, statut, observations, entree, caution
 function _mapLocataire(r) {
   return {
@@ -60,6 +60,7 @@ function _mapLocataire(r) {
     iid:        r.immeuble_id,
     nom:        r.nom || '',
     tel:        r.telephone || '',
+    whatsapp:   r.whatsapp || '',
     appt:       r.appt || '',
     type:       r.type_local || 'appartement',
     loyer:      r.loyer || 0,
@@ -174,6 +175,7 @@ async function saveLocataireToSupabase(l) {
     immeuble_id:  l.iid,
     nom:          l.nom,
     telephone:    l.tel || '',
+    whatsapp:     l.whatsapp || '',
     appt:         l.appt || '',
     type_local:   l.type || 'appartement',
     loyer:        l.loyer || 0,
