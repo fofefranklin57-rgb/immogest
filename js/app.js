@@ -1896,9 +1896,14 @@ async function saveLocataire() {
 function ouvrirFicheSuivi(locId) {
   const l = DATA.locataires.find(x => x.id === locId);
   if (!l) return;
-  
+
   const currentYear = new Date().getFullYear();
-  const years = [currentYear - 1, currentYear, currentYear + 1];
+  const entreeYear  = l.entree ? new Date(l.entree).getFullYear() : null;
+  const moisDus     = (l.loyer > 0 && l.reste > 0) ? Math.ceil(l.reste / l.loyer) : 1;
+  const calcStart   = new Date(new Date().getFullYear(), new Date().getMonth() - moisDus + 1, 1).getFullYear();
+  const firstYear   = entreeYear ? Math.min(entreeYear, currentYear) : calcStart;
+  const years = [];
+  for (let y = firstYear; y <= currentYear + 1; y++) years.push(y);
   
   // Build fiche directly with current year
   const fd = buildFicheData(locId, currentYear);
@@ -1942,11 +1947,39 @@ function rafraichirFiche(locId) {
 
 function genFicheHtml(fd) {
   const { l, im, lignes, annee } = fd;
+  const fmt = n => Number(n).toLocaleString('fr-FR');
+  const td  = 'border:1px solid #ddd;padding:4px 6px;vertical-align:top;';
+
+  const rows = lignes.map((lg, i) => {
+    const bg = i % 2 === 0 ? '#fff' : '#f8f9fa';
+    if (lg.versements.length === 0) {
+      return `<tr style="background:${bg};">
+        <td style="${td}font-weight:600;">${lg.periode}</td>
+        <td style="${td}"></td><td style="${td}"></td><td style="${td}"></td>
+        <td style="${td}"></td><td style="${td}"></td><td style="${td}"></td>
+      </tr>`;
+    }
+    const montants = lg.versements.map(v => fmt(v.montant)).join('<br>');
+    const restes   = lg.versements.map(v => `<span style="color:${v.reste > 0 ? '#e74c3c' : ''}">${v.reste === 0 ? '0' : fmt(v.reste)}</span>`).join('<br>');
+    const dates    = lg.versements.map(v => v.date ? new Date(v.date).toLocaleDateString('fr-FR') : '').join('<br>');
+    const modes    = lg.versements.map(v => v.mode || '').join('<br>');
+    const obs      = lg.versements.length > 1 ? lg.versements.length + ' versements' : (lg.versements[0].note || '');
+    return `<tr style="background:${bg};">
+      <td style="${td}font-weight:600;">${lg.periode}</td>
+      <td style="${td}text-align:center;color:${lg.statut ? '#27ae60' : ''};">${lg.statut}</td>
+      <td style="${td}text-align:right;">${montants}</td>
+      <td style="${td}text-align:right;">${restes}</td>
+      <td style="${td}text-align:center;">${dates}</td>
+      <td style="${td}text-align:center;">${modes}</td>
+      <td style="${td}">${obs}</td>
+    </tr>`;
+  }).join('');
+
+  const total = lignes.reduce((s, lg) => s + lg.totalVerse, 0);
+
   return `
     <div style="font-family:Arial,sans-serif;font-size:11px;padding:8px;">
-      <div style="text-align:center;font-size:15px;font-weight:900;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
-        Fiche de Suivi des Loyers
-      </div>
+      <div style="text-align:center;font-size:15px;font-weight:900;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">Fiche de Suivi des Loyers</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:10px;border:1px solid #333;padding:6px;">
         <div><strong>Immeuble :</strong> ${im ? im.nom : ''}</div>
         <div><strong>Nom locataire :</strong> ${l.nom}</div>
@@ -1969,25 +2002,11 @@ function genFicheHtml(fd) {
             <th style="border:1px solid #555;padding:4px 6px;width:20%;">Observations</th>
           </tr>
         </thead>
-        <tbody>
-          ${lignes.map((lg, i) => `
-            <tr style="background:${i%2===0?'#fff':'#f8f9fa'};">
-              <td style="border:1px solid #ddd;padding:4px 6px;font-weight:600;">${lg.mois}</td>
-              <td style="border:1px solid #ddd;padding:4px 6px;text-align:center;color:${lg.statut==='Payé'?'#27ae60':lg.statut==='Partiel'?'#e67e22':'#999'};">${lg.statut}</td>
-              <td style="border:1px solid #ddd;padding:4px 6px;text-align:right;">${lg.montant ? lg.montant.toLocaleString('fr-FR') : ''}</td>
-              <td style="border:1px solid #ddd;padding:4px 6px;text-align:right;color:${lg.reste>0?'#e74c3c':''};">${lg.reste !== '' && lg.reste !== undefined ? (lg.reste > 0 ? lg.reste.toLocaleString('fr-FR') : '–') : ''}</td>
-              <td style="border:1px solid #ddd;padding:4px 6px;text-align:center;">${lg.date ? new Date(lg.date).toLocaleDateString('fr-FR') : ''}</td>
-              <td style="border:1px solid #ddd;padding:4px 6px;text-align:center;">${lg.mode || ''}</td>
-              <td style="border:1px solid #ddd;padding:4px 6px;">${lg.obs || ''}</td>
-            </tr>
-          `).join('')}
-        </tbody>
+        <tbody>${rows}</tbody>
         <tfoot>
           <tr style="background:#f0f0f0;font-weight:700;">
             <td style="border:1px solid #ddd;padding:4px 6px;" colspan="2">TOTAL</td>
-            <td style="border:1px solid #ddd;padding:4px 6px;text-align:right;">
-              ${lignes.filter(lg=>lg.montant).reduce((s,lg)=>s+(lg.montant||0),0).toLocaleString('fr-FR')} FCFA
-            </td>
+            <td style="border:1px solid #ddd;padding:4px 6px;text-align:right;">${total.toLocaleString('fr-FR')} FCFA</td>
             <td colspan="4" style="border:1px solid #ddd;padding:4px 6px;"></td>
           </tr>
         </tfoot>
@@ -2005,75 +2024,71 @@ function buildFicheData(locId, annee) {
   const l = DATA.locataires.find(x => x.id === locId);
   if (!l) return null;
   const im = DATA.immeubles.find(i => i.id === l.iid);
-  
-  const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin',
-                'Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-  const MOIS_COURT = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
-  
-  // Calculate entry day (jourPaiement = day of month rent is due)
-  const jourEntree = l.jourPaiement || 1;
-  const entreeDate = l.entree ? new Date(l.entree) : null;
-  
-  // Helper: format period "15 Mai → 15 Juin"
-  const formatPeriode = (moisIdx, anneeP) => {
-    const moisSuivant = (moisIdx + 1) % 12;
-    const anneeSuivante = moisIdx === 11 ? anneeP + 1 : anneeP;
-    return jourEntree + ' ' + MOIS_COURT[moisIdx] + ' → ' + jourEntree + ' ' + MOIS_COURT[moisSuivant];
-  };
 
-  // Get all payments for this locataire in this year
-  const pays = DATA.paiements
-    .filter(p => {
-      if (p.locId !== locId || p.type === 'caution') return false;
-      const byMoisC = p.anneeC == annee;
-      const byDate = p.date && new Date(p.date).getFullYear() == annee;
-      return byMoisC || byDate;
-    })
-    .sort((a,b) => a.moisC - b.moisC || new Date(a.date) - new Date(b.date));
+  const MC   = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  const jour = l.jourPaiement || 1;
+  const now  = new Date();
 
-  // Only show months from entry date onwards
-  const entreeMois = entreeDate ? entreeDate.getMonth() : 0;
-  const entreeAnnee = entreeDate ? entreeDate.getFullYear() : annee;
-  
-  const lignes = [];
-  for (let mois = 0; mois < 12; mois++) {
-    // Skip months before entry date
-    if (annee === entreeAnnee && mois < entreeMois) continue;
-    if (entreeAnnee > annee) continue;
+  // ── Mois de départ ──
+  let startY, startM;
+  if (l.entree) {
+    const d = new Date(l.entree);
+    startY = d.getFullYear(); startM = d.getMonth();
+  } else {
+    const moisDus = (l.loyer > 0 && l.reste > 0) ? Math.ceil(l.reste / l.loyer) : 1;
+    const d = new Date(now.getFullYear(), now.getMonth() - moisDus + 1, 1);
+    startY = d.getFullYear(); startM = d.getMonth();
+  }
 
-    const paiementsMois = pays.filter(p => p.moisC === mois);
-    const periode = formatPeriode(mois, annee);
+  // ── Slots du début au mois actuel ──
+  const slots = [];
+  let cy = startY, cm = startM;
+  while (cy < now.getFullYear() || (cy === now.getFullYear() && cm <= now.getMonth())) {
+    slots.push({ year: cy, month: cm, versements: [], cumul: 0 });
+    if (++cm > 11) { cm = 0; cy++; }
+    if (slots.length > 120) break;
+  }
 
-    if (paiementsMois.length > 0) {
-      const totalMois = paiementsMois.reduce((s, p) => s + p.montant, 0);
-      const dernierPay = paiementsMois[paiementsMois.length - 1];
-      const resteMois = Math.max(0, l.loyer - totalMois);
-      lignes.push({
-        mois: periode,
-        moisNom: MOIS[mois],
-        statut: totalMois >= l.loyer ? 'Payé' : 'Partiel',
-        montant: totalMois,
-        reste: resteMois,
-        date: dernierPay.date || '',
-        mode: dernierPay.mode || 'Espèces',
-        obs: paiementsMois.length > 1 ? paiementsMois.length + ' versements' : (dernierPay.note || '')
-      });
+  // ── Dispatcher les paiements (triés par date) ──
+  const allPays = DATA.paiements
+    .filter(p => p.locId === locId && p.type !== 'caution' && p.montant > 0)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  for (const pay of allPays) {
+    let rem = pay.montant;
+    for (const s of slots) {
+      if (rem <= 0) break;
+      if (s.cumul >= l.loyer) continue;
+      const v = Math.min(rem, l.loyer - s.cumul);
+      s.cumul += v;
+      s.versements.push({ montant: v, reste: Math.max(0, l.loyer - s.cumul), date: pay.date, mode: pay.mode || 'espèces', note: pay.note || '' });
+      rem -= v;
     }
-    // Mois sans paiement → ligne vide (période visible, reste blanc)
-    else {
-      lignes.push({
-        mois: periode,
-        moisNom: MOIS[mois],
-        statut: '',
-        montant: '',
-        reste: '',
-        date: '',
-        mode: '',
-        obs: ''
-      });
+    // Avances : créer de nouveaux slots
+    while (rem > 0 && slots.length < 120) {
+      const last = slots[slots.length - 1];
+      let ny = last.year, nm = last.month + 1;
+      if (nm > 11) { nm = 0; ny++; }
+      const ns = { year: ny, month: nm, versements: [], cumul: 0 };
+      slots.push(ns);
+      const v = Math.min(rem, l.loyer);
+      ns.cumul += v;
+      ns.versements.push({ montant: v, reste: Math.max(0, l.loyer - ns.cumul), date: pay.date, mode: pay.mode || 'espèces', note: pay.note || '' });
+      rem -= v;
     }
   }
-  
+
+  // ── Filtrer sur l'année affichée ──
+  const lignes = slots
+    .filter(s => s.year === annee)
+    .map(s => ({
+      periode:    jour + ' ' + MC[s.month] + ' - ' + jour + ' ' + MC[(s.month + 1) % 12],
+      statut:     (s.cumul >= l.loyer && s.versements.length > 0) ? 'Payé' : '',
+      versements: s.versements,
+      totalVerse: s.versements.reduce((sum, v) => sum + v.montant, 0),
+      mois:       s.month
+    }));
+
   return { l, im, annee, lignes };
 }
 
@@ -2225,72 +2240,68 @@ function downloadFicheSuivi(locId) {
     // Data rows
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    const rowH = 12.5;
-    
+    const lineH = 4.5; // hauteur par versement
+    const rowPad = 3;  // padding vertical
+
+    let curY = tableY + 7;
     lignes.forEach((lg, i) => {
-      const rowY = tableY + 7 + i * rowH;
-      
-      // Alternating background
-      if (i % 2 === 0) {
-        doc.setFillColor(248, 249, 250);
-        doc.rect(margin, rowY, W-2*margin, rowH, 'F');
-      }
-      
-      // Grid lines
+      const nLines = Math.max(1, lg.versements.length);
+      const rowH   = nLines * lineH + rowPad * 2;
+
+      if (i % 2 === 0) { doc.setFillColor(248, 249, 250); doc.rect(margin, curY, W-2*margin, rowH, 'F'); }
       doc.setDrawColor(200, 200, 200);
-      doc.rect(margin, rowY, W-2*margin, rowH);
-      
+      doc.rect(margin, curY, W-2*margin, rowH);
+
       cx = margin;
-      doc.setTextColor(0,0,0);
-      
-      // Mois
+      doc.setTextColor(0, 0, 0);
+
+      // Période
       doc.setFont('helvetica', 'bold');
-      doc.text(lg.mois, cx+2, rowY+4.5);
+      doc.text(lg.periode, cx + 2, curY + rowPad + lineH * 0.7);
       cx += cols[0].w;
-      
-      // Statut
+
+      // Statut (centré verticalement)
       doc.setFont('helvetica', 'normal');
       if (lg.statut) {
         doc.setTextColor(39, 174, 96);
-        doc.text(lg.statut, cx + cols[1].w/2, rowY+4.5, { align:'center' });
-        doc.setTextColor(0,0,0);
+        doc.text(lg.statut, cx + cols[1].w/2, curY + rowH/2, { align:'center', baseline:'middle' });
+        doc.setTextColor(0, 0, 0);
       }
       cx += cols[1].w;
-      
-      // Montant versé
-      if (lg.montant) {
-        doc.text(lg.montant.toLocaleString('fr-FR'), cx + cols[2].w - 2, rowY+4.5, { align:'right' });
-      }
-      cx += cols[2].w;
-      
-      // Reste
-      if (lg.reste !== '') {
-        if (lg.reste > 0) doc.setTextColor(231, 76, 60);
-        doc.text(lg.reste > 0 ? lg.reste.toLocaleString('fr-FR') : '–', cx + cols[3].w/2, rowY+4.5, { align:'center' });
-        doc.setTextColor(0,0,0);
-      }
-      cx += cols[3].w;
-      
-      // Date
-      if (lg.date) doc.text(new Date(lg.date).toLocaleDateString('fr-FR'), cx + cols[4].w/2, rowY+4.5, { align:'center' });
-      cx += cols[4].w;
-      
-      // Mode
-      doc.text(lg.mode || '', cx + cols[5].w/2, rowY+4.5, { align:'center' });
-      cx += cols[5].w;
-      
+
+      // Versements : montant, reste, date, mode (une ligne par versement)
+      lg.versements.forEach((v, vi) => {
+        const vy = curY + rowPad + vi * lineH + lineH * 0.7;
+        doc.setTextColor(0, 0, 0);
+        doc.text(v.montant.toLocaleString('fr-FR'), cx + cols[2].w - 2, vy, { align:'right' });
+        if (v.reste === 0) {
+          doc.setTextColor(80, 80, 80);
+          doc.text('0', cx + cols[2].w + cols[3].w/2, vy, { align:'center' });
+        } else if (v.reste > 0) {
+          doc.setTextColor(231, 76, 60);
+          doc.text(v.reste.toLocaleString('fr-FR'), cx + cols[2].w + cols[3].w/2, vy, { align:'center' });
+        }
+        doc.setTextColor(0, 0, 0);
+        if (v.date) doc.text(new Date(v.date).toLocaleDateString('fr-FR'), cx + cols[2].w + cols[3].w + cols[4].w/2, vy, { align:'center' });
+        doc.text(v.mode || '', cx + cols[2].w + cols[3].w + cols[4].w + cols[5].w/2, vy, { align:'center' });
+      });
+
       // Observations
-      doc.text(lg.obs || '', cx+2, rowY+4.5);
-      
-      // Vertical dividers
+      const obsX = margin + cols[0].w + cols[1].w + cols[2].w + cols[3].w + cols[4].w + cols[5].w;
+      const obs = lg.versements.length > 1 ? lg.versements.length + ' versements' : (lg.versements[0]?.note || '');
+      if (obs) doc.text(obs, obsX + 2, curY + rowH/2, { baseline:'middle' });
+
+      // Séparateurs verticaux
       cx = margin;
-      doc.setDrawColor(180,180,180);
-      cols.forEach(c => { cx += c.w; doc.line(cx, rowY, cx, rowY+rowH); });
+      doc.setDrawColor(180, 180, 180);
+      cols.forEach(c => { cx += c.w; doc.line(cx, curY, cx, curY + rowH); });
+
+      curY += rowH;
     });
-    
+
     // Total row
-    const totalY = tableY + 7 + 12 * rowH;
-    const totalPaye = lignes.filter(lg=>lg.montant).reduce((s,lg)=>s+(lg.montant||0),0);
+    const totalY = curY;
+    const totalPaye = lignes.reduce((s, lg) => s + lg.totalVerse, 0);
     doc.setFillColor(220, 220, 220);
     doc.rect(margin, totalY, W-2*margin, 7, 'F');
     doc.setFont('helvetica', 'bold');

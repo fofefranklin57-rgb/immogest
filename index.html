@@ -578,8 +578,8 @@
       </div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Loyer mensuel (FCFA) *</label><input type="number" id="loc-loyer" placeholder="80000" oninput="calcMoisDus()"></div>
-      <div class="form-group"><label>Caution (FCFA)</label><input type="number" id="loc-caution" placeholder="0"></div>
+      <div class="form-group"><label>Loyer mensuel (FCFA) *</label><input type="number" id="loc-loyer" placeholder="80000" oninput="calcMoisDus()" onfocus="this.select()"></div>
+      <div class="form-group"><label>Caution (FCFA)</label><input type="number" id="loc-caution" placeholder="0" onfocus="this.select()"></div>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -609,11 +609,11 @@
     <div class="form-row">
       <div class="form-group">
         <label>Arriérés (FCFA)</label>
-        <input type="number" id="loc-reste" value="0" min="0" oninput="calcMoisDus()">
+        <input type="number" id="loc-reste" value="0" min="0" oninput="calcMoisDus()" onfocus="this.select()">
       </div>
       <div class="form-group">
         <label>Mois dus (calcul auto)</label>
-        <input type="number" id="loc-mois-dus" value="0" min="0" oninput="calcResteFromMois()" style="background:var(--bg2);">
+        <input type="number" id="loc-mois-dus" value="0" min="0" oninput="calcResteFromMois()" onfocus="this.select()" style="background:var(--bg2);">
       </div>
     </div>
     <div class="form-group"><label>Observations</label><textarea id="loc-obs" rows="2" placeholder="Notes..."></textarea></div>
@@ -631,7 +631,7 @@
     <div class="form-group"><label>Locataire *</label><select id="pay-loc"></select></div>
     <div class="form-row">
       <div class="form-group"><label>Date du versement *</label><input type="date" id="pay-date"></div>
-      <div class="form-group"><label>Montant versé (FCFA) *</label><input type="number" id="pay-montant" placeholder="80000"></div>
+      <div class="form-group"><label>Montant versé (FCFA) *</label><input type="number" id="pay-montant" placeholder="80000" onfocus="this.select()"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Type</label>
