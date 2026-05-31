@@ -2161,12 +2161,12 @@ async function saveLocataire() {
         password: null,
         locId: obj.id,
         iid: obj.iid,
-        pin: 'craa',
+        pin: '0000',
         actif: true,
         customPerms: {}
       });
       // Synchroniser le PIN sur DATA.locataires pour que loginLocataire fonctionne
-      obj.pin = obj.pin || 'craa';
+      obj.pin = obj.pin || '0000';
       obj.firstLogin = true;
       saveUsers();
     }
@@ -3902,10 +3902,48 @@ function importerSauvegarde(file) {
 }
 
 
+// ── Hachage SHA-256 ─────────────────────────────────────────────────────────
+async function _hashPwd(pwd) {
+  try {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pwd));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  } catch(e) { return pwd; } // fallback si crypto non dispo
+}
+function _isHashed(s) { return typeof s === 'string' && /^[0-9a-f]{64}$/.test(s); }
+
+// ── Anti brute-force ─────────────────────────────────────────────────────────
+const _bf = { count:0, lockUntil:0 };
+function _bfCheck(errEl) {
+  if (Date.now() < _bf.lockUntil) {
+    const s = Math.ceil((_bf.lockUntil - Date.now()) / 1000);
+    errEl.textContent = `Trop de tentatives. Réessayez dans ${s}s.`;
+    errEl.style.display = 'block';
+    return false;
+  }
+  return true;
+}
+function _bfFail(errEl, msg) {
+  _bf.count++;
+  if (_bf.count >= 5) { _bf.lockUntil = Date.now() + 30000; _bf.count = 0; }
+  errEl.textContent = msg;
+  errEl.style.display = 'block';
+}
+function _bfReset() { _bf.count = 0; _bf.lockUntil = 0; }
+
+// ── Session ──────────────────────────────────────────────────────────────────
+const SESSION_MAX_AGE = 30 * 24 * 3600 * 1000; // 30 jours
+
 function loadSession() {
   try {
-    const s = localStorage.getItem(AUTH_KEY); // DEPLOY17: localStorage pour persister entre rechargements
-    if (s) SESSION = JSON.parse(s);
+    const s = localStorage.getItem(AUTH_KEY);
+    if (s) {
+      const parsed = JSON.parse(s);
+      if (parsed._ts && Date.now() - parsed._ts > SESSION_MAX_AGE) {
+        localStorage.removeItem(AUTH_KEY);
+        return; // session expirée
+      }
+      SESSION = parsed;
+    }
   } catch(e) {}
 }
 
@@ -3920,7 +3958,7 @@ function _purgeUsersIndiv() {
 }
 
 function saveSession() {
-  localStorage.setItem(AUTH_KEY, JSON.stringify(SESSION)); // DEPLOY17
+  localStorage.setItem(AUTH_KEY, JSON.stringify({...SESSION, _ts: Date.now()}));
 }
 
 function clearSession() {
@@ -4012,66 +4050,82 @@ function pinSubmit() {
 }
 
 // ── LOGIN ─────────────────────────────────────────────────────────────────────
-function loginIndividuel() {
+async function loginIndividuel() {
+  const errEl = document.getElementById('err-individuel');
+  errEl.style.display = 'none';
+  if (!_bfCheck(errEl)) return;
   const pwd = document.getElementById('pwd-individuel').value;
-  let user = USERS.find(u => u.version==='individuel' && u.role==='admin' && u.password===pwd);
-  // Fallback : chercher n'importe quel compte individuel si pas de role=admin
-  if (!user) user = USERS.find(u => u.version==='individuel' && u.password===pwd);
-  if (!user) {
-    document.getElementById('err-individuel').style.display = 'block';
-    return;
-  }
-  // Forcer role=admin pour le compte individuel principal
+  const hash = await _hashPwd(pwd);
+
+  let user = USERS.find(u => u.version==='individuel' && u.role==='admin' &&
+    (_isHashed(u.password) ? u.password===hash : u.password===pwd));
+  if (!user) user = USERS.find(u => u.version==='individuel' &&
+    (_isHashed(u.password) ? u.password===hash : u.password===pwd));
+
+  if (!user) { _bfFail(errEl, 'Mot de passe incorrect'); return; }
+
+  // Migration silencieuse vers hash
+  if (!_isHashed(user.password)) { user.password = hash; saveUsers(); }
+
+  _bfReset();
   user.role = 'admin';
-  // SUPPRIMER définitivement gestionnaire et comptable en mode perso
   USERS = USERS.filter(u => !(u.role === 'gestionnaire' || u.role === 'comptable'));
   saveUsers();
   startSession(user, 'individuel');
 }
 
-function loginEntreprise() {
-  const role = window._authRole;
+async function loginEntreprise() {
   const errEl = document.getElementById('err-entreprise');
   errEl.style.display = 'none';
+  if (!_bfCheck(errEl)) return;
 
-  if (role === 'locataire') {
-    const telInput = document.getElementById('loc-tel-login-ent') || document.getElementById('loc-tel-login');
-    const pin = ['pin1','pin2','pin3','pin4'].map(id=>document.getElementById(id)?document.getElementById(id).value:'').join('');
-    const telVal = telInput ? telInput.value.trim() : '';
-    // Find locataire by phone + PIN
-    const locataire = DATA.locataires.find(l => 
-      l.tel && l.tel.replace(/[^0-9]/g,'') === telVal.replace(/[^0-9]/g,'') && 
-      l.pin === pin && l.s !== 'libre'
-    );
-    if (!locataire) { 
-      errEl.textContent='Numéro ou PIN incorrect'; 
-      errEl.style.display='block'; 
-      ['pin1','pin2','pin3','pin4'].forEach(id=>{document.getElementById(id).value=''});
-      if(document.getElementById('pin1')) document.getElementById('pin1').focus(); 
-      return; 
-    }
-    // Create session for locataire
-    const user = { 
-      id: 'loc_' + locataire.id, 
-      nom: locataire.nom, 
-      role: 'locataire', 
-      locId: locataire.id,
-      iid: locataire.iid,
-      version: 'entreprise'
-    };
-    startSession(user, 'entreprise');
-    // Show PIN change suggestion if firstLogin
-    if (locataire.firstLogin) {
-      setTimeout(() => showPINChangeSuggestion(locataire.id), 800);
-    }
-  } else {
-    const username = document.getElementById('ent-username').value.trim();
-    const password = document.getElementById('ent-password').value;
-    const user = USERS.find(u => u.version==='entreprise' && u.role===role && u.username===username && u.password===password);
-    if (!user) { errEl.textContent='Identifiant ou mot de passe incorrect'; errEl.style.display='block'; return; }
-    if (user.actif === false) { errEl.textContent='Compte suspendu. Contactez l\'administrateur.'; errEl.style.display='block'; return; }
-    startSession(user, 'entreprise');
+  const username = (document.getElementById('ent-username').value || '').trim();
+  const password = document.getElementById('ent-password').value;
+  if (!username || !password) { errEl.textContent = 'Identifiant et mot de passe requis'; errEl.style.display = 'block'; return; }
+
+  const hash = await _hashPwd(password);
+  const user = USERS.find(u =>
+    u.version === 'entreprise' && u.role !== 'locataire' && u.username === username &&
+    (_isHashed(u.password) ? u.password === hash : u.password === password)
+  );
+  if (!user) { _bfFail(errEl, 'Identifiant ou mot de passe incorrect'); return; }
+  if (user.actif === false) { errEl.textContent = 'Compte suspendu. Contactez l\'administrateur.'; errEl.style.display = 'block'; return; }
+
+  // Migration silencieuse vers hash
+  if (!_isHashed(user.password)) { user.password = hash; saveUsers(); }
+
+  _bfReset();
+  startSession(user, 'entreprise');
+}
+
+async function loginEntrepriseLocataire() {
+  const errEl = document.getElementById('err-entreprise-loc');
+  errEl.style.display = 'none';
+  if (!_bfCheck(errEl)) return;
+  const telVal = (document.getElementById('loc-tel-login-ent') || {value:''}).value.trim();
+  const pin = ['pin1','pin2','pin3','pin4'].map(id => (document.getElementById(id)||{value:''}).value).join('');
+  const locataire = DATA.locataires.find(l =>
+    l.tel && l.tel.replace(/[^0-9]/g,'') === telVal.replace(/[^0-9]/g,'') &&
+    (l.pin === pin || (!l.pin && pin === '0000')) && l.s !== 'libre'
+  );
+  if (!locataire) {
+    _bfFail(errEl, 'Numéro ou PIN incorrect');
+    ['pin1','pin2','pin3','pin4'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    const p1=document.getElementById('pin1'); if(p1) p1.focus();
+    return;
   }
+  if (!locataire.pin) { locataire.pin = pin; saveData(); }
+  _bfReset();
+  startSession({ id:'loc_'+locataire.id, nom:locataire.nom, role:'locataire', locId:locataire.id, iid:locataire.iid, version:'entreprise' }, 'entreprise');
+  if (locataire.firstLogin) setTimeout(() => showPINChangeSuggestion(locataire.id), 800);
+}
+
+function toggleEntLocataire() {
+  const staff = document.getElementById('ent-staff-form');
+  const loc   = document.getElementById('ent-loc-form');
+  const isLoc = loc && loc.style.display !== 'none';
+  if (staff) staff.style.display = isLoc ? 'block' : 'none';
+  if (loc)   loc.style.display   = isLoc ? 'none'  : 'block';
 }
 
 function startSession(user, version) {
@@ -4488,8 +4542,8 @@ function _renderTabLocataires(users, isIndiv) {
     locsImm.forEach(function(l) {
       var actif = l.actif !== false;
       var pinLabel, pinColor;
-      if (!l.pin)          { pinLabel = 'craa (défaut)'; pinColor = 'var(--text3)'; }
-      else if (l.pin==='craa') { pinLabel = 'craa';          pinColor = 'var(--yellow)'; }
+      if (!l.pin)          { pinLabel = '0000 (défaut)'; pinColor = 'var(--text3)'; }
+      else if (l.pin==='0000') { pinLabel = '0000';          pinColor = 'var(--yellow)'; }
       else                 { pinLabel = '●●●● (modifié)'; pinColor = 'var(--green)'; }
       var btnReinit = '<button class="btn btn-ghost btn-icon btn-sm" onclick="reinitPINLocataire(this.dataset.id)" data-id="'+l.id+'" title="Réinitialiser PIN" style="font-size:11px;">🔑</button>';
       var btnBlock  = '<button class="btn btn-ghost btn-icon btn-sm" onclick="toggleBloquerLocataire(this.dataset.id)" data-id="'+l.id+'" title="'+(actif?'Bloquer':'Débloquer')+'" style="color:'+(actif?'var(--red)':'var(--green)')+';">'+(actif?'🔒':'🔓')+'</button>';
@@ -4581,20 +4635,20 @@ function toggleBloquerLocataire(locId) {
 function reinitPINLocataire(locId) {
   const l = DATA.locataires.find(x => x.id === locId);
   if (!l) return;
-  if (!confirm('Réinitialiser le PIN de ' + l.nom + ' à "craa" ?')) return;
-  l.pin = 'craa';
+  if (!confirm('Réinitialiser le PIN de ' + l.nom + ' à "0000" ?')) return;
+  l.pin = '0000';
   saveData();
-  showToast('PIN réinitialisé → craa ✓', 'green');
+  showToast('PIN réinitialisé → 0000 ✓', 'green');
   renderUtilisateurs();
 }
 
 function reinitMdpUser(userId) {
   const u = USERS.find(x => x.id === userId);
   if (!u) return;
-  if (!confirm('Réinitialiser le mot de passe de ' + u.nom + ' à "craa" ?')) return;
-  u.password = 'craa';
+  if (!confirm('Réinitialiser le mot de passe de ' + u.nom + ' à "immo1234" ?')) return;
+  u.password = 'immo1234';
   saveUsers();
-  showToast('Mot de passe réinitialisé → craa ✓', 'green');
+  showToast('Mot de passe réinitialisé → immo1234 ✓', 'green');
   renderUtilisateurs();
 }
 
@@ -4631,11 +4685,11 @@ function _openUserModal(userId, tabContext) {
     '<input id="mu-tel" class="auth-input" style="margin-bottom:12px;" value="' + (u&&u.tel ? u.tel : '') + '" placeholder="Ex: 699 00 00 00">' +
     '</div>' +
     '<div id="mu-pwd-row">' +
-    '<label class="auth-label" style="margin-bottom:6px;">' + (isEdit ? 'NOUVEAU MOT DE PASSE (laisser vide = inchangé)' : 'MOT DE PASSE (défaut: craa)') + '</label>' +
-    '<input id="mu-pwd" class="auth-input" type="password" style="margin-bottom:12px;" placeholder="' + (isEdit ? 'Laisser vide pour conserver' : 'craa') + '">' +
+    '<label class="auth-label" style="margin-bottom:6px;">' + (isEdit ? 'NOUVEAU MOT DE PASSE (laisser vide = inchangé)' : 'MOT DE PASSE (défaut: immo1234)') + '</label>' +
+    '<input id="mu-pwd" class="auth-input" type="password" style="margin-bottom:12px;" placeholder="' + (isEdit ? 'Laisser vide pour conserver' 'immo1234') + '">' +
     '</div>' +
     '<div id="mu-pin-row" style="display:none;">' +
-    '<label style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.5px;display:block;margin-bottom:6px;">CODE PIN (défaut: craa)</label>' +
+    '<label style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.5px;display:block;margin-bottom:6px;">CODE PIN (défaut: immo1234)</label>' +
     '<input id="mu-pin" class="auth-input" style="margin-bottom:12px;" value="' + (u&&u.pin ? u.pin : '') + '" placeholder="4 chiffres">' +
     '</div>' +
     '<div id="mu-imm-row">' +
@@ -4699,8 +4753,8 @@ function _saveUserModal(userId) {
     showToast('Utilisateur modifié ✓', 'green');
   } else {
     // Create new
-    var defaultPwd = pwd || 'craa';
-    var defaultPin = pin || 'craa';
+    var defaultPwd = pwd || 'immo1234';
+    var defaultPin = pin || '0000';
     var newUser = {
       id: 'usr_' + Date.now(),
       version: (SESSION && SESSION.version === 'individuel') ? 'individuel' : 'entreprise',
@@ -6002,33 +6056,32 @@ function showChangerMotDePasse(forced = false) {
   document.getElementById('modal-changer-pwd').classList.add('open');
 }
 
-function sauvegarderMotDePasse() {
+async function sauvegarderMotDePasse() {
   const actuel  = document.getElementById('pwd-actuel').value;
   const nouveau = document.getElementById('pwd-nouveau').value;
   const confirm = document.getElementById('pwd-confirm').value;
   const errEl   = document.getElementById('pwd-error');
   const errMsg  = document.getElementById('pwd-error-msg');
 
-  function showErr(msg) {
-    errMsg.textContent = msg;
-    errEl.style.display = 'flex';
-  }
+  function showErr(msg) { errMsg.textContent = msg; errEl.style.display = 'flex'; }
 
-  // Validations
   if (!actuel)   { showErr('Veuillez entrer votre mot de passe actuel'); return; }
   if (!nouveau)  { showErr('Veuillez entrer un nouveau mot de passe'); return; }
-  if (nouveau.length <6) { showErr('Le mot de passe doit contenir au moins 6 caractères'); return; }
+  if (nouveau.length < 6) { showErr('Le mot de passe doit contenir au moins 6 caractères'); return; }
   if (nouveau !== confirm) { showErr('Les mots de passe ne correspondent pas'); return; }
   if (nouveau === actuel)  { showErr('Le nouveau mot de passe doit être différent de l\'ancien'); return; }
 
-  // Verify current password
   if (!SESSION) { showErr('Session expirée. Veuillez vous reconnecter.'); return; }
   const u = USERS.find(x => x.id === SESSION.userId);
   if (!u) { showErr('Utilisateur introuvable'); return; }
-  if (u.password !== actuel) { showErr('Mot de passe actuel incorrect'); return; }
 
-  // Save new password
-  u.password = nouveau;
+  // Vérifier mot de passe actuel (hash ou clair)
+  const hashActuel = await _hashPwd(actuel);
+  const pwdOk = _isHashed(u.password) ? u.password === hashActuel : u.password === actuel;
+  if (!pwdOk) { showErr('Mot de passe actuel incorrect'); return; }
+
+  // Sauvegarder hashé
+  u.password = await _hashPwd(nouveau);
   u.mustChangePassword = false;
   saveUsers();
 
@@ -8477,9 +8530,9 @@ function loginLocataire() {
       pinOk = true;
       // Synchroniser le PIN dans DATA.locataires pour les prochaines connexions
       locataire.pin = pin;
-    } else if (!locataire.pin && (!userRecord || !userRecord.pin) && pin === 'craa') {
+    } else if (!locataire.pin && (!userRecord || !userRecord.pin) && pin === '0000') {
       pinOk = true; // PIN par défaut
-      locataire.pin = 'craa';
+      locataire.pin = '0000';
     }
     if (!pinOk) locataire = null;
   }
@@ -8512,32 +8565,27 @@ function loginLocataire() {
   }
 }
 
-function loginProprietaire() {
+async function loginProprietaire() {
   var telEl = document.getElementById('proprio-tel');
   var pwdEl = document.getElementById('proprio-pwd');
   var errEl = document.getElementById('err-proprio');
+  errEl.style.display = 'none';
+  if (!_bfCheck(errEl)) return;
   var telVal = telEl ? telEl.value.trim() : '';
   var pwdVal = pwdEl ? pwdEl.value : '';
   if (!telVal) { errEl.textContent = 'Veuillez entrer votre numéro de téléphone'; errEl.style.display = 'block'; return; }
   if (!pwdVal) { errEl.textContent = 'Veuillez entrer votre mot de passe'; errEl.style.display = 'block'; return; }
-  errEl.style.display = 'none';
-  // Cherche dans USERS : entreprise ET individuel
+  var hash = await _hashPwd(pwdVal);
   var user = USERS.find(function(u) {
     return u.role === 'proprietaire' &&
            (u.version === 'entreprise' || u.version === 'individuel') &&
            u.tel && u.tel.replace(/[^0-9]/g,'') === telVal.replace(/[^0-9]/g,'') &&
-           u.password === pwdVal;
+           (_isHashed(u.password) ? u.password === hash : u.password === pwdVal);
   });
-  if (!user) {
-    errEl.textContent = 'Numéro ou mot de passe incorrect';
-    errEl.style.display = 'block';
-    return;
-  }
-  if (user.actif === false) {
-    errEl.textContent = 'Compte suspendu.';
-    errEl.style.display = 'block';
-    return;
-  }
+  if (!user) { _bfFail(errEl, 'Numéro ou mot de passe incorrect'); return; }
+  if (user.actif === false) { errEl.textContent = 'Compte suspendu.'; errEl.style.display = 'block'; return; }
+  if (!_isHashed(user.password)) { user.password = hash; saveUsers(); }
+  _bfReset();
   startSession(user, user.version || 'entreprise');
 }
 
@@ -8616,7 +8664,7 @@ function saveImmeuble() {
           nom: nomProprio,
           username: telClean,
           tel: telProprio,
-          password: 'craa',
+          password: 'immo1234',
           immeubles: [newId],
           pin: null,
           actif: true,
@@ -8624,7 +8672,7 @@ function saveImmeuble() {
           mustChangePassword: true
         });
         saveUsers();
-        showToast('Compte proprio créé (tel: ' + telProprio + ', mdp: craa) ✓', 'green');
+        showToast('Compte proprio créé (tel: ' + telProprio + ', mdp: immo1234) ✓', 'green');
       }
     }
     showToast('Immeuble ajouté ✓', 'green');

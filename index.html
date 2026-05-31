@@ -167,7 +167,7 @@
           onkeydown="if(event.key==='Enter')loginProprietaire()">
         <button class="auth-btn-primary" onclick="loginProprietaire()">Accéder à mon espace</button>
         <div id="err-proprio" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>
-        <div style="text-align:center;margin-top:10px;font-size:11px;color:#aaa;"><span style="color:rgba(232,240,254,0.35);">Mot de passe par défaut : <strong style="color:rgba(232,240,254,0.6);">craa</strong></span></div>
+        <div style="text-align:center;margin-top:10px;font-size:11px;color:rgba(232,240,254,0.35);">Mot de passe fourni par votre administrateur</div>
       </div>
 
       <!-- STEP 3B: Login Locataire -->
@@ -190,7 +190,7 @@
         </div>
         <button class="auth-btn-primary" onclick="loginLocataire()">Accéder à mon espace</button>
         <div id="err-locataire" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>
-        <div style="text-align:center;margin-top:10px;font-size:11px;color:#aaa;"><span style="color:rgba(232,240,254,0.35);">PIN par défaut : <strong style="color:rgba(232,240,254,0.6);">craa</strong></span></div>
+        <div style="text-align:center;margin-top:10px;font-size:11px;color:rgba(232,240,254,0.35);">PIN par défaut : <strong style="color:rgba(232,240,254,0.6);">0000</strong></div>
       </div>
 
       <!-- STEP 2B: Mode Entreprise -->
@@ -198,39 +198,43 @@
         <button class="auth-back-btn" onclick="authGoStep('1')">&#8592; Retour</button>
         <div style="text-align:center;margin-bottom:22px;">
           <div style="margin-bottom:8px;display:flex;justify-content:center;"><svg width="26" height="26" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="8" width="28" height="24" rx="2" fill="rgba(79,142,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="8" y="4" width="20" height="6" rx="1" fill="rgba(79,142,247,0.2)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="9" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="16" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="9" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="14" y="27" width="8" height="5" rx="1" fill="#4f8ef7" opacity=".9"/></svg></div>
-          <div style="font-size:16px;font-weight:800;color:#e8f0fe;">Équipe Gestion Immobilière</div>
-          <div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:4px;letter-spacing:.5px;">ACCÈS PROFESSIONNEL</div>
+          <div style="font-size:16px;font-weight:800;color:#e8f0fe;">Accès Professionnel</div>
+          <div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:4px;letter-spacing:.5px;">MODE ENTREPRISE</div>
         </div>
-        <label style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.5px;display:block;margin-bottom:6px;">RÔLE</label>
-        <select id="role-selector" class="auth-input" style="margin-bottom:12px;background:rgba(255,255,255,0.08);color:#e8f0fe;cursor:pointer;"
-          onchange="window._authRole=this.value;document.getElementById('pin-section-new').style.display=this.value==='locataire'?'block':'none';document.getElementById('creds-section-new').style.display=this.value==='locataire'?'none':'block';">
-          <option value="admin">👑 Administrateur</option>
-          <option value="gestionnaire">🏘️ Gestionnaire</option>
-          <option value="comptable">📊 Comptable</option>
-          <option value="proprietaire">🏠 Propriétaire</option>
-          <option value="locataire">🔑 Locataire</option>
-        </select>
-        <div id="creds-section-new">
+
+        <!-- Formulaire staff (admin / gestionnaire / comptable / propriétaire) -->
+        <div id="ent-staff-form">
           <label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:6px;">IDENTIFIANT</label>
           <input type="text" id="ent-username" class="auth-input" placeholder="Nom d'utilisateur" style="margin-bottom:12px;"
-            onkeydown="if(event.key==='Enter')loginEntreprise()">
+            onkeydown="if(event.key==='Enter')document.getElementById('ent-password').focus()">
           <label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:6px;">MOT DE PASSE</label>
           <input type="password" id="ent-password" class="auth-input" placeholder="Mot de passe" style="margin-bottom:16px;"
             onkeydown="if(event.key==='Enter')loginEntreprise()">
+          <button class="auth-btn-primary" onclick="loginEntreprise()">Se connecter</button>
+          <div id="err-entreprise" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>
+          <div style="text-align:center;margin-top:14px;">
+            <button onclick="toggleEntLocataire()" style="background:none;border:none;color:rgba(200,223,248,0.5);font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit;">🔑 Je suis locataire</button>
+          </div>
         </div>
-        <div id="pin-section-new" style="display:none;">
+
+        <!-- Formulaire locataire (phone + PIN) -->
+        <div id="ent-loc-form" style="display:none;">
           <label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:8px;">NUMÉRO DE TÉLÉPHONE</label>
-          <input type="tel" id="loc-tel-login-ent" class="auth-input" placeholder="Ex: 699 00 00 00" style="margin-bottom:12px;">
+          <input type="tel" id="loc-tel-login-ent" class="auth-input" placeholder="Ex: 699 00 00 00" style="margin-bottom:12px;"
+            onkeydown="if(event.key==='Enter')document.getElementById('pin1').focus()">
           <label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:8px;">CODE PIN</label>
           <div class="pin-row">
             <input type="password" id="pin1" class="pin-box" maxlength="1" oninput="if(this.value)document.getElementById('pin2').focus()">
             <input type="password" id="pin2" class="pin-box" maxlength="1" oninput="if(this.value)document.getElementById('pin3').focus()">
             <input type="password" id="pin3" class="pin-box" maxlength="1" oninput="if(this.value)document.getElementById('pin4').focus()">
-            <input type="password" id="pin4" class="pin-box" maxlength="1" onkeydown="if(event.key==='Enter')loginEntreprise()">
+            <input type="password" id="pin4" class="pin-box" maxlength="1" onkeydown="if(event.key==='Enter')loginEntrepriseLocataire()">
+          </div>
+          <button class="auth-btn-primary" style="margin-top:16px;" onclick="loginEntrepriseLocataire()">Accéder à mon espace</button>
+          <div id="err-entreprise-loc" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>
+          <div style="text-align:center;margin-top:14px;">
+            <button onclick="toggleEntLocataire()" style="background:none;border:none;color:rgba(200,223,248,0.5);font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit;">&#8592; Retour connexion staff</button>
           </div>
         </div>
-        <button class="auth-btn-primary" onclick="loginEntreprise()">Se connecter</button>
-        <div id="err-entreprise" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;">Identifiant ou mot de passe incorrect</div>
       </div>
 
 
