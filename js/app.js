@@ -388,7 +388,19 @@ function renderDashboard() {
   const encMois = pays.filter(p=>p.type!=='caution').reduce((s,p)=>s+p.montant,0);
   const nbImm = DATA.immeubles.filter(im=>DATA.locataires.some(l=>l.iid===im.id&&l.s!=='libre')).length;
 
-  let html = `<div class="metrics-grid">
+  // Bannière setup cabinet si non configuré (admin seulement)
+  const _cabNonConfig = (SESSION.role === 'admin') && !(_cabInfo().nom !== 'Cabinet de Gestion Immobilière' || _cabInfo().tel1 || _cabInfo().email);
+  let html = _cabNonConfig ? `
+    <div onclick="navigateTo('parametres')" style="display:flex;align-items:center;gap:14px;background:linear-gradient(90deg,#0E6AAF,#1a82d4);color:#fff;border-radius:12px;padding:14px 18px;margin-bottom:16px;cursor:pointer;box-shadow:0 2px 12px rgba(14,106,175,.3);">
+      <div style="font-size:28px;flex-shrink:0;">🏢</div>
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:14px;">Configurez l'identité de votre cabinet</div>
+        <div style="font-size:12px;opacity:.85;margin-top:2px;">Nom, logo, coordonnées — apparaissent sur tous vos documents (reçus, contrats, rapports).</div>
+      </div>
+      <div style="font-size:20px;flex-shrink:0;">→</div>
+    </div>` : '';
+
+  html += `<div class="metrics-grid">
     <div class="metric-card"><div class="metric-label">Immeubles</div><div class="metric-value accent">${nbImm}</div><div class="metric-sub">${getVisibleImmeubles().length} renseignés</div></div>
     <div class="metric-card"><div class="metric-label">Locataires actifs</div><div class="metric-value">${ac.length}</div><div class="metric-sub">${nbJ} à jour · ${nbLib} libre(s)</div></div>
     <div class="metric-card"><div class="metric-label">Loyers / mois</div><div class="metric-value" style="font-size:17px;">${fmtShort(tL)}</div><div class="metric-sub">attendu total</div></div>
