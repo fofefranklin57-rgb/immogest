@@ -2102,17 +2102,25 @@ async function saveLocataire() {
     if (libreIdx >= 0) {
       // Update the libre local with new tenant info
       const libreId = DATA.locataires[libreIdx].id;
-      obj.id = libreId; // ← set obj.id so caution payment can use it
+      obj.id = libreId;
+      const _tel4b = obj.tel.replace(/[^0-9]/g,'').slice(-4);
+      obj.pin = _tel4b.length === 4 ? _tel4b : '0000';
+      obj.firstLogin = true;
       DATA.locataires[libreIdx] = { ...DATA.locataires[libreIdx], ...obj, id: libreId };
-      showToast('Locataire ajouté ✓');
+      const _pinInfob = _tel4b.length === 4 ? `PIN : ${_tel4b}` : 'PIN : 0000';
+      showToast(`Locataire ajouté ✓ — ${_pinInfob}`, 'green');
     } else {
-      // New locataire
+      // New locataire — auto-générer PIN depuis les 4 derniers chiffres du tel
+      const _tel4 = obj.tel.replace(/[^0-9]/g,'').slice(-4);
+      obj.pin = _tel4.length === 4 ? _tel4 : '0000';
+      obj.firstLogin = true;
       obj.id = DATA.nextLocId++;
       DATA.locataires.push(obj);
-      showToast('Locataire ajouté ✓');
+      const _pinInfo = _tel4.length === 4 ? `PIN : ${_tel4} (4 derniers chiffres)` : 'PIN : 0000';
+      showToast(`Locataire ajouté ✓ — ${_pinInfo}`, 'green');
     }
   }
-  
+
   // Auto caution payment for new locataires
   // finalId must be calculated AFTER locataire is saved (obj.id assigned)
   if (!(existId && existId > 0)) {
@@ -4117,7 +4125,7 @@ async function loginEntrepriseLocataire() {
   if (!locataire.pin) { locataire.pin = pin; saveData(); }
   _bfReset();
   startSession({ id:'loc_'+locataire.id, nom:locataire.nom, role:'locataire', locId:locataire.id, iid:locataire.iid, version:'entreprise' }, 'entreprise');
-  if (locataire.firstLogin) setTimeout(() => showPINChangeSuggestion(locataire.id), 800);
+  if (locataire.firstLogin) setTimeout(() => showPINChangeSuggestion(locataire.id, true), 800);
 }
 
 function toggleEntLocataire() {
@@ -4752,9 +4760,12 @@ function _saveUserModal(userId) {
     if (role !== 'admin' && role !== 'comptable') u.immeubles = immeubles;
     showToast('Utilisateur modifié ✓', 'green');
   } else {
-    // Create new
-    var defaultPwd = pwd || 'immo1234';
-    var defaultPin = pin || '0000';
+    // Create new — PIN/password = 4 derniers chiffres du tel, sinon défaut
+    var tel4 = tel.replace(/[^0-9]/g,'').slice(-4);
+    var autoPin = tel4.length === 4 ? tel4 : '0000';
+    var autoPwd = tel4.length === 4 ? tel4 : 'immo1234';
+    var defaultPwd = pwd || autoPwd;
+    var defaultPin = pin || autoPin;
     var newUser = {
       id: 'usr_' + Date.now(),
       version: (SESSION && SESSION.version === 'individuel') ? 'individuel' : 'entreprise',
@@ -4767,10 +4778,14 @@ function _saveUserModal(userId) {
       immeubles: immeubles,
       locId: null,
       customPerms: {},
-      mustChangePassword: false
+      mustChangePassword: role !== 'locataire', // force changement au 1er login
+      firstLogin: role === 'locataire',
     };
     USERS.push(newUser);
-    showToast('Utilisateur créé ✓', 'green');
+    var infoAcces = role === 'locataire'
+      ? `PIN : ${defaultPin}`
+      : `Identifiant : ${newUser.username} — Mdp : ${defaultPwd}`;
+    showToast(`Utilisateur créé ✓ — ${infoAcces}`, 'green');
   }
 
   saveUsers();
@@ -8530,9 +8545,13 @@ function loginLocataire() {
       pinOk = true;
       // Synchroniser le PIN dans DATA.locataires pour les prochaines connexions
       locataire.pin = pin;
-    } else if (!locataire.pin && (!userRecord || !userRecord.pin) && pin === '0000') {
-      pinOk = true; // PIN par défaut
-      locataire.pin = '0000';
+    } else if (!locataire.pin && (!userRecord || !userRecord.pin)) {
+      var _tel4def = locataire.tel ? locataire.tel.replace(/[^0-9]/g,'').slice(-4) : '';
+      if (pin === '0000' || (_tel4def.length === 4 && pin === _tel4def)) {
+        pinOk = true;
+        locataire.pin = _tel4def.length === 4 ? _tel4def : '0000';
+        locataire.firstLogin = true; // forcer changement PIN
+      }
     }
     if (!pinOk) locataire = null;
   }
@@ -8561,7 +8580,7 @@ function loginLocataire() {
   };
   startSession(user, _locVersion);
   if (locataire.firstLogin) {
-    setTimeout(function() { showPINChangeSuggestion(locataire.id); }, 800);
+    setTimeout(function() { showPINChangeSuggestion(locataire.id, true); }, 800);
   }
 }
 
@@ -8576,11 +8595,16 @@ async function loginProprietaire() {
   if (!telVal) { errEl.textContent = 'Veuillez entrer votre numéro de téléphone'; errEl.style.display = 'block'; return; }
   if (!pwdVal) { errEl.textContent = 'Veuillez entrer votre mot de passe'; errEl.style.display = 'block'; return; }
   var hash = await _hashPwd(pwdVal);
+  // Aussi accepter les 4 derniers chiffres du tel comme mot de passe par défaut
+  var tel4Hash = await _hashPwd(telVal.replace(/[^0-9]/g,'').slice(-4));
   var user = USERS.find(function(u) {
-    return u.role === 'proprietaire' &&
-           (u.version === 'entreprise' || u.version === 'individuel') &&
-           u.tel && u.tel.replace(/[^0-9]/g,'') === telVal.replace(/[^0-9]/g,'') &&
-           (_isHashed(u.password) ? u.password === hash : u.password === pwdVal);
+    if (u.role !== 'proprietaire') return false;
+    if (!(u.version === 'entreprise' || u.version === 'individuel')) return false;
+    if (!u.tel || u.tel.replace(/[^0-9]/g,'') !== telVal.replace(/[^0-9]/g,'')) return false;
+    if (_isHashed(u.password)) return u.password === hash;
+    // Clair : accepter mot de passe exact OU 4 derniers chiffres tel
+    var tel4 = u.tel.replace(/[^0-9]/g,'').slice(-4);
+    return u.password === pwdVal || (tel4.length === 4 && u.password === tel4 && pwdVal === tel4);
   });
   if (!user) { _bfFail(errEl, 'Numéro ou mot de passe incorrect'); return; }
   if (user.actif === false) { errEl.textContent = 'Compte suspendu.'; errEl.style.display = 'block'; return; }
@@ -9203,10 +9227,17 @@ function demanderReinitialisationPIN(tel) {
   document.getElementById('modal-pin-reset').classList.remove('open');
 }
 
-function showPINChangeSuggestion(locId) {
+function showPINChangeSuggestion(locId, forced = false) {
   const modal = document.getElementById('modal-pin-suggest');
   if (!modal) return;
   modal.dataset.locId = locId;
+  // Masquer "Plus tard" si première connexion obligatoire
+  const laterBtn = document.getElementById('pin-suggest-later');
+  const msgEl    = document.getElementById('pin-suggest-msg');
+  if (laterBtn) laterBtn.style.display = forced ? 'none' : 'flex';
+  if (msgEl)    msgEl.textContent = forced
+    ? 'Première connexion : veuillez choisir un code PIN personnel pour sécuriser votre espace.'
+    : 'Nous vous conseillons de changer votre PIN pour plus de sécurité.';
   modal.classList.add('open');
 }
 
@@ -9239,7 +9270,11 @@ function saveNewPIN() {
     return;
   }
   changerPINLocataire(locId, newPin);
+  // Effacer le flag firstLogin
+  const l = DATA.locataires.find(x => x.id === locId);
+  if (l) { l.firstLogin = false; saveData(); }
   modal.classList.remove('open');
+  showToast('PIN mis à jour ✓', 'green');
 }
 
 // ============================================================
