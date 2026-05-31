@@ -7391,62 +7391,107 @@ function renderStatistiquesProprietaire() {
 }
 
 // ============================================================
-// MESSAGERIE INTERNE
+// MESSAGERIE INTERNE — v2
+// Règles d'accès :
+//   admin/gestionnaire → cabinet + proprios + locataires de ses immeubles
+//   proprietaire       → gestionnaire + locataires de ses immeubles
+//   locataire          → gestionnaire + proprio de son immeuble
 // ============================================================
-let _msgTab = 'recus';
+var _msgSelId = null; // id du message ouvert dans le panneau droit
 
-async function renderMessagerie() {
-  document.getElementById('page-title').textContent = 'Messagerie';
-  document.getElementById('page-sub').textContent = 'Échanges internes';
-  const tb = document.getElementById('topbar-main-btn');
-  if (tb) { tb.textContent = '✉️ Nouveau message'; tb.style.display = 'flex'; tb.onclick = () => _openNewMessageModal(); }
+// ── Construire la liste des destinataires selon le rôle ──────
+function _msgGetDestinataires() {
+  var role  = SESSION.role;
+  var immSess = SESSION.immeubles || [];
+  var dest = [];
 
-  document.getElementById('content').innerHTML = `<div style="text-align:center;padding:40px;color:var(--text3);">Chargement…</div>`;
+  // Helpers
+  var roleLabel = {admin:'Admin',gestionnaire:'Gestionnaire',comptable:'Comptable',proprietaire:'Propriétaire',locataire:'Locataire'};
+  var roleGroupe = {admin:'🏢 Cabinet',gestionnaire:'🏢 Cabinet',comptable:'🏢 Cabinet',proprietaire:'🔑 Propriétaires'};
 
-  const [recus, envoyes] = await Promise.all([_msgChargerRecus(), _msgChargerEnvoyes()]);
-  const nonLus = recus.filter(m => !m.lu).length;
-  _updateBadgeMessagerie(nonLus);
+  if (role === 'admin' || role === 'gestionnaire' || role === 'comptable') {
+    // Cabinet : tous les autres users du cabinet
+    USERS.filter(function(u){ return u.id !== SESSION.userId && u.version === 'entreprise' && ['admin','gestionnaire','comptable'].includes(u.role); })
+      .forEach(function(u){ dest.push({ id: u.id, nom: u.nom, groupe: '🏢 Cabinet', label: u.nom + ' — ' + (roleLabel[u.role]||u.role) }); });
+    // Propriétaires assignés aux immeubles gérés
+    USERS.filter(function(u){ return u.version === 'entreprise' && u.role === 'proprietaire' && (u.immeubles||[]).some(function(iid){ return role==='admin' || immSess.includes(iid); }); })
+      .forEach(function(u){ dest.push({ id: u.id, nom: u.nom, groupe: '🔑 Propriétaires', label: u.nom + ' — Propriétaire' }); });
+    // Locataires des immeubles gérés
+    DATA.locataires.filter(function(l){ return l.s !== 'libre' && (role === 'admin' || immSess.includes(l.iid)); })
+      .forEach(function(l){
+        var im = DATA.immeubles.find(function(i){ return i.id === l.iid; });
+        dest.push({ id: 'loc_'+l.id, nom: l.nom, groupe: '🏠 ' + (im ? im.nom : 'Locataires'), label: l.nom + (l.appt?' ('+l.appt+')':'') + (im?' — '+im.nom:'') });
+      });
 
-  const tabStyle = t => t === _msgTab
-    ? 'padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;background:#0E6AAF;color:#fff;'
-    : 'padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;background:transparent;color:var(--text2);';
+  } else if (role === 'proprietaire') {
+    // Gestionnaires/admin
+    USERS.filter(function(u){ return u.version === 'entreprise' && ['admin','gestionnaire'].includes(u.role); })
+      .forEach(function(u){ dest.push({ id: u.id, nom: u.nom, groupe: '🏢 Cabinet', label: u.nom + ' — ' + (roleLabel[u.role]||u.role) }); });
+    // Locataires de ses immeubles
+    DATA.locataires.filter(function(l){ return l.s !== 'libre' && immSess.includes(l.iid); })
+      .forEach(function(l){
+        var im = DATA.immeubles.find(function(i){ return i.id === l.iid; });
+        dest.push({ id: 'loc_'+l.id, nom: l.nom, groupe: '🏠 Mes locataires', label: l.nom + (l.appt?' ('+l.appt+')':'') });
+      });
 
-  let html = `<div style="display:flex;background:var(--bg4);border-radius:10px;padding:4px;margin-bottom:20px;gap:4px;">
-    <button style="${tabStyle('recus')}" onclick="window._msgTab='recus';renderMessagerie();">📥 Reçus ${nonLus>0?`<span style="background:rgba(255,255,255,0.25);padding:1px 7px;border-radius:99px;font-size:11px;margin-left:4px;">${nonLus}</span>`:''}</button>
-    <button style="${tabStyle('envoyes')}" onclick="window._msgTab='envoyes';renderMessagerie();">📤 Envoyés <span style="background:rgba(255,255,255,0.25);padding:1px 7px;border-radius:99px;font-size:11px;margin-left:4px;">${envoyes.length}</span></button>
-  </div>`;
-
-  const msgs = _msgTab === 'recus' ? recus : envoyes;
-  if (msgs.length === 0) {
-    html += `<div class="card" style="text-align:center;padding:48px 24px;color:var(--text3);">
-      <div style="font-size:36px;margin-bottom:12px;">💬</div>
-      <div style="font-size:14px;">${_msgTab==='recus'?'Aucun message reçu':'Aucun message envoyé'}</div>
-    </div>`;
-  } else {
-    html += `<div style="display:flex;flex-direction:column;gap:10px;">`;
-    msgs.forEach(msg => {
-      const nonLu = !msg.lu && _msgTab === 'recus';
-      const dt = new Date(msg.date_envoi).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-      html += `<div class="card" onclick="_msgOuvrir('${msg.id}')" style="cursor:pointer;${nonLu?'border-left:3px solid #0E6AAF;':''}padding:14px 16px;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-          <div style="flex:1;min-width:0;">
-            ${nonLu?`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#0E6AAF;margin-right:6px;"></span>`:''}
-            <span style="font-weight:${nonLu?'700':'600'};font-size:14px;color:var(--text1);">${msg.sujet||'(sans sujet)'}</span>
-            <div style="font-size:12px;color:var(--text3);margin-top:3px;">${_msgTab==='recus'?'De : '+(msg.de_nom||msg.de_user_id):'À : '+(msg.pour_nom||msg.pour_user_id)}</div>
-            <div style="font-size:12px;color:var(--text2);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${(msg.corps||'').slice(0,120)}…</div>
-          </div>
-          <div style="font-size:11px;color:var(--text3);white-space:nowrap;flex-shrink:0;">${dt}</div>
-        </div>
-      </div>`;
-    });
-    html += `</div>`;
+  } else if (role === 'locataire') {
+    var locData = SESSION.locId ? DATA.locataires.find(function(l){ return l.id === SESSION.locId; }) : null;
+    var iid = locData ? locData.iid : null;
+    // Gestionnaires/admin
+    USERS.filter(function(u){ return u.version === 'entreprise' && ['admin','gestionnaire'].includes(u.role); })
+      .forEach(function(u){ dest.push({ id: u.id, nom: u.nom, groupe: '🏢 Gestionnaire', label: u.nom + ' — Gestionnaire' }); });
+    // Proprio de son immeuble
+    if (iid) {
+      USERS.filter(function(u){ return u.version === 'entreprise' && u.role === 'proprietaire' && (u.immeubles||[]).includes(iid); })
+        .forEach(function(u){ dest.push({ id: u.id, nom: u.nom, groupe: '🔑 Bailleur', label: u.nom + ' — Propriétaire' }); });
+    }
   }
-  document.getElementById('content').innerHTML = html;
+
+  return dest;
+}
+
+// ── Construire le <select> des destinataires ─────────────────
+function _msgBuildDestSelect(preselectId) {
+  var dest = _msgGetDestinataires();
+  if (!dest.length) return '<option disabled>Aucun destinataire disponible</option>';
+  // Grouper
+  var groupes = {};
+  dest.forEach(function(d){
+    if (!groupes[d.groupe]) groupes[d.groupe] = [];
+    groupes[d.groupe].push(d);
+  });
+  var html = '';
+  Object.keys(groupes).forEach(function(g){
+    html += '<optgroup label="' + g + '">';
+    groupes[g].forEach(function(d){
+      var sel = preselectId && d.id === preselectId ? ' selected' : '';
+      html += '<option value="' + d.id + '|||' + d.nom.replace(/"/g,'&quot;') + '"' + sel + '>' + d.label + '</option>';
+    });
+    html += '</optgroup>';
+  });
+  return html;
+}
+
+// ── Charger tous les messages (reçus + envoyés) ──────────────
+async function _msgChargerTous() {
+  try {
+    var [r1, r2] = await Promise.all([
+      _sb.from('messages_internes').select('*').eq('pour_user_id', SESSION.userId).order('date_envoi',{ascending:false}),
+      _sb.from('messages_internes').select('*').eq('de_user_id',   SESSION.userId).order('date_envoi',{ascending:false})
+    ]);
+    var recus    = (r1.data || []);
+    var envoyes  = (r2.data || []);
+    // Dédupliquer (messages à soi-même)
+    var ids = new Set();
+    var tous = [];
+    recus.concat(envoyes).forEach(function(m){ if (!ids.has(m.id)){ ids.add(m.id); tous.push(m); } });
+    return { recus, envoyes, tous };
+  } catch(e) { return { recus:[], envoyes:[], tous:[] }; }
 }
 
 async function _msgChargerRecus() {
   try {
-    const { data, error } = await _sb.from('messages_internes').select('*').eq('pour_user_id', SESSION.userId).order('date_envoi', { ascending: false });
+    var { data, error } = await _sb.from('messages_internes').select('*').eq('pour_user_id', SESSION.userId).order('date_envoi',{ascending:false});
     if (error) throw error;
     return data || [];
   } catch(e) { return []; }
@@ -7454,98 +7499,252 @@ async function _msgChargerRecus() {
 
 async function _msgChargerEnvoyes() {
   try {
-    const { data, error } = await _sb.from('messages_internes').select('*').eq('de_user_id', SESSION.userId).order('date_envoi', { ascending: false });
+    var { data, error } = await _sb.from('messages_internes').select('*').eq('de_user_id', SESSION.userId).order('date_envoi',{ascending:false});
     if (error) throw error;
     return data || [];
   } catch(e) { return []; }
 }
 
-async function _msgOuvrir(id) {
-  const { data: msgs } = await _sb.from('messages_internes').select('*').eq('id', id).limit(1);
-  const msg = msgs && msgs[0];
-  if (!msg) return;
-  if (!msg.lu && msg.pour_user_id === SESSION.userId) {
-    await _sb.from('messages_internes').update({ lu: true }).eq('id', id);
-  }
-  const dt = new Date(msg.date_envoi).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  const sujetEsc = (msg.sujet||'').replace(/'/g,"\\'");
-  const deIdEsc  = (msg.de_user_id||'').replace(/'/g,"\\'");
-  const deNomEsc = (msg.de_nom||'').replace(/'/g,"\\'");
-  showModal(`<div style="max-width:520px;">
-    <div style="font-weight:700;font-size:16px;color:var(--text1);margin-bottom:12px;">${msg.sujet||'(sans sujet)'}</div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:4px;">De : <strong>${msg.de_nom||msg.de_user_id}</strong> → À : <strong>${msg.pour_nom||msg.pour_user_id}</strong></div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">${dt}</div>
-    <hr style="border:none;border-top:1px solid var(--border);margin-bottom:16px;">
-    <div style="font-size:14px;color:var(--text1);line-height:1.7;white-space:pre-wrap;">${msg.corps}</div>
-    <div style="display:flex;gap:10px;margin-top:20px;">
-      <button class="btn btn-primary" onclick="closeModal();_openReplyModal('${deIdEsc}','${deNomEsc}','${sujetEsc}')">↩ Répondre</button>
-      <button class="btn" onclick="closeModal();renderMessagerie()">✕ Fermer</button>
-    </div>
-  </div>`);
+// ── Rendu principal messagerie ────────────────────────────────
+var _msgCache = null; // { recus, envoyes, tous }
+var _msgFiltreTab = 'tous'; // 'tous' | 'recus' | 'envoyes'
+var _msgSearch = '';
+
+async function renderMessagerie() {
+  document.getElementById('page-title').textContent = 'Messagerie';
+  document.getElementById('page-sub').textContent = 'Échanges internes';
+  var tb = document.getElementById('topbar-main-btn');
+  if (tb) { tb.textContent = '✉️ Nouveau message'; tb.style.display = 'flex'; tb.onclick = function(){ _openNewMessageModal(); }; }
+
+  document.getElementById('content').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);">⏳ Chargement…</div>';
+  _msgCache = await _msgChargerTous();
+  var nonLus = _msgCache.recus.filter(function(m){ return !m.lu; }).length;
+  _updateBadgeMessagerie(nonLus);
+  _msgRenderLayout();
 }
 
-function _openNewMessageModal() {
-  const destOptions = USERS.filter(u => u.id !== SESSION.userId && u.version === 'entreprise')
-    .map(u => `<option value="${u.id}|||${u.nom}">${u.nom} (${u.role})</option>`).join('');
-  if (!destOptions) { showToast('Aucun autre utilisateur disponible', 'red'); return; }
-  showModal(`<div style="max-width:480px;">
+function _msgRenderLayout() {
+  if (!_msgCache) return;
+  var recus   = _msgCache.recus;
+  var envoyes = _msgCache.envoyes;
+  var nonLus  = recus.filter(function(m){ return !m.lu; }).length;
+
+  var msgs = _msgFiltreTab === 'recus' ? recus : _msgFiltreTab === 'envoyes' ? envoyes : _msgCache.tous;
+  if (_msgSearch.trim()) {
+    var q = _msgSearch.toLowerCase();
+    msgs = msgs.filter(function(m){ return (m.sujet||'').toLowerCase().includes(q) || (m.corps||'').toLowerCase().includes(q) || (m.de_nom||'').toLowerCase().includes(q) || (m.pour_nom||'').toLowerCase().includes(q); });
+  }
+  // Trier du plus récent
+  msgs = msgs.slice().sort(function(a,b){ return b.date_envoi > a.date_envoi ? 1 : -1; });
+
+  var tabSty = function(t){ return t === _msgFiltreTab
+    ? 'padding:7px 14px;border:none;border-radius:7px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;background:var(--accent);color:#fff;'
+    : 'padding:7px 14px;border:none;border-radius:7px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;background:transparent;color:var(--text2);'; };
+
+  var listHtml = '';
+  if (!msgs.length) {
+    listHtml = '<div style="text-align:center;padding:40px 16px;color:var(--text3);font-size:13px;">💬<br>Aucun message</div>';
+  } else {
+    msgs.forEach(function(m){
+      var isMine = m.de_user_id === SESSION.userId;
+      var nonLu  = !m.lu && !isMine;
+      var actif  = _msgSelId === m.id;
+      var dt     = _msgRelDate(m.date_envoi);
+      var interlocuteur = isMine ? (m.pour_nom || m.pour_user_id) : (m.de_nom || m.de_user_id);
+      var preview = (m.corps||'').replace(/\n/g,' ').slice(0,70);
+      listHtml += '<div onclick="_msgOuvrir(\'' + m.id + '\')" style="padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;background:' + (actif?'var(--bg4)':'transparent') + ';transition:background .15s;">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:3px;">'
+        + '<div style="font-weight:' + (nonLu?'700':'500') + ';font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;">'
+        + (nonLu?'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:5px;vertical-align:middle;"></span>':'')
+        + interlocuteur + '</div>'
+        + '<div style="font-size:10px;color:var(--text3);flex-shrink:0;">' + dt + '</div></div>'
+        + '<div style="font-size:12px;font-weight:' + (nonLu?'600':'400') + ';color:var(--text2);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (m.sujet||'(sans sujet)') + '</div>'
+        + '<div style="font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + preview + '</div>'
+        + '</div>';
+    });
+  }
+
+  var detailHtml = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text3);gap:12px;">'
+    + '<div style="font-size:40px;">💬</div>'
+    + '<div style="font-size:13px;">Sélectionne un message</div>'
+    + '<button onclick="_openNewMessageModal()" class="btn btn-primary" style="margin-top:8px;">✉️ Nouveau message</button>'
+    + '</div>';
+
+  // Si un message est sélectionné, afficher son contenu
+  if (_msgSelId && _msgCache) {
+    var sel = _msgCache.tous.find(function(m){ return m.id === _msgSelId; });
+    if (sel) detailHtml = _msgDetailHtml(sel);
+  }
+
+  var html = '<div style="display:grid;grid-template-columns:280px 1fr;gap:0;height:calc(100vh - 130px);background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">'
+    // Colonne gauche
+    + '<div style="border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;">'
+    + '<div style="padding:12px;border-bottom:1px solid var(--border);display:flex;gap:4px;background:var(--bg3);">'
+    + '<button style="' + tabSty('tous') + '" onclick="window._msgFiltreTab=\'tous\';_msgRenderLayout();">Tous</button>'
+    + '<button style="' + tabSty('recus') + '" onclick="window._msgFiltreTab=\'recus\';_msgRenderLayout();">📥' + (nonLus>0?' <b style=\'color:var(--red);\'>'+nonLus+'</b>':'') + '</button>'
+    + '<button style="' + tabSty('envoyes') + '" onclick="window._msgFiltreTab=\'envoyes\';_msgRenderLayout();">📤</button>'
+    + '</div>'
+    + '<div style="padding:8px 10px;border-bottom:1px solid var(--border);">'
+    + '<input type="text" placeholder="🔍 Rechercher…" value="' + _msgSearch.replace(/"/g,'&quot;') + '" oninput="window._msgSearch=this.value;_msgRenderLayout()" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--font);background:var(--bg);box-sizing:border-box;">'
+    + '</div>'
+    + '<div style="flex:1;overflow-y:auto;">' + listHtml + '</div>'
+    + '<div style="padding:10px;border-top:1px solid var(--border);background:var(--bg3);">'
+    + '<button onclick="_openNewMessageModal()" class="btn btn-primary" style="width:100%;font-size:12px;">✉️ Nouveau message</button>'
+    + '</div>'
+    + '</div>'
+    // Colonne droite
+    + '<div id="msg-detail-pane" style="overflow-y:auto;">' + detailHtml + '</div>'
+    + '</div>';
+
+  document.getElementById('content').innerHTML = html;
+}
+
+function _msgDetailHtml(msg) {
+  var isMine = msg.de_user_id === SESSION.userId;
+  var dt = new Date(msg.date_envoi).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  var sujetEsc = (msg.sujet||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+  var deIdEsc  = (msg.de_user_id||'').replace(/'/g,"\\'");
+  var deNomEsc = (msg.de_nom||'').replace(/'/g,"\\'");
+  return '<div style="padding:24px;display:flex;flex-direction:column;height:100%;box-sizing:border-box;">'
+    + '<div style="margin-bottom:20px;">'
+    + '<div style="font-weight:700;font-size:17px;color:var(--text);margin-bottom:8px;">' + (msg.sujet||'(sans sujet)') + '</div>'
+    + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+    + '<div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">' + (msg.de_nom||'?').slice(0,2).toUpperCase() + '</div>'
+    + '<div><div style="font-size:13px;font-weight:600;color:var(--text);">' + (msg.de_nom||msg.de_user_id) + '</div>'
+    + '<div style="font-size:11px;color:var(--text3);">→ ' + (msg.pour_nom||msg.pour_user_id) + ' · ' + dt + '</div></div>'
+    + '</div></div>'
+    + '<hr style="border:none;border-top:1px solid var(--border);margin-bottom:20px;">'
+    + '<div style="flex:1;font-size:14px;color:var(--text);line-height:1.8;white-space:pre-wrap;">' + (msg.corps||'') + '</div>'
+    + '<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">'
+    + '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Réponse rapide</div>'
+    + '<textarea id="msg-reply-corps" rows="3" placeholder="Votre réponse…" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font);resize:none;background:var(--bg);color:var(--text);box-sizing:border-box;"></textarea>'
+    + '<div style="display:flex;gap:8px;margin-top:8px;">'
+    + '<button onclick="_msgRepondreRapide(\'' + deIdEsc + '\',\'' + deNomEsc + '\',\'' + sujetEsc + '\')" class="btn btn-primary" style="flex:1;">↩ Répondre</button>'
+    + '</div></div></div>';
+}
+
+async function _msgOuvrir(id) {
+  _msgSelId = id;
+  // Marquer comme lu
+  var msg = _msgCache && _msgCache.tous.find(function(m){ return m.id === id; });
+  if (msg && !msg.lu && msg.pour_user_id === SESSION.userId) {
+    await _sb.from('messages_internes').update({ lu: true }).eq('id', id);
+    msg.lu = true;
+    var nonLus = (_msgCache.recus || []).filter(function(m){ return !m.lu; }).length;
+    _updateBadgeMessagerie(nonLus);
+  }
+  // Mettre à jour le panneau droit sans recharger la liste
+  var pane = document.getElementById('msg-detail-pane');
+  if (pane && msg) {
+    pane.innerHTML = _msgDetailHtml(msg);
+  } else {
+    _msgRenderLayout();
+  }
+}
+
+async function _msgRepondreRapide(destId, destNom, sujetOriginal) {
+  var corps = (document.getElementById('msg-reply-corps') || {}).value || '';
+  corps = corps.trim();
+  if (!corps) { showToast('Le message ne peut pas être vide', 'red'); return; }
+  var sujet = sujetOriginal.startsWith('Re:') ? sujetOriginal : 'Re: ' + sujetOriginal;
+  try {
+    var { error } = await _sb.from('messages_internes').insert([{
+      de_user_id: SESSION.userId, de_nom: SESSION.nom,
+      pour_user_id: destId, pour_nom: destNom,
+      sujet: sujet, corps: corps, lu: false
+    }]);
+    if (error) throw error;
+    showToast('Réponse envoyée ✓', 'green');
+    _msgCache = await _msgChargerTous();
+    _msgFiltreTab = 'envoyes';
+    _msgSelId = null;
+    _msgRenderLayout();
+  } catch(e) { showToast('Erreur : ' + (e.message||e), 'red'); }
+}
+
+function _openNewMessageModal(preselectId) {
+  var destSelect = _msgBuildDestSelect(preselectId||null);
+  if (!destSelect || destSelect.includes('Aucun destinataire')) {
+    showToast('Aucun destinataire disponible pour votre rôle', 'red'); return;
+  }
+  showModal(`<div style="max-width:500px;">
     <div style="font-weight:700;font-size:16px;margin-bottom:16px;">✉️ Nouveau message</div>
     <div class="form-group" style="margin-bottom:12px;"><label>Destinataire</label>
-      <select id="msg-dest" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);background:var(--bg4);">${destOptions}</select>
+      <select id="msg-dest" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);background:var(--bg);color:var(--text);">${destSelect}</select>
     </div>
     <div class="form-group" style="margin-bottom:12px;"><label>Sujet</label>
-      <input type="text" id="msg-sujet" placeholder="Sujet du message" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
+      <input type="text" id="msg-sujet" placeholder="Sujet du message" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);background:var(--bg);color:var(--text);box-sizing:border-box;">
     </div>
     <div class="form-group" style="margin-bottom:16px;"><label>Message</label>
-      <textarea id="msg-corps" rows="5" placeholder="Votre message…" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);resize:vertical;box-sizing:border-box;"></textarea>
+      <textarea id="msg-corps" rows="5" placeholder="Votre message…" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);resize:vertical;background:var(--bg);color:var(--text);box-sizing:border-box;"></textarea>
     </div>
     <div style="display:flex;gap:10px;">
       <button class="btn btn-primary" style="flex:1;" onclick="_msgEnvoyer()">📤 Envoyer</button>
-      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-ghost" onclick="closeModals()">Annuler</button>
     </div>
   </div>`);
 }
 
 function _openReplyModal(destId, destNom, sujetOriginal) {
-  const sujet = sujetOriginal.startsWith('Re:') ? sujetOriginal : 'Re: ' + sujetOriginal;
-  const destOptions = USERS.filter(u => u.version === 'entreprise')
-    .map(u => `<option value="${u.id}|||${u.nom}" ${u.id===destId?'selected':''}>${u.nom} (${u.role})</option>`).join('');
-  showModal(`<div style="max-width:480px;">
+  var sujet = sujetOriginal.startsWith('Re:') ? sujetOriginal : 'Re: ' + sujetOriginal;
+  var destSelect = _msgBuildDestSelect(destId);
+  showModal(`<div style="max-width:500px;">
     <div style="font-weight:700;font-size:16px;margin-bottom:16px;">↩ Répondre</div>
     <div class="form-group" style="margin-bottom:12px;"><label>Destinataire</label>
-      <select id="msg-dest" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);background:var(--bg4);">${destOptions}</select>
+      <select id="msg-dest" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);background:var(--bg);color:var(--text);">${destSelect}</select>
     </div>
     <div class="form-group" style="margin-bottom:12px;"><label>Sujet</label>
-      <input type="text" id="msg-sujet" value="${sujet.replace(/"/g,'&quot;')}" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
+      <input type="text" id="msg-sujet" value="${sujet.replace(/"/g,'&quot;')}" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);background:var(--bg);color:var(--text);box-sizing:border-box;">
     </div>
     <div class="form-group" style="margin-bottom:16px;"><label>Message</label>
-      <textarea id="msg-corps" rows="5" placeholder="Votre réponse…" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);resize:vertical;box-sizing:border-box;"></textarea>
+      <textarea id="msg-corps" rows="5" placeholder="Votre réponse…" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);resize:vertical;background:var(--bg);color:var(--text);box-sizing:border-box;"></textarea>
     </div>
     <div style="display:flex;gap:10px;">
       <button class="btn btn-primary" style="flex:1;" onclick="_msgEnvoyer()">📤 Envoyer</button>
-      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-ghost" onclick="closeModals()">Annuler</button>
     </div>
   </div>`);
 }
 
 async function _msgEnvoyer() {
-  const destVal = document.getElementById('msg-dest').value;
-  const [pourId, pourNom] = destVal.split('|||');
-  const sujet  = (document.getElementById('msg-sujet').value || '').trim();
-  const corps  = (document.getElementById('msg-corps').value || '').trim();
-  if (!corps) { showToast('Le message ne peut pas être vide', 'red'); return; }
+  var destEl = document.getElementById('msg-dest');
+  var destVal = destEl ? destEl.value : '';
+  var parts = destVal.split('|||');
+  var pourId = parts[0], pourNom = parts[1] || pourId;
+  var sujet  = ((document.getElementById('msg-sujet')||{}).value || '').trim();
+  var corps  = ((document.getElementById('msg-corps')||{}).value || '').trim();
+  if (!pourId) { showToast('Destinataire requis', 'red'); return; }
+  if (!corps)  { showToast('Le message ne peut pas être vide', 'red'); return; }
   try {
-    const { error } = await _sb.from('messages_internes').insert([{
+    var { error } = await _sb.from('messages_internes').insert([{
       de_user_id: SESSION.userId, de_nom: SESSION.nom,
       pour_user_id: pourId, pour_nom: pourNom,
-      sujet, corps, lu: false
+      sujet: sujet || '(sans sujet)', corps: corps, lu: false
     }]);
     if (error) throw error;
-    closeModal();
+    closeModals();
     showToast('Message envoyé ✓', 'green');
-    _msgTab = 'envoyes';
-    renderMessagerie();
+    // Notif push si le destinataire a OneSignal
+    if (typeof sendOneSignalNotif === 'function') {
+      sendOneSignalNotif(pourId, '✉️ Nouveau message de ' + SESSION.nom, sujet || corps.slice(0,80), { type:'message' });
+    }
+    _msgCache = await _msgChargerTous();
+    _msgFiltreTab = 'envoyes';
+    _msgSelId = null;
+    _msgRenderLayout();
   } catch(e) { showToast('Erreur : ' + (e.message || e), 'red'); }
+}
+
+// ── Formater date relative ────────────────────────────────────
+function _msgRelDate(iso) {
+  if (!iso) return '';
+  var d   = new Date(iso);
+  var now = new Date();
+  var diffH = (now - d) / 3600000;
+  if (diffH < 1)   return 'À l\'instant';
+  if (diffH < 24)  return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  if (diffH < 168) return ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'][d.getDay()];
+  return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'});
 }
 
 function _updateBadgeMessagerie(n) {

@@ -12,6 +12,7 @@ function showTab(tab) {
   currentTab = tab;
   if (tab === 'maintenance') loadMaintHistory();
   if (tab === 'documents') loadDocumentsLocataire();
+  if (tab === 'chat') locMsgCharger();
 }
 
 // 7. Paiement Mobile Money
@@ -635,3 +636,162 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 })();
 
+// ═══════════════════════════════════════════════════════════
+// MESSAGERIE LOCATAIRE — v2
+// Le locataire peut écrire au gestionnaire et à son proprio
+// ═══════════════════════════════════════════════════════════
+
+async function locMsgCharger() {
+  const el = document.getElementById('loc-msg-liste');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px;">⏳ Chargement…</div>';
+  if (typeof _sb === 'undefined' || !SESSION) { el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);">Non connecté</div>'; return; }
+  try {
+    const [r1, r2] = await Promise.all([
+      _sb.from('messages_internes').select('*').eq('pour_user_id', SESSION.userId).order('date_envoi',{ascending:false}),
+      _sb.from('messages_internes').select('*').eq('de_user_id',   SESSION.userId).order('date_envoi',{ascending:false})
+    ]);
+    const tous = [];
+    const ids = new Set();
+    (r1.data||[]).concat(r2.data||[]).forEach(m => { if (!ids.has(m.id)){ ids.add(m.id); tous.push(m); } });
+    tous.sort((a,b) => b.date_envoi > a.date_envoi ? 1 : -1);
+    if (!tous.length) {
+      el.innerHTML = '<div style="text-align:center;padding:40px 16px;color:var(--text3);font-size:13px;">💬<br><br>Aucun message.<br><button onclick="locMsgNouveauModal()" style="margin-top:12px;padding:8px 18px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;">✉️ Écrire au gestionnaire</button></div>';
+      return;
+    }
+    const MNOMS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+    el.innerHTML = tous.map(m => {
+      const isMine = m.de_user_id === SESSION.userId;
+      const nonLu  = !m.lu && !isMine;
+      const autre  = isMine ? (m.pour_nom||m.pour_user_id) : (m.de_nom||m.de_user_id);
+      const d = new Date(m.date_envoi);
+      const dt = d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+      const preview = (m.corps||'').replace(/\n/g,' ').slice(0,80);
+      return `<div onclick="locMsgOuvrir('${m.id}')" style="padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;${nonLu?'background:var(--bg3);':''}display:flex;align-items:center;gap:12px;">
+        <div style="width:38px;height:38px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">${autre.slice(0,2).toUpperCase()}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-weight:${nonLu?'700':'500'};font-size:13px;">${nonLu?'● ':''}<b>${autre}</b></div>
+            <div style="font-size:10px;color:var(--text3);">${dt}</div>
+          </div>
+          <div style="font-size:12px;color:var(--text2);font-weight:${nonLu?'600':'400'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.sujet||'(sans sujet)'}</div>
+          <div style="font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${preview}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="padding:20px;color:var(--text3);font-size:12px;">Erreur chargement : ' + e.message + '</div>';
+  }
+}
+
+async function locMsgOuvrir(id) {
+  if (typeof _sb === 'undefined') return;
+  const { data: msgs } = await _sb.from('messages_internes').select('*').eq('id', id).limit(1);
+  const msg = msgs && msgs[0];
+  if (!msg) return;
+  if (!msg.lu && msg.pour_user_id === SESSION.userId) {
+    await _sb.from('messages_internes').update({ lu: true }).eq('id', id);
+  }
+  const dt = new Date(msg.date_envoi).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const sujetEsc = (msg.sujet||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+  const deIdEsc  = (msg.de_user_id||'').replace(/'/g,"\\'");
+  const deNomEsc = (msg.de_nom||'').replace(/'/g,"\\'");
+  if (typeof showModal === 'function') {
+    showModal(`<div style="max-width:500px;">
+      <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:10px;">${msg.sujet||'(sans sujet)'}</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:4px;">De : <strong>${msg.de_nom||msg.de_user_id}</strong> → <strong>${msg.pour_nom||msg.pour_user_id}</strong></div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">${dt}</div>
+      <hr style="border:none;border-top:1px solid var(--border);margin-bottom:14px;">
+      <div style="font-size:14px;line-height:1.7;white-space:pre-wrap;color:var(--text);">${msg.corps||''}</div>
+      <div style="margin-top:18px;">
+        <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:6px;">Réponse rapide</div>
+        <textarea id="loc-reply-corps" rows="3" placeholder="Votre réponse…"
+          style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font);resize:none;background:var(--bg);color:var(--text);box-sizing:border-box;"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button onclick="locMsgRepondre('${deIdEsc}','${deNomEsc}','${sujetEsc}')" class="btn btn-primary" style="flex:1;">↩ Répondre</button>
+          <button onclick="closeModals()" class="btn btn-ghost">Fermer</button>
+        </div>
+      </div>
+    </div>`);
+  }
+}
+
+async function locMsgRepondre(destId, destNom, sujetOriginal) {
+  const corps = ((document.getElementById('loc-reply-corps')||{}).value||'').trim();
+  if (!corps) { if (typeof showToast === 'function') showToast('Message vide', 'red'); return; }
+  const sujet = sujetOriginal.startsWith('Re:') ? sujetOriginal : 'Re: ' + sujetOriginal;
+  try {
+    const { error } = await _sb.from('messages_internes').insert([{
+      de_user_id: SESSION.userId, de_nom: SESSION.nom,
+      pour_user_id: destId, pour_nom: destNom,
+      sujet, corps, lu: false
+    }]);
+    if (error) throw error;
+    if (typeof closeModals === 'function') closeModals();
+    if (typeof showToast === 'function') showToast('Réponse envoyée ✓', 'green');
+    locMsgCharger();
+  } catch(e) {
+    if (typeof showToast === 'function') showToast('Erreur : ' + e.message, 'red');
+  }
+}
+
+async function locMsgNouveauModal() {
+  // Construire la liste des destinataires accessibles au locataire
+  const dests = [];
+  if (typeof USERS !== 'undefined' && Array.isArray(USERS)) {
+    USERS.filter(u => u.version === 'entreprise' && ['admin','gestionnaire'].includes(u.role))
+      .forEach(u => dests.push({ id: u.id, nom: u.nom, label: u.nom + ' — Gestionnaire' }));
+    const loc = (typeof DATA !== 'undefined' && SESSION.locId) ? DATA.locataires.find(l => l.id === SESSION.locId) : null;
+    const iid = loc ? loc.iid : null;
+    if (iid) {
+      USERS.filter(u => u.version === 'entreprise' && u.role === 'proprietaire' && (u.immeubles||[]).includes(iid))
+        .forEach(u => dests.push({ id: u.id, nom: u.nom, label: u.nom + ' — Propriétaire' }));
+    }
+  }
+  if (!dests.length) {
+    if (typeof showToast === 'function') showToast('Aucun gestionnaire disponible', 'red'); return;
+  }
+  const opts = dests.map(d => `<option value="${d.id}|||${d.nom.replace(/"/g,'&quot;')}">${d.label}</option>`).join('');
+  if (typeof showModal === 'function') {
+    showModal(`<div style="max-width:480px;">
+      <div style="font-weight:700;font-size:15px;margin-bottom:14px;">✉️ Nouveau message</div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;">Destinataire</label>
+        <select id="loc-msg-dest" style="width:100%;margin-top:4px;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);background:var(--bg);color:var(--text);">${opts}</select>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;">Sujet</label>
+        <input type="text" id="loc-msg-sujet" placeholder="Sujet…" style="width:100%;margin-top:4px;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);background:var(--bg);color:var(--text);box-sizing:border-box;">
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;">Message</label>
+        <textarea id="loc-msg-corps" rows="4" placeholder="Votre message…" style="width:100%;margin-top:4px;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);resize:vertical;background:var(--bg);color:var(--text);box-sizing:border-box;"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="locMsgEnvoyer()" class="btn btn-primary" style="flex:1;">📤 Envoyer</button>
+        <button onclick="closeModals()" class="btn btn-ghost">Annuler</button>
+      </div>
+    </div>`);
+  }
+}
+
+async function locMsgEnvoyer() {
+  const destVal = ((document.getElementById('loc-msg-dest')||{}).value||'');
+  const [pourId, pourNom] = destVal.split('|||');
+  const sujet = ((document.getElementById('loc-msg-sujet')||{}).value||'').trim();
+  const corps = ((document.getElementById('loc-msg-corps')||{}).value||'').trim();
+  if (!pourId || !corps) { if (typeof showToast === 'function') showToast('Remplissez tous les champs', 'red'); return; }
+  try {
+    const { error } = await _sb.from('messages_internes').insert([{
+      de_user_id: SESSION.userId, de_nom: SESSION.nom,
+      pour_user_id: pourId, pour_nom: pourNom,
+      sujet: sujet||'(sans sujet)', corps, lu: false
+    }]);
+    if (error) throw error;
+    if (typeof closeModals === 'function') closeModals();
+    if (typeof showToast === 'function') showToast('Message envoyé ✓', 'green');
+    locMsgCharger();
+  } catch(e) {
+    if (typeof showToast === 'function') showToast('Erreur : ' + e.message, 'red');
+  }
+}
