@@ -1,10 +1,16 @@
 // ═══════════════════════════════════════════════════════════════
 // IMMOGEST — Cloudflare Worker
-// - Cron : rappels loyers via OneSignal
-// - POST /ai     : proxy Anthropic API (clé sécurisée côté serveur)
-// - POST /pay    : init paiement CinetPay (credentials sécurisés)
-// - POST /notify : webhook CinetPay (confirmation paiement)
+// - Cron  : rappels loyers via OneSignal
+// - POST /pay              : initier collecte Campay (MTN/Orange)
+// - GET  /check-pay?ref=xx : vérifier statut transaction Campay
+// - POST /campay-webhook   : webhook Campay → activer abonnement Supabase
+// - POST /ai               : proxy Anthropic API
 // - GET  /test-notifs, /health
+// Secrets requis : CAMPAY_TOKEN (permanent access token), CAMPAY_WEBHOOK_KEY,
+//                  CAMPAY_ENV (demo|prod),
+//                  SUPABASE_URL, SUPABASE_KEY,
+//                  ONESIGNAL_APP_ID, ONESIGNAL_REST_KEY,
+//                  ANTHROPIC_API_KEY
 // ═══════════════════════════════════════════════════════════════
 
 const ALLOWED_ORIGIN = 'https://immogest-34w.pages.dev';
@@ -24,11 +30,15 @@ export default {
     }
 
     if (url.pathname === '/pay' && request.method === 'POST') {
-      return handlePaymentInit(request, env);
+      return handleCampayCollect(request, env);
     }
 
-    if (url.pathname === '/notify' && request.method === 'POST') {
-      return handlePaymentNotify(request, env);
+    if (url.pathname === '/check-pay' && request.method === 'GET') {
+      return handleCampayCheck(request, env);
+    }
+
+    if (url.pathname === '/campay-webhook' && request.method === 'POST') {
+      return handleCampayWebhook(request, env);
     }
 
     if (url.pathname === '/ai' && request.method === 'POST') {
@@ -53,84 +63,151 @@ export default {
 };
 
 // ══════════════════════════════════════════════════════════════
-// CINETPAY — Initialisation paiement
+// CAMPAY — Initier une collecte (MTN MoMo / Orange Money)
+// POST /pay  { phone, amount, plan, duree, userId }
 // ══════════════════════════════════════════════════════════════
-async function handlePaymentInit(request, env) {
+async function handleCampayCollect(request, env) {
   try {
     const body = await request.json();
-    const { transactionId, amount, designation, firstName, lastName, email, phone } = body;
+    const { phone, amount, plan, duree, userId } = body;
 
-    if (!transactionId || !amount || !designation) {
-      return jsonResponse({ ok: false, error: 'Paramètres manquants' }, 400, request);
+    if (!phone || !amount || !plan) {
+      return jsonResponse({ ok: false, error: 'Paramètres manquants (phone, amount, plan)' }, 400, request);
     }
 
-    // 1. Authentification CinetPay → access_token
-    const authResp = await fetch('https://api.cinetpay.net/v1/oauth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key:      env.CINETPAY_API_KEY,
-        api_password: env.CINETPAY_API_PASSWORD
-      })
-    });
-    const authData = await authResp.json();
-    if (authData.code !== 200 || !authData.access_token) {
-      console.error('[CinetPay] Auth échouée:', JSON.stringify(authData));
-      return jsonResponse({ ok: false, error: 'Authentification CinetPay échouée', details: authData }, 500, request);
+    if (!env.CAMPAY_TOKEN) {
+      return jsonResponse({ ok: false, error: 'CAMPAY_TOKEN non configuré' }, 500, request);
     }
 
-    // 2. Initialiser le paiement
-    const payResp = await fetch('https://api.cinetpay.net/v1/payment', {
+    const base     = (env.CAMPAY_ENV === 'prod') ? 'https://campay.net' : 'https://demo.campay.net';
+    const safeUser = String(userId || 'user').replace(/[|]/g, '').slice(0, 30);
+    const extRef   = `IG|${plan}|${duree || 1}|${safeUser}`;
+
+    const resp = await fetch(`${base}/api/collect/`, {
       method: 'POST',
       headers: {
-        'Content-Type':  'application/json',
-        'Authorization': `Bearer ${authData.access_token}`
+        'Content-Type': 'application/json',
+        'Authorization': `Token ${env.CAMPAY_TOKEN}`
       },
       body: JSON.stringify({
-        currency:               'XAF',
-        merchant_transaction_id: transactionId,
-        amount:                 amount,
-        lang:                   'fr',
-        designation:            designation,
-        client_email:           email || 'client@immogest.cm',
-        client_first_name:      firstName || 'Client',
-        client_last_name:       lastName  || 'ImmoGest',
-        client_phone_number:    phone || '',
-        success_url: 'https://immogest-34w.pages.dev/?payment=success',
-        failed_url:  'https://immogest-34w.pages.dev/?payment=failed',
-        notify_url:  'https://immogest1.fofefranklin57.workers.dev/notify'
+        amount:             String(amount),
+        currency:           'XAF',
+        from:               String(phone),
+        description:        `ImmoGest ${plan} – ${duree || 1} mois`,
+        external_reference: extRef,
+        webhook_url:        'https://immogest1.fofefranklin57.workers.dev/campay-webhook'
       })
     });
-    const payData = await payResp.json();
 
-    if (payData.code === 200 && payData.payment_url) {
-      return jsonResponse({
-        ok:             true,
-        payment_url:    payData.payment_url,
-        transaction_id: payData.transaction_id
-      }, 200, request);
+    const data = await resp.json();
+    console.log('[Campay] collect →', JSON.stringify(data));
+
+    if (data.reference) {
+      return jsonResponse({ ok: true, reference: data.reference, status: data.status }, 200, request);
     }
 
-    console.error('[CinetPay] Init paiement échouée:', JSON.stringify(payData));
-    return jsonResponse({ ok: false, error: 'Initialisation paiement échouée', details: payData }, 500, request);
+    return jsonResponse({ ok: false, error: 'Campay collect échoué', details: data }, 502, request);
 
   } catch (e) {
-    console.error('[CinetPay] Exception /pay:', e.message);
+    console.error('[Campay] /pay exception:', e.message);
     return jsonResponse({ ok: false, error: e.message }, 500, request);
   }
 }
 
 // ══════════════════════════════════════════════════════════════
-// CINETPAY — Webhook notification paiement
+// CAMPAY — Vérifier le statut d'une transaction
+// GET /check-pay?ref=<reference>
 // ══════════════════════════════════════════════════════════════
-async function handlePaymentNotify(request, env) {
+async function handleCampayCheck(request, env) {
   try {
-    const body = await request.json();
-    console.log('[CinetPay] Notify reçu:', JSON.stringify(body));
-    // Extensible : mise à jour Supabase ici si besoin
-    return new Response('OK', { status: 200 });
+    const url  = new URL(request.url);
+    const ref  = url.searchParams.get('ref');
+
+    if (!ref) {
+      return jsonResponse({ ok: false, error: 'Paramètre ref manquant' }, 400, request);
+    }
+
+    const base = (env.CAMPAY_ENV === 'prod') ? 'https://campay.net' : 'https://demo.campay.net';
+    const resp = await fetch(`${base}/api/transaction/${ref}/`, {
+      headers: { 'Authorization': `Token ${env.CAMPAY_TOKEN}` }
+    });
+
+    const data = await resp.json();
+    return jsonResponse({ ok: true, status: data.status, data }, 200, request);
+
   } catch (e) {
-    return new Response('Error', { status: 400 });
+    return jsonResponse({ ok: false, error: e.message }, 500, request);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// CAMPAY — Webhook : paiement confirmé → activer abonnement Supabase
+// POST /campay-webhook
+// ══════════════════════════════════════════════════════════════
+async function handleCampayWebhook(request, env) {
+  try {
+    // Vérifier l'authenticité du webhook via la Webhook Key
+    const webhookKey = request.headers.get('webhook-key') || request.headers.get('x-webhook-key') || '';
+    if (env.CAMPAY_WEBHOOK_KEY && webhookKey !== env.CAMPAY_WEBHOOK_KEY) {
+      console.warn('[Campay] Webhook key invalide — requête ignorée');
+      return new Response('Unauthorized', { status: 401 });
+    }
+
+    const body = await request.json();
+    console.log('[Campay] Webhook reçu:', JSON.stringify(body));
+
+    const { reference, external_reference, status, amount } = body;
+
+    // Toujours répondre 200 à Campay pour éviter les retries inutiles
+    if (status !== 'SUCCESSFUL') {
+      console.log('[Campay] Statut non réussi:', status);
+      return new Response('OK', { status: 200 });
+    }
+
+    // Parser external_reference : IG|plan|duree|userId
+    const parts  = (external_reference || '').split('|');
+    const plan   = parts[1] || 'starter';
+    const duree  = parseInt(parts[2]) || 1;
+    const userId = parts[3] || '';
+
+    if (!userId) {
+      console.error('[Campay] userId absent dans external_reference:', external_reference);
+      return new Response('OK', { status: 200 });
+    }
+
+    const expiry = new Date(Date.now() + duree * 30 * 86400000).toISOString();
+
+    // Upsert dans Supabase table abonnements
+    const sbResp = await fetch(`${env.SUPABASE_URL}/rest/v1/abonnements`, {
+      method:  'POST',
+      headers: {
+        'apikey':        env.SUPABASE_KEY,
+        'Authorization': `Bearer ${env.SUPABASE_KEY}`,
+        'Content-Type':  'application/json',
+        'Prefer':        'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({
+        user_id:       userId,
+        plan:          plan,
+        statut:        'actif',
+        date_fin:      expiry,
+        reference:     reference,
+        montant:       parseFloat(amount) || 0,
+        date_paiement: new Date().toISOString()
+      })
+    });
+
+    if (!sbResp.ok) {
+      console.error('[Campay] Supabase error:', sbResp.status, await sbResp.text());
+    } else {
+      console.log(`[Campay] ✅ Abonnement ${plan} activé pour ${userId} jusqu'au ${expiry}`);
+    }
+
+    return new Response('OK', { status: 200 });
+
+  } catch (e) {
+    console.error('[Campay] Webhook exception:', e.message);
+    return new Response('OK', { status: 200 }); // toujours 200 pour Campay
   }
 }
 

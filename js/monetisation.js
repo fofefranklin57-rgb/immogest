@@ -780,7 +780,7 @@ function processPaymentAbonnement() {
   var methodNames = { mtn: 'MTN Mobile Money', orange: 'Orange Money', card: 'Carte prépayée', whatsapp: 'WhatsApp' };
   var methodIcons = { mtn: '📱', orange: '🟠', card: '💳', whatsapp: '💬' };
 
-  // ─ WhatsApp : ouvrir directement sans modal ─
+  // ─ WhatsApp : ouvrir directement ─
   if (isWhatsApp) {
     var waText = encodeURIComponent(
       'Bonjour, je souhaite souscrire au plan *' + planInfo.label + '* d\'ImmoGest' +
@@ -790,71 +790,41 @@ function processPaymentAbonnement() {
     return;
   }
 
-  // ─ Construire le modal d'instructions ─
-  var overlay = document.createElement('div');
-  overlay.className = 'overlay open';
-  overlay.id = 'modal-paiement-confirm';
-  overlay.style.zIndex = '10005';
-
-  var instructionsHtml = '';
-
+  // ─ MTN / Orange → Campay (USSD push automatique) ─
   if (isMobile) {
-    var numero = P[selectedPaymentMethod] || P.mtn;
-    instructionsHtml =
-      '<div style="background:linear-gradient(135deg,#e8f5e9,#f1f8e9);border:1.5px solid #66BB6A;border-radius:10px;padding:16px;margin:16px 0;text-align:center;">' +
-        '<div style="font-size:11px;font-weight:700;color:#388E3C;margin-bottom:6px;">📲 ENVOYEZ CE MONTANT À CE NUMÉRO</div>' +
-        '<div style="font-size:30px;font-weight:900;color:#1B5E20;letter-spacing:3px;margin-bottom:4px;">' + numero + '</div>' +
-        '<div style="font-size:22px;font-weight:800;color:#2e7d32;margin-bottom:4px;">' + total.toLocaleString('fr-FR') + ' FCFA</div>' +
-        '<div style="font-size:11px;color:#558B2F;">Via ' + methodNames[selectedPaymentMethod] + '</div>' +
-      '</div>' +
-      '<div style="background:var(--yellow-bg);border:1px solid var(--yellow);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.8;">' +
-        '<strong>Étapes :</strong><br>' +
-        '1. Ouvrez ' + methodNames[selectedPaymentMethod] + ' sur votre téléphone<br>' +
-        '2. Envoyez <strong>' + total.toLocaleString('fr-FR') + ' FCFA</strong> au <strong>' + numero + '</strong><br>' +
-        '3. Copiez la référence de transaction<br>' +
-        '4. Cliquez <strong>"J\'ai payé"</strong> ci-dessous' +
-      '</div>';
-
-  } else if (isCard) {
-    // Carte prépayée (Visa/Mastercard, MoMo Card, Orange Card...)
-    instructionsHtml =
-      '<div style="background:linear-gradient(135deg,#e8eaf6,#f3f4ff);border:1.5px solid #5C6BC0;border-radius:10px;padding:16px;margin:16px 0;text-align:center;">' +
-        '<div style="font-size:32px;margin-bottom:6px;">💳</div>' +
-        '<div style="font-size:20px;font-weight:800;color:#283593;margin-bottom:4px;">' + total.toLocaleString('fr-FR') + ' FCFA</div>' +
-        '<div style="font-size:11px;color:#5C6BC0;">Carte Visa · Mastercard · MoMo Card · Orange Card</div>' +
-      '</div>' +
-      '<div style="background:var(--bg3);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.8;">' +
-        '✅ Les cartes prépayées <strong>MTN MoMo Card</strong> et <strong>Orange Card</strong> sont acceptées.<br>' +
-        'Envoyez-nous la preuve de paiement par WhatsApp ou email :<br><br>' +
-        '<strong>📞 ' + P.telephone + '</strong> (WhatsApp)<br>' +
-        '<strong>✉️ ' + P.email + '</strong>' +
-      '</div>';
+    payerAvecCampay(selectedPlan, duree, phone, selectedPaymentMethod, total);
+    return;
   }
 
-  var hasConfirmBtn = isMobile || isCard;
-
-  overlay.innerHTML =
-    '<div class="modal" style="max-width:460px;">' +
-      '<h3 style="margin-bottom:4px;">' + methodIcons[selectedPaymentMethod] + ' ' + methodNames[selectedPaymentMethod] + '</h3>' +
-      '<div style="font-size:12px;color:var(--text3);margin-bottom:12px;">' +
-        'Plan <strong>' + planInfo.label + '</strong> · ' + duree + ' mois' +
-      '</div>' +
-      instructionsHtml +
-      (isMobile ?
-        '<div class="form-group" style="margin-bottom:12px;">' +
-          '<label>Référence de transaction (facultatif)</label>' +
-          '<input type="text" id="pay-ref-transaction" placeholder="Ex: MP250529.1234.XXXXXX" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:var(--font);box-sizing:border-box;">' +
-        '</div>' : '') +
-      '<div class="modal-footer">' +
-        '<button class="btn btn-ghost" onclick="this.closest(\'.overlay\').remove()">Annuler</button>' +
-        (isMobile ?
-          '<button class="btn btn-primary" id="btn-confirmer-paiement" onclick="_confirmerPaiementAbonnement(\'' + selectedPlan + '\',' + duree + ')">✅ J\'ai payé</button>' :
-          '<button class="btn btn-primary" style="background:#25D366;border-color:#25D366;" onclick="window.open(\'https://wa.me/' + P.whatsapp + '\',\'_blank\');this.closest(\'.overlay\').remove();">💬 Envoyer la preuve</button>'
-        ) +
-      '</div>' +
-    '</div>';
-
-  document.body.appendChild(overlay);
+  // ─ Carte prépayée → instructions manuelles ─
+  if (isCard) {
+    var overlay = document.createElement('div');
+    overlay.className = 'overlay open';
+    overlay.id = 'modal-paiement-confirm';
+    overlay.style.zIndex = '10005';
+    overlay.innerHTML =
+      '<div class="modal" style="max-width:460px;">' +
+        '<h3 style="margin-bottom:4px;">💳 Carte prépayée</h3>' +
+        '<div style="font-size:12px;color:var(--text3);margin-bottom:12px;">' +
+          'Plan <strong>' + planInfo.label + '</strong> · ' + duree + ' mois' +
+        '</div>' +
+        '<div style="background:linear-gradient(135deg,#e8eaf6,#f3f4ff);border:1.5px solid #5C6BC0;border-radius:10px;padding:16px;margin:16px 0;text-align:center;">' +
+          '<div style="font-size:32px;margin-bottom:6px;">💳</div>' +
+          '<div style="font-size:20px;font-weight:800;color:#283593;margin-bottom:4px;">' + total.toLocaleString('fr-FR') + ' FCFA</div>' +
+          '<div style="font-size:11px;color:#5C6BC0;">MoMo Card · Orange Card · Visa · Mastercard</div>' +
+        '</div>' +
+        '<div style="background:var(--bg3);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.8;">' +
+          'Envoyez la preuve de paiement par WhatsApp ou email :<br><br>' +
+          '<strong>📞 ' + P.telephone + '</strong> (WhatsApp)<br>' +
+          '<strong>✉️ ' + P.email + '</strong>' +
+        '</div>' +
+        '<div class="modal-footer">' +
+          '<button class="btn btn-ghost" onclick="this.closest(\'.overlay\').remove()">Annuler</button>' +
+          '<button class="btn btn-primary" style="background:#25D366;border-color:#25D366;" onclick="window.open(\'https://wa.me/' + P.whatsapp + '\',\'_blank\');this.closest(\'.overlay\').remove();">💬 Envoyer la preuve</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+  }
 }
 
 function _confirmerPaiementAbonnement(plan, duree, txId) {
@@ -907,6 +877,129 @@ function _confirmerPaiementAbonnement(plan, duree, txId) {
     // Message succès
     _showAbonnementSuccess(plan, duree);
   }, 1500);
+}
+
+// ══════════════════════════════════════════════════════════════
+// CAMPAY — Paiement automatique MTN / Orange Money
+// ══════════════════════════════════════════════════════════════
+const _CAMPAY_WORKER = 'https://immogest1.fofefranklin57.workers.dev';
+
+async function payerAvecCampay(plan, duree, phone, provider, total) {
+  // Normaliser le numéro → 237XXXXXXXXX
+  var clean = phone.replace(/\D/g, '');
+  if (!clean.startsWith('237')) clean = '237' + clean.replace(/^0+/, '');
+
+  // Fermer les modals ouverts
+  document.querySelectorAll('.overlay.open').forEach(function(el) { el.classList.remove('open'); });
+
+  // Overlay "en attente"
+  var overlay = document.createElement('div');
+  overlay.id = 'campay-pending-overlay';
+  overlay.className = 'overlay open';
+  overlay.style.zIndex = '10010';
+  overlay.innerHTML =
+    '<div class="modal" style="max-width:380px;text-align:center;padding:32px 24px;">' +
+      '<div style="font-size:52px;margin-bottom:12px;">' + (provider === 'orange' ? '🟠' : '📱') + '</div>' +
+      '<h3 style="margin-bottom:8px;">Confirmez sur votre téléphone</h3>' +
+      '<p style="font-size:13px;color:var(--text2);line-height:1.7;margin:0 0 20px;">' +
+        'Une demande a été envoyée au<br><strong>' + clean + '</strong>.<br>' +
+        'Tapez votre PIN <strong>' + (provider === 'orange' ? 'Orange Money' : 'MTN MoMo') + '</strong> pour valider.' +
+      '</p>' +
+      '<div style="display:flex;justify-content:center;margin-bottom:16px;">' +
+        '<div class="campay-spinner"></div>' +
+      '</div>' +
+      '<div id="campay-status-msg" style="font-size:12px;color:var(--text3);margin-bottom:16px;">En attente de confirmation…</div>' +
+      '<button class="btn btn-ghost" style="font-size:12px;" onclick="_cancelCampay()">Annuler</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  try {
+    var userId = (typeof SESSION !== 'undefined' && SESSION)
+      ? (SESSION.username || SESSION.email || SESSION.nom || 'user')
+      : 'user';
+
+    var resp = await fetch(_CAMPAY_WORKER + '/pay', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ phone: clean, amount: total, plan: plan, duree: duree, userId: userId })
+    });
+    var data = await resp.json();
+
+    if (!data.ok || !data.reference) {
+      throw new Error(data.error || 'Impossible d\'initier le paiement');
+    }
+
+    _pollCampayStatus(data.reference, plan, duree);
+
+  } catch (e) {
+    var ov = document.getElementById('campay-pending-overlay');
+    if (ov) ov.remove();
+    showToast('❌ ' + e.message, 'error');
+  }
+}
+
+var _campayTimer   = null;
+var _campayTicks   = 0;
+var _CAMPAY_MAXSEC = 120; // 2 minutes
+
+function _pollCampayStatus(reference, plan, duree) {
+  _campayTicks = 0;
+  _campayTimer = setInterval(async function() {
+    _campayTicks += 5;
+
+    var msgEl = document.getElementById('campay-status-msg');
+
+    if (_campayTicks >= _CAMPAY_MAXSEC) {
+      clearInterval(_campayTimer);
+      var ov = document.getElementById('campay-pending-overlay');
+      if (ov) ov.remove();
+      showToast('⏱ Délai dépassé. Réessayez ou contactez-nous via WhatsApp.', 'error');
+      return;
+    }
+
+    try {
+      var resp = await fetch(_CAMPAY_WORKER + '/check-pay?ref=' + reference);
+      var data = await resp.json();
+      var st   = data.status;
+
+      if (st === 'SUCCESSFUL') {
+        clearInterval(_campayTimer);
+        var ov = document.getElementById('campay-pending-overlay');
+        if (ov) ov.remove();
+
+        // Activer plan localement (la persistence se fait via webhook Supabase)
+        MONETISATION.plan = plan;
+        var expiry = new Date(Date.now() + (duree || 1) * 30 * 86400000).toISOString();
+        localStorage.setItem('immogest_subscription', JSON.stringify({
+          tier: plan, ref: reference,
+          startDate: new Date().toISOString(), expiryDate: expiry
+        }));
+        saveMonetisation();
+        applyPlan();
+        updatePlanBadge();
+        _showAbonnementSuccess(plan, duree || 1);
+
+      } else if (st === 'FAILED') {
+        clearInterval(_campayTimer);
+        var ov = document.getElementById('campay-pending-overlay');
+        if (ov) ov.remove();
+        showToast('❌ Paiement refusé. Vérifiez votre solde et réessayez.', 'error');
+
+      } else {
+        var restant = _CAMPAY_MAXSEC - _campayTicks;
+        if (msgEl) msgEl.textContent = 'En attente… (' + restant + 's restantes)';
+      }
+    } catch (e) {
+      console.warn('[Campay] Poll error:', e.message);
+    }
+
+  }, 5000); // vérifier toutes les 5 secondes
+}
+
+function _cancelCampay() {
+  clearInterval(_campayTimer);
+  var ov = document.getElementById('campay-pending-overlay');
+  if (ov) ov.remove();
 }
 
 function _showAbonnementSuccess(plan, duree) {
