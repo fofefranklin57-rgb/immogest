@@ -1407,6 +1407,28 @@ function savePaiement() {
   const anneeCourante = today.getFullYear();
 
   if (type === 'loyer' && l && l.loyer > 0) {
+    // Période manuelle sélectionnée ?
+    const periodeVal = document.getElementById('pay-periode') ? document.getElementById('pay-periode').value : '';
+    if (periodeVal) {
+      const parts = periodeVal.split('-');
+      const pAnnee = parseInt(parts[0]), pMois = parseInt(parts[1]);
+      DATA.paiements.push({
+        id: DATA.nextPayId++, locId, date, montant,
+        moisC: pMois, anneeC: pAnnee,
+        moisFin: pMois, anneeFin: pAnnee,
+        type, mode, note, remisAuBailleur
+      });
+      l.reste = Math.max(0, l.reste - montant);
+      l.s = l.reste === 0 ? 'payé' : 'impayé';
+      showToast('Paiement enregistré ✓');
+      saveData();
+      if (SESSION) { savePaiementToSupabase(DATA.paiements[DATA.paiements.length-1]); saveLocataireToSupabase(l); }
+      if (typeof notifPaiementRecu === 'function') notifPaiementRecu(l, montant);
+      closeModals();
+      if (currentPage === 'rapport' && window._currentRapportIid) ouvrirRapportImmeuble(window._currentRapportIid);
+      else renderCurrent();
+      return;
+    }
     // Determine which months this payment covers
     const moisCouverts = calculerMoisCouverts(l, montant);
 
@@ -1585,6 +1607,7 @@ function openModalPaiement(iid, locId) {
   document.getElementById('pay-date').value = today.toISOString().split('T')[0];
   const cb = document.getElementById('pay-remis-bailleur');
   if (cb) cb.checked = false;
+  updatePayPeriode();
   document.getElementById('modal-paiement').classList.add('open');
 }
 
@@ -1597,6 +1620,51 @@ function updatePayLoc(iid, preLocId) {
       `<option value="${l.id}" ${l.id==preLocId?'selected':''}>${l.appt ? l.appt+' — ' : ''}${l.nom}</option>`
     ).join('');
   }
+  updatePayPeriode();
+}
+
+function updatePayPeriode() {
+  const sel = document.getElementById('pay-periode');
+  if (!sel) return;
+  const locId = parseInt(document.getElementById('pay-loc').value);
+  const l = DATA.locataires.find(x => x.id === locId);
+  if (!l || !l.loyer) { sel.innerHTML = '<option value="">— Automatique</option>'; return; }
+
+  const MC = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  const now = new Date();
+  const jour = l.jourPaiement || 1;
+
+  // Déterminer le mois de début
+  let startY, startM;
+  if (l.entree) {
+    const d = new Date(l.entree); startY = d.getFullYear(); startM = d.getMonth();
+  } else {
+    const moisDus = l.loyer > 0 && l.reste > 0 ? Math.ceil(l.reste / l.loyer) : 1;
+    const d = new Date(now.getFullYear(), now.getMonth() - moisDus + 1, 1);
+    startY = d.getFullYear(); startM = d.getMonth();
+  }
+
+  // Calculer le cumul payé par mois
+  const cumuls = {};
+  DATA.paiements
+    .filter(p => p.locId === locId && p.type !== 'caution')
+    .forEach(p => {
+      const k = p.anneeC + '-' + p.moisC;
+      cumuls[k] = (cumuls[k] || 0) + p.montant;
+    });
+
+  // Construire la liste des périodes
+  let options = '<option value="">— Automatique (plus ancien non soldé)</option>';
+  let cy = startY, cm = startM;
+  while (cy < now.getFullYear() || (cy === now.getFullYear() && cm <= now.getMonth())) {
+    const k = cy + '-' + cm;
+    const paye = cumuls[k] || 0;
+    const statut = paye >= l.loyer ? ' ✓' : paye > 0 ? ' (partiel)' : '';
+    const label = jour + ' ' + MC[cm] + ' - ' + jour + ' ' + MC[(cm + 1) % 12] + ' ' + cy + statut;
+    options += `<option value="${cy}-${cm}">${label}</option>`;
+    if (++cm > 11) { cm = 0; cy++; }
+  }
+  sel.innerHTML = options;
 }
 
 function editLocataire(locId) {

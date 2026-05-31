@@ -628,7 +628,11 @@
   <div class="modal">
     <h3>💳 Enregistrer un paiement</h3>
     <div class="form-group"><label>Immeuble</label><select id="pay-imm" onchange="updatePayLoc()"></select></div>
-    <div class="form-group"><label>Locataire *</label><select id="pay-loc"></select></div>
+    <div class="form-group"><label>Locataire *</label><select id="pay-loc" onchange="updatePayPeriode()"></select></div>
+    <div class="form-group">
+      <label>Période couverte <span style="font-size:11px;color:var(--text3);">(optionnel — automatique si vide)</span></label>
+      <select id="pay-periode"><option value="">— Automatique (plus ancien non soldé)</option></select>
+    </div>
     <div class="form-row">
       <div class="form-group"><label>Date du versement *</label><input type="date" id="pay-date"></div>
       <div class="form-group"><label>Montant versé (FCFA) *</label><input type="number" id="pay-montant" placeholder="80000" onfocus="this.select()"></div>
