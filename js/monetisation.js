@@ -900,6 +900,7 @@ async function payerAvecCampay(plan, duree, phone, provider, total) {
         '<div class="campay-spinner"></div>' +
       '</div>' +
       '<div id="campay-status-msg" style="font-size:12px;color:var(--text3);margin-bottom:16px;">En attente de confirmation…</div>' +
+      '<div id="campay-sandbox-badge" style="display:none;background:#f59e0b;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;margin-bottom:12px;">MODE TEST — 25 XAF</div>' +
       '<button class="btn btn-ghost" style="font-size:12px;" onclick="_cancelCampay()">Annuler</button>' +
     '</div>';
   document.body.appendChild(overlay);
@@ -918,6 +919,12 @@ async function payerAvecCampay(plan, duree, phone, provider, total) {
 
     if (!data.ok || !data.reference) {
       throw new Error(data.error || 'Impossible d\'initier le paiement');
+    }
+
+    // Afficher badge sandbox si mode test
+    if (data.sandbox) {
+      var badge = document.getElementById('campay-sandbox-badge');
+      if (badge) badge.style.display = 'inline-block';
     }
 
     _pollCampayStatus(data.reference, plan, duree);

@@ -79,9 +79,13 @@ async function handleCampayCollect(request, env) {
       return jsonResponse({ ok: false, error: 'CAMPAY_TOKEN non configuré' }, 500, request);
     }
 
-    const base     = (env.CAMPAY_ENV === 'prod') ? 'https://campay.net' : 'https://demo.campay.net';
+    const isProd   = (env.CAMPAY_ENV === 'prod');
+    const base     = isProd ? 'https://campay.net' : 'https://demo.campay.net';
     const safeUser = String(userId || 'user').replace(/[|]/g, '').slice(0, 30);
     const extRef   = `IG|${plan}|${duree || 1}|${safeUser}`;
+
+    // Sandbox : limiter à 25 XAF (limite Campay demo)
+    const finalAmount = isProd ? String(amount) : '25';
 
     const resp = await fetch(`${base}/api/collect/`, {
       method: 'POST',
@@ -90,10 +94,12 @@ async function handleCampayCollect(request, env) {
         'Authorization': `Token ${env.CAMPAY_TOKEN}`
       },
       body: JSON.stringify({
-        amount:             String(amount),
+        amount:             finalAmount,
         currency:           'XAF',
         from:               String(phone),
-        description:        `ImmoGest ${plan} – ${duree || 1} mois`,
+        description:        isProd
+          ? `ImmoGest ${plan} – ${duree || 1} mois`
+          : `[TEST] ImmoGest ${plan} – ${duree || 1} mois`,
         external_reference: extRef,
         webhook_url:        'https://immogest1.fofefranklin57.workers.dev/campay-webhook'
       })
@@ -103,10 +109,11 @@ async function handleCampayCollect(request, env) {
     console.log('[Campay] collect →', JSON.stringify(data));
 
     if (data.reference) {
-      return jsonResponse({ ok: true, reference: data.reference, status: data.status }, 200, request);
+      return jsonResponse({ ok: true, reference: data.reference, status: data.status, sandbox: !isProd }, 200, request);
     }
 
-    return jsonResponse({ ok: false, error: 'Campay collect échoué', details: data }, 502, request);
+    console.error('[Campay] Erreur collect:', JSON.stringify(data));
+    return jsonResponse({ ok: false, error: data.message || data.detail || 'Campay collect échoué', details: data }, 502, request);
 
   } catch (e) {
     console.error('[Campay] /pay exception:', e.message);
