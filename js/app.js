@@ -367,7 +367,7 @@ function topbarAction() {
   if (currentPage === 'locataires' || currentPage === 'immeuble') openModalLocataire(currentImmId);
   else if (currentPage === 'encaissements') openModalPaiement();
   else if (currentPage === 'immeubles-config') openModalImmeuble();
-  else if (currentPage === 'rapport-annuel') genDocxRapportAnnuel();
+  else if (currentPage === 'rapport-annuel') { if (window._rapAnnIid !== undefined) genDocxRapportAnnuel(); else renderRapportAnnuelPage(); }
   else openModalPaiement();
 }
 
@@ -1021,11 +1021,179 @@ async function telechargerTousAlertes() {
 // ============================================================
 // RAPPORT
 // ============================================================
+// ── PDF Synthèse Globale (jsPDF) ──────────────────────────────────────────────
+function genPdfSyntheseGlobale() {
+  if (!window.jspdf) { showToast('jsPDF non chargé', 'red'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc   = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const cab   = _cabInfo();
+  const m     = gM(), a = gA();
+  const MNOMS_L = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const today = new Date().toLocaleDateString('fr-FR');
+  const imms  = getVisibleImmeubles();
+  const fmtN  = n => Number(n||0).toLocaleString('fr-FR') + ' F';
+  const W     = 210, M = 14;
+
+  // ── Palette ──
+  const BLUE  = [14,106,175];
+  const GREEN = [26,107,69];
+  const RED   = [192,57,43];
+  const GRAY  = [100,100,100];
+  const LGRAY = [245,245,245];
+
+  // ── Page de couverture ──────────────────────────────────────────────────────
+  doc.setFillColor(...BLUE);
+  doc.rect(0, 0, W, 60, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(26); doc.setFont('helvetica','bold');
+  doc.text('SYNTHÈSE GLOBALE', W/2, 28, {align:'center'});
+  doc.setFontSize(13); doc.setFont('helvetica','normal');
+  doc.text(`${MNOMS_L[m]} ${a}`, W/2, 38, {align:'center'});
+  doc.setFontSize(10);
+  doc.text(cab.nom, W/2, 48, {align:'center'});
+  if (cab.ville) doc.text(cab.ville + (cab.adresse ? ' · ' + cab.adresse : ''), W/2, 54, {align:'center'});
+
+  // ── KPIs globaux ────────────────────────────────────────────────────────────
+  const tousLocs   = imms.flatMap(im => DATA.locataires.filter(l => l.iid===im.id && l.s!=='libre'));
+  const totalAtt   = tousLocs.reduce((s,l) => s+l.loyer, 0);
+  const totalReste = tousLocs.reduce((s,l) => s+l.reste, 0);
+  const encMois    = DATA.paiements.filter(p => {
+    const l = DATA.locataires.find(x => x.id===(p.locId||p.locataire_id));
+    return l && imms.some(im=>im.id===l.iid) && (p.moisC===m||p.mois===m) && (p.anneeC===a||(p.annee&&new Date(p.date||'').getFullYear()===a));
+  }).reduce((s,p)=>s+p.montant,0);
+  const nbAJour    = tousLocs.filter(l=>l.s==='payé').length;
+  const nbImpayes  = tousLocs.filter(l=>l.s==='impayé').length;
+
+  let y = 70;
+  // Titre section
+  doc.setFillColor(...LGRAY);
+  doc.rect(M, y, W-M*2, 8, 'F');
+  doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(...GRAY);
+  doc.text('VUE D\'ENSEMBLE', M+3, y+5.5);
+  y += 12;
+
+  // KPI boxes (4 colonnes)
+  const kpis = [
+    { label:'Encaissé ce mois', val:fmtN(encMois), color:GREEN },
+    { label:'Loyers attendus/mois', val:fmtN(totalAtt), color:BLUE },
+    { label:'Impayés cumulés', val:fmtN(totalReste), color:RED },
+    { label:'Locataires à jour', val:`${nbAJour} / ${tousLocs.length}`, color:nbImpayes===0?GREEN:BLUE },
+  ];
+  const bw = (W-M*2-9)/4;
+  kpis.forEach((k,i) => {
+    const x = M + i*(bw+3);
+    doc.setFillColor(255,255,255);
+    doc.setDrawColor(...k.color);
+    doc.roundedRect(x, y, bw, 18, 2, 2, 'FD');
+    doc.setFontSize(7.5); doc.setFont('helvetica','normal'); doc.setTextColor(...GRAY);
+    doc.text(k.label, x+bw/2, y+6, {align:'center'});
+    doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(...k.color);
+    doc.text(k.val, x+bw/2, y+13.5, {align:'center'});
+  });
+  y += 24;
+
+  // ── Tableau par immeuble ─────────────────────────────────────────────────────
+  doc.setFillColor(...LGRAY);
+  doc.rect(M, y, W-M*2, 8, 'F');
+  doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(...GRAY);
+  doc.text('DÉTAIL PAR IMMEUBLE', M+3, y+5.5);
+  y += 12;
+
+  // En-tête tableau
+  const cols = [55,20,25,35,35,22];
+  const headers = ['Immeuble','Locs','Libres','Attendu/mois','Encaissé mois','Tx pmt'];
+  let x = M;
+  doc.setFillColor(...BLUE); doc.rect(M, y, W-M*2, 7, 'F');
+  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  headers.forEach((h,i) => {
+    doc.text(h, x+1, y+5);
+    x += cols[i];
+  });
+  y += 7;
+
+  imms.forEach((im, ri) => {
+    if (y > 260) { doc.addPage(); y = 20; }
+    const locs    = DATA.locataires.filter(l=>l.iid===im.id && l.s!=='libre');
+    const lib     = DATA.locataires.filter(l=>l.iid===im.id && l.s==='libre').length;
+    const att     = locs.reduce((s,l)=>s+l.loyer,0);
+    const nbAJ    = locs.filter(l=>l.s==='payé').length;
+    const txP     = locs.length>0 ? Math.round(nbAJ/locs.length*100) : 0;
+    const encIm   = DATA.paiements.filter(p=>{
+      const l=DATA.locataires.find(x=>x.id===(p.locId||p.locataire_id));
+      return l&&l.iid===im.id&&(p.moisC===m||p.mois===m)&&(p.anneeC===a||(p.annee&&new Date(p.date||'').getFullYear()===a));
+    }).reduce((s,p)=>s+p.montant,0);
+
+    doc.setFillColor(ri%2===0?250:255, ri%2===0?250:255, ri%2===0?250:255);
+    doc.rect(M, y, W-M*2, 7, 'F');
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(30,30,30);
+    const vals = [im.nom, String(locs.length), String(lib), fmtN(att), encIm>0?fmtN(encIm):'–', txP+'%'];
+    x = M;
+    vals.forEach((v,i) => {
+      const col = i===4 ? (encIm>0?GREEN:GRAY) : i===5 ? (txP===100?GREEN:txP>=50?[180,120,0]:RED) : [30,30,30];
+      doc.setTextColor(...col);
+      doc.text(String(v), x+1, y+5);
+      x += cols[i];
+    });
+    y += 7;
+  });
+
+  y += 6;
+
+  // ── Liste des impayés ─────────────────────────────────────────────────────────
+  const impayes = tousLocs.filter(l=>l.reste>0).sort((a,b)=>b.reste-a.reste);
+  if (impayes.length > 0) {
+    if (y > 230) { doc.addPage(); y = 20; }
+    doc.setFillColor(...LGRAY); doc.rect(M, y, W-M*2, 8, 'F');
+    doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(...GRAY);
+    doc.text(`IMPAYÉS — ${impayes.length} locataire(s)`, M+3, y+5.5);
+    y += 12;
+
+    const colsI = [60,30,35,35,22];
+    const hdrsI = ['Locataire','Local','Immeuble','Arriérés','Mois'];
+    x = M;
+    doc.setFillColor(...RED); doc.rect(M, y, W-M*2, 7, 'F');
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+    hdrsI.forEach((h,i) => { doc.text(h, x+1, y+5); x += colsI[i]; });
+    y += 7;
+
+    impayes.forEach((l, ri) => {
+      if (y > 270) { doc.addPage(); y = 20; }
+      const im  = DATA.immeubles.find(i=>i.id===l.iid);
+      const mois = l.loyer > 0 ? Math.round(l.reste/l.loyer) : '?';
+      doc.setFillColor(ri%2===0?255:252, ri%2===0?245:245, ri%2===0?245:245);
+      doc.rect(M, y, W-M*2, 7, 'F');
+      doc.setFontSize(8); doc.setFont('helvetica','normal');
+      const valsI = [l.nom, l.appt||'–', im?im.nom.split(' ')[0]:'–', fmtN(l.reste), String(mois)];
+      x = M;
+      valsI.forEach((v,i) => {
+        doc.setTextColor(...(i===3||i===4 ? RED : [30,30,30]));
+        doc.text(String(v), x+1, y+5); x += colsI[i];
+      });
+      y += 7;
+    });
+  }
+
+  // ── Pied de page ─────────────────────────────────────────────────────────────
+  const pages = doc.getNumberOfPages();
+  for (let i=1; i<=pages; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(...BLUE); doc.setLineWidth(0.3);
+    doc.line(M, 285, W-M, 285);
+    doc.setFontSize(7.5); doc.setFont('helvetica','italic'); doc.setTextColor(...GRAY);
+    doc.text(`ImmoGest · ${cab.nom} · Généré le ${today}`, M, 290);
+    doc.text(`Page ${i}/${pages}`, W-M, 290, {align:'right'});
+  }
+
+  doc.save(`Synthese_${MNOMS_L[m]}_${a}.pdf`);
+  showToast('PDF généré ✓');
+}
+
 function renderRapportPage() {
   document.getElementById('page-title').textContent = 'Rapports';
   document.getElementById('page-sub').textContent = 'Sélectionnez un immeuble';
-  document.getElementById('topbar-main-btn').textContent = '📄 Générer';
-  document.getElementById('topbar-main-btn').style.display = 'none';
+  document.getElementById('topbar-main-btn').textContent = '📄 PDF Synthèse globale';
+  document.getElementById('topbar-main-btn').style.display = 'flex';
+  document.getElementById('topbar-main-btn').onclick = genPdfSyntheseGlobale;
 
   const imms = getVisibleImmeubles();
   let html = '<div class="cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:8px;">';
@@ -1396,13 +1564,16 @@ function ouvrirRapportAnnuelImmeuble(iid) {
     </div>
   </div>`;
 
-    // Add back button at top
   html = `<div style="margin-bottom:12px;">
     <button class="btn btn-ghost" onclick="renderRapportAnnuelPage()" style="display:flex;align-items:center;gap:6px;">
       ← Tous les immeubles
     </button>
   </div>` + html;
-  
+
+  document.getElementById('content').innerHTML = html;
+  document.getElementById('topbar-main-btn').style.display = 'flex';
+  document.getElementById('topbar-main-btn').textContent = '📊 Télécharger DOCX';
+  window._rapAnnIid = iid;
 }
 
 
@@ -2939,6 +3110,153 @@ async function genDocxRapportMensuel(iidFilter) {
   link.download = `Rapport_${label}_${MNOMS[m]}_${a}.docx`;
   link.click();
   showToast('Rapport téléchargé ✓');
+}
+
+// ── Rapport annuel DOCX ─────────────────────────────────────────────────────
+async function genDocxRapportAnnuel() {
+  const iid    = window._rapAnnIid;
+  const annee  = window._rapAnnee || new Date().getFullYear();
+  const im     = iid !== undefined ? DATA.immeubles.find(i => i.id === iid) : null;
+  if (iid !== undefined && !im) { showToast('Immeuble introuvable', 'red'); return; }
+  if (!window.docx) { showToast('Bibliothèque docx introuvable', 'red'); return; }
+
+  const {
+    Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+    AlignmentType, BorderStyle, WidthType, ShadingType, VerticalAlign, Header, Footer
+  } = window.docx;
+
+  const cab   = _cabInfo();
+  const BLUE  = '0E6AAF', BLUE_L = 'D6E9F6', GRAY = '666666', WHITE = 'FFFFFF', DGRAY = '333333';
+  const BORD  = 'C5DCF0', RED = 'C0392B', GREEN = '1A6B45';
+  const MNOMS_L = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const fmtN  = n => Number(n||0).toLocaleString('fr-FR');
+  const today = new Date().toLocaleDateString('fr-FR');
+  const noBorder = { top:{style:BorderStyle.NONE}, bottom:{style:BorderStyle.NONE}, left:{style:BorderStyle.NONE}, right:{style:BorderStyle.NONE} };
+
+  function mkCell(text, opts={}) {
+    const { bg, bold, color, size=20, align='left' } = opts;
+    return new TableCell({
+      children:[new Paragraph({
+        children:[new TextRun({ text:String(text), bold:!!bold, color:color||DGRAY, size, font:'Calibri' })],
+        alignment: align === 'right' ? AlignmentType.RIGHT : AlignmentType.LEFT
+      })],
+      shading: bg ? { fill:bg, type:ShadingType.CLEAR } : undefined,
+      borders: noBorder,
+      margins: { top:60, bottom:60, left:100, right:100 }
+    });
+  }
+
+  function secTitle(text) {
+    return new Paragraph({
+      children:[new TextRun({text, bold:true, size:22, color:WHITE, font:'Calibri'})],
+      shading:{fill:BLUE, type:ShadingType.CLEAR},
+      spacing:{before:240, after:80}, indent:{left:100, right:100}
+    });
+  }
+
+  const immsToProcess = iid !== undefined ? [im] : DATA.immeubles.filter(i => DATA.locataires.some(l => l.iid===i.id && l.s!=='libre'));
+  const sections = [];
+
+  immsToProcess.forEach((imm, idx) => {
+    const locs = DATA.locataires.filter(l => l.iid===imm.id && l.s!=='libre');
+    const pays  = DATA.paiements.filter(p => locs.some(l => l.id===p.locId) && (p.anneeC===annee || (p.annee && new Date(p.date).getFullYear()===annee)));
+    const totalEncaisse = pays.reduce((s,p)=>s+p.montant,0);
+    const totalAttendu  = locs.reduce((s,l)=>s+l.loyer,0) * 12;
+    const totalReste    = locs.reduce((s,l)=>s+l.reste,0);
+    const txRecouvr     = totalAttendu > 0 ? Math.round(totalEncaisse/totalAttendu*100) : 0;
+
+    const children = [
+      // Titre immeuble
+      new Paragraph({
+        children:[new TextRun({text:`RAPPORT ANNUEL ${annee} — ${imm.nom}`, bold:true, size:28, color:BLUE, font:'Berlin Sans FB'})],
+        alignment:AlignmentType.CENTER,
+        border:{bottom:{style:BorderStyle.SINGLE, size:6, color:'F8CACB', space:4}},
+        spacing:{after:80}
+      }),
+      new Paragraph({
+        children:[new TextRun({text:`${cab.nom}  ·  ${imm.ville}${imm.quartier?' · '+imm.quartier:''}  ·  Généré le ${today}`, size:18, color:GRAY, font:'Calibri'})],
+        alignment:AlignmentType.CENTER, spacing:{after:400}
+      }),
+
+      // KPIs
+      secTitle('SYNTHÈSE GLOBALE'),
+      new Paragraph({spacing:{after:80}}),
+      new Table({
+        width:{size:9506,type:WidthType.DXA}, columnWidths:[2376,2376,2377,2377],
+        rows:[new TableRow({children:[
+          mkCell(`Encaissé ${annee}\n${fmtN(totalEncaisse)} FCFA`, {bg:BLUE_L, bold:true, color:BLUE, size:18}),
+          mkCell(`Attendu ${annee}\n${fmtN(totalAttendu)} FCFA`, {bg:'F5F5F5', bold:true, size:18}),
+          mkCell(`Arriérés cumulés\n${fmtN(totalReste)} FCFA`, {bg:'FDF0F0', bold:true, color:RED, size:18}),
+          mkCell(`Taux recouvrement\n${txRecouvr}%`, {bg: txRecouvr>=70?'F0FFF4':'FDF0F0', bold:true, color: txRecouvr>=70?GREEN:RED, size:18}),
+        ]})]
+      }),
+      new Paragraph({spacing:{after:400}}),
+
+      // Tableau mensuel par locataire
+      secTitle('SUIVI MENSUEL PAR LOCATAIRE'),
+      new Paragraph({spacing:{after:80}}),
+      new Table({
+        width:{size:9506,type:WidthType.DXA},
+        columnWidths:[1800,600,...Array(12).fill(530),700,700],
+        rows:[
+          new TableRow({children:[
+            mkCell('Locataire',{bg:BLUE_L,bold:true,color:BLUE,size:16}),
+            mkCell('Local',{bg:BLUE_L,bold:true,color:BLUE,size:16}),
+            ...MNOMS_L.map(m=>mkCell(m.slice(0,3),{bg:BLUE_L,bold:true,color:BLUE,size:14,align:'right'})),
+            mkCell('Total',{bg:BLUE_L,bold:true,color:BLUE,size:16,align:'right'}),
+            mkCell('Arriérés',{bg:BLUE_L,bold:true,color:RED,size:16,align:'right'}),
+          ]}),
+          ...locs.map(l => {
+            let totalLoc = 0;
+            const moisCells = MNOMS_L.map((_,mi) => {
+              const montant = pays.filter(p=>p.locId===l.id&&(p.moisC===mi||p.mois===mi)&&(p.anneeC===annee||(p.annee&&new Date(p.date).getFullYear()===annee))).reduce((s,p)=>s+p.montant,0);
+              totalLoc += montant;
+              const color = montant===0?'CCCCCC':montant>=l.loyer?GREEN:'E67E22';
+              const txt   = montant===0?'–':montant>=l.loyer?'✓':`${Math.round(montant/l.loyer*100)}%`;
+              return mkCell(txt,{color,size:14,align:'right'});
+            });
+            return new TableRow({children:[
+              mkCell(l.nom,{bold:true,size:16}),
+              mkCell(l.appt||'–',{size:14}),
+              ...moisCells,
+              mkCell(fmtN(totalLoc),{bold:true,size:14,align:'right',color:GREEN}),
+              mkCell(l.reste>0?fmtN(l.reste):'–',{bold:l.reste>0,size:14,align:'right',color:l.reste>0?RED:GRAY}),
+            ]});
+          }),
+          new TableRow({children:[
+            mkCell('TOTAL',{bg:'F5F5F5',bold:true,size:16}),
+            mkCell('',{bg:'F5F5F5'}),
+            ...MNOMS_L.map((_,mi)=>{
+              const t=pays.filter(p=>p.moisC===mi||p.mois===mi).reduce((s,p)=>s+p.montant,0);
+              return mkCell(t>0?fmtN(t):'',{bg:'F5F5F5',bold:true,size:13,align:'right',color:BLUE});
+            }),
+            mkCell(fmtN(totalEncaisse),{bg:'F5F5F5',bold:true,size:14,align:'right',color:GREEN}),
+            mkCell(fmtN(totalReste),{bg:'FDF0F0',bold:true,size:14,align:'right',color:RED}),
+          ]})
+        ]
+      }),
+      new Paragraph({spacing:{after:300}}),
+      new Paragraph({
+        children:[new TextRun({text:`✓ = Payé complet   % = Partiel   – = Non payé`, size:16, color:GRAY, italics:true, font:'Calibri'})],
+        spacing:{after:600}
+      }),
+    ];
+
+    sections.push({
+      properties:{page:{size:{width:21006,height:16838},margin:{top:1000,right:800,bottom:1000,left:800}},orientation:'landscape'},
+      headers:{default:new Header({children:[new Paragraph({children:[new TextRun({text:`${cab.nom}  ·  Rapport Annuel ${annee}  ·  ${imm.nom}`,size:16,color:GRAY,font:'Calibri'})]})  ]})},
+      footers:{default:new Footer({children:[new Paragraph({children:[new TextRun({text:`Document généré le ${today} par ImmoGest · ${cab.nom}`,size:14,color:'BBBBBB',italics:true,font:'Calibri'})],alignment:AlignmentType.CENTER})]})},
+      children
+    });
+  });
+
+  const doc  = new Document({ styles:{default:{document:{run:{font:'Calibri',size:20}}}}, sections });
+  const blob = await Packer.toBlob(doc);
+  const link = document.createElement('a');
+  link.href  = URL.createObjectURL(blob);
+  link.download = im ? `RapportAnnuel_${im.nom.replace(/\s+/g,'_')}_${annee}.docx` : `RapportAnnuel_Tous_${annee}.docx`;
+  link.click();
+  showToast('Rapport annuel téléchargé ✓');
 }
 
 async function genDocxRapportPeriode(debStr, finStr, iidFilter) {
