@@ -2430,7 +2430,8 @@ function downloadFicheSuivi(locId) {
     // Footer
     doc.setFontSize(7);
     doc.setTextColor(150,150,150);
-    doc.text('ImmoGest — Cabinet CRAA — Généré le ' + new Date().toLocaleDateString('fr-FR'), W/2, H-5, { align:'center' });
+    const _cabNom = (DATA.settings && DATA.settings.cabinet && DATA.settings.cabinet.nom) ? DATA.settings.cabinet.nom : 'ImmoGest';
+    doc.text('ImmoGest — ' + _cabNom + ' — Généré le ' + new Date().toLocaleDateString('fr-FR'), W/2, H-5, { align:'center' });
     
     doc.save('Fiche_Suivi_' + l.nom.replace(/\s+/g,'_') + '_' + annee + '.pdf');
     showToast('Fiche téléchargée ✓');
@@ -2711,17 +2712,17 @@ async function genDocxRapportMensuel(iidFilter) {
           }),
           new TableCell({
             children:[
-              new Paragraph({children:[new TextRun({text:"CABINET DE RECOUVREMENT ET D\'AVOCATS ASSOCIÉS",bold:true,size:20,color:BLUE,font:'Berlin Sans FB'})],spacing:{after:20}}),
-              new Paragraph({children:[new TextRun({text:"CRAA  ·  RCCM N° RC/YAD/2018/A/3347  ·  N°Contrib. PO38412724963M",size:16,color:GRAY,font:'Calibri'})],spacing:{after:0}}),
+              new Paragraph({children:[new TextRun({text:_cabInfo().nom,bold:true,size:20,color:BLUE,font:'Berlin Sans FB'})],spacing:{after:20}}),
+              new Paragraph({children:[new TextRun({text:_cabInfo().ligne1(),size:16,color:GRAY,font:'Calibri'})],spacing:{after:0}}),
             ],
             borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.SINGLE,size:6,color:BLUE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE}},
             verticalAlign:VerticalAlign.CENTER,margins:{top:0,bottom:60,left:100,right:60}
           }),
           new TableCell({
             children:[
-              new Paragraph({children:[new TextRun({text:"📞 +237 676 52 89 17",size:17,color:GRAY})],spacing:{after:20}}),
-              new Paragraph({children:[new TextRun({text:"693 53 06 85",size:17,color:GRAY})],spacing:{after:20}}),
-              new Paragraph({children:[new TextRun({text:"camerounaiserecourement@yahoo.com",size:15,color:GRAY,italics:true})],spacing:{after:0}}),
+              new Paragraph({children:[new TextRun({text:_cabInfo().tel1 ? '📞 '+_cabInfo().tel1 : '',size:17,color:GRAY})],spacing:{after:20}}),
+              new Paragraph({children:[new TextRun({text:_cabInfo().tel2 || '',size:17,color:GRAY})],spacing:{after:20}}),
+              new Paragraph({children:[new TextRun({text:_cabInfo().email || '',size:15,color:GRAY,italics:true})],spacing:{after:0}}),
             ],
             borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.SINGLE,size:6,color:BLUE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE}},
             verticalAlign:VerticalAlign.CENTER,margins:{top:0,bottom:60,left:60,right:0}
@@ -2733,7 +2734,7 @@ async function genDocxRapportMensuel(iidFilter) {
     // ── FOOTER ─────────────────────────────────────────────────────────
     const ftr = new Footer({children:[
       new Paragraph({
-        children:[new TextRun({text:"Immeuble de la Pharmacie MESSA, 3ème étage, Yaoundé  ·  "+im.nom+" · "+MNOMS[m]+" "+a,size:16,color:'AAAAAA',italics:true,font:'Calibri'})],
+        children:[new TextRun({text:_cabInfo().ligne2()+"  ·  "+im.nom+" · "+MNOMS[m]+" "+a,size:16,color:'AAAAAA',italics:true,font:'Calibri'})],
         border:{top:{style:BorderStyle.SINGLE,size:4,color:BLUE,space:4}},
         spacing:{before:100}
       }),
@@ -2890,7 +2891,7 @@ async function genDocxRapportMensuel(iidFilter) {
           new TableCell({
             children:[
               new Paragraph({children:[new TextRun({text:'Le Gestionnaire',bold:true,size:20,color:BLUE,font:'Calibri'})],spacing:{after:80}}),
-              new Paragraph({children:[new TextRun({text:'CRAA',size:18,color:GRAY,font:'Calibri',italics:true})],spacing:{after:400}}),
+              new Paragraph({children:[new TextRun({text:_cabInfo().nom,size:18,color:GRAY,font:'Calibri',italics:true})],spacing:{after:400}}),
               new Paragraph({children:[new TextRun({text:'Signature & Cachet :',size:18,color:GRAY,font:'Calibri'})]}),
               new Paragraph({border:{bottom:{style:BorderStyle.SINGLE,size:4,color:BLUE}},spacing:{before:560,after:0}}),
             ],
@@ -2911,7 +2912,7 @@ async function genDocxRapportMensuel(iidFilter) {
       }),
       br(),
       new Paragraph({
-        children:[new TextRun({text:`Document généré le ${today} par ImmoGest · CRAA`,size:16,color:'BBBBBB',italics:true,font:'Calibri'})],
+        children:[new TextRun({text:`Document généré le ${today} par ImmoGest · ${_cabInfo().nom}`,size:16,color:'BBBBBB',italics:true,font:'Calibri'})],
         alignment:AlignmentType.CENTER,spacing:{before:200}
       }),
     ];
@@ -3007,14 +3008,14 @@ function previewRapportMensuel(iidFilter) {
     html += `
     <div style="border-bottom:3px solid #0E6AAF;padding-bottom:10px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-start;">
       <div>
-        <div style="font-size:15px;font-weight:700;color:#0E6AAF;font-family:'Berlin Sans FB',Calibri,sans-serif;letter-spacing:.3px;">CABINET DE RECOUVREMENT ET D'AVOCATS ASSOCIÉS</div>
-        <div style="font-size:11px;color:#888;margin-top:2px;">CRAA  ·  RCCM N° RC/YAD/2018/A/3347  ·  N°Contrib. PO38412724963M</div>
-        <div style="font-size:11px;color:#888;">Immeuble de la Pharmacie MESSA, 3ème étage, Yaoundé</div>
+        <div style="font-size:15px;font-weight:700;color:#0E6AAF;font-family:'Berlin Sans FB',Calibri,sans-serif;letter-spacing:.3px;">${_cabInfo().nom}</div>
+        <div style="font-size:11px;color:#888;margin-top:2px;">${_cabInfo().ligne1()}</div>
+        <div style="font-size:11px;color:#888;">${_cabInfo().ligne2()}</div>
       </div>
       <div style="text-align:right;font-size:11px;color:#888;line-height:1.8;">
-        <div>📞 +237 676 52 89 17</div>
-        <div>693 53 06 85</div>
-        <div style="font-size:10px;">camerounaiserecourement@yahoo.com</div>
+        <div>${_cabInfo().tel1 ? '📞 '+_cabInfo().tel1 : ''}</div>
+        <div>${_cabInfo().tel2 || ''}</div>
+        <div style="font-size:10px;">${_cabInfo().email || ''}</div>
       </div>
     </div>`;
 
@@ -3162,7 +3163,7 @@ function previewRapportMensuel(iidFilter) {
     <div style="display:flex;gap:40px;margin-top:32px;">
       <div style="flex:1;">
         <div style="font-weight:700;color:#0E6AAF;font-size:12px;">Le Gestionnaire</div>
-        <div style="font-size:11px;color:#888;font-style:italic;margin-bottom:32px;">CRAA</div>
+        <div style="font-size:11px;color:#888;font-style:italic;margin-bottom:32px;">${_cabInfo().nom}</div>
         <div style="font-size:11px;color:#888;">Signature & Cachet :</div>
         <div style="border-bottom:1.5px solid #0E6AAF;margin-top:40px;"></div>
       </div>
@@ -3174,7 +3175,7 @@ function previewRapportMensuel(iidFilter) {
       </div>
     </div>
     <div style="text-align:center;font-size:10px;color:#bbb;font-style:italic;margin-top:16px;">
-      Document généré le ${today} par ImmoGest · CRAA
+      Document généré le ${today} par ImmoGest · ${_cabInfo().nom}
     </div>`;
   });
 
@@ -3352,9 +3353,9 @@ async function genDocxPlainte(locId) {
           borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.NONE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE},insideH:{style:BorderStyle.NONE},insideV:{style:BorderStyle.NONE}},
           rows:[new TableRow({children:[
             mkCell([
-              new Paragraph({children:[r("Cabinet de Recouvrement et d\u2019Avocats Associ\u00e9s",{bold:true})],spacing:{after:80}}),
-              new Paragraph({children:[r("CRAA",{bold:true})],spacing:{after:80}}),
-              new Paragraph({children:[r("+237 676 52 89 17 / 693 53 06 85",{size:22})],spacing:{after:0}}),
+              new Paragraph({children:[r(_cabInfo().nom,{bold:true})],spacing:{after:80}}),
+              new Paragraph({children:[r(_cabInfo().rccm ? 'RCCM '+_cabInfo().rccm : '',{bold:true})],spacing:{after:80}}),
+              new Paragraph({children:[r(_cabInfo().tels(),{size:22})],spacing:{after:0}}),
             ],{padL:0}),
             mkCell([
               new Paragraph({children:[r(villeDoc+", le "+today)],alignment:AlignmentType.RIGHT,spacing:{after:200}}),
@@ -3439,7 +3440,7 @@ async function genDocxPlainte(locId) {
         mkP([
           r("C\u2019est pourquoi, "),
           r(im.nom,{bold:true}),
-          r(", repr\u00e9sent\u00e9 par le Cabinet CRAA, sollicite qu\u2019il vous plaise, Monsieur le Procureur de la R\u00e9publique, de bien vouloir recevoir la pr\u00e9sente plainte, d\u2019ouvrir une enqu\u00eate pr\u00e9liminaire \u00e0 l\u2019effet de faire convoquer "),
+          r(", repr\u00e9sent\u00e9 par "+_cabInfo().nom+", sollicite qu\u2019il vous plaise, Monsieur le Procureur de la R\u00e9publique, de bien vouloir recevoir la pr\u00e9sente plainte, d\u2019ouvrir une enqu\u00eate pr\u00e9liminaire \u00e0 l\u2019effet de faire convoquer "),
           r(l.nom,{bold:true}),
           r(" afin qu\u2019il r\u00e9ponde de ses actes, et de prendre toute mesure l\u00e9gale permettant la restitution des sommes dues et l\u2019\u00e9tablissement des responsabilit\u00e9s."),
         ]),
@@ -3458,7 +3459,7 @@ async function genDocxPlainte(locId) {
               new Paragraph({border:{bottom:{style:BorderStyle.SINGLE,size:4,color:"000000"}},spacing:{before:560,after:0}}),
             ],{padL:0}),
             mkCell([
-              new Paragraph({children:[r("Pour le Cabinet CRAA",{bold:true,size:22})],alignment:AlignmentType.RIGHT,spacing:{after:80}}),
+              new Paragraph({children:[r("Pour "+_cabInfo().nom,{bold:true,size:22})],alignment:AlignmentType.RIGHT,spacing:{after:80}}),
               new Paragraph({children:[r("Le Mandataire",{size:20,italic:true})],alignment:AlignmentType.RIGHT,spacing:{after:400}}),
               new Paragraph({border:{bottom:{style:BorderStyle.SINGLE,size:4,color:"000000"}},spacing:{before:560,after:0}}),
             ],{padR:0}),
@@ -3467,7 +3468,7 @@ async function genDocxPlainte(locId) {
 
         sp(200),
         new Paragraph({
-          children:[r("Document g\u00e9n\u00e9r\u00e9 le "+dateAuj+" par ImmoGest \u00b7 CRAA",{size:18,italic:true,color:"AAAAAA"})],
+          children:[r("Document g\u00e9n\u00e9r\u00e9 le "+dateAuj+" par ImmoGest \u00b7 "+_cabInfo().nom,{size:18,italic:true,color:"AAAAAA"})],
           alignment:AlignmentType.CENTER
         }),
       ],
@@ -4611,7 +4612,7 @@ async function validerDeclaration() {
   d.montantValidé = montant;
   d.dateValidation = date;
   d.noteComptable = note;
-  d.receiptId = 'CRAA-' + new Date().getFullYear() + '-' + String(declId).padStart(5, '0');
+  d.receiptId = 'IMG-' + new Date().getFullYear() + '-' + String(declId).padStart(5, '0');
 
   // Add to official paiements
   if (!DATA.nextPayId) DATA.nextPayId = 50;
@@ -4696,7 +4697,7 @@ async function genPDFRecu(payId, decl) {
 
   const today = new Date().toLocaleDateString('fr-FR', {day:'2-digit',month:'long',year:'numeric'});
   const dateAuj = new Date().toLocaleDateString('fr-FR');
-  const receiptId = decl ? decl.receiptId : ('CRAA-' + new Date().getFullYear() + '-' + String(payId).padStart(5,'0'));
+  const receiptId = decl ? decl.receiptId : ('IMG-' + new Date().getFullYear() + '-' + String(payId).padStart(5,'0'));
   const modeLabels = {mtn:'Mobile Money MTN',orange:'Orange Money',virement:'Virement bancaire',depot:'Dépôt bancaire direct',especes:'Espèces'};
 
   const W = 210, H = 297;
@@ -4715,12 +4716,13 @@ async function genPDFRecu(payId, decl) {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('CABINET DE RECOUVREMENT ET D\'AVOCATS ASSOCIÉS', W/2, 14, {align:'center'});
+  doc.text(_cabInfo().nom.toUpperCase(), W/2, 14, {align:'center'});
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text('CRAA  ·  +237 676 52 89 17 / 693 53 06 85  ·  camerounaiserecourement@yahoo.com', W/2, 22, {align:'center'});
+  const _ci = _cabInfo();
+  doc.text([_ci.tels(), _ci.email].filter(Boolean).join('  ·  '), W/2, 22, {align:'center'});
   doc.setFontSize(8);
-  doc.text('RCCM N° RC/YAD/2018/A/3347  ·  N°Contrib. PO38412724963M  ·  Immeuble Pharmacie MESSA, 3ème étage, Yaoundé', W/2, 29, {align:'center'});
+  doc.text([_ci.rccm ? 'RCCM '+_ci.rccm : '', _ci.ligne2()].filter(Boolean).join('  ·  '), W/2, 29, {align:'center'});
 
   // Pink accent line
   doc.setFillColor(...PINK);
@@ -4813,7 +4815,7 @@ async function genPDFRecu(payId, decl) {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...DARK);
-  const attestation = 'Le Cabinet CRAA certifie avoir reçu de ' + l.nom + ' la somme de ' +
+  const attestation = _cabInfo().nom + ' certifie avoir reçu de ' + l.nom + ' la somme de ' +
     fmtN(p.montant) + ' FCFA au titre du loyer du local ' + (l.appt||'–') +
     ' pour le mois de ' + MNOMS[p.moisC] + ' ' + p.anneeC +
     '. Ce reçu constitue une pièce justificative officielle de paiement.';
@@ -4833,7 +4835,7 @@ async function genPDFRecu(payId, decl) {
   doc.text('Le Locataire', W - 20, y + 25, {align:'right'});
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(...GRAY);
-  doc.text('Cabinet CRAA', 20, y + 30);
+  doc.text(_cabInfo().nom, 20, y + 30);
   doc.text(l.nom, W - 20, y + 30, {align:'right'});
   y += 40;
 
@@ -4843,9 +4845,9 @@ async function genPDFRecu(payId, decl) {
   doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...GRAY);
-  doc.text('🔒 Document officiel – Réf. ' + receiptId + ' – Émis le ' + dateAuj + ' par ImmoGest · CRAA', W/2, y + 5, {align:'center'});
+  doc.text('Document officiel – Réf. ' + receiptId + ' – Émis le ' + dateAuj + ' par ImmoGest · ' + _cabInfo().nom, W/2, y + 5, {align:'center'});
   doc.text('Tout document non muni de cette référence est considéré comme non valide.', W/2, y + 10, {align:'center'});
-  doc.text('DOCUMENT NON MODIFIABLE – Toute altération constitue un faux en écriture au sens du Code Pénal camerounais.', W/2, y + 15, {align:'center'});
+  doc.text('DOCUMENT NON MODIFIABLE – Toute altération constitue un faux.', W/2, y + 15, {align:'center'});
 
   // ── FOOTER ────────────────────────────────────────────────────────────────
   doc.setFillColor(...BLUE);
@@ -4853,8 +4855,8 @@ async function genPDFRecu(payId, decl) {
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(255, 255, 255);
-  doc.text('Cabinet CRAA · Immeuble Pharmacie MESSA, 3ème étage, Yaoundé · +237 676 52 89 17', W/2, H - 8, {align:'center'});
-  doc.text('+237 693 53 06 85 · camerounaiserecourement@yahoo.com', W/2, H - 4, {align:'center'});
+  doc.text(_cabInfo().nom + (_cabInfo().ligne2() ? ' · ' + _cabInfo().ligne2() : '') + (_cabInfo().tel1 ? ' · ' + _cabInfo().tel1 : ''), W/2, H - 8, {align:'center'});
+  doc.text(_cabInfo().tel2 || _cabInfo().email ? [_cabInfo().tel2, _cabInfo().email].filter(Boolean).join(' · ') : ' ', W/2, H - 4, {align:'center'});
 
   // Save PDF
   doc.save('Recu_' + receiptId + '_' + l.nom.replace(/\s+/g,'_') + '.pdf');
@@ -5160,8 +5162,8 @@ function previewRecu(payId) {
   const html = `
     <!-- En-tête -->
     <div style="background:#0E6AAF;color:#fff;padding:16px 20px;margin:-32px -32px 20px -32px;border-radius:4px 4px 0 0;">
-      <div style="font-size:14px;font-weight:700;letter-spacing:.3px;">CABINET DE RECOUVREMENT ET D'AVOCATS ASSOCIÉS</div>
-      <div style="font-size:11px;opacity:.8;margin-top:3px;">CRAA · +237 676 52 89 17 / 693 53 06 85 · camerounaiserecourement@yahoo.com</div>
+      <div style="font-size:14px;font-weight:700;letter-spacing:.3px;">${_cabInfo().nom.toUpperCase()}</div>
+      <div style="font-size:11px;opacity:.8;margin-top:3px;">${[_cabInfo().tels(), _cabInfo().email].filter(Boolean).join(' · ')}</div>
     </div>
     <!-- Bande rose -->
     <div style="height:4px;background:#F8CACB;margin:-20px -32px 20px -32px;"></div>
@@ -5176,7 +5178,7 @@ function previewRecu(payId) {
     <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:12px;">
       <tr>
         <td style="padding:7px 10px;background:#D6E9F6;font-weight:700;color:#0E6AAF;width:35%;border:1px solid #C5DCF0;">Bailleur / Gestionnaire</td>
-        <td style="padding:7px 10px;border:1px solid #C5DCF0;">Cabinet CRAA – ${im ? im.nom : '–'}</td>
+        <td style="padding:7px 10px;border:1px solid #C5DCF0;">${_cabInfo().nom} – ${im ? im.nom : '–'}</td>
       </tr>
       <tr>
         <td style="padding:7px 10px;background:#D6E9F6;font-weight:700;color:#0E6AAF;border:1px solid #C5DCF0;">Locataire</td>
@@ -5216,7 +5218,7 @@ function previewRecu(payId) {
 
     <!-- Attestation -->
     <p style="font-size:12px;text-align:justify;color:#333;margin-bottom:20px;">
-      Le Cabinet CRAA certifie avoir reçu de <strong>${l?l.nom:'–'}</strong> la somme de
+      ${_cabInfo().nom} certifie avoir reçu de <strong>${l?l.nom:'–'}</strong> la somme de
       <strong>${fmtN(p.montant)} FCFA</strong> au titre du loyer du local
       <strong>${l?l.appt||'–':'–'}</strong> pour la période de
       <strong>${p.periodeLabel || (p.moisFin && (p.moisFin !== p.moisC || p.anneeFin !== p.anneeC) ? MNOMS[p.moisC]+' '+p.anneeC+' à '+MNOMS[p.moisFin]+' '+p.anneeFin : MNOMS[p.moisC]+' '+p.anneeC)}</strong>.
@@ -5227,7 +5229,7 @@ function previewRecu(payId) {
     <div style="display:flex;gap:30px;margin-top:20px;">
       <div style="flex:1;">
         <div style="font-weight:700;color:#0E6AAF;font-size:12px;">Le Gestionnaire / Bailleur</div>
-        <div style="font-size:11px;color:#888;font-style:italic;margin-bottom:30px;">Cabinet CRAA</div>
+        <div style="font-size:11px;color:#888;font-style:italic;margin-bottom:30px;">${_cabInfo().nom}</div>
         <div style="border-bottom:1.5px solid #0E6AAF;"></div>
       </div>
       <div style="flex:1;text-align:right;">
@@ -5239,7 +5241,7 @@ function previewRecu(payId) {
 
     <!-- Sécurité -->
     <div style="margin-top:20px;background:#f5f7fa;border-radius:4px;padding:10px 14px;font-size:10px;color:#888;text-align:center;">
-      🔒 Réf. ${receiptId} · Émis le ${new Date().toLocaleDateString('fr-FR')} par ImmoGest · CRAA<br>
+      🔒 Réf. ${receiptId} · Émis le ${new Date().toLocaleDateString('fr-FR')} par ImmoGest · ${_cabInfo().nom}<br>
       <strong>Document officiel non modifiable</strong> — Toute altération constitue un faux en écriture.
     </div>`;
 
@@ -6155,7 +6157,9 @@ function renderParametres() {
 
   if (!DATA.settings) DATA.settings = {};
   if (!DATA.settings.momo) DATA.settings.momo = { mtn: '', orange: '', wave: '' };
+  if (!DATA.settings.cabinet) DATA.settings.cabinet = {};
   const m = DATA.settings.momo;
+  const cab = DATA.settings.cabinet;
 
   const monNom = SESSION ? SESSION.nom : '';
   const sectionMonCompte = isIndiv ? `
@@ -6169,6 +6173,55 @@ function renderParametres() {
     </div>` : '';
 
   document.getElementById('content').innerHTML = sectionMonCompte + `
+
+    <div class="card" style="max-width:520px;margin-bottom:16px;">
+      <div class="card-title" style="margin-bottom:16px;">🏢 Identité du Cabinet</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Ces informations apparaissent sur tous les documents générés : reçus, contrats, mises en demeure, rapports.</p>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="form-group">
+          <label>Nom du cabinet / société *</label>
+          <input type="text" id="cab-nom" value="${cab.nom||''}" placeholder="Cabinet de Gestion Immobilière XYZ" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <div class="form-group" style="flex:1;min-width:160px;">
+            <label>Ville</label>
+            <input type="text" id="cab-ville" value="${cab.ville||''}" placeholder="Yaoundé" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
+          </div>
+          <div class="form-group" style="flex:1;min-width:160px;">
+            <label>Quartier / Adresse</label>
+            <input type="text" id="cab-adresse" value="${cab.adresse||''}" placeholder="Bastos, Immeuble XYZ" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <div class="form-group" style="flex:1;min-width:160px;">
+            <label>Téléphone 1</label>
+            <input type="tel" id="cab-tel1" value="${cab.tel1||''}" placeholder="+237 6XX XXX XXX" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
+          </div>
+          <div class="form-group" style="flex:1;min-width:160px;">
+            <label>Téléphone 2</label>
+            <input type="tel" id="cab-tel2" value="${cab.tel2||''}" placeholder="+237 6XX XXX XXX" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <div class="form-group" style="flex:1;min-width:160px;">
+            <label>Email</label>
+            <input type="email" id="cab-email" value="${cab.email||''}" placeholder="contact@cabinet.cm" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
+          </div>
+          <div class="form-group" style="flex:1;min-width:160px;">
+            <label>RCCM / N° contribuable</label>
+            <input type="text" id="cab-rccm" value="${cab.rccm||''}" placeholder="RC/YAO/2020/B/XXX" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Slogan / Mention (optionnel)</label>
+          <input type="text" id="cab-slogan" value="${cab.slogan||''}" placeholder="Votre patrimoine, notre priorité" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:16px;padding:12px;" onclick="saveParametresCabinet()">
+        💾 Enregistrer les infos cabinet
+      </button>
+    </div>
+
     <div class="card" style="max-width:520px;">
       <div class="card-title" style="margin-bottom:20px;">📱 Numéros Mobile Money du Cabinet</div>
       <p style="font-size:13px;color:var(--text2);margin-bottom:24px;">Ces numéros seront affichés aux locataires quand ils souhaitent payer par Mobile Money.</p>
@@ -6300,6 +6353,40 @@ function sauvegarderNomAdmin() {
   const chip = document.querySelector('.user-chip span');
   if (chip) chip.textContent = nom;
   showToast('Nom mis à jour : ' + nom, 'green');
+}
+
+// Retourne les infos cabinet avec fallback CRAA si non configuré
+function _cabInfo() {
+  const cab = (DATA.settings && DATA.settings.cabinet) || {};
+  return {
+    nom:     cab.nom     || 'Cabinet de Gestion Immobilière',
+    ville:   cab.ville   || 'Yaoundé',
+    adresse: cab.adresse || '',
+    tel1:    cab.tel1    || '',
+    tel2:    cab.tel2    || '',
+    email:   cab.email   || '',
+    rccm:    cab.rccm    || '',
+    slogan:  cab.slogan  || '',
+    ligne1() { return [this.rccm ? 'RCCM ' + this.rccm : '', this.nom].filter(Boolean).join('  ·  '); },
+    ligne2() { return [this.adresse, this.ville].filter(Boolean).join(', '); },
+    tels()   { return [this.tel1, this.tel2].filter(Boolean).join('  /  '); },
+  };
+}
+
+function saveParametresCabinet() {
+  if (!DATA.settings) DATA.settings = {};
+  DATA.settings.cabinet = {
+    nom:     (document.getElementById('cab-nom').value     || '').trim(),
+    ville:   (document.getElementById('cab-ville').value   || '').trim(),
+    adresse: (document.getElementById('cab-adresse').value || '').trim(),
+    tel1:    (document.getElementById('cab-tel1').value    || '').trim(),
+    tel2:    (document.getElementById('cab-tel2').value    || '').trim(),
+    email:   (document.getElementById('cab-email').value   || '').trim(),
+    rccm:    (document.getElementById('cab-rccm').value    || '').trim(),
+    slogan:  (document.getElementById('cab-slogan').value  || '').trim(),
+  };
+  saveData();
+  showToast('Infos cabinet enregistrées ✓', 'green');
 }
 
 function saveParametresMomo() {
@@ -7741,7 +7828,7 @@ function loginLocataire() {
     return;
   }
   if (locataire.actif === false) {
-    errEl.textContent = 'Compte suspendu. Contactez le Cabinet CRAA.';
+    errEl.textContent = 'Compte suspendu. Contactez votre gestionnaire.';
     errEl.style.display = 'block';
     return;
   }
@@ -8244,7 +8331,7 @@ Sois direct et actionnable. Réponds en français avec du HTML simple. 200 mots 
 
 ${_buildDataContext()}`;
     } else if (role === 'comptable') {
-      systemPrompt = `Tu es l'assistant IA de ImmoGest pour ${nom}, comptable du Cabinet CRAA.
+      systemPrompt = `Tu es l'assistant IA de ImmoGest pour ${nom}, comptable du cabinet ${_cabInfo().nom}.
 Tu as accès à toutes les données financières du portefeuille.
 Tu peux : analyser les flux d'encaissements, calculer les commissions, identifier les anomalies comptables, préparer des synthèses financières.
 Sois précis et chiffré. Réponds en français avec du HTML simple. 300 mots max.
@@ -8252,7 +8339,7 @@ Sois précis et chiffré. Réponds en français avec du HTML simple. 300 mots ma
 ${_buildDataContext()}`;
     } else {
       const roleLabel = role === 'gestionnaire' ? 'gestionnaire' : 'administrateur';
-      systemPrompt = `Tu es l'assistant IA de ImmoGest pour ${nom}, ${roleLabel} du Cabinet CRAA au Cameroun.
+      systemPrompt = `Tu es l'assistant IA de ImmoGest pour ${nom}, ${roleLabel} du cabinet ${_cabInfo().nom}.
 Tu as accès à toutes les données du portefeuille immobilier en temps réel.
 Tu peux : analyser les impayés, identifier des tendances, suggérer des priorités d'action, générer des synthèses, conseiller sur la stratégie de recouvrement.
 Sois concis, actionnable et base-toi sur les données réelles ci-dessous. HTML simple (strong, br, ul/li). 300 mots max.
