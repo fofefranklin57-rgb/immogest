@@ -8729,15 +8729,19 @@ async function renderMaintenanceEdl() {
   content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text3);">⏳ Chargement...</div>`;
 
   const [maintenances, edls] = await Promise.all([loadMaintenances(), loadEtatsLieux()]);
-  _maintData = maintenances;
-  _edlData = edls;
 
-  const nbNouv = maintenances.filter(m => m.statut === 'nouveau').length;
+  // Propriétaire : filtrer par ses immeubles uniquement
+  const isProprio = SESSION && SESSION.role === 'proprietaire';
+  const myImm = SESSION && SESSION.immeubles ? SESSION.immeubles : null;
+  _maintData = isProprio ? maintenances.filter(m => myImm.includes(m.immeuble_id)) : maintenances;
+  _edlData   = isProprio ? edls.filter(e => myImm.includes(e.immeuble_id)) : edls;
+
+  const nbNouv = _maintData.filter(m => m.statut === 'nouveau').length;
   const badge = document.getElementById('badge-maintenance');
   if (badge) { badge.textContent = nbNouv; badge.style.display = nbNouv > 0 ? 'flex' : 'none'; }
 
   document.getElementById('page-sub').textContent =
-    `${maintenances.length} demande(s) · ${edls.length} état(s) des lieux`;
+    `${_maintData.length} demande(s) · ${_edlData.length} état(s) des lieux`;
 
   _renderMaintenanceEdlContent();
 }
