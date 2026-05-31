@@ -620,6 +620,7 @@ function openModalLocataire(iid, preAppt, preType) {
   document.getElementById('loc-id').value = '';
   document.getElementById('loc-nom').value = '';
   document.getElementById('loc-tel').value = '';
+  if (document.getElementById('loc-whatsapp')) document.getElementById('loc-whatsapp').value = '';
   document.getElementById('loc-appt').value = preAppt || '';
   document.getElementById('loc-type').value = preType || 'appartement';
   document.getElementById('loc-loyer').value = '';
@@ -1491,7 +1492,8 @@ function saveNouveauApresLib() {
   const obs = document.getElementById('nal-obs').value.trim();
   // Remplacer le locataire libre sur ce local
   const existing = DATA.locataires.find(l=>l.iid===iid&&l.appt===appt&&l.s==='libre');
-  const obj = { nom, tel: document.getElementById('nal-tel').value.trim(), iid, appt, type, loyer, caution, entree, obs: obs||(avance>0?'Payé '+avance+' mois d\'avance':''), reste:0, s:'payé' };
+  const waVal = document.getElementById('nal-whatsapp') ? document.getElementById('nal-whatsapp').value.trim() : '';
+  const obj = { nom, tel: document.getElementById('nal-tel').value.trim(), whatsapp: waVal || undefined, iid, appt, type, loyer, caution, entree, obs: obs||(avance>0?'Payé '+avance+' mois d\'avance':''), reste:0, s:'payé' };
   if (existing) {
     Object.assign(existing, obj);
   } else {
@@ -1558,6 +1560,7 @@ async function confirmerLiberation() {
     document.getElementById('nal-entree').value = new Date().toISOString().split('T')[0];
     document.getElementById('nal-nom').value='';
     document.getElementById('nal-tel').value='';
+    if (document.getElementById('nal-whatsapp')) document.getElementById('nal-whatsapp').value='';
     document.getElementById('nal-loyer').value='';
     document.getElementById('nal-caution').value='';
     document.getElementById('nal-avance').value='';
@@ -1603,6 +1606,7 @@ function editLocataire(locId) {
   document.getElementById('loc-id').value = l.id;
   document.getElementById('loc-nom').value = l.nom;
   document.getElementById('loc-tel').value = l.tel || '';
+  if (document.getElementById('loc-whatsapp')) document.getElementById('loc-whatsapp').value = l.whatsapp || '';
   document.getElementById('loc-imm').value = l.iid;
   document.getElementById('loc-appt').value = l.appt || '';
   document.getElementById('loc-type').value = l.type || 'appartement';
@@ -1773,6 +1777,7 @@ async function saveLocataire() {
   const obj = {
     nom, loyer, reste,
     tel:          document.getElementById('loc-tel').value.trim(),
+    whatsapp:     (document.getElementById('loc-whatsapp') ? document.getElementById('loc-whatsapp').value.trim() : '') || undefined,
     iid:          parseInt(document.getElementById('loc-imm').value),
     appt:         document.getElementById('loc-appt').value.trim(),
     type:         document.getElementById('loc-type').value,
@@ -8233,9 +8238,9 @@ function envoyerAccesWhatsApp(locId) {
     'Vous pouvez changer votre PIN après connexion.\n' +
     '_ImmoGest — Gestion Immobilière_'
   );
-  const tel = l.tel ? l.tel.replace(/[^0-9+]/g, '') : '';
-  const waUrl = tel
-    ? 'https://wa.me/' + (tel.startsWith('+') ? tel.slice(1) : '237' + tel) + '?text=' + msg
+  const waNum = (l.whatsapp || l.tel || '').replace(/[^0-9+]/g, '');
+  const waUrl = waNum
+    ? 'https://wa.me/' + (waNum.startsWith('+') ? waNum.slice(1) : (waNum.startsWith('237') ? waNum : '237' + waNum)) + '?text=' + msg
     : 'https://wa.me/?text=' + msg;
   window.open(waUrl, '_blank');
 }

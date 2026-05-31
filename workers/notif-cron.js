@@ -1,16 +1,19 @@
 // ═══════════════════════════════════════════════════════════════
 // IMMOGEST — Cloudflare Worker
-// - Cron  : rappels loyers via OneSignal
+// - Cron  : rappels loyers via OneSignal + rapport WhatsApp gestionnaire
 // - POST /pay              : initier collecte Campay (MTN/Orange)
 // - GET  /check-pay?ref=xx : vérifier statut transaction Campay
 // - POST /campay-webhook   : webhook Campay → activer abonnement Supabase
 // - POST /ai               : proxy Anthropic API
+// - GET  /wa-impayés       : page HTML liens WhatsApp impayés (gestionnaire)
 // - GET  /test-notifs, /health
 // Secrets requis : CAMPAY_TOKEN (permanent access token), CAMPAY_WEBHOOK_KEY,
 //                  CAMPAY_ENV (demo|prod),
 //                  SUPABASE_URL, SUPABASE_KEY,
 //                  ONESIGNAL_APP_ID, ONESIGNAL_REST_KEY,
-//                  ANTHROPIC_API_KEY
+//                  ANTHROPIC_API_KEY,
+//                  MANAGER_WHATSAPP (ex: 237690409929),
+//                  MANAGER_ONESIGNAL_ID (external_id OneSignal du gestionnaire)
 // ═══════════════════════════════════════════════════════════════
 
 const ALLOWED_ORIGIN = 'https://immogest-34w.pages.dev';
@@ -43,6 +46,10 @@ export default {
 
     if (url.pathname === '/ai' && request.method === 'POST') {
       return handleAI(request, env);
+    }
+
+    if (url.pathname === '/wa-impay%C3%A9s' || url.pathname === '/wa-impayes') {
+      return handleWaImpayesPage(request, env);
     }
 
     if (url.pathname === '/test-notifs') {
@@ -334,7 +341,7 @@ async function notifRappelMensuel(env, moisLabel) {
 
 async function notifImpayes(env) {
   const locataires = await querySupabase(env,
-    `locataires?statut=eq.impay%C3%A9&reste=gt.0&actif=eq.true&select=id,nom,loyer,reste,immeuble_id`
+    `locataires?statut=eq.impay%C3%A9&reste=gt.0&actif=eq.true&select=id,nom,tel,whatsapp,loyer,reste,immeuble_id`
   );
   if (!locataires || locataires.length === 0) return { sent: 0, total: 0 };
 
@@ -354,7 +361,101 @@ async function notifImpayes(env) {
     if (ok) sent++;
     await sleep(100);
   }
+
+  // Notifier le gestionnaire avec résumé + lien vers la page WhatsApp
+  if (locataires.length > 0 && env.MANAGER_ONESIGNAL_ID) {
+    const totalDu = locataires.reduce((s, l) => s + (l.reste || 0), 0);
+    await sendOneSignalNotif(env,
+      env.MANAGER_ONESIGNAL_ID,
+      `⚠️ ${locataires.length} impayé(s) ce matin`,
+      `Total : ${totalDu.toLocaleString('fr-FR')} FCFA — Cliquez pour envoyer les relances WhatsApp`
+    );
+  }
+
   return { sent, total: locataires.length };
+}
+
+// ══════════════════════════════════════════════════════════════
+// PAGE WHATSAPP IMPAYÉS — liens pré-remplis pour le gestionnaire
+// GET /wa-impayes
+// ══════════════════════════════════════════════════════════════
+async function handleWaImpayesPage(request, env) {
+  const locataires = await querySupabase(env,
+    `locataires?statut=eq.impay%C3%A9&reste=gt.0&actif=eq.true&select=id,nom,tel,whatsapp,loyer,reste,immeuble_id`
+  );
+  const immeubles = await querySupabase(env, `immeubles?select=id,nom`);
+  const immMap = {};
+  (immeubles || []).forEach(i => { immMap[i.id] = i.nom; });
+
+  const now = new Date().toLocaleDateString('fr-FR', { timeZone: 'Africa/Douala', day:'2-digit', month:'long', year:'numeric' });
+  const locs = locataires || [];
+  const totalDu = locs.reduce((s, l) => s + (l.reste || 0), 0);
+
+  const lignes = locs.map(loc => {
+    const montant = (loc.reste || 0).toLocaleString('fr-FR');
+    const nomImm  = immMap[loc.immeuble_id] || 'Immeuble';
+    // Priorité : numéro WhatsApp dédié, sinon téléphone
+    const rawNum  = (loc.whatsapp || loc.tel || '').replace(/\D/g, '');
+    const tel     = loc.tel ? loc.tel.replace(/\D/g, '') : '';
+    const telWa   = rawNum ? (rawNum.startsWith('237') ? rawNum : '237' + rawNum) : '';
+    const moisDus = loc.loyer > 0 ? Math.round(loc.reste / loc.loyer) : '?';
+    const msg     = encodeURIComponent(
+      `Bonjour ${loc.nom},\n\nNous vous rappelons que votre loyer est en souffrance.\n` +
+      `Montant dû : *${montant} FCFA* (${moisDus} mois)\n` +
+      `Immeuble : ${nomImm}\n\n` +
+      `Merci de régulariser dans les meilleurs délais.\n\nCordialement,\nCabinet CRAA ImmoGest`
+    );
+    const hasPhone = telWa.length >= 12;
+    const btnHtml = hasPhone
+      ? `<a href="https://wa.me/${telWa}?text=${msg}" target="_blank"
+           style="display:inline-block;background:#25D366;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">
+           💬 WhatsApp
+         </a>`
+      : `<span style="color:#999;font-size:12px;">Pas de numéro</span>`;
+
+    return `
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="font-weight:700;font-size:15px;color:#1a202c;">${loc.nom}</div>
+          <div style="font-size:13px;color:#718096;margin-top:2px;">${nomImm} · ${tel || 'pas de numéro'}</div>
+          <div style="font-size:13px;color:#e53e3e;font-weight:600;margin-top:4px;">⚠️ ${montant} FCFA (${moisDus} mois)</div>
+        </div>
+        <div>${btnHtml}</div>
+      </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ImmoGest — Relances WhatsApp</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7fafc; margin: 0; padding: 20px; }
+    .header { background: linear-gradient(135deg, #0E6AAF, #1a82d4); color: #fff; border-radius: 16px; padding: 20px 24px; margin-bottom: 20px; }
+    .stat { display: inline-block; background: rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 16px; margin-right: 8px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div style="font-size:22px;font-weight:800;margin-bottom:4px;">📋 Relances WhatsApp</div>
+    <div style="font-size:13px;opacity:.85;">ImmoGest · ${now}</div>
+    <div style="margin-top:12px;">
+      <span class="stat">⚠️ ${locs.length} locataire(s) impayé(s)</span>
+      <span class="stat">💰 ${totalDu.toLocaleString('fr-FR')} FCFA dus</span>
+    </div>
+  </div>
+  ${locs.length === 0
+    ? '<div style="text-align:center;padding:40px;color:#718096;font-size:16px;">✅ Aucun impayé aujourd\'hui !</div>'
+    : lignes
+  }
+  <div style="text-align:center;font-size:12px;color:#a0aec0;margin-top:20px;">ImmoGest — Cabinet CRAA</div>
+</body>
+</html>`;
+
+  return new Response(html, {
+    headers: { 'Content-Type': 'text/html; charset=utf-8' }
+  });
 }
 
 // ══════════════════════════════════════════════════════════════
