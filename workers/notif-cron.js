@@ -177,7 +177,7 @@ async function handleCampayWebhook(request, env) {
 
     const expiry = new Date(Date.now() + duree * 30 * 86400000).toISOString();
 
-    // Upsert dans Supabase table abonnements
+    // Upsert dans Supabase table abonnements (un enregistrement par cabinet)
     const sbResp = await fetch(`${env.SUPABASE_URL}/rest/v1/abonnements`, {
       method:  'POST',
       headers: {
@@ -192,7 +192,7 @@ async function handleCampayWebhook(request, env) {
         statut:        'actif',
         date_fin:      expiry,
         reference:     reference,
-        montant:       parseFloat(amount) || 0,
+        montant:       Math.round(parseFloat(amount) || 0),
         date_paiement: new Date().toISOString()
       })
     });
