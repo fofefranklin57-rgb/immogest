@@ -188,6 +188,84 @@ async function updateEtatLieux(id, fields) {
   }
 }
 
+// ── Helpers Charges ──────────────────────────────────────────
+async function loadChargesByImmeuble(immeubleId) {
+  try {
+    const { data, error } = await _sb.from('charges').select('*')
+      .eq('immeuble_id', immeubleId).order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch(e) { console.warn('loadCharges error:', e.message); return []; }
+}
+
+async function insertCharge(row) {
+  try {
+    const { data, error } = await _sb.from('charges').insert(row).select().single();
+    if (error) throw error;
+    return data;
+  } catch(e) { console.warn('insertCharge error:', e.message); return null; }
+}
+
+async function updateCharge(id, fields) {
+  try {
+    const { error } = await _sb.from('charges').update(fields).eq('id', id);
+    if (error) throw error;
+    return true;
+  } catch(e) { console.warn('updateCharge error:', e.message); return false; }
+}
+
+async function deleteCharge(id) {
+  try {
+    const { error } = await _sb.from('charges').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  } catch(e) { console.warn('deleteCharge error:', e.message); return false; }
+}
+
+// ── Helpers Contrats ─────────────────────────────────────────
+async function loadContratByLocataire(locataireId) {
+  try {
+    const { data, error } = await _sb.from('contrats').select('*')
+      .eq('locataire_id', locataireId).maybeSingle();
+    if (error) throw error;
+    return data;
+  } catch(e) { console.warn('loadContrat error:', e.message); return null; }
+}
+
+async function upsertContrat(row) {
+  try {
+    const { data, error } = await _sb.from('contrats')
+      .upsert(row, { onConflict: 'locataire_id' }).select().single();
+    if (error) throw error;
+    return data;
+  } catch(e) { console.warn('upsertContrat error:', e.message); return null; }
+}
+
+async function updateContratAutorisation(locataireId, fields) {
+  try {
+    const { error } = await _sb.from('contrats').update(fields).eq('locataire_id', locataireId);
+    if (error) throw error;
+    return true;
+  } catch(e) { console.warn('updateContratAutorisation error:', e.message); return false; }
+}
+
+async function uploadContratTemplate(immeubleId, file) {
+  try {
+    const path = `templates/immeuble_${immeubleId}.docx`;
+    const { error } = await _sb.storage.from('contrats').upload(path, file, { upsert: true });
+    if (error) throw error;
+    const { data } = _sb.storage.from('contrats').getPublicUrl(path);
+    return data.publicUrl;
+  } catch(e) { console.warn('uploadContratTemplate error:', e.message); return null; }
+}
+
+async function getContratTemplateUrl(immeubleId) {
+  try {
+    const { data } = _sb.storage.from('contrats').getPublicUrl(`templates/immeuble_${immeubleId}.docx`);
+    return data.publicUrl;
+  } catch(e) { return null; }
+}
+
 // ── loadDataFromSupabase ──────────────────────────────────────
 async function loadDataFromSupabase() {
   try {

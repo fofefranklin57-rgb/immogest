@@ -599,6 +599,7 @@ function renderImmeuble(iid) {
                 ${l.tel?`<div class="action-dropdown-item" onclick="envoyerAccesWhatsApp(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📲 Envoyer accès WhatsApp</div>`:''}
                 ${l.pinResetRequested?`<div class="action-dropdown-item" style="color:var(--yellow);" onclick="reinitialiserPIN(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">🔑 Réinitialiser PIN (demandé)</div>`:''}
                 ${can('canJuridique')?`<div class="action-dropdown-item" onclick="ouvrirGenDocx(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📄 Documents</div>`:''}
+                ${can('canJuridique')?`<div class="action-dropdown-item" onclick="ouvrirContratLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📜 Contrat de bail</div>`:''}
                 <div class="action-dropdown-sep"></div>
                 ${can('canEditLocataires')?`<div class="action-dropdown-item danger" onclick="ouvrirLiberation(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">🔓 Libérer</div>`:''}
                 ${can('canEditLocataires')?`<div class="action-dropdown-item danger" onclick="supprimerLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">🗑️ Supprimer</div>`:''}
@@ -611,7 +612,34 @@ function renderImmeuble(iid) {
   </div>`;
 
   html = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><button class="btn btn-ghost btn-sm" onclick="ajouterLocal(${iid})">+ Ajouter un local</button></div>` + html;
+
+  // Section charges + contrat template
+  html += `
+  <div class="card" style="margin-top:16px;" id="card-charges-${iid}">
+    <div class="card-header">
+      <div class="card-title">💡 Charges de l'immeuble</div>
+      ${can('canEdit') ? `<button class="btn btn-primary btn-sm" onclick="openAddChargeModal(${iid})">+ Ajouter</button>` : ''}
+    </div>
+    <div id="charges-list-${iid}"><div style="text-align:center;padding:20px;color:var(--text3);">⏳ Chargement...</div></div>
+  </div>
+
+  ${can('canEdit') ? `
+  <div class="card" style="margin-top:16px;">
+    <div class="card-header">
+      <div class="card-title">📄 Modèle contrat de bail</div>
+      <button class="btn btn-sm" onclick="document.getElementById('upload-contrat-${iid}').click()">📤 Uploader DOCX</button>
+    </div>
+    <input type="file" id="upload-contrat-${iid}" accept=".docx" style="display:none;" onchange="uploadContratTemplatePourImmeuble(${iid}, this)">
+    <div id="contrat-template-status-${iid}" style="font-size:13px;color:var(--text2);padding:8px 0;">
+      Vérification du modèle...
+    </div>
+  </div>` : ''}`;
+
   document.getElementById('content').innerHTML = html;
+
+  // Charger les charges et vérifier le template en parallèle
+  loadAndRenderCharges(iid);
+  if (can('canEdit')) checkContratTemplateStatus(iid);
 }
 
 function scrollToLocataire(locId) {
@@ -9138,6 +9166,402 @@ function openEdlDetail(id) {
       <button class="btn btn-primary" onclick="signerEdl('${edl.id}')">✍️ Marquer comme signé</button>
     </div>` : ''}
   `, { wide: true });
+}
+
+// ══════════════════════════════════════════════════════════════
+// GESTION DES CHARGES
+// ══════════════════════════════════════════════════════════════
+async function loadAndRenderCharges(iid) {
+  const charges = await loadChargesByImmeuble(iid);
+  const container = document.getElementById('charges-list-' + iid);
+  if (!container) return;
+
+  if (charges.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;">Aucune charge enregistrée</div>';
+    return;
+  }
+
+  const typeLabels = { fixe: 'Fixe', variable: 'Variable' };
+  const total = charges.reduce((s, c) => s + (c.montant || 0), 0);
+
+  let html = '<div class="table-wrap"><table class="tbl"><thead><tr><th>Libellé</th><th>Type</th><th>Mois/Année</th><th class="td-amount">Montant</th>';
+  if (can('canEdit')) html += '<th></th>';
+  html += '</tr></thead><tbody>';
+
+  charges.forEach(c => {
+    const periode = c.mois ? `${c.mois}/${c.annee || ''}` : 'Mensuel';
+    html += `<tr>
+      <td>${c.libelle}</td>
+      <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${c.type==='fixe'?'#EBF5FB':'#FEF9E7'};color:${c.type==='fixe'?'#0E6AAF':'#856404'};">${typeLabels[c.type]||c.type}</span></td>
+      <td style="color:var(--text2);">${periode}</td>
+      <td class="td-amount">${fmt(c.montant)}</td>
+      ${can('canEdit') ? `<td style="text-align:right;">
+        <button class="btn btn-sm btn-ghost" onclick="openEditChargeModal('${c.id}',${iid})" style="margin-right:4px;">✏️</button>
+        <button class="btn btn-sm" style="color:var(--red);border-color:var(--red);" onclick="supprimerCharge('${c.id}',${iid})">🗑</button>
+      </td>` : ''}
+    </tr>`;
+  });
+
+  html += `</tbody><tfoot><tr style="font-weight:700;background:var(--bg2);">
+    <td colspan="3">Total mensuel</td>
+    <td class="td-amount">${fmt(total)}</td>
+    ${can('canEdit') ? '<td></td>' : ''}
+  </tr></tfoot></table></div>`;
+
+  container.innerHTML = html;
+}
+
+function openAddChargeModal(iid) {
+  showModal(`
+    <h3 style="margin:0 0 16px;">💡 Ajouter une charge</h3>
+    <div class="form-group">
+      <label>Libellé *</label>
+      <input type="text" id="charge-libelle" placeholder="Eau, Électricité, Gardiennage..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div class="form-group" style="flex:1;min-width:130px;">
+        <label>Type</label>
+        <select id="charge-type" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
+          <option value="fixe">Fixe (mensuel)</option>
+          <option value="variable">Variable (ponctuel)</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:1;min-width:130px;">
+        <label>Montant (FCFA) *</label>
+        <input type="number" id="charge-montant" value="0" min="0" onfocus="this.select()" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;" id="charge-periode-row">
+      <div class="form-group" style="flex:1;min-width:100px;">
+        <label>Mois (optionnel)</label>
+        <select id="charge-mois" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
+          <option value="">Tous les mois</option>
+          ${['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'].map((m,i)=>`<option value="${i+1}">${m}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group" style="flex:1;min-width:100px;">
+        <label>Année</label>
+        <input type="number" id="charge-annee" value="${new Date().getFullYear()}" onfocus="this.select()" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveCharge(${iid})">💾 Enregistrer</button>
+    </div>
+  `);
+}
+
+async function openEditChargeModal(chargeId, iid) {
+  const charges = await loadChargesByImmeuble(iid);
+  const c = charges.find(x => x.id === chargeId);
+  if (!c) return;
+  showModal(`
+    <h3 style="margin:0 0 16px;">✏️ Modifier la charge</h3>
+    <input type="hidden" id="charge-edit-id" value="${c.id}">
+    <div class="form-group">
+      <label>Libellé *</label>
+      <input type="text" id="charge-libelle" value="${c.libelle}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div class="form-group" style="flex:1;min-width:130px;">
+        <label>Type</label>
+        <select id="charge-type" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
+          <option value="fixe" ${c.type==='fixe'?'selected':''}>Fixe (mensuel)</option>
+          <option value="variable" ${c.type==='variable'?'selected':''}>Variable (ponctuel)</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:1;min-width:130px;">
+        <label>Montant (FCFA) *</label>
+        <input type="number" id="charge-montant" value="${c.montant}" onfocus="this.select()" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div class="form-group" style="flex:1;min-width:100px;">
+        <label>Mois</label>
+        <select id="charge-mois" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
+          <option value="">Tous les mois</option>
+          ${['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'].map((m,i)=>`<option value="${i+1}" ${c.mois==i+1?'selected':''}>${m}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group" style="flex:1;min-width:100px;">
+        <label>Année</label>
+        <input type="number" id="charge-annee" value="${c.annee||''}" onfocus="this.select()" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveChargeEdit(${iid})">💾 Enregistrer</button>
+    </div>
+  `);
+}
+
+async function saveCharge(iid) {
+  const libelle = document.getElementById('charge-libelle').value.trim();
+  const montant = parseFloat(document.getElementById('charge-montant').value) || 0;
+  if (!libelle) { showToast('Libellé requis', 'red'); return; }
+  const mois = document.getElementById('charge-mois').value;
+  const annee = document.getElementById('charge-annee').value;
+  const row = {
+    immeuble_id: iid,
+    libelle,
+    montant,
+    type: document.getElementById('charge-type').value,
+    mois: mois ? parseInt(mois) : null,
+    annee: annee ? parseInt(annee) : null
+  };
+  const result = await insertCharge(row);
+  if (result) { closeModal(); showToast('Charge ajoutée ✓', 'green'); loadAndRenderCharges(iid); }
+  else showToast('Erreur lors de l\'ajout', 'red');
+}
+
+async function saveChargeEdit(iid) {
+  const id = document.getElementById('charge-edit-id').value;
+  const libelle = document.getElementById('charge-libelle').value.trim();
+  const montant = parseFloat(document.getElementById('charge-montant').value) || 0;
+  if (!libelle) { showToast('Libellé requis', 'red'); return; }
+  const mois = document.getElementById('charge-mois').value;
+  const annee = document.getElementById('charge-annee').value;
+  const ok = await updateCharge(id, {
+    libelle, montant,
+    type: document.getElementById('charge-type').value,
+    mois: mois ? parseInt(mois) : null,
+    annee: annee ? parseInt(annee) : null
+  });
+  if (ok) { closeModal(); showToast('Charge modifiée ✓', 'green'); loadAndRenderCharges(iid); }
+  else showToast('Erreur', 'red');
+}
+
+async function supprimerCharge(id, iid) {
+  if (!confirm('Supprimer cette charge ?')) return;
+  const ok = await deleteCharge(id);
+  if (ok) { showToast('Charge supprimée', 'green'); loadAndRenderCharges(iid); }
+  else showToast('Erreur', 'red');
+}
+
+// ══════════════════════════════════════════════════════════════
+// CONTRAT DE BAIL
+// ══════════════════════════════════════════════════════════════
+async function checkContratTemplateStatus(iid) {
+  const el = document.getElementById('contrat-template-status-' + iid);
+  if (!el) return;
+  const url = await getContratTemplateUrl(iid);
+  // Vérifier si le fichier existe réellement
+  try {
+    const res = await fetch(url, { method: 'HEAD' });
+    if (res.ok) {
+      el.innerHTML = `✅ Modèle présent — <button class="btn btn-sm" onclick="genererContrat(${iid})" style="margin-left:8px;">👁 Prévisualiser</button>`;
+    } else {
+      el.textContent = '⚠️ Aucun modèle uploadé pour cet immeuble. Modèle cabinet par défaut utilisé.';
+    }
+  } catch(e) {
+    el.textContent = '⚠️ Aucun modèle uploadé. Modèle cabinet par défaut utilisé.';
+  }
+}
+
+async function uploadContratTemplatePourImmeuble(iid, input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (!file.name.endsWith('.docx')) { showToast('Fichier .docx requis', 'red'); return; }
+  showToast('Upload en cours...', 'blue');
+  const url = await uploadContratTemplate(iid, file);
+  if (url) {
+    showToast('Modèle uploadé ✓', 'green');
+    checkContratTemplateStatus(iid);
+  } else {
+    showToast('Erreur upload — vérifiez le bucket Supabase Storage', 'red');
+  }
+  input.value = '';
+}
+
+// Variables disponibles dans le template
+function _getContratVariables(locId) {
+  const l = DATA.locataires.find(x => x.id === locId);
+  if (!l) return {};
+  const im = DATA.immeubles.find(i => i.id === l.iid);
+  const cab = (DATA.settings && DATA.settings.cabinet) || {};
+  const today = new Date().toLocaleDateString('fr-FR');
+  const entreeDate = l.entree ? new Date(l.entree).toLocaleDateString('fr-FR') : '–';
+  return {
+    nom_locataire:    l.nom || '',
+    telephone:        l.tel || '',
+    whatsapp:         l.whatsapp || l.tel || '',
+    appt:             l.appt || '',
+    immeuble:         im ? im.nom : '',
+    ville:            im ? (im.ville || '') : '',
+    loyer:            Number(l.loyer || 0).toLocaleString('fr-FR') + ' FCFA',
+    caution:          Number(l.caution || 0).toLocaleString('fr-FR') + ' FCFA',
+    date_entree:      entreeDate,
+    date_contrat:     today,
+    nom_gestionnaire: cab.nom || (SESSION ? SESSION.nom : ''),
+    nom_proprietaire: im ? (im.nomProprio || im.nom || '') : '',
+  };
+}
+
+async function ouvrirContratLocataire(locId) {
+  if (!can('canJuridique') && !can('canEdit')) { showToast('Accès refusé', 'red'); return; }
+  const l = DATA.locataires.find(x => x.id === locId);
+  if (!l) return;
+
+  // Charger le contrat existant
+  const contrat = await loadContratByLocataire(locId);
+  const vars = _getContratVariables(locId);
+  const varsHtml = Object.entries(vars).map(([k,v]) =>
+    `<div style="display:flex;gap:8px;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);">
+      <span style="color:var(--text3);min-width:160px;">{{${k}}}</span>
+      <span style="font-weight:600;">${v}</span>
+    </div>`).join('');
+
+  const autoriseLocataire = contrat ? contrat.autorise_locataire : false;
+  const autoriseProprio   = contrat ? contrat.autorise_proprietaire : false;
+
+  showModal(`
+    <h3 style="margin:0 0 16px;">📄 Contrat de bail — ${l.nom}</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+      <button class="btn btn-primary" onclick="genererContratPourLocataire(${locId})">👁 Générer / Prévisualiser</button>
+      <button class="btn" onclick="closeModal()">Fermer</button>
+    </div>
+
+    <div style="font-weight:600;font-size:13px;margin-bottom:8px;">🔑 Autorisations d'accès</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="auth-locataire" ${autoriseLocataire?'checked':''} style="width:16px;height:16px;">
+        Locataire peut voir et télécharger
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="auth-proprio" ${autoriseProprio?'checked':''} style="width:16px;height:16px;">
+        Propriétaire peut voir et télécharger
+      </label>
+    </div>
+    <button class="btn btn-sm" onclick="sauvegarderAutorisationContrat(${locId})">💾 Sauvegarder autorisations</button>
+
+    <div style="font-weight:600;font-size:13px;margin:16px 0 8px;">📋 Variables disponibles dans le modèle</div>
+    <div style="max-height:200px;overflow-y:auto;background:var(--bg2);padding:10px;border-radius:8px;">
+      ${varsHtml}
+    </div>
+  `, { wide: true });
+}
+
+async function sauvegarderAutorisationContrat(locId) {
+  const autLoc   = document.getElementById('auth-locataire')?.checked || false;
+  const autProprio = document.getElementById('auth-proprio')?.checked || false;
+  const l = DATA.locataires.find(x => x.id === locId);
+  const im = l ? DATA.immeubles.find(i => i.id === l.iid) : null;
+  const row = {
+    locataire_id: locId,
+    immeuble_id: l ? l.iid : null,
+    autorise_locataire: autLoc,
+    autorise_proprietaire: autProprio,
+    date_contrat: new Date().toISOString().slice(0,10)
+  };
+  const result = await upsertContrat(row);
+  if (result) showToast('Autorisations sauvegardées ✓', 'green');
+  else showToast('Erreur', 'red');
+}
+
+async function genererContratPourLocataire(locId) {
+  const l = DATA.locataires.find(x => x.id === locId);
+  if (!l) return;
+  const vars = _getContratVariables(locId);
+
+  // Chercher template immeuble, sinon template par défaut
+  const templateUrl = await getContratTemplateUrl(l.iid);
+  let templateExists = false;
+  try {
+    const res = await fetch(templateUrl, { method: 'HEAD' });
+    templateExists = res.ok;
+  } catch(e) {}
+
+  if (templateExists) {
+    await _genererContratDepuisDocx(templateUrl, vars, l.nom);
+  } else {
+    _genererContratParDefaut(vars, l.nom);
+  }
+}
+
+async function _genererContratDepuisDocx(url, vars, nomLocataire) {
+  try {
+    showToast('Génération du contrat...', 'blue');
+    const res = await fetch(url);
+    const buf = await res.arrayBuffer();
+
+    if (typeof PizZip === 'undefined' || typeof Docxtemplater === 'undefined') {
+      showToast('Librairies non chargées, utilisation du modèle par défaut', 'red');
+      _genererContratParDefaut(vars, nomLocataire); return;
+    }
+
+    const zip  = new PizZip(buf);
+    const doc  = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+    doc.setData(vars);
+    doc.render();
+    const blob = doc.getZip().generate({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+
+    // Convertir en HTML avec mammoth pour preview + impression
+    const arrayBuf = await blob.arrayBuffer();
+    const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuf });
+    _afficherContratPourImpression(result.value, nomLocataire);
+  } catch(e) {
+    console.warn('Erreur génération DOCX:', e);
+    showToast('Erreur génération — vérifiez les balises {{}} du template', 'red');
+  }
+}
+
+function _genererContratParDefaut(vars, nomLocataire) {
+  const cab = (DATA.settings && DATA.settings.cabinet) || {};
+  const html = `
+    <div style="font-family:Georgia,serif;max-width:700px;margin:auto;padding:40px;line-height:1.7;">
+      <div style="text-align:center;margin-bottom:32px;border-bottom:2px solid #333;padding-bottom:16px;">
+        <div style="font-size:18px;font-weight:700;">${cab.nom || 'Cabinet de Gestion Immobilière'}</div>
+        <div style="font-size:12px;color:#555;">${cab.adresse || ''} ${cab.ville ? '· ' + cab.ville : ''} ${cab.tel ? '· ' + cab.tel : ''}</div>
+      </div>
+      <h2 style="text-align:center;margin-bottom:24px;font-size:16px;text-transform:uppercase;letter-spacing:1px;">CONTRAT DE BAIL À USAGE D'HABITATION</h2>
+      <p>Entre les soussignés :</p>
+      <p><b>Le Bailleur :</b> ${vars.nom_proprietaire}, représenté par ${vars.nom_gestionnaire}</p>
+      <p><b>Le Preneur :</b> ${vars.nom_locataire}, Tél. : ${vars.telephone}</p>
+      <p>Il a été convenu et arrêté ce qui suit :</p>
+      <h3 style="font-size:14px;">Article 1 — Objet du bail</h3>
+      <p>Le bailleur donne à bail au preneur qui accepte, le local désigné comme suit : <b>${vars.appt}</b> situé dans l'immeuble <b>${vars.immeuble}</b>, à <b>${vars.ville}</b>.</p>
+      <h3 style="font-size:14px;">Article 2 — Durée</h3>
+      <p>Le présent bail est consenti pour une durée d'un (1) an à compter du <b>${vars.date_entree}</b>, renouvelable par tacite reconduction.</p>
+      <h3 style="font-size:14px;">Article 3 — Loyer</h3>
+      <p>Le loyer mensuel est fixé à la somme de <b>${vars.loyer}</b>, payable d'avance le premier de chaque mois.</p>
+      <h3 style="font-size:14px;">Article 4 — Caution</h3>
+      <p>À la signature du présent contrat, le preneur versera une caution de <b>${vars.caution}</b>, remboursable à la fin du bail sous déduction des sommes dues.</p>
+      <h3 style="font-size:14px;">Article 5 — Obligations du preneur</h3>
+      <p>Le preneur s'engage à : payer le loyer aux échéances convenues, user des lieux en bon père de famille, ne pas sous-louer sans accord écrit du bailleur, restituer les lieux en bon état à la fin du bail.</p>
+      <div style="margin-top:60px;display:flex;justify-content:space-between;">
+        <div style="text-align:center;">
+          <div>Fait à ${vars.ville || '...'}, le ${vars.date_contrat}</div>
+          <div style="margin-top:40px;border-top:1px solid #333;padding-top:8px;">Le Bailleur / Gestionnaire<br><b>${vars.nom_gestionnaire}</b></div>
+        </div>
+        <div style="text-align:center;">
+          <div>&nbsp;</div>
+          <div style="margin-top:40px;border-top:1px solid #333;padding-top:8px;">Le Preneur<br><b>${vars.nom_locataire}</b></div>
+        </div>
+      </div>
+    </div>`;
+  _afficherContratPourImpression(html, nomLocataire);
+}
+
+function _afficherContratPourImpression(html, nomLocataire) {
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head>
+    <title>Contrat de bail — ${nomLocataire}</title>
+    <style>
+      body { margin: 0; font-family: Georgia, serif; }
+      @media print { .no-print { display: none !important; } }
+      .print-toolbar { position: fixed; top: 0; left: 0; right: 0; background: #0E6AAF; color: #fff; padding: 10px 20px; display: flex; gap: 12px; align-items: center; z-index: 999; }
+      .print-toolbar button { padding: 6px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+      .content-wrap { margin-top: 56px; }
+    </style>
+  </head><body>
+    <div class="print-toolbar no-print">
+      <span style="font-weight:700;">📄 Contrat de bail — ${nomLocataire}</span>
+      <button onclick="window.print()" style="background:#fff;color:#0E6AAF;">🖨️ Imprimer / Enregistrer en PDF</button>
+      <button onclick="window.close()" style="background:rgba(255,255,255,0.2);color:#fff;">✕ Fermer</button>
+    </div>
+    <div class="content-wrap">${html}</div>
+  </body></html>`);
+  win.document.close();
 }
 
 async function signerEdl(id) {

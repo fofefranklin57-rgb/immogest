@@ -11,6 +11,7 @@ function showTab(tab) {
   event.target.classList.add('active');
   currentTab = tab;
   if (tab === 'maintenance') loadMaintHistory();
+  if (tab === 'documents') loadDocumentsLocataire();
 }
 
 // 7. Paiement Mobile Money
@@ -218,6 +219,41 @@ function sendMessage() {
 }
 
 // 10. Documents
+async function loadDocumentsLocataire() {
+  const loc = _getLocataireConnecte();
+  if (!loc) return;
+  const container = document.getElementById('docs-contrat-section');
+  if (!container) return;
+
+  container.innerHTML = '<div style="text-align:center;padding:16px;color:#999;">⏳ Chargement...</div>';
+  const contrat = await loadContratByLocataire(loc.id);
+
+  if (!contrat || !contrat.autorise_locataire) {
+    container.innerHTML = `<div style="text-align:center;padding:24px;color:#999;">
+      🔒 Votre contrat de bail n'est pas encore disponible.<br>
+      <span style="font-size:12px;">Contactez votre gestionnaire pour en demander l'accès.</span>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = `<div style="padding:12px;background:#EBF5FB;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div>
+      <div style="font-weight:600;font-size:14px;">📜 Contrat de bail</div>
+      <div style="font-size:12px;color:#555;">Signé le ${contrat.date_contrat ? new Date(contrat.date_contrat).toLocaleDateString('fr-FR') : '–'}</div>
+    </div>
+    <button onclick="telechargerMonContrat()" style="padding:8px 16px;background:#0E6AAF;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;">📥 Voir / Télécharger PDF</button>
+  </div>`;
+}
+
+async function telechargerMonContrat() {
+  const loc = _getLocataireConnecte();
+  if (!loc) return;
+  // Réutiliser la fonction de génération de app.js
+  if (typeof genererContratPourLocataire === 'function') {
+    await genererContratPourLocataire(loc.id);
+  }
+}
+
 function downloadDoc(docId) {
   alert(`📥 Téléchargement de ${docId}...\n(En production: génération PDF à la volée)`);
 }

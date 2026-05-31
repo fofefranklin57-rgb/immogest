@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://unpkg.com/pizzip@3.1.6/dist/pizzip.js"></script>
+  <script src="https://unpkg.com/docxtemplater@3.49.0/build/docxtemplater.js"></script>
+  <script src="https://unpkg.com/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0E6AAF">
@@ -1408,8 +1411,12 @@ self.addEventListener('fetch', (event) => {
 <!-- Tab: Documents (10. Documents Personnels) -->
 <div id="tab-documents" class="tab-content" style="display:none;">
   <div class="card">
-    <div class="card-title">📄 Mes documents</div>
-    <div class="doc-list" id="doc-list"><div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">Chargement…</div></div>
+    <div class="card-title">📜 Contrat de bail</div>
+    <div id="docs-contrat-section"><div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">Chargement…</div></div>
+  </div>
+  <div class="card" style="margin-top:12px;">
+    <div class="card-title">📄 Autres documents</div>
+    <div class="doc-list" id="doc-list"><div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">Aucun document disponible</div></div>
   </div>
 </div>
 
