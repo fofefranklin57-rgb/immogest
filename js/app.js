@@ -4163,6 +4163,7 @@ function startSession(user, version) {
   var aib = document.getElementById('ai-float-btn');
   if (aib) aib.style.display = 'flex';
   initApp();
+  setTimeout(function() { if (window.initAds) initAds(); }, 2000);
   if (window._firstLaunch) {
     window._firstLaunch = false;
     setTimeout(_showBienvenueModal, 600);
