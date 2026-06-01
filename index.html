@@ -1216,6 +1216,8 @@ self.addEventListener('fetch', (event) => {
       <div style="font-size: 16px; font-weight: 700;">🏠 Espace Locataire</div>
       <button class="btn btn-ghost btn-sm" onclick="closePortailLocataire()" style="color: #fff; border-color: rgba(255,255,255,0.3);">✕ Fermer</button>
     </div>
+    <!-- Bannière pub sticky bas -->
+    <div id="ad-slot-portail-sticky" class="ad-slot-sticky"></div>
     <!-- Contenu scrollable -->
     <div style="flex: 1; overflow-y: auto; background: var(--bg);">
 
@@ -1276,7 +1278,10 @@ self.addEventListener('fetch', (event) => {
     <div id="dashboard-chart-labels" style="display:flex;gap:6px;margin-top:4px;"></div>
   </div>
 
-  <div class="card">
+  <!-- Pub native entre sections -->
+  <div id="ad-slot-portail-native" class="ad-slot-native"></div>
+
+  <div class="card" style="margin-bottom:60px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
       <div class="card-title">📋 Historique complet</div>
       <div id="dashboard-hist-count" style="font-size:11px;color:var(--text3);"></div>

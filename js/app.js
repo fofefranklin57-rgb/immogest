@@ -6838,13 +6838,80 @@ function renderParametres() {
         ⚠️ Envoyer rappel à tous les locataires impayés
       </button>
     </div>
+
+    <!-- Section Publicités -->
+    <div class="card" style="max-width:520px;margin-top:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:36px;height:36px;background:linear-gradient(135deg,#1877F2,#0A5DC2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">📢</div>
+          <div>
+            <div class="card-title" style="margin:0;">Publicités — PropellerAds</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:1px;">Portail locataire & propriétaire uniquement</div>
+          </div>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;">
+          <input type="checkbox" id="ads-enabled" style="width:16px;height:16px;" onchange="saveParametresAds()">
+          <span>Actif</span>
+        </label>
+      </div>
+      <p style="font-size:12px;color:var(--text2);margin:12px 0 16px;">
+        Les pubs s'affichent <strong>uniquement</strong> aux locataires et propriétaires (utilisateurs gratuits).<br>
+        Gestionnaires abonnés → zéro pub.<br><br>
+        Crée ton compte sur <strong>propellerads.com</strong> → Publishers → Add Zone (bannière 320×50 et 320×100).
+      </p>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="form-group">
+          <label style="font-size:12px;font-weight:700;">Publisher ID <span style="color:var(--text3);font-weight:400;">(ex: 123456)</span></label>
+          <input type="text" id="ads-publisher-id" placeholder="Ton Publisher ID PropellerAds"
+            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box;">
+        </div>
+        <div class="form-group">
+          <label style="font-size:12px;font-weight:700;">Zone ID — Bannière sticky 320×50 <span style="color:var(--text3);font-weight:400;">(bas de page)</span></label>
+          <input type="text" id="ads-zone-sticky" placeholder="Zone ID bannière sticky"
+            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box;">
+        </div>
+        <div class="form-group">
+          <label style="font-size:12px;font-weight:700;">Zone ID — Bannière native 320×100 <span style="color:var(--text3);font-weight:400;">(entre sections)</span></label>
+          <input type="text" id="ads-zone-native" placeholder="Zone ID bannière native"
+            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box;">
+        </div>
+      </div>
+      <div style="background:var(--bg4);border-radius:8px;padding:10px 12px;margin-top:14px;font-size:11px;color:var(--text3);">
+        💡 <strong>Quand l'APK Android est prêt :</strong> remplace PropellerAds par le SDK Facebook Audience Network — même slots, zéro recode.
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:16px;padding:12px;" onclick="saveParametresAds()">
+        💾 Enregistrer les paramètres pub
+      </button>
+    </div>
   `;
 
   // Afficher le statut OneSignal actuel
   if (typeof _updateOneSignalStatusBadge === 'function') _updateOneSignalStatusBadge();
+  // Pré-remplir les champs pub
+  const adsCfg = (DATA.settings && DATA.settings.ads) || {};
+  const adsEnabled = document.getElementById('ads-enabled');
+  if (adsEnabled) adsEnabled.checked = adsCfg.enabled !== false;
+  const adsFields = { 'ads-publisher-id': 'publisherId', 'ads-zone-sticky': 'zoneSticky', 'ads-zone-native': 'zoneNative' };
+  Object.entries(adsFields).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el && adsCfg[key]) el.value = adsCfg[key];
+  });
 }
 
 
+
+function saveParametresAds() {
+  if (!DATA.settings) DATA.settings = {};
+  DATA.settings.ads = {
+    enabled:     document.getElementById('ads-enabled') ? document.getElementById('ads-enabled').checked : true,
+    network:     'propellerads',
+    publisherId: (document.getElementById('ads-publisher-id') || {}).value || '',
+    zoneSticky:  (document.getElementById('ads-zone-sticky')  || {}).value || '',
+    zoneNative:  (document.getElementById('ads-zone-native')  || {}).value || '',
+  };
+  saveData();
+  showToast('Paramètres pub enregistrés ✓', 'green');
+}
 
 function sauvegarderNomAdmin() {
   if (!SESSION) return;

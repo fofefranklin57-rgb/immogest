@@ -379,6 +379,28 @@ tr.row-new td { background: rgba(46,204,138,.04); }
 .role-locataire { background:rgba(160,174,192,.15);color:#4A5568; }
 .perm-denied { display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--text3);text-align:center; }
 .perm-denied .icon { font-size:48px;margin-bottom:12px; }
+
+/* ── Slots publicitaires portail ── */
+.ad-slot-sticky {
+  position:sticky; bottom:0; left:0; right:0; z-index:50;
+  background:#f8fafc; border-top:1px solid #e2e8f0;
+  display:flex; align-items:center; justify-content:center;
+  min-height:52px; padding:4px 8px; flex-shrink:0;
+}
+.ad-slot-sticky:empty { display:none; }
+.ad-slot-native {
+  margin:0 0 14px 0; border-radius:8px; overflow:hidden;
+  background:#f7fafc; border:1px solid #e2e8f0;
+  display:flex; align-items:center; justify-content:center;
+  min-height:90px;
+}
+.ad-slot-native:empty { display:none; }
+.ad-label {
+  font-size:9px; color:#a0aec0; text-transform:uppercase;
+  letter-spacing:.08em; text-align:center;
+  display:block; margin-bottom:2px;
+}
+
 .tenant-header { background: linear-gradient(135deg, #0E6AAF 0%, #0a4a7a 100%); color: #fff; padding: 20px; }
 .tenant-header h1 { font-size: 20px; display: flex; align-items: center; gap: 10px; }
 .tenant-header .user-info { display: flex; align-items: center; gap: 12px; margin-top: 12px; }

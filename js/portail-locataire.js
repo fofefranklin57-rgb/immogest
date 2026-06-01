@@ -3,6 +3,103 @@
 let currentTab = 'dashboard';
 let selectedMomo = null;
 
+// ═══════════════════════════════════════════════════════════
+// SYSTÈME PUBLICITAIRE — PropellerAds / FAN-ready
+// Config dans DATA.settings.ads (modifiable depuis Paramètres)
+// Affiché uniquement pour locataire et propriétaire (gratuits)
+// Jamais pour gestionnaire/admin/comptable (abonnés)
+// ═══════════════════════════════════════════════════════════
+
+function _adConfig() {
+  const cfg = (typeof DATA !== 'undefined' && DATA.settings && DATA.settings.ads) ? DATA.settings.ads : {};
+  return {
+    enabled:    cfg.enabled !== false,          // actif par défaut
+    network:    cfg.network    || 'propellerads',
+    zoneNative: cfg.zoneNative || '',           // ID zone banner native PropellerAds
+    zoneSticky: cfg.zoneSticky || '',           // ID zone sticky 320x50
+    publisherId:cfg.publisherId|| '',           // Publisher ID PropellerAds
+  };
+}
+
+function _adShouldShow() {
+  if (typeof SESSION === 'undefined' || !SESSION) return false;
+  const noAdRoles = ['admin','gestionnaire','comptable'];
+  if (noAdRoles.includes(SESSION.role)) return false;
+  return _adConfig().enabled;
+}
+
+function initPortailAds() {
+  if (!_adShouldShow()) {
+    // Cacher tous les slots
+    ['ad-slot-portail-sticky','ad-slot-portail-native'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    return;
+  }
+  const cfg = _adConfig();
+
+  // ── Bannière sticky bas ──────────────────────────────────
+  const sticky = document.getElementById('ad-slot-portail-sticky');
+  if (sticky) {
+    if (cfg.publisherId && cfg.zoneSticky) {
+      sticky.innerHTML =
+        '<span class="ad-label">Publicité</span>' +
+        '<div id="pa-zone-sticky"></div>';
+      _adLoadPropellerads(cfg.publisherId, cfg.zoneSticky, 'pa-zone-sticky');
+    } else {
+      // Placeholder visuel (en attente config)
+      sticky.innerHTML = _adPlaceholder('320x50');
+    }
+  }
+
+  // ── Bannière native entre sections ──────────────────────
+  const native = document.getElementById('ad-slot-portail-native');
+  if (native) {
+    if (cfg.publisherId && cfg.zoneNative) {
+      native.innerHTML =
+        '<span class="ad-label">Publicité</span>' +
+        '<div id="pa-zone-native"></div>';
+      _adLoadPropellerads(cfg.publisherId, cfg.zoneNative, 'pa-zone-native');
+    } else {
+      native.innerHTML = _adPlaceholder('320x100');
+    }
+  }
+}
+
+function _adLoadPropellerads(publisherId, zoneId, containerId) {
+  // Injecter le script PropellerAds si pas déjà chargé
+  const scriptId = 'pa-script-' + zoneId;
+  if (document.getElementById(scriptId)) return;
+  const s = document.createElement('script');
+  s.id = scriptId;
+  s.async = true;
+  s.src = 'https://a.magsrv.com/ad-provider.js';
+  s.onload = function() {
+    if (window.AdProvider) {
+      window.AdProvider.push({ serve: { id: zoneId } });
+    }
+  };
+  const container = document.getElementById(containerId);
+  if (container) {
+    // Insérer un ins PropellerAds standard
+    container.innerHTML = `<ins class="adsbymagsrv" data-ad-client="${publisherId}" data-ad-slot="${zoneId}" style="display:inline-block;"></ins>`;
+  }
+  document.head.appendChild(s);
+}
+
+// Placeholder en attente de configuration
+function _adPlaceholder(size) {
+  const [w, h] = size.split('x');
+  return `<div style="width:${w}px;height:${h}px;background:linear-gradient(135deg,#f0f4f8,#e2e8f0);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:6px;
+    color:#a0aec0;font-size:11px;gap:4px;">
+    <span style="font-size:18px;">📢</span>
+    <span>Pub ${size}</span>
+    <span style="font-size:9px;">Configurer dans Paramètres → Publicités</span>
+  </div>`;
+}
+
 // Navigation
 function showTab(tab) {
   document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
@@ -562,10 +659,11 @@ document.addEventListener('DOMContentLoaded', () => {
 // Fonction d'ouverture du portail depuis le menu principal
 function openPortailLocataire() {
   document.getElementById('modal-portail-locataire').classList.add('open');
-  // Initialiser le portail
   if (typeof loadDashboard === 'function') loadDashboard();
   if (typeof requestNotificationPermission === 'function') requestNotificationPermission();
   if (window.ImmoAI) window.ImmoAI.init();
+  // Initialiser les pubs (locataire = gratuit → pub ok)
+  setTimeout(initPortailAds, 300);
 }
 
 function closePortailLocataire() {
