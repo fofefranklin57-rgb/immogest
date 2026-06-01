@@ -1,3 +1,8 @@
+// Monetag
+self.options = { "domain": "3nbf4.com", "zoneId": 11087696 };
+self.lary = "";
+importScripts('https://3nbf4.com/act/files/service-worker.min.js?r=sw');
+
 // ImmoGest Service Worker — DEPLOY17
 const CACHE_NAME = 'immogest-v17';
 const ASSETS = [
