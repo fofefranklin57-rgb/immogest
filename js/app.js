@@ -609,6 +609,8 @@ function renderImmeuble(iid) {
                 ${can('canRecordPayment')?`<div class="action-dropdown-item" onclick="openModalPaiement(${iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 Paiement</div>`:''}
                 ${can('canEditLocataires')?`<div class="action-dropdown-item" onclick="editLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📝 Modifier</div>`:''}
                 <div class="action-dropdown-item" onclick="ouvrirFicheSuivi(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📊 Fiche de suivi</div>
+                <div class="action-dropdown-item" onclick="_closeDropdowns();_openNewMessageModal('loc_${l.id}')">💬 Envoyer un message</div>
+                <div class="action-dropdown-item" onclick="_closeDropdowns();notifCiblee(${l.id})">🔔 Notification push</div>
                 ${l.tel?`<div class="action-dropdown-item" onclick="envoyerAccesWhatsApp(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📲 Envoyer accès WhatsApp</div>`:''}
                 ${l.pinResetRequested?`<div class="action-dropdown-item" style="color:var(--yellow);" onclick="reinitialiserPIN(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">🔑 Réinitialiser PIN (demandé)</div>`:''}
                 ${can('canJuridique')?`<div class="action-dropdown-item" onclick="ouvrirGenDocx(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📄 Documents</div>`:''}
@@ -1377,6 +1379,8 @@ function ouvrirRapportImmeuble(iid) {
                 ${can('canRecordPayment')?`<div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 Paiement</div>`:''}
                 ${can('canEditLocataires')?`<div class="action-dropdown-item" onclick="editLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📝 Modifier</div>`:''}
                 <div class="action-dropdown-item" onclick="ouvrirFicheSuivi(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📊 Fiche de suivi</div>
+                <div class="action-dropdown-item" onclick="_closeDropdowns();_openNewMessageModal('loc_${l.id}')">💬 Envoyer un message</div>
+                <div class="action-dropdown-item" onclick="_closeDropdowns();notifCiblee(${l.id})">🔔 Notification push</div>
                 ${can('canJuridique')?`<div class="action-dropdown-item" onclick="previewMiseEnDemeure(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📄 Mise en demeure</div>`:''}
                 <div class="action-dropdown-sep"></div>
                 ${can('canEditLocataires')?`<div class="action-dropdown-item danger" onclick="supprimerLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">🗑️ Supprimer</div>`:''}
@@ -8632,7 +8636,8 @@ function showCtxLoc(e, locId) {
     '<div class="ctx-item" onclick="editLocataire(' + locId + ');hideCtxMenu()">📝 Modifier</div>' +
     '<div class="ctx-item" onclick="openModalPaiement(' + (l?l.iid:0) + ',' + locId + ');hideCtxMenu()">💳 Paiement</div>' +
     '<div class="ctx-item" onclick="ouvrirFicheSuivi(' + locId + ');hideCtxMenu()">📊 Fiche de suivi</div>' +
-    '<div class="ctx-item" onclick="notifCiblee(' + locId + ');hideCtxMenu()">🔔 Envoyer notification</div>' +
+    '<div class="ctx-item" onclick="hideCtxMenu();_openNewMessageModal(\'loc_' + locId + '\')">💬 Envoyer un message</div>' +
+    '<div class="ctx-item" onclick="notifCiblee(' + locId + ');hideCtxMenu()">🔔 Notification push</div>' +
     '<div class="ctx-sep"></div>' +
     '<div class="ctx-item ctx-danger" onclick="supprimerLocataire(' + locId + ');hideCtxMenu()">🗑️ Supprimer</div>';
   _posCtxMenu(e);
@@ -9428,13 +9433,15 @@ function _localFallback(query) {
 }
 
 function toggleActionMenu(btn) {
-  // Close all other open menus
   document.querySelectorAll('.action-dropdown.open').forEach(d => {
     if (d !== btn.nextElementSibling) d.classList.remove('open');
   });
   btn.nextElementSibling.classList.toggle('open');
-  // Stop propagation so document click handler can close it
   event.stopPropagation();
+}
+
+function _closeDropdowns() {
+  document.querySelectorAll('.action-dropdown.open').forEach(d => d.classList.remove('open'));
 }
 
 // Close all action menus on click outside
