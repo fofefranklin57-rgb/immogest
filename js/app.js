@@ -4516,7 +4516,7 @@ function _renderUtilisateursPerso(tab) {
 // ── MODE ENTREPRISE : Cabinet + Propriétaires + Locataires ────────────────────
 function _renderUtilisateursEntreprise(tab) {
   if (tab) window._usersTab = tab;
-  if (!window._usersTab || window._usersTab === 'proprios') window._usersTab = 'cabinet';
+  if (!window._usersTab) window._usersTab = 'cabinet';
   const t = window._usersTab;
 
   const cabinet   = USERS.filter(u => u.version === 'entreprise' && ['admin','gestionnaire','comptable'].includes(u.role));
