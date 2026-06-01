@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ImmoGest — Vue Propriétaire</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+
+  /* ── Auth ── */
+  #auth-screen {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; background: #0f172a;
+  }
+  .auth-card {
+    background: #1e293b; border-radius: 16px; padding: 40px;
+    width: 100%; max-width: 380px; text-align: center;
+    box-shadow: 0 25px 50px rgba(0,0,0,.5);
+  }
+  .auth-card .logo { font-size: 2.5rem; margin-bottom: 8px; }
+  .auth-card h1 { font-size: 1.4rem; color: #f1f5f9; margin-bottom: 4px; }
+  .auth-card p { font-size: .85rem; color: #64748b; margin-bottom: 28px; }
+  .auth-card input {
+    width: 100%; padding: 12px 16px; border-radius: 10px;
+    border: 1px solid #334155; background: #0f172a; color: #e2e8f0;
+    font-size: 1rem; margin-bottom: 12px; outline: none;
+  }
+  .auth-card input:focus { border-color: #6366f1; }
+  .auth-card button {
+    width: 100%; padding: 12px; background: #6366f1; color: #fff;
+    border: none; border-radius: 10px; font-size: 1rem; font-weight: 600;
+    cursor: pointer; transition: background .2s;
+  }
+  .auth-card button:hover { background: #4f46e5; }
+  .auth-error { color: #f87171; font-size: .85rem; margin-top: 8px; display: none; }
+
+  /* ── Dashboard ── */
+  #dashboard { display: none; }
+
+  header {
+    background: #1e293b; border-bottom: 1px solid #334155;
+    padding: 16px 28px; display: flex; align-items: center; justify-content: space-between;
+  }
+  header h1 { font-size: 1.2rem; color: #f1f5f9; font-weight: 700; }
+  header span { font-size: .8rem; color: #64748b; }
+  .refresh-btn {
+    background: #334155; border: none; color: #94a3b8; padding: 8px 14px;
+    border-radius: 8px; cursor: pointer; font-size: .85rem; transition: background .2s;
+  }
+  .refresh-btn:hover { background: #475569; color: #f1f5f9; }
+
+  main { padding: 28px; max-width: 1200px; margin: 0 auto; }
+
+  .section-title {
+    font-size: .75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .1em; color: #64748b; margin-bottom: 16px; margin-top: 32px;
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  /* ── KPI Cards ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+  .kpi-card {
+    background: #1e293b; border-radius: 12px; padding: 20px 22px;
+    border: 1px solid #334155; position: relative; overflow: hidden;
+  }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--accent, #6366f1);
+  }
+  .kpi-label { font-size: .78rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+  .kpi-value { font-size: 2rem; font-weight: 800; color: #f1f5f9; line-height: 1; }
+  .kpi-sub { font-size: .8rem; color: #94a3b8; margin-top: 6px; }
+
+  /* ── Charts ── */
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 768px) { .charts-grid { grid-template-columns: 1fr; } }
+  .chart-card {
+    background: #1e293b; border-radius: 12px; padding: 20px;
+    border: 1px solid #334155;
+  }
+  .chart-card h3 { font-size: .9rem; color: #94a3b8; margin-bottom: 16px; font-weight: 600; }
+  .chart-card canvas { max-height: 220px; }
+
+  /* ── Status indicator ── */
+  .status-bar {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .78rem; color: #64748b; margin-top: 20px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .dot.error { background: #ef4444; animation: none; }
+
+  .loading { color: #64748b; font-size: .9rem; padding: 40px; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ── Écran de connexion ── -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="logo">🏢</div>
+    <h1>ImmoGest</h1>
+    <p>Vue propriétaire — accès restreint</p>
+    <input type="password" id="pwd-input" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')checkAuth()" autofocus>
+    <button onclick="checkAuth()">Accéder</button>
+    <div class="auth-error" id="auth-error">Mot de passe incorrect</div>
+  </div>
+</div>
+
+<!-- ── Dashboard ── -->
+<div id="dashboard">
+  <header>
+    <h1>🏢 ImmoGest — Vue propriétaire</h1>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span id="last-update">—</span>
+      <button class="refresh-btn" onclick="loadStats()">↻ Actualiser</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="loading" id="loading-msg">Chargement des données…</div>
+
+    <div id="content" style="display:none">
+
+      <div class="section-title">Vue d'ensemble</div>
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--accent:#6366f1">
+          <div class="kpi-label">Immeubles</div>
+          <div class="kpi-value" id="kpi-immeubles">—</div>
+          <div class="kpi-sub">enregistrés</div>
+        </div>
+        <div class="kpi-card" style="--accent:#22c55e">
+          <div class="kpi-label">Locataires actifs</div>
+          <div class="kpi-value" id="kpi-locataires">—</div>
+          <div class="kpi-sub" id="kpi-loc-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--accent:#f59e0b">
+          <div class="kpi-label">Taux d'occupation</div>
+          <div class="kpi-value" id="kpi-taux">—</div>
+          <div class="kpi-sub">des locaux</div>
+        </div>
+        <div class="kpi-card" style="--accent:#0ea5e9">
+          <div class="kpi-label">Paiements ce mois</div>
+          <div class="kpi-value" id="kpi-pays-mois">—</div>
+          <div class="kpi-sub" id="kpi-pays-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--accent:#ef4444">
+          <div class="kpi-label">Impayés</div>
+          <div class="kpi-value" id="kpi-impayes">—</div>
+          <div class="kpi-sub">locataires en retard</div>
+        </div>
+        <div class="kpi-card" style="--accent:#a855f7">
+          <div class="kpi-label">Maintenances</div>
+          <div class="kpi-value" id="kpi-maintenances">—</div>
+          <div class="kpi-sub" id="kpi-maint-sub">—</div>
+        </div>
+      </div>
+
+      <div class="section-title">Activité</div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>Paiements — 6 derniers mois (nombre)</h3>
+          <canvas id="chart-pays"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Statut des locataires</h3>
+          <canvas id="chart-statuts"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Nouveaux locataires par mois (6 mois)</h3>
+          <canvas id="chart-nouveaux"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Répartition par immeuble (locaux occupés)</h3>
+          <canvas id="chart-immeubles"></canvas>
+        </div>
+      </div>
+
+      <div class="status-bar">
+        <div class="dot" id="status-dot"></div>
+        <span id="status-text">Connecté à Supabase</span>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+// ── CONFIG ─────────────────────────────────────────────────────────
+const OWNER_PWD    = 'immogest2025owner'; // ← change ce mot de passe
+const SUPABASE_URL = 'https://uggxfmwpttfsfcirmeqx.supabase.co';
+const SUPABASE_ANON= 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZ3hmbXdwdHRmc2ZjaXJtZXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNTA4MjIsImV4cCI6MjA5NDYyNjgyMn0.l8iYlJHOt6evNlBQ3zRskZasn_J2BjAUs1l2vKOZNvY';
+
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let charts = {};
+
+// ── AUTH ────────────────────────────────────────────────────────────
+function checkAuth() {
+  const val = document.getElementById('pwd-input').value;
+  if (val === OWNER_PWD) {
+    sessionStorage.setItem('owner_ok', '1');
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadStats();
+  } else {
+    document.getElementById('auth-error').style.display = 'block';
+    document.getElementById('pwd-input').value = '';
+    document.getElementById('pwd-input').focus();
+  }
+}
+
+// Auto-login si déjà authentifié dans la session
+if (sessionStorage.getItem('owner_ok') === '1') {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  loadStats();
+}
+
+// ── LOAD STATS ──────────────────────────────────────────────────────
+async function loadStats() {
+  document.getElementById('loading-msg').style.display = 'block';
+  document.getElementById('content').style.display = 'none';
+
+  try {
+    const now = new Date();
+    const moisCourant = now.getMonth() + 1;
+    const anneeCourante = now.getFullYear();
+
+    const [
+      { data: immeubles },
+      { data: locataires },
+      { data: paiements },
+      { data: maintenances }
+    ] = await Promise.all([
+      _sb.from('immeubles').select('id, nom'),
+      _sb.from('locataires').select('id, statut, entree, immeuble_id'),
+      _sb.from('paiements').select('id, mois, annee, montant, date_paiement'),
+      _sb.from('maintenances').select('id, statut')
+    ]);
+
+    // ── KPIs ──
+    const actifs = (locataires || []).filter(l => l.statut !== 'libre');
+    const libres = (locataires || []).filter(l => l.statut === 'libre');
+    const impayes = (locataires || []).filter(l => l.statut === 'impayé');
+    const total = actifs.length + libres.length;
+    const taux = total > 0 ? Math.round(actifs.length / total * 100) : 0;
+
+    const paysMois = (paiements || []).filter(p => p.mois === moisCourant && p.annee === anneeCourante);
+    const montantMois = paysMois.reduce((s, p) => s + (p.montant || 0), 0);
+
+    const maintEnAttente = (maintenances || []).filter(m => m.statut === 'en_attente' || m.statut === 'en_cours');
+    const maintTotal = (maintenances || []).length;
+
+    set('kpi-immeubles', (immeubles || []).length);
+    set('kpi-locataires', actifs.length);
+    set('kpi-loc-sub', libres.length + ' locaux libres');
+    set('kpi-taux', taux + '%');
+    set('kpi-pays-mois', paysMois.length);
+    set('kpi-pays-sub', fmtMontant(montantMois) + ' encaissés');
+    set('kpi-impayes', impayes.length);
+    set('kpi-maintenances', maintEnAttente.length);
+    set('kpi-maint-sub', maintTotal + ' au total');
+
+    // ── Charts ──
+    buildChartPays(paiements || [], now);
+    buildChartStatuts(locataires || []);
+    buildChartNouveaux(locataires || [], now);
+    buildChartImmeubles(immeubles || [], locataires || []);
+
+    // ── Status ──
+    set('last-update', 'Mis à jour ' + now.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}));
+    document.getElementById('status-dot').className = 'dot';
+    document.getElementById('status-text').textContent = 'Connecté à Supabase';
+
+    document.getElementById('loading-msg').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+
+  } catch(e) {
+    console.error(e);
+    document.getElementById('loading-msg').textContent = 'Erreur de chargement — ' + e.message;
+    document.getElementById('status-dot').className = 'dot error';
+    document.getElementById('status-text').textContent = 'Erreur Supabase';
+  }
+}
+
+// ── CHART : paiements 6 mois ─────────────────────────────────────
+function buildChartPays(paiements, now) {
+  const labels = [], data = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    labels.push(d.toLocaleDateString('fr-FR', {month:'short', year:'2-digit'}));
+    data.push(paiements.filter(p => p.mois === d.getMonth()+1 && p.annee === d.getFullYear()).length);
+  }
+  renderChart('chart-pays', 'bar', labels, [{
+    label: 'Paiements', data, backgroundColor: '#6366f155', borderColor: '#6366f1', borderWidth: 2, borderRadius: 4
+  }]);
+}
+
+// ── CHART : statuts locataires ────────────────────────────────────
+function buildChartStatuts(locataires) {
+  const counts = { payé:0, impayé:0, partiel:0, libre:0 };
+  locataires.forEach(l => { if (counts[l.statut] !== undefined) counts[l.statut]++; else counts.partiel++; });
+  renderChart('chart-statuts', 'doughnut',
+    ['Payé', 'Impayé', 'Partiel', 'Libre'],
+    [{ data: [counts.payé, counts.impayé, counts.partiel, counts.libre],
+       backgroundColor: ['#22c55e88','#ef444488','#f59e0b88','#64748b88'],
+       borderColor:     ['#22c55e','#ef4444','#f59e0b','#64748b'],
+       borderWidth: 2 }]
+  );
+}
+
+// ── CHART : nouveaux locataires ───────────────────────────────────
+function buildChartNouveaux(locataires, now) {
+  const labels = [], data = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const fin = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+    labels.push(d.toLocaleDateString('fr-FR', {month:'short', year:'2-digit'}));
+    data.push(locataires.filter(l => {
+      if (!l.entree) return false;
+      const e = new Date(l.entree);
+      return e >= d && e <= fin;
+    }).length);
+  }
+  renderChart('chart-nouveaux', 'line', labels, [{
+    label: 'Nouveaux', data, borderColor: '#22c55e', backgroundColor: '#22c55e22',
+    borderWidth: 2, fill: true, tension: .3, pointRadius: 4
+  }]);
+}
+
+// ── CHART : répartition par immeuble ─────────────────────────────
+function buildChartImmeubles(immeubles, locataires) {
+  const labels = immeubles.map(im => im.nom || 'Immeuble');
+  const data = immeubles.map(im => locataires.filter(l => l.immeuble_id === im.id && l.statut !== 'libre').length);
+  const colors = ['#6366f1','#22c55e','#f59e0b','#0ea5e9','#a855f7','#ef4444','#14b8a6','#f97316'];
+  renderChart('chart-immeubles', 'bar', labels, [{
+    label: 'Locaux occupés', data,
+    backgroundColor: labels.map((_,i) => colors[i % colors.length] + '88'),
+    borderColor:     labels.map((_,i) => colors[i % colors.length]),
+    borderWidth: 2, borderRadius: 4
+  }]);
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────
+function set(id, val) { document.getElementById(id).textContent = val; }
+
+function fmtMontant(n) {
+  return new Intl.NumberFormat('fr-FR', {style:'currency', currency:'XAF', maximumFractionDigits:0}).format(n);
+}
+
+function renderChart(id, type, labels, datasets) {
+  if (charts[id]) charts[id].destroy();
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx, {
+    type,
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+      scales: type !== 'doughnut' ? {
+        x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+        y: { ticks: { color: '#64748b' }, grid: { color: '#334155' }, beginAtZero: true }
+      } : {}
+    }
+  });
+}
+</script>
+</body>
+</html>
