@@ -320,10 +320,6 @@ const MonetizationModule = {
   }
 };
 
-// Initialisation au chargement
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => MonetizationModule.init(), 2500);
-});
 
 
 // ══════════════════════════════════════════════════════════════
