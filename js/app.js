@@ -4527,7 +4527,7 @@ window._usersTab = 'proprios';
 
 function renderUtilisateurs(tab) {
   if (!can('canManageUsers')) {
-    document.getElementById('content').innerHTML = '<div class="perm-denied"><div class="icon">🔒</div><div>Accès réservé à l\'administrateur</div></div>';
+    document.getElementById('content').innerHTML = '<div class="perm-denied"><div class="icon">🔒</div><div>' + t('Accès réservé à l\'administrateur') + '</div></div>';
     return;
   }
   document.getElementById('page-title').textContent = t('Gestion des utilisateurs');
@@ -4554,8 +4554,8 @@ function _renderUtilisateursPerso(tab) {
     : 'padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;background:transparent;color:var(--text2);transition:all .2s;';
 
   let html = '<div style="display:flex;background:var(--bg4);border-radius:10px;padding:4px;margin-bottom:20px;gap:4px;">'
-    + '<button style="'+tabStyle('proprios')+'" onclick="renderUtilisateurs(\'proprios\')">🔑 Propriétaires <span style="background:rgba(255,255,255,0.25);padding:1px 7px;border-radius:99px;font-size:11px;margin-left:4px;">'+proprios.length+'</span></button>'
-    + '<button style="'+tabStyle('locataires')+'" onclick="renderUtilisateurs(\'locataires\')">🏠 Locataires <span style="background:rgba(255,255,255,0.25);padding:1px 7px;border-radius:99px;font-size:11px;margin-left:4px;">'+nbLocs+'</span></button>'
+    + '<button style="'+tabStyle('proprios')+'" onclick="renderUtilisateurs(\'proprios\')">🔑 ' + window.t('Propriétaire') + 's <span style="background:rgba(255,255,255,0.25);padding:1px 7px;border-radius:99px;font-size:11px;margin-left:4px;">'+proprios.length+'</span></button>'
+    + '<button style="'+tabStyle('locataires')+'" onclick="renderUtilisateurs(\'locataires\')">🏠 ' + window.t('Locataires') + ' <span style="background:rgba(255,255,255,0.25);padding:1px 7px;border-radius:99px;font-size:11px;margin-left:4px;">'+nbLocs+'</span></button>'
     + '</div>';
 
   if (t === 'locataires') {
@@ -4582,9 +4582,9 @@ function _renderUtilisateursEntreprise(tab) {
     : 'padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;background:transparent;color:var(--text2);transition:all .2s;';
 
   let html = '<div style="display:flex;background:var(--bg4);border-radius:10px;padding:4px;margin-bottom:20px;gap:4px;">'
-    + '<button style="'+tabStyle('cabinet')+'" onclick="renderUtilisateurs(\'cabinet\')">🏢 Équipe Cabinet <span style="background:rgba(255,255,255,0.25);padding:1px 7px;border-radius:99px;font-size:11px;margin-left:4px;">'+cabinet.length+'</span></button>'
-    + '<button style="'+tabStyle('proprios')+'" onclick="renderUtilisateurs(\'proprios\')">🔑 Propriétaires <span style="background:rgba(255,255,255,0.25);padding:1px 7px;border-radius:99px;font-size:11px;margin-left:4px;">'+proprios.length+'</span></button>'
-    + '<button style="'+tabStyle('locataires')+'" onclick="renderUtilisateurs(\'locataires\')">🏠 Locataires <span style="background:rgba(255,255,255,0.25);padding:1px 7px;border-radius:99px;font-size:11px;margin-left:4px;">'+locataires.length+'</span></button>'
+    + '<button style="'+tabStyle('cabinet')+'" onclick="renderUtilisateurs(\'cabinet\')">🏢 ' + window.t('Équipe Cabinet') + ' <span style="background:rgba(255,255,255,0.25);padding:1px 7px;border-radius:99px;font-size:11px;margin-left:4px;">'+cabinet.length+'</span></button>'
+    + '<button style="'+tabStyle('proprios')+'" onclick="renderUtilisateurs(\'proprios\')">🔑 ' + window.t('Propriétaire') + 's <span style="background:rgba(255,255,255,0.25);padding:1px 7px;border-radius:99px;font-size:11px;margin-left:4px;">'+proprios.length+'</span></button>'
+    + '<button style="'+tabStyle('locataires')+'" onclick="renderUtilisateurs(\'locataires\')">🏠 ' + window.t('Locataires') + ' <span style="background:rgba(255,255,255,0.25);padding:1px 7px;border-radius:99px;font-size:11px;margin-left:4px;">'+locataires.length+'</span></button>'
     + '</div>';
 
   if (t === 'cabinet')    html += _renderTabCabinet(cabinet);
@@ -4602,11 +4602,11 @@ function _renderTabCabinet(users) {
   users.forEach(function(u) {
     var actif = u.actif !== false;
     var imms = (u.role==='admin'||u.role==='comptable')
-      ? '<span style="color:var(--green);font-size:12px;">Tous</span>'
+      ? '<span style="color:var(--green);font-size:12px;">' + t('Tous') + '</span>'
       : (u.immeubles||[]).map(function(iid){
           var im = DATA.immeubles.find(function(i){return i.id===iid;});
           return im ? '<span class="badge badge-accent" style="margin:1px;font-size:10px;">'+im.nom.split(' ')[0]+'</span>' : '';
-        }).join('') || '<span style="color:var(--text3);font-size:12px;">Aucun</span>';
+        }).join('') || '<span style="color:var(--text3);font-size:12px;">' + t('Aucun') + '</span>';
     var btnEdit   = '<button class="btn btn-ghost btn-icon btn-sm" onclick="editUser(this.dataset.id)" data-id="'+u.id+'" title="Modifier">✎</button>';
     var btnBlock  = '<button class="btn btn-ghost btn-icon btn-sm" onclick="toggleBloquerUser(this.dataset.id)" data-id="'+u.id+'" title="'+(actif?'Bloquer':'Débloquer')+'" style="color:'+(actif?'var(--red)':'var(--green)')+';">'+(actif?'🔒':'🔓')+'</button>';
     var btnDelete = u.id!=='adm1' ? '<button class="btn btn-danger btn-icon btn-sm" onclick="deleteUser(this.dataset.id)" data-id="'+u.id+'" title="Supprimer">🗑</button>' : '';
@@ -4615,15 +4615,15 @@ function _renderTabCabinet(users) {
       + '<td><span class="role-badge" style="background:'+(roleColors[u.role]||'#888')+'22;color:'+(roleColors[u.role]||'#888')+';font-size:11px;">'+(roleLabels[u.role]||u.role)+'</span></td>'
       + '<td style="font-size:12px;font-family:var(--mono);">'+(u.username||'—')+'</td>'
       + '<td>'+imms+'</td>'
-      + '<td>'+(actif?'<span style="color:var(--green);font-size:11px;font-weight:600;">● Actif</span>':'<span style="color:var(--red);font-size:11px;font-weight:600;">● Bloqué</span>')+'</td>'
+      + '<td>'+(actif?'<span style="color:var(--green);font-size:11px;font-weight:600;">' + t('● Actif') + '</span>':'<span style="color:var(--red);font-size:11px;font-weight:600;">' + t('● Bloqué') + '</span>')+'</td>'
       + '<td style="white-space:nowrap;">' + btnEdit + btnBlock + btnDelete + '</td>'
       + '</tr>';
   });
   return '<div class="card">'
-    + '<div class="card-header"><div class="card-title">Équipe ' + _cabInfo().nom + '</div>'
-    + '<button class="btn btn-primary btn-sm" onclick="_openUserModal(null,\'cabinet\')">＋ Ajouter</button></div>'
+    + '<div class="card-header"><div class="card-title">' + t('Équipe Cabinet') + ' ' + _cabInfo().nom + '</div>'
+    + '<button class="btn btn-primary btn-sm" onclick="_openUserModal(null,\'cabinet\')">＋ ' + t('Ajouter') + '</button></div>'
     + '<div class="table-wrap"><table class="tbl">'
-    + '<thead><tr><th>Nom</th><th>Rôle</th><th>Identifiant</th><th>Immeubles assignés</th><th>Statut</th><th></th></tr></thead>'
+    + '<thead><tr><th>' + t('Nom') + '</th><th>' + t('Rôle') + '</th><th>' + t('Identifiant') + '</th><th>' + t('Immeubles assignés') + '</th><th>' + t('Statut') + '</th><th></th></tr></thead>'
     + '<tbody>' + rows + '</tbody>'
     + '</table></div></div>';
 }
@@ -4632,7 +4632,7 @@ function _renderTabCabinet(users) {
 function _renderTabProprios(users, isIndiv) {
   var rows = '';
   if (users.length === 0) {
-    rows = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px;font-style:italic;">Aucun propriétaire</td></tr>';
+    rows = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px;font-style:italic;">' + t('Aucun propriétaire') + '</td></tr>';
   } else {
     users.forEach(function(u) {
       var actif = u.actif !== false;
@@ -4643,17 +4643,17 @@ function _renderTabProprios(users, isIndiv) {
       rows += '<tr style="opacity:'+(actif?'1':'0.5')+';">'
         + '<td class="td-name">'+u.nom+'</td>'
         + '<td style="font-size:12px;">'+(u.tel||'<span style="color:#ccc;">—</span>')+'</td>'
-        + '<td style="font-size:12px;">'+(imms.length>0 ? imms.map(function(im){return '<span class="badge badge-accent" style="margin:1px;font-size:10px;">'+im.nom+'</span>';}).join('') : '<span style="color:var(--text3);">Aucun</span>')+'</td>'
-        + '<td>'+(actif?'<span style="color:var(--green);font-size:11px;font-weight:600;">● Actif</span>':'<span style="color:var(--red);font-size:11px;font-weight:600;">● Bloqué</span>')+'</td>'
+        + '<td style="font-size:12px;">'+(imms.length>0 ? imms.map(function(im){return '<span class="badge badge-accent" style="margin:1px;font-size:10px;">'+im.nom+'</span>';}).join('') : '<span style="color:var(--text3);">' + t('Aucun') + '</span>')+'</td>'
+        + '<td>'+(actif?'<span style="color:var(--green);font-size:11px;font-weight:600;">' + t('● Actif') + '</span>':'<span style="color:var(--red);font-size:11px;font-weight:600;">' + t('● Bloqué') + '</span>')+'</td>'
         + '<td style="white-space:nowrap;">' + btnEdit + btnReinit + btnBlock + '</td>'
         + '</tr>';
     });
   }
   return '<div class="card">'
-    + '<div class="card-header"><div class="card-title">Propriétaires</div>'
-    + '<button class="btn btn-primary btn-sm" onclick="_openUserModal(null,\'proprios\')">＋ Ajouter</button></div>'
+    + '<div class="card-header"><div class="card-title">' + t('Propriétaire') + 's</div>'
+    + '<button class="btn btn-primary btn-sm" onclick="_openUserModal(null,\'proprios\')">＋ ' + t('Ajouter') + '</button></div>'
     + '<div class="table-wrap"><table class="tbl">'
-    + '<thead><tr><th>Nom</th><th>Téléphone</th><th>Immeubles</th><th>Statut</th><th></th></tr></thead>'
+    + '<thead><tr><th>' + t('Nom') + '</th><th>' + t('Téléphone') + '</th><th>' + t('Immeubles') + '</th><th>' + t('Statut') + '</th><th></th></tr></thead>'
     + '<tbody>' + rows + '</tbody>'
     + '</table></div></div>';
 }
@@ -4673,9 +4673,9 @@ function _renderTabLocataires(users, isIndiv) {
     locsImm.forEach(function(l) {
       var actif = l.actif !== false;
       var pinLabel, pinColor;
-      if (!l.pin)          { pinLabel = '0000 (défaut)'; pinColor = 'var(--text3)'; }
+      if (!l.pin)          { pinLabel = t('0000 (défaut)'); pinColor = 'var(--text3)'; }
       else if (l.pin==='0000') { pinLabel = '0000';          pinColor = 'var(--yellow)'; }
-      else                 { pinLabel = '●●●● (modifié)'; pinColor = 'var(--green)'; }
+      else                 { pinLabel = t('●●●● (modifié)'); pinColor = 'var(--green)'; }
       var btnReinit = '<button class="btn btn-ghost btn-icon btn-sm" onclick="reinitPINLocataire(this.dataset.id)" data-id="'+l.id+'" title="Réinitialiser PIN" style="font-size:11px;">🔑</button>';
       var btnBlock  = '<button class="btn btn-ghost btn-icon btn-sm" onclick="toggleBloquerLocataire(this.dataset.id)" data-id="'+l.id+'" title="'+(actif?'Bloquer':'Débloquer')+'" style="color:'+(actif?'var(--red)':'var(--green)')+';">'+(actif?'🔒':'🔓')+'</button>';
       rows += '<tr class="loc-user-row" data-search="'+(l.nom+' '+(l.tel||'')+' '+(l.appt||'')).toLowerCase()+'" style="opacity:'+(actif?'1':'0.55')+';">'
@@ -4683,7 +4683,7 @@ function _renderTabLocataires(users, isIndiv) {
         + '<td class="td-name">'+l.nom+'</td>'
         + '<td style="font-size:12px;">'+(l.tel||'<span style="color:#ccc;">—</span>')+'</td>'
         + '<td style="font-size:11px;color:'+pinColor+';font-family:var(--mono);">'+pinLabel+'</td>'
-        + '<td>'+(actif?'<span style="color:var(--green);font-size:11px;font-weight:600;">● Actif</span>':'<span style="color:var(--red);font-size:11px;font-weight:600;">● Bloqué</span>')+'</td>'
+        + '<td>'+(actif?'<span style="color:var(--green);font-size:11px;font-weight:600;">' + t('● Actif') + '</span>':'<span style="color:var(--red);font-size:11px;font-weight:600;">' + t('● Bloqué') + '</span>')+'</td>'
         + '<td style="white-space:nowrap;">' + btnReinit + btnBlock + '</td>'
         + '</tr>';
     });
@@ -4697,18 +4697,18 @@ function _renderTabLocataires(users, isIndiv) {
       + '<span style="font-size:11px;color:var(--text3);">'+im.ville+(im.quartier?' · '+im.quartier:'')+'</span>'
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:12px;">'
-      + '<span style="font-size:12px;color:var(--text3);background:var(--bg4);padding:2px 10px;border-radius:99px;">'+locsImm.length+' locataire(s)</span>'
+      + '<span style="font-size:12px;color:var(--text3);background:var(--bg4);padding:2px 10px;border-radius:99px;">'+locsImm.length+' ' + t('locataire(s)') + '</span>'
       + '<span id="acc-arrow-'+im.id+'" style="font-size:12px;color:var(--text3);transition:transform .2s;display:inline-block;transform:'+(isOpen?'rotate(180deg)':'rotate(0deg)')+';">▼</span>'
       + '</div>'
       + '</div>'
       + '<div id="'+blockId+'" style="display:'+(isOpen?'block':'none')+';">'
       + '<div class="table-wrap"><table class="tbl">'
-      + '<thead><tr><th>Local</th><th>Nom</th><th>Téléphone</th><th>PIN</th><th>Statut</th><th></th></tr></thead>'
+      + '<thead><tr><th>' + t('Local') + '</th><th>' + t('Nom') + '</th><th>' + t('Téléphone') + '</th><th>' + t('PIN') + '</th><th>' + t('Statut') + '</th><th></th></tr></thead>'
       + '<tbody>'+rows+'</tbody>'
       + '</table></div></div></div>';
   });
 
-  if (!accordions) accordions = '<div class="card"><div style="text-align:center;color:var(--text3);padding:24px;font-style:italic;">Aucun locataire actif</div></div>';
+  if (!accordions) accordions = '<div class="card"><div style="text-align:center;color:var(--text3);padding:24px;font-style:italic;">' + t('Aucun locataire actif') + '</div></div>';
   return searchBar + accordions;
 }
 
@@ -5973,18 +5973,18 @@ async function renderValidationComptable() {
     html += `<div class="comptable-alert">
       <span style="font-size:28px;">💰</span>
       <div>
-        <div style="font-weight:700;color:var(--accent);font-size:14px;">${pending.length + pendingBailleur.length} paiement(s) en attente de validation</div>
-        <div style="font-size:12px;color:var(--text3);">Vérifiez et validez pour émettre les reçus PDF officiels</div>
+        <div style="font-weight:700;color:var(--accent);font-size:14px;">${pending.length + pendingBailleur.length} ${t('paiement(s) en attente de validation')}</div>
+        <div style="font-size:12px;color:var(--text3);">${t('Vérifiez et validez pour émettre les reçus PDF officiels')}</div>
       </div>
     </div>`;
   }
 
   html += `<div class="card" style="margin-bottom:16px;">
     <div class="card-header">
-      <div class="card-title">⏳ En attente de validation (${pending.length})</div>
+      <div class="card-title">⏳ ${t('En attente de validation')} (${pending.length})</div>
     </div>
     ${pending.length>0?`<div class="table-wrap"><table class="tbl">
-      <thead><tr><th>Date décl.</th><th>Locataire</th><th>Local</th><th>Immeuble</th><th>Mode</th><th>Mois</th><th>Montant</th><th>Source</th><th>Action</th></tr></thead>
+      <thead><tr><th>${t('Date décl.')}</th><th>${t('Locataire')}</th><th>${t('Local')}</th><th>${t('Immeuble')}</th><th>${t('Mode')}</th><th>${t('Mois')}</th><th>${t('Montant')}</th><th>${t('Source')}</th><th>${t('Action')}</th></tr></thead>
       <tbody>
       ${pending.map(d=>`
         <tr class="valid-row" data-search="${(d.nomLocataire+' '+(d.apptLocataire||'')+' '+d.nomImmeuble+' '+(MNOMS[d.moisC]||'')+' '+d.anneeC).toLowerCase()}">
@@ -5997,23 +5997,23 @@ async function renderValidationComptable() {
           <td class="td-amount green">${fmt(d.montant)}</td>
           <td style="font-size:11px;">
             ${d.statut==='pending_receipt'
-              ? `<span style="background:rgba(14,106,175,.1);color:var(--accent);padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600;">📋 ${d.recordedBy||'Gestionnaire'}</span>`
-              : `<span style="background:var(--green-bg);color:var(--green);padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600;">🔑 Locataire</span>`}
+              ? `<span style="background:rgba(14,106,175,.1);color:var(--accent);padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600;">📋 ${d.recordedBy||t('Gestionnaire')}</span>`
+              : `<span style="background:var(--green-bg);color:var(--green);padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600;">🔑 ${t('Locataire')}</span>`}
           </td>
           <td style="white-space:nowrap;">
-            <button class="btn btn-primary btn-sm" onclick="ouvrirValidation(${d.id})">✅ Valider</button>
+            <button class="btn btn-primary btn-sm" onclick="ouvrirValidation(${d.id})">${t('✅ Valider')}</button>
             <button class="btn btn-danger btn-sm" onclick="rejeterRapide(${d.id})">✗</button>
           </td>
         </tr>`).join('')}
       </tbody>
     </table></div>`
-    :'<div class="empty"><div class="empty-text">✓ Aucun paiement en attente</div></div>'}
+    :'<div class="empty"><div class="empty-text">' + t('✓ Aucun paiement en attente') + '</div></div>'}
   </div>
 
   ${pendingBailleur.length>0?`
   <div class="card" style="margin-bottom:16px;">
     <div class="card-header">
-      <div class="card-title">🏠 Paiements déclarés par le propriétaire (${pendingBailleur.length})</div>
+      <div class="card-title">🏠 ${t('Paiements déclarés par le propriétaire')} (${pendingBailleur.length})</div>
     </div>
     <div class="table-wrap"><table class="tbl">
       <thead><tr><th>Date</th><th>Locataire</th><th>Immeuble</th><th>Note</th><th>Montant</th><th>Action</th></tr></thead>
@@ -6028,7 +6028,7 @@ async function renderValidationComptable() {
           <td style="font-size:12px;">${d.note||'Paiement reçu'}</td>
           <td class="td-amount green">${fmt(d.montant)}</td>
           <td style="white-space:nowrap;">
-            <button class="btn btn-primary btn-sm" onclick="validerDeclBailleur(${d.id})">✅ Valider</button>
+            <button class="btn btn-primary btn-sm" onclick="validerDeclBailleur(${d.id})">${t('✅ Valider')}</button>
             <button class="btn btn-danger btn-sm" onclick="rejeterDeclBailleur(${d.id})">✗</button>
           </td>
         </tr>`;
@@ -6039,8 +6039,8 @@ async function renderValidationComptable() {
 
   ${validated.length>0?`
   <div class="card">
-    <div class="card-header"><div class="card-title">✅ Derniers validés (${validated.length})</div></div>
-      <thead><tr><th>Date valid.</th><th>Locataire</th><th>Mois</th><th>Montant</th><th>Réf. reçu</th><th>PDF</th></tr></thead>
+    <div class="card-header"><div class="card-title">✅ ${t('Derniers validés')} (${validated.length})</div></div>
+      <thead><tr><th>${t('Date valid.')}</th><th>${t('Locataire')}</th><th>${t('Mois')}</th><th>${t('Montant')}</th><th>${t('Réf. reçu')}</th><th>PDF</th></tr></thead>
       <tbody>
       ${validated.map(d=>`
         <tr>
@@ -6855,10 +6855,10 @@ function _updateBadgeSignalements() {
 }
 
 function renderParametres() {
-  if (!SESSION) { document.getElementById('content').innerHTML = '<div class="card"><p style="color:var(--text2);padding:8px;">🔒 Session expirée. Veuillez vous reconnecter.</p></div>'; return; }
+  if (!SESSION) { document.getElementById('content').innerHTML = '<div class="card"><p style="color:var(--text2);padding:8px;">' + t('🔒 Session expirée. Veuillez vous reconnecter.') + '</p></div>'; return; }
   const peutGererMomo = SESSION.role === 'admin' || SESSION.role === 'comptable';
   if (!peutGererMomo) {
-    document.getElementById('content').innerHTML = '<div class="card"><p style="color:var(--text2);padding:8px;">🔒 La configuration des numéros Mobile Money est réservée à l\'administrateur et au comptable.</p></div>';
+    document.getElementById('content').innerHTML = '<div class="card"><p style="color:var(--text2);padding:8px;">🔒 ' + t('Configuration Mobile Money') + ' — ' + t('Accès réservé à l\'administrateur') + '</p></div>';
     return;
   }
   // Mode individuel : afficher aussi la section "Mon compte" pour modifier le nom
@@ -6876,41 +6876,41 @@ function renderParametres() {
   const monNom = SESSION ? SESSION.nom : '';
   const sectionMonCompte = isIndiv ? `
     <div class="card" style="max-width:520px;margin-bottom:16px;">
-      <div class="card-title" style="margin-bottom:16px;">👤 Mon compte</div>
+      <div class="card-title" style="margin-bottom:16px;">${t('👤 Mon compte')}</div>
       <div class="form-group">
-        <label>Mon nom affiché</label>
+        <label>${t('Mon nom affiché')}</label>
         <input type="text" id="admin-nom-perso" value="${monNom}" placeholder="Votre nom" class="form-control">
       </div>
-      <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="sauvegarderNomAdmin()">💾 Enregistrer mon nom</button>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="sauvegarderNomAdmin()">${t('💾 Enregistrer mon nom')}</button>
     </div>` : '';
 
   document.getElementById('content').innerHTML = sectionMonCompte + `
 
     <div class="card" style="max-width:520px;margin-bottom:16px;">
-      <div class="card-title" style="margin-bottom:16px;">🏢 Identité du Cabinet</div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Ces informations apparaissent sur tous les documents générés : reçus, contrats, mises en demeure, rapports.</p>
+      <div class="card-title" style="margin-bottom:16px;">${t('🏢 Identité du Cabinet')}</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">${t('Ces informations apparaissent sur tous les documents générés : reçus, contrats, mises en demeure, rapports.')}</p>
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div class="form-group">
-          <label>Nom du cabinet / société *</label>
+          <label>${t('Nom du cabinet / société *')}</label>
           <input type="text" id="cab-nom" value="${cab.nom||''}" placeholder="Cabinet de Gestion Immobilière XYZ" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
         </div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
           <div class="form-group" style="flex:1;min-width:160px;">
-            <label>Ville</label>
+            <label>${t('Ville')}</label>
             <input type="text" id="cab-ville" value="${cab.ville||''}" placeholder="Yaoundé" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
           </div>
           <div class="form-group" style="flex:1;min-width:160px;">
-            <label>Quartier / Adresse</label>
+            <label>${t('Quartier / Adresse')}</label>
             <input type="text" id="cab-adresse" value="${cab.adresse||''}" placeholder="Bastos, Immeuble XYZ" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
           </div>
         </div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
           <div class="form-group" style="flex:1;min-width:160px;">
-            <label>Téléphone 1</label>
+            <label>${t('Téléphone 1')}</label>
             <input type="tel" id="cab-tel1" value="${cab.tel1||''}" placeholder="+237 6XX XXX XXX" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
           </div>
           <div class="form-group" style="flex:1;min-width:160px;">
-            <label>Téléphone 2</label>
+            <label>${t('Téléphone 2')}</label>
             <input type="tel" id="cab-tel2" value="${cab.tel2||''}" placeholder="+237 6XX XXX XXX" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
           </div>
         </div>
@@ -6920,28 +6920,28 @@ function renderParametres() {
             <input type="email" id="cab-email" value="${cab.email||''}" placeholder="contact@cabinet.cm" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
           </div>
           <div class="form-group" style="flex:1;min-width:160px;">
-            <label>RCCM / N° contribuable</label>
+            <label>${t('RCCM / N° contribuable')}</label>
             <input type="text" id="cab-rccm" value="${cab.rccm||''}" placeholder="RC/YAO/2020/B/XXX" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
           </div>
         </div>
         <div class="form-group">
-          <label>Slogan / Mention (optionnel)</label>
+          <label>${t('Slogan / Mention (optionnel)')}</label>
           <input type="text" id="cab-slogan" value="${cab.slogan||''}" placeholder="Votre patrimoine, notre priorité" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
         </div>
         <div class="form-group">
-          <label>URL du logo (optionnel)</label>
+          <label>${t('URL du logo (optionnel)')}</label>
           <input type="url" id="cab-logo-url" value="${cab.logo_url||''}" placeholder="https://exemple.com/logo.png" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
-          <span style="font-size:11px;color:var(--text3);">Affiché dans l'en-tête des rapports DOCX. Format PNG ou JPG recommandé.</span>
+          <span style="font-size:11px;color:var(--text3);">${t('Affiché dans l\'en-tête des rapports DOCX. Format PNG ou JPG recommandé.')}</span>
         </div>
       </div>
       <button class="btn btn-primary" style="width:100%;margin-top:16px;padding:12px;" onclick="saveParametresCabinet()">
-        💾 Enregistrer les infos cabinet
+        ${t('💾 Enregistrer les infos cabinet')}
       </button>
     </div>
 
     <div class="card" style="max-width:520px;">
-      <div class="card-title" style="margin-bottom:20px;">📱 Numéros Mobile Money du Cabinet</div>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:24px;">Ces numéros seront affichés aux locataires quand ils souhaitent payer par Mobile Money.</p>
+      <div class="card-title" style="margin-bottom:20px;">${t('📱 Numéros Mobile Money du Cabinet')}</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:24px;">${t('Ces numéros seront affichés aux locataires quand ils souhaitent payer par Mobile Money.')}</p>
 
       <div style="display:flex;flex-direction:column;gap:20px;">
 
@@ -6993,7 +6993,7 @@ function renderParametres() {
       </div>
 
       <button class="btn btn-primary" style="width:100%;margin-top:24px;padding:14px;" onclick="saveParametresMomo()">
-        💾 Enregistrer les numéros
+        ${t('💾 Enregistrer les numéros')}
       </button>
     </div>
 
@@ -9862,11 +9862,11 @@ function renderPortailProprietaire(immeubles, tab) {
   const tauxRecouvrement = totalLoyers > 0 ? Math.round(encaisséMois/totalLoyers*100) : 0;
 
   const tabs = [
-    {id:'dashboard', label:'📊 Tableau de bord'},
-    {id:'locataires', label:'👥 Locataires'},
-    {id:'encaissements', label:'💰 Encaissements'},
-    {id:'rapports', label:'📄 Rapports'},
-    {id:'mafiche', label:'📋 Ma fiche'},
+    {id:'dashboard', label:'📊 ' + t('Tableau de bord')},
+    {id:'locataires', label:'👥 ' + t('Locataires')},
+    {id:'encaissements', label:'💰 ' + t('Encaissements')},
+    {id:'rapports', label:'📄 ' + t('Rapports')},
+    {id:'mafiche', label:'📋 ' + t('Ma fiche')},
   ];
 
   let html = `
@@ -9900,26 +9900,26 @@ function renderPortailProprietaire(immeubles, tab) {
       <!-- KPIs -->
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px;">
         <div style="background:#fff;border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Loyers/mois</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">${t('Loyers/mois')}</div>
           <div style="font-size:22px;font-weight:800;color:var(--accent);margin-top:4px;">${fmtShort(totalLoyers)}</div>
         </div>
         <div style="background:#fff;border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Encaissé ${MNOMS[moisActuel]}</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">${t('Encaissé')} ${MNOMS[moisActuel]}</div>
           <div style="font-size:22px;font-weight:800;color:var(--green);margin-top:4px;">${fmtShort(encaisséMois)}</div>
         </div>
         <div style="background:#fff;border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Impayés cumulés</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">${t('Impayés cumulés')}</div>
           <div style="font-size:22px;font-weight:800;color:var(--red);margin-top:4px;">${fmtShort(totalImpayés)}</div>
-          <div style="font-size:10px;color:var(--text3);">${nbImpayés} locataire(s)</div>
+          <div style="font-size:10px;color:var(--text3);">${nbImpayés} ${t('locataire(s)')}</div>
         </div>
         <div style="background:#fff;border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Recouvrement</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">${t('Recouvrement')}</div>
           <div style="font-size:22px;font-weight:800;color:${tauxRecouvrement>=80?'var(--green)':tauxRecouvrement>=50?'var(--yellow)':'var(--red)'};margin-top:4px;">${tauxRecouvrement}%</div>
         </div>
       </div>
 
       <!-- Immeubles cards -->
-      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;">Mes immeubles</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;">${t('Mes immeubles')}</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
         ${immeubles.map(im => {
           const locs = DATA.locataires.filter(l => l.iid===im.id && l.s!=='libre');
@@ -9931,15 +9931,15 @@ function renderPortailProprietaire(immeubles, tab) {
             <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">📍 ${im.ville}${im.quartier?' · '+im.quartier:''}</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;">
               <div style="background:var(--bg2);border-radius:6px;padding:6px;">
-                <div style="color:var(--text3);">Locataires</div>
-                <div style="font-weight:700;">${locs.length} <span style="color:var(--text3);font-weight:400;">(${libres} libre)</span></div>
+                <div style="color:var(--text3);">${t('Locataires')}</div>
+                <div style="font-weight:700;">${locs.length} <span style="color:var(--text3);font-weight:400;">(${libres} ${t('libre(s)')})</span></div>
               </div>
               <div style="background:var(--bg2);border-radius:6px;padding:6px;">
-                <div style="color:var(--text3);">Impayés</div>
+                <div style="color:var(--text3);">${t('Impayés cumulés')}</div>
                 <div style="font-weight:700;color:${imImpayés>0?'var(--red)':'var(--green)'};">${imImpayés}</div>
               </div>
               <div style="background:var(--bg2);border-radius:6px;padding:6px;grid-column:span 2;">
-                <div style="color:var(--text3);">Loyers/mois</div>
+                <div style="color:var(--text3);">${t('Loyers/mois')}</div>
                 <div style="font-weight:700;color:var(--accent);">${fmtShort(imLoyers)} FCFA</div>
               </div>
             </div>
@@ -9951,17 +9951,17 @@ function renderPortailProprietaire(immeubles, tab) {
   // ── TAB: LOCATAIRES ────────────────────────────────────────────────────
   else if (tab === 'locataires') {
     html += `
-      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;">${allLocs.length} Locataires actifs</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;">${allLocs.length} ${t('Locataires actifs')}</div>
       <div style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead>
             <tr style="background:var(--bg2);">
-              <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:600;">Local</th>
-              <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:600;">Nom</th>
-              <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:600;">Immeuble</th>
-              <th style="padding:10px 12px;text-align:right;color:var(--text3);font-weight:600;">Loyer</th>
-              <th style="padding:10px 12px;text-align:center;color:var(--text3);font-weight:600;">Statut</th>
-              <th style="padding:10px 12px;text-align:right;color:var(--text3);font-weight:600;">Reste dû</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:600;">${t('Local')}</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:600;">${t('Nom')}</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:600;">${t('Immeuble')}</th>
+              <th style="padding:10px 12px;text-align:right;color:var(--text3);font-weight:600;">${t('Loyer')}</th>
+              <th style="padding:10px 12px;text-align:center;color:var(--text3);font-weight:600;">${t('Statut')}</th>
+              <th style="padding:10px 12px;text-align:right;color:var(--text3);font-weight:600;">${t('Reste dû')}</th>
               <th style="padding:10px 12px;"></th>
             </tr>
           </thead>
@@ -9976,7 +9976,7 @@ function renderPortailProprietaire(immeubles, tab) {
                 <td style="padding:10px 12px;text-align:right;font-family:var(--mono);">${fmt(l.loyer)}</td>
                 <td style="padding:10px 12px;text-align:center;">
                   <span style="padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;background:${isPaid?'var(--green-bg)':'var(--red-bg)'};color:${isPaid?'var(--green)':'var(--red)'};">
-                    ${isPaid?'✓ À jour':'⚠ Impayé'}
+                    ${isPaid?'✓ '+t('À jour'):'⚠ '+t('Impayé')}
                   </span>
                 </td>
                 <td style="padding:10px 12px;text-align:right;font-family:var(--mono);color:${(l.reste||0)>0?'var(--red)':'var(--green)'};">
@@ -9985,11 +9985,11 @@ function renderPortailProprietaire(immeubles, tab) {
                 <td style="padding:10px 12px;text-align:center;white-space:nowrap;">
                   <button onclick="ouvrirFicheSuiviReadOnly(${l.id})"
                     style="padding:5px 10px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit;margin-right:4px;">
-                    👁 Fiche
+                    ${t('👁 Fiche')}
                   </button>
                   <button onclick="document.getElementById('modal-portail-proprietaire').classList.remove('open');setTimeout(()=>ouvrirDeclarationPaiement(${l.id}),200)"
                     style="padding:5px 10px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit;">
-                    💳 Déclarer
+                    ${t('💳 Déclarer')}
                   </button>
                 </td>
               </tr>`;
@@ -10006,16 +10006,16 @@ function renderPortailProprietaire(immeubles, tab) {
       .sort((a,b) => b.date.localeCompare(a.date))
       .slice(0, 50);
     html += `
-      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;">Derniers versements</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;">${t('Derniers versements')}</div>
       <div style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead>
             <tr style="background:var(--bg2);">
-              <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:600;">Date</th>
-              <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:600;">Locataire</th>
-              <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:600;">Immeuble</th>
-              <th style="padding:10px 12px;text-align:center;color:var(--text3);font-weight:600;">Type</th>
-              <th style="padding:10px 12px;text-align:right;color:var(--text3);font-weight:600;">Montant</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:600;">${t('Date')}</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:600;">${t('Locataire')}</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:600;">${t('Immeuble')}</th>
+              <th style="padding:10px 12px;text-align:center;color:var(--text3);font-weight:600;">${t('Type')}</th>
+              <th style="padding:10px 12px;text-align:right;color:var(--text3);font-weight:600;">${t('Montant')}</th>
             </tr>
           </thead>
           <tbody>
@@ -10040,7 +10040,7 @@ function renderPortailProprietaire(immeubles, tab) {
   // ── TAB: RAPPORTS ──────────────────────────────────────────────────────
   else if (tab === 'rapports') {
     html += `
-      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;">Télécharger les rapports</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;">${t('Télécharger les rapports')}</div>
       <div style="display:flex;flex-direction:column;gap:10px;">
         ${immeubles.map(im => `
           <div style="background:#fff;border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,0.08);display:flex;justify-content:space-between;align-items:center;">
@@ -10051,7 +10051,7 @@ function renderPortailProprietaire(immeubles, tab) {
             <div style="display:flex;gap:8px;">
               <button onclick="window._rptIid=${im.id};window._rptMois=${moisActuel};window._rptAnnee=${anneeActuelle};document.getElementById('modal-portail-proprietaire').classList.remove('open');setTimeout(()=>previewRapportMensuel(${im.id}),200)" 
                 style="padding:7px 12px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit;">
-                👁 Aperçu
+                ${t('👁 Aperçu')}
               </button>
               <button onclick="window._rptIid=${im.id};window._rptMois=${moisActuel};window._rptAnnee=${anneeActuelle};document.getElementById('modal-portail-proprietaire').classList.remove('open');setTimeout(()=>genDocxRapportMensuel(${im.id}),200)" 
                 style="padding:7px 12px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit;">
@@ -10060,7 +10060,7 @@ function renderPortailProprietaire(immeubles, tab) {
             </div>
           </div>`).join('')}
         <!-- Fiches de suivi -->
-        <div style="font-size:13px;font-weight:700;color:var(--text2);margin-top:8px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Fiches de suivi</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text2);margin-top:8px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">${t('Fiches de suivi')}</div>
         ${allLocs.map(l => {
           const im = DATA.immeubles.find(x=>x.id===l.iid);
           return `<div style="background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,0.08);display:flex;justify-content:space-between;align-items:center;">
@@ -10092,24 +10092,24 @@ function renderPortailProprietaire(immeubles, tab) {
 
     html += `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <div style="font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.05em;">Ma fiche</div>
-        <span style="font-size:11px;color:var(--text3);font-style:italic;">🔒 Lecture seule</span>
+        <div style="font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.05em;">${t('Ma fiche')}</div>
+        <span style="font-size:11px;color:var(--text3);font-style:italic;">${t('🔒 Lecture seule')}</span>
       </div>
 
       <!-- Infos personnelles -->
       <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-bottom:14px;">
-        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:12px;">Informations personnelles</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:12px;">${t('Informations personnelles')}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          ${ficheRowP('👤 Nom complet', propNom)}
-          ${ficheRowP('📱 Téléphone', propTel)}
-          ${ficheRowP('🔑 Identifiant', propUser)}
-          ${ficheRowP('🏢 Immeubles assignés', immeubles.length + ' immeuble(s)')}
+          ${ficheRowP('👤 ' + t('Nom'), propNom)}
+          ${ficheRowP('📱 ' + t('Téléphone'), propTel)}
+          ${ficheRowP('🔑 ' + t('Identifiant'), propUser)}
+          ${ficheRowP('🏢 ' + t('Immeubles assignés'), immeubles.length + ' immeuble(s)')}
         </div>
       </div>
 
       <!-- Mes immeubles -->
       <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-bottom:14px;">
-        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:12px;">Mes immeubles</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:12px;">${t('Mes immeubles')}</div>
         <div style="display:flex;flex-direction:column;gap:8px;">
           ${immeubles.map(im => {
             const locs = DATA.locataires.filter(l => l.iid === im.id && l.s !== 'libre');
@@ -10122,9 +10122,9 @@ function renderPortailProprietaire(immeubles, tab) {
                 <div style="font-size:11px;color:var(--text3);">${[im.ville,im.quartier].filter(Boolean).join(' · ')}</div>
               </div>
               <div style="text-align:right;font-size:11px;">
-                <div style="color:var(--green);font-weight:600;">${locs.length} occupé(s)</div>
-                ${libres > 0 ? `<div style="color:var(--text3);">${libres} libre(s)</div>` : ''}
-                ${impayes > 0 ? `<div style="color:var(--red);">${impayes} impayé(s)</div>` : ''}
+                <div style="color:var(--green);font-weight:600;">${locs.length} ${t('occupé(s)')}</div>
+                ${libres > 0 ? `<div style="color:var(--text3);">${libres} ${t('libre(s)')}</div>` : ''}
+                ${impayes > 0 ? `<div style="color:var(--red);">${impayes} ${t('impayé(s)')}</div>` : ''}
               </div>
             </div>`;
           }).join('')}
@@ -10133,12 +10133,12 @@ function renderPortailProprietaire(immeubles, tab) {
 
       <!-- Résumé financier -->
       <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:12px;">Résumé financier</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:12px;">${t('Résumé financier')}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          ${ficheRowP('💰 Total loyers/mois', Number(totalLoyers).toLocaleString('fr-FR') + ' FCFA')}
-          ${ficheRowP('✅ Encaissé ce mois', Number(encaisséMois).toLocaleString('fr-FR') + ' FCFA')}
-          ${ficheRowP('⚠️ Impayés cumulés', '<span style="color:var(--red);">' + Number(totalImpayés).toLocaleString('fr-FR') + ' FCFA</span>')}
-          ${ficheRowP('📊 Taux recouvrement', '<span style="color:' + (tauxRecouvrement>=80?'var(--green)':tauxRecouvrement>=50?'var(--yellow)':'var(--red)') + ';">' + tauxRecouvrement + '%</span>')}
+          ${ficheRowP('💰 ' + t('Total loyers/mois'), Number(totalLoyers).toLocaleString('fr-FR') + ' FCFA')}
+          ${ficheRowP('✅ ' + t('Encaissé ce mois'), Number(encaisséMois).toLocaleString('fr-FR') + ' FCFA')}
+          ${ficheRowP('⚠️ ' + t('Impayés cumulés'), '<span style="color:var(--red);">' + Number(totalImpayés).toLocaleString('fr-FR') + ' FCFA</span>')}
+          ${ficheRowP('📊 ' + t('Recouvrement'), '<span style="color:' + (tauxRecouvrement>=80?'var(--green)':tauxRecouvrement>=50?'var(--yellow)':'var(--red)') + ';">' + tauxRecouvrement + '%</span>')}
         </div>
       </div>`;
   }

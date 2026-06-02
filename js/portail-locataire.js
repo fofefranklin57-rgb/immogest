@@ -485,13 +485,13 @@ async function loadDashboard() {
     const solde = l.reste || 0;
     if (solde > 0) {
       const m = Math.ceil(solde / l.loyer);
-      rentTrend.innerHTML = '⚠️ ' + m + ' mois de retard';
+      rentTrend.innerHTML = '⚠️ ' + m + ' ' + t('mois de retard');
       rentTrend.style.color = 'var(--red)';
     } else if (solde < 0) {
-      rentTrend.innerHTML = '✅ ' + Math.floor(Math.abs(solde)/l.loyer) + " mois d'avance";
+      rentTrend.innerHTML = '✅ ' + Math.floor(Math.abs(solde)/l.loyer) + " " + t("mois d'avance");
       rentTrend.style.color = 'var(--green)';
     } else {
-      rentTrend.innerHTML = '✅ À jour';
+      rentTrend.innerHTML = '✅ ' + t('À jour');
       rentTrend.style.color = 'var(--green)';
     }
   }
@@ -505,7 +505,7 @@ async function loadDashboard() {
   }
   const balTrend = document.getElementById('dashboard-balance-trend');
   if (balTrend) {
-    balTrend.textContent = solde > 0 ? '⚠️ Arriéré à régulariser' : '✅ Compte soldé';
+    balTrend.textContent = solde > 0 ? t('⚠️ Arriéré à régulariser') : t('✅ Compte soldé');
     balTrend.style.color  = solde > 0 ? 'var(--red)' : 'var(--green)';
   }
 
@@ -568,10 +568,10 @@ async function loadDashboard() {
   const hist = document.getElementById('payment-history');
   if (hist) {
     if (!pays.length) {
-      hist.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;">Aucun paiement enregistré</div>';
+      hist.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;">' + t('Aucun paiement enregistré') + '</div>';
     } else {
       hist.innerHTML = pays.map(p => {
-        const label = (p.type==='caution'?'Caution':'Loyer') + ' — ' + MNOMS[p.moisC] + ' ' + p.anneeC;
+        const label = (p.type==='caution'?t('Caution reçue'):t('Paiement confirmé')) + ' — ' + tMois(p.moisC) + ' ' + p.anneeC;
         const modeIcon = {mtn:'📱',orange:'🟠',wave:'🌊',especes:'💵',virement:'🏦',cheque:'📝'}[p.mode]||'💰';
         return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;">
           <div style="display:flex;align-items:center;gap:10px;">
@@ -600,7 +600,7 @@ async function loadDashboard() {
     const cautionPay = pays.find(p => p.type === 'caution');
     let docsHtml = '';
     quittances.forEach(p => {
-      const label = 'Quittance ' + MNOMS[p.moisC] + ' ' + p.anneeC;
+      const label = t('Quittance') + ' ' + tMois(p.moisC) + ' ' + p.anneeC;
       docsHtml += `<div class="doc-item" onclick="ouvrirFicheSuivi(${l.id})">
         <div class="icon">🧾</div>
         <div class="info">
@@ -614,13 +614,13 @@ async function loadDashboard() {
       docsHtml += `<div class="doc-item">
         <div class="icon">💰</div>
         <div class="info">
-          <div class="name">Reçu caution</div>
+          <div class="name">${t('Reçu caution')}</div>
           <div class="date">${new Date(cautionPay.date).toLocaleDateString('fr-FR')} · ${Number(cautionPay.montant).toLocaleString('fr-FR')} FCFA</div>
         </div>
         <div style="color:var(--accent);font-size:18px;">⬇</div>
       </div>`;
     }
-    if (!docsHtml) docsHtml = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">Aucun document disponible</div>';
+    if (!docsHtml) docsHtml = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">' + t('Aucun document disponible') + '</div>';
     docList.innerHTML = docsHtml;
   }
 
@@ -640,11 +640,11 @@ async function loadDashboard() {
 
       if (pending.length > 0) {
         dhtml += `<div style="background:var(--yellow-bg);border:1.5px solid var(--yellow);border-radius:10px;padding:12px 16px;margin-bottom:10px;">
-          <div style="font-weight:700;color:var(--yellow);font-size:13px;margin-bottom:8px;">⏳ ${pending.length} paiement(s) en attente de validation</div>`;
+          <div style="font-weight:700;color:var(--yellow);font-size:13px;margin-bottom:8px;">⏳ ${pending.length} ${t('paiement(s) en attente de validation')}</div>`;
         pending.forEach(d => {
           dhtml += `<div style="font-size:12px;color:var(--text2);display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-top:1px solid rgba(0,0,0,.05);">
-            <span>${MNOMS[d.moisC]||''} ${d.anneeC||''} — ${Number(d.montant).toLocaleString('fr-FR')} FCFA (${d.mode||''})</span>
-            <span style="font-size:11px;color:var(--text3);">Déclaré le ${new Date(d.dateDeclaration).toLocaleDateString('fr-FR')}</span>
+            <span>${tMois(d.moisC)||''} ${d.anneeC||''} — ${Number(d.montant).toLocaleString('fr-FR')} FCFA (${d.mode||''})</span>
+            <span style="font-size:11px;color:var(--text3);">${t('Déclaré le')} ${new Date(d.dateDeclaration).toLocaleDateString('fr-FR')}</span>
           </div>`;
           if (d.photoUrl) {
             dhtml += `<div style="margin-top:6px;"><img src="${d.photoUrl}" onclick="window.open('${d.photoUrl}','_blank')" style="max-height:80px;border-radius:6px;cursor:pointer;border:1px solid var(--border);" title="Voir le reçu"></div>`;
@@ -655,14 +655,14 @@ async function loadDashboard() {
 
       if (rejected.length > 0) {
         dhtml += `<div style="background:var(--red-bg);border:1.5px solid var(--red);border-radius:10px;padding:12px 16px;">
-          <div style="font-weight:700;color:var(--red);font-size:13px;margin-bottom:8px;">❌ ${rejected.length} paiement(s) rejeté(s)</div>`;
+          <div style="font-weight:700;color:var(--red);font-size:13px;margin-bottom:8px;">❌ ${rejected.length} ${t('paiement(s) rejeté(s)')}</div>`;
         rejected.forEach(d => {
           dhtml += `<div style="font-size:12px;color:var(--text2);padding:4px 0;border-top:1px solid rgba(0,0,0,.05);">
             <div style="display:flex;justify-content:space-between;">
               <span>${MNOMS[d.moisC]||''} ${d.anneeC||''} — ${Number(d.montant).toLocaleString('fr-FR')} FCFA</span>
               <span style="font-size:11px;color:var(--text3);">${d.dateValidation||''}</span>
             </div>
-            ${d.noteComptable ? `<div style="font-size:11px;color:var(--red);margin-top:2px;">Motif : ${d.noteComptable}</div>` : ''}
+            ${d.noteComptable ? `<div style="font-size:11px;color:var(--red);margin-top:2px;">${t('Motif :')} ${d.noteComptable}</div>` : ''}
           </div>`;
         });
         dhtml += '</div>';
@@ -679,7 +679,7 @@ async function loadDashboard() {
   if (notifList) {
     const recents = pays.slice(0, 3);
     if (!recents.length) {
-      notifList.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">Aucune notification</div>';
+      notifList.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">' + t('Aucune notification') + '</div>';
     } else {
       notifList.innerHTML = recents.map(p => {
         const label = (p.type==='caution'?'Caution reçue':'Paiement confirmé') + ' — ' + Number(p.montant).toLocaleString('fr-FR') + ' FCFA';
@@ -688,8 +688,8 @@ async function loadDashboard() {
           <div class="icon">💳</div>
           <div class="content">
             <div class="title">${label}</div>
-            <div class="desc">${MNOMS[p.moisC]} ${p.anneeC}${p.note?' · '+p.note:''}</div>
-            <div class="time">Il y a ${ago === 0 ? "aujourd\'hui" : ago + " jour(s)"}</div>
+            <div class="desc">${tMois(p.moisC)} ${p.anneeC}${p.note?' · '+p.note:''}</div>
+            <div class="time">${ago === 0 ? t("aujourd\'hui") : t('Il y a') + ' ' + ago + ' ' + t('jour(s)')}</div>
           </div>
         </div>`;
       }).join('');
@@ -819,7 +819,7 @@ async function locMsgCharger() {
     (r1.data||[]).concat(r2.data||[]).forEach(m => { if (!ids.has(m.id)){ ids.add(m.id); tous.push(m); } });
     tous.sort((a,b) => b.date_envoi > a.date_envoi ? 1 : -1);
     if (!tous.length) {
-      el.innerHTML = '<div style="text-align:center;padding:40px 16px;color:var(--text3);font-size:13px;">💬<br><br>Aucun message.<br><button onclick="locMsgNouveauModal()" style="margin-top:12px;padding:8px 18px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;">✉️ Écrire au gestionnaire</button></div>';
+      el.innerHTML = '<div style="text-align:center;padding:40px 16px;color:var(--text3);font-size:13px;">💬<br><br>' + t('Aucun message.') + '<br><button onclick="locMsgNouveauModal()" style="margin-top:12px;padding:8px 18px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;">' + t('✉️ Écrire au gestionnaire') + '</button></div>';
       return;
     }
     const MNOMS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
@@ -867,12 +867,12 @@ async function locMsgOuvrir(id) {
       <hr style="border:none;border-top:1px solid var(--border);margin-bottom:14px;">
       <div style="font-size:14px;line-height:1.7;white-space:pre-wrap;color:var(--text);">${msg.corps||''}</div>
       <div style="margin-top:18px;">
-        <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:6px;">Réponse rapide</div>
-        <textarea id="loc-reply-corps" rows="3" placeholder="Votre réponse…"
+        <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:6px;">${t('Réponse rapide')}</div>
+        <textarea id="loc-reply-corps" rows="3" placeholder="${t('Votre réponse…')}"
           style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font);resize:none;background:var(--bg);color:var(--text);box-sizing:border-box;"></textarea>
         <div style="display:flex;gap:8px;margin-top:8px;">
-          <button onclick="locMsgRepondre('${deIdEsc}','${deNomEsc}','${sujetEsc}')" class="btn btn-primary" style="flex:1;">↩ Répondre</button>
-          <button onclick="closeModals()" class="btn btn-ghost">Fermer</button>
+          <button onclick="locMsgRepondre('${deIdEsc}','${deNomEsc}','${sujetEsc}')" class="btn btn-primary" style="flex:1;">↩ ${t('Répondre')}</button>
+          <button onclick="closeModals()" class="btn btn-ghost">${t('Fermer')}</button>
         </div>
       </div>
     </div>`);
@@ -881,7 +881,7 @@ async function locMsgOuvrir(id) {
 
 async function locMsgRepondre(destId, destNom, sujetOriginal) {
   const corps = ((document.getElementById('loc-reply-corps')||{}).value||'').trim();
-  if (!corps) { if (typeof showToast === 'function') showToast('Message vide', 'red'); return; }
+  if (!corps) { if (typeof showToast === 'function') showToast(t('Message vide'), 'red'); return; }
   const sujet = sujetOriginal.startsWith('Re:') ? sujetOriginal : 'Re: ' + sujetOriginal;
   try {
     const { error } = await _sb.from('messages_internes').insert([{
@@ -891,7 +891,7 @@ async function locMsgRepondre(destId, destNom, sujetOriginal) {
     }]);
     if (error) throw error;
     if (typeof closeModals === 'function') closeModals();
-    if (typeof showToast === 'function') showToast('Réponse envoyée ✓', 'green');
+    if (typeof showToast === 'function') showToast(t('Réponse envoyée ✓'), 'green');
     locMsgCharger();
   } catch(e) {
     if (typeof showToast === 'function') showToast('Erreur : ' + e.message, 'red');
@@ -917,22 +917,22 @@ async function locMsgNouveauModal() {
   const opts = dests.map(d => `<option value="${d.id}|||${d.nom.replace(/"/g,'&quot;')}">${d.label}</option>`).join('');
   if (typeof showModal === 'function') {
     showModal(`<div style="max-width:480px;">
-      <div style="font-weight:700;font-size:15px;margin-bottom:14px;">✉️ Nouveau message</div>
+      <div style="font-weight:700;font-size:15px;margin-bottom:14px;">${t('✉️ Nouveau message')}</div>
       <div style="margin-bottom:10px;">
-        <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;">Destinataire</label>
+        <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;">${t('Destinataire')}</label>
         <select id="loc-msg-dest" style="width:100%;margin-top:4px;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);background:var(--bg);color:var(--text);">${opts}</select>
       </div>
       <div style="margin-bottom:10px;">
-        <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;">Sujet</label>
-        <input type="text" id="loc-msg-sujet" placeholder="Sujet…" style="width:100%;margin-top:4px;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);background:var(--bg);color:var(--text);box-sizing:border-box;">
+        <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;">${t('Sujet')}</label>
+        <input type="text" id="loc-msg-sujet" placeholder="${t('Sujet…')}" style="width:100%;margin-top:4px;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);background:var(--bg);color:var(--text);box-sizing:border-box;">
       </div>
       <div style="margin-bottom:14px;">
         <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;">Message</label>
-        <textarea id="loc-msg-corps" rows="4" placeholder="Votre message…" style="width:100%;margin-top:4px;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);resize:vertical;background:var(--bg);color:var(--text);box-sizing:border-box;"></textarea>
+        <textarea id="loc-msg-corps" rows="4" placeholder="${t('Votre message...')}" style="width:100%;margin-top:4px;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);resize:vertical;background:var(--bg);color:var(--text);box-sizing:border-box;"></textarea>
       </div>
       <div style="display:flex;gap:8px;">
-        <button onclick="locMsgEnvoyer()" class="btn btn-primary" style="flex:1;">📤 Envoyer</button>
-        <button onclick="closeModals()" class="btn btn-ghost">Annuler</button>
+        <button onclick="locMsgEnvoyer()" class="btn btn-primary" style="flex:1;">📤 ${t('Envoyer')}</button>
+        <button onclick="closeModals()" class="btn btn-ghost">${t('Annuler')}</button>
       </div>
     </div>`);
   }
@@ -943,7 +943,7 @@ async function locMsgEnvoyer() {
   const [pourId, pourNom] = destVal.split('|||');
   const sujet = ((document.getElementById('loc-msg-sujet')||{}).value||'').trim();
   const corps = ((document.getElementById('loc-msg-corps')||{}).value||'').trim();
-  if (!pourId || !corps) { if (typeof showToast === 'function') showToast('Remplissez tous les champs', 'red'); return; }
+  if (!pourId || !corps) { if (typeof showToast === 'function') showToast(t('Remplissez tous les champs'), 'red'); return; }
   try {
     const { error } = await _sb.from('messages_internes').insert([{
       de_user_id: SESSION.userId, de_nom: SESSION.nom,
@@ -952,7 +952,7 @@ async function locMsgEnvoyer() {
     }]);
     if (error) throw error;
     if (typeof closeModals === 'function') closeModals();
-    if (typeof showToast === 'function') showToast('Message envoyé ✓', 'green');
+    if (typeof showToast === 'function') showToast(t('Message envoyé ✓'), 'green');
     locMsgCharger();
   } catch(e) {
     if (typeof showToast === 'function') showToast('Erreur : ' + e.message, 'red');
@@ -991,30 +991,30 @@ function loadMaFiche() {
   el.innerHTML = `
     <div class="card" style="margin-bottom:16px;">
       <div class="card-header">
-        <div class="card-title">📋 Ma fiche locative</div>
-        <span style="font-size:11px;color:var(--text3);font-style:italic;">🔒 Lecture seule</span>
+        <div class="card-title">${t('📋 Ma fiche locative')}</div>
+        <span style="font-size:11px;color:var(--text3);font-style:italic;">${t('🔒 Lecture seule')}</span>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 0;">
-        ${ficheRow('🏠 Immeuble', im.nom || '—')}
-        ${ficheRow('📍 Ville', [im.ville, im.quartier].filter(Boolean).join(' · ') || '—')}
-        ${ficheRow('🚪 Local / Appt', l.appt || '—')}
-        ${ficheRow('📦 Type', l.type || '—')}
-        ${ficheRow('📅 Date d\'entrée', l.entree ? new Date(l.entree).toLocaleDateString('fr-FR') : '—')}
-        ${ficheRow('💰 Loyer mensuel', Number(l.loyer||0).toLocaleString('fr-FR') + ' FCFA')}
-        ${ficheRow('🔐 Caution versée', Number(l.caution||0).toLocaleString('fr-FR') + ' FCFA')}
-        ${ficheRow('📊 Statut', '<span style="color:'+statutColor+';font-weight:700;">'+(l.s||'—')+'</span>')}
-        ${ficheRow('💳 Solde', '<span style="color:'+soldeColor+';font-weight:700;">'+soldeLabel+'</span>')}
-        ${l.obs ? ficheRow('📝 Observations', l.obs) : ''}
+        ${ficheRow('🏠 ' + t('Immeuble'), im.nom || '—')}
+        ${ficheRow('📍 ' + t('Ville'), [im.ville, im.quartier].filter(Boolean).join(' · ') || '—')}
+        ${ficheRow('🚪 ' + t('Local / Appt'), l.appt || '—')}
+        ${ficheRow('📦 ' + t('Type'), l.type || '—')}
+        ${ficheRow('📅 ' + t('Date d\'entrée'), l.entree ? new Date(l.entree).toLocaleDateString('fr-FR') : '—')}
+        ${ficheRow('💰 ' + t('Loyer mensuel'), Number(l.loyer||0).toLocaleString('fr-FR') + ' FCFA')}
+        ${ficheRow('🔐 ' + t('Caution versée (FCFA)').replace(' (FCFA)',''), Number(l.caution||0).toLocaleString('fr-FR') + ' FCFA')}
+        ${ficheRow('📊 ' + t('Statut'), '<span style="color:'+statutColor+';font-weight:700;">' + t(l.s||'—') + '</span>')}
+        ${ficheRow('💳 ' + t('Solde'), '<span style="color:'+soldeColor+';font-weight:700;">'+soldeLabel+'</span>')}
+        ${l.obs ? ficheRow('📝 ' + t('Observations'), l.obs) : ''}
       </div>
     </div>
     <div class="card">
       <div class="card-header">
-        <div class="card-title">💳 Historique des paiements</div>
-        <span style="font-size:11px;color:var(--text3);">${pays.length} paiement(s) au total</span>
+        <div class="card-title">${t('💳 Historique des paiements')}</div>
+        <span style="font-size:11px;color:var(--text3);">${pays.length} ${t('paiement(s) au total')}</span>
       </div>
       <div class="table-wrap">
         <table class="tbl">
-          <thead><tr><th>Date</th><th>Période</th><th>Montant</th><th>Mode</th></tr></thead>
+          <thead><tr><th>${t('Date')}</th><th>${t('Période')}</th><th>${t('Montant')}</th><th>${t('Mode de paiement')}</th></tr></thead>
           <tbody>${histo}</tbody>
         </table>
       </div>

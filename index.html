@@ -587,102 +587,110 @@
     <h3 id="modal-loc-title">👤 Nouveau locataire</h3>
     <input type="hidden" id="loc-id">
     <div class="form-row">
-      <div class="form-group"><label>Nom complet *</label><input type="text" id="loc-nom" placeholder="Nom Prénom"></div>
-      <div class="form-group"><label>Téléphone</label><input type="text" id="loc-tel" placeholder="6XX XXX XXX"></div>
+      <div class="form-group"><label data-i18n="Nom complet *">Nom complet *</label><input type="text" id="loc-nom" placeholder="Nom Prénom"></div>
+      <div class="form-group"><label data-i18n="Téléphone">Téléphone</label><input type="text" id="loc-tel" placeholder="6XX XXX XXX"></div>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>💬 WhatsApp <span style="font-size:11px;color:var(--text3);">(si différent du tél)</span></label>
+        <label>💬 WhatsApp <span style="font-size:11px;color:var(--text3);" data-i18n="(si différent du tél)">(si différent du tél)</span></label>
         <input type="text" id="loc-whatsapp" placeholder="6XX XXX XXX — laisser vide si identique">
       </div>
     </div>
-    <div class="form-group"><label>Immeuble *</label><select id="loc-imm"></select></div>
+    <div class="form-group"><label data-i18n="Immeuble *">Immeuble *</label><select id="loc-imm"></select></div>
     <div class="form-row">
-      <div class="form-group"><label>N° local (ex: A1, S2)</label><input type="text" id="loc-appt" placeholder="A1"></div>
-      <div class="form-group"><label>Type</label>
+      <div class="form-group"><label data-i18n="N° local (ex: A1, S2)">N° local (ex: A1, S2)</label><input type="text" id="loc-appt" placeholder="A1"></div>
+      <div class="form-group"><label data-i18n="Type">Type</label>
         <select id="loc-type">
-          <option value="appartement">Appartement</option>
-          <option value="studio">Studio</option>
-          <option value="chambre">Chambre</option>
-          <option value="commerce">Commerce</option>
+          <option value="appartement" data-i18n="Appartement">Appartement</option>
+          <option value="studio" data-i18n="Studio">Studio</option>
+          <option value="chambre" data-i18n="Chambre">Chambre</option>
+          <option value="commerce" data-i18n="Commerce">Commerce</option>
         </select>
       </div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Loyer mensuel (FCFA) *</label><input type="number" id="loc-loyer" placeholder="80000" oninput="calcMoisDus()" onfocus="this.select()"></div>
-      <div class="form-group"><label>Caution (FCFA)</label><input type="number" id="loc-caution" placeholder="0" onfocus="this.select()"></div>
+      <div class="form-group"><label data-i18n="Loyer mensuel (FCFA) *">Loyer mensuel (FCFA) *</label><input type="number" id="loc-loyer" placeholder="80000" oninput="calcMoisDus()" onfocus="this.select()"></div>
+      <div class="form-group"><label data-i18n="Caution (FCFA)">Caution (FCFA)</label><input type="number" id="loc-caution" placeholder="0" onfocus="this.select()"></div>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Date d'entrée</label>
+        <label data-i18n="Date d'entrée">Date d'entrée</label>
         <input type="date" id="loc-entree" oninput="autoJourPaiement()">
       </div>
       <div class="form-group">
-        <label>Jour de paiement mensuel</label>
+        <label data-i18n="Jour de paiement mensuel">Jour de paiement mensuel</label>
         <select id="loc-jour-paiement">
-          <option value="1">01 du mois</option><option value="2">02 du mois</option>
-          <option value="3">03 du mois</option><option value="4">04 du mois</option>
-          <option value="5">05 du mois</option><option value="6">06 du mois</option>
-          <option value="7">07 du mois</option><option value="8">08 du mois</option>
-          <option value="9">09 du mois</option><option value="10">10 du mois</option>
-          <option value="11">11 du mois</option><option value="12">12 du mois</option>
-          <option value="13">13 du mois</option><option value="14">14 du mois</option>
-          <option value="15">15 du mois</option><option value="16">16 du mois</option>
-          <option value="17">17 du mois</option><option value="18">18 du mois</option>
-          <option value="19">19 du mois</option><option value="20">20 du mois</option>
-          <option value="21">21 du mois</option><option value="22">22 du mois</option>
-          <option value="23">23 du mois</option><option value="24">24 du mois</option>
-          <option value="25">25 du mois</option><option value="26">26 du mois</option>
-          <option value="27">27 du mois</option><option value="28">28 du mois</option>
+          <option value="1">01 <span data-i18n="du mois">du mois</span></option><option value="2">02 <span data-i18n="du mois">du mois</span></option>
+          <option value="3">03 <span data-i18n="du mois">du mois</span></option><option value="4">04 <span data-i18n="du mois">du mois</span></option>
+          <option value="5">05 <span data-i18n="du mois">du mois</span></option><option value="6">06 <span data-i18n="du mois">du mois</span></option>
+          <option value="7">07 <span data-i18n="du mois">du mois</span></option><option value="8">08 <span data-i18n="du mois">du mois</span></option>
+          <option value="9">09 <span data-i18n="du mois">du mois</span></option><option value="10">10 <span data-i18n="du mois">du mois</span></option>
+          <option value="11">11 <span data-i18n="du mois">du mois</span></option><option value="12">12 <span data-i18n="du mois">du mois</span></option>
+          <option value="13">13 <span data-i18n="du mois">du mois</span></option><option value="14">14 <span data-i18n="du mois">du mois</span></option>
+          <option value="15">15 <span data-i18n="du mois">du mois</span></option><option value="16">16 <span data-i18n="du mois">du mois</span></option>
+          <option value="17">17 <span data-i18n="du mois">du mois</span></option><option value="18">18 <span data-i18n="du mois">du mois</span></option>
+          <option value="19">19 <span data-i18n="du mois">du mois</span></option><option value="20">20 <span data-i18n="du mois">du mois</span></option>
+          <option value="21">21 <span data-i18n="du mois">du mois</span></option><option value="22">22 <span data-i18n="du mois">du mois</span></option>
+          <option value="23">23 <span data-i18n="du mois">du mois</span></option><option value="24">24 <span data-i18n="du mois">du mois</span></option>
+          <option value="25">25 <span data-i18n="du mois">du mois</span></option><option value="26">26 <span data-i18n="du mois">du mois</span></option>
+          <option value="27">27 <span data-i18n="du mois">du mois</span></option><option value="28">28 <span data-i18n="du mois">du mois</span></option>
         </select>
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Arriérés (FCFA)</label>
+        <label data-i18n="Arriérés (FCFA)">Arriérés (FCFA)</label>
         <input type="number" id="loc-reste" value="0" min="0" oninput="calcMoisDus()" onfocus="this.select()">
       </div>
       <div class="form-group">
-        <label>Mois dus (calcul auto)</label>
+        <label data-i18n="Mois dus (calcul auto)">Mois dus (calcul auto)</label>
         <input type="number" id="loc-mois-dus" value="0" min="0" oninput="calcResteFromMois()" onfocus="this.select()" style="background:var(--bg2);">
       </div>
     </div>
-    <div class="form-group"><label>Observations</label><textarea id="loc-obs" rows="2" placeholder="Notes..."></textarea></div>
+    <div class="form-group"><label data-i18n="Observations">Observations</label><textarea id="loc-obs" rows="2" placeholder="Notes..."></textarea></div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModals()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveLocataire()">Enregistrer</button>
+      <button class="btn btn-ghost" onclick="closeModals()" data-i18n="Annuler">Annuler</button>
+      <button class="btn btn-primary" onclick="saveLocataire()" data-i18n="Enregistrer">Enregistrer</button>
     </div>
   </div>
 </div>
 
 <div class="overlay" id="modal-paiement">
   <div class="modal">
-    <h3>💳 Enregistrer un paiement</h3>
-    <div class="form-group"><label>Immeuble</label><select id="pay-imm" onchange="updatePayLoc()"></select></div>
-    <div class="form-group"><label>Locataire *</label><select id="pay-loc" onchange="updatePayPeriode()"></select></div>
+    <h3 data-i18n="💳 Enregistrer un paiement">💳 Enregistrer un paiement</h3>
+    <div class="form-group"><label data-i18n="Immeuble">Immeuble</label><select id="pay-imm" onchange="updatePayLoc()"></select></div>
+    <div class="form-group"><label data-i18n="Locataire *">Locataire *</label><select id="pay-loc" onchange="updatePayPeriode()"></select></div>
     <div class="form-group">
-      <label>Période couverte <span style="font-size:11px;color:var(--text3);">(optionnel — automatique si vide)</span></label>
+      <label data-i18n="Période couverte">Période couverte</label> <span style="font-size:11px;color:var(--text3);" data-i18n="(optionnel — automatique si vide)">(optionnel — automatique si vide)</span>
       <select id="pay-periode"><option value="">— Automatique (plus ancien non soldé)</option></select>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Date du versement *</label><input type="date" id="pay-date"></div>
-      <div class="form-group"><label>Montant versé (FCFA) *</label><input type="number" id="pay-montant" placeholder="80000" onfocus="this.select()"></div>
+      <div class="form-group"><label data-i18n="Date du versement *">Date du versement *</label><input type="date" id="pay-date"></div>
+      <div class="form-group"><label data-i18n="Montant versé (FCFA) *">Montant versé (FCFA) *</label><input type="number" id="pay-montant" placeholder="80000" onfocus="this.select()"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Type</label>
-        <select id="pay-type"><option value="loyer">Loyer</option><option value="autre">Autre</option></select>
+      <div class="form-group"><label data-i18n="Type">Type</label>
+        <select id="pay-type">
+          <option value="loyer" data-i18n="Loyer">Loyer</option>
+          <option value="autre" data-i18n="Autre">Autre</option>
+        </select>
       </div>
-      <div class="form-group"><label>Mode de paiement</label>
-        <select id="pay-mode"><option value="especes">Espèces</option><option value="virement">Virement</option><option value="mobile">Mobile Money</option><option value="cheque">Chèque</option></select>
+      <div class="form-group"><label data-i18n="Mode de paiement">Mode de paiement</label>
+        <select id="pay-mode">
+          <option value="especes" data-i18n="Espèces">Espèces</option>
+          <option value="virement" data-i18n="Virement">Virement</option>
+          <option value="mobile">Mobile Money</option>
+          <option value="cheque" data-i18n="chèque">Chèque</option>
+        </select>
       </div>
     </div>
-    <div class="form-group"><label>Note</label><input type="text" id="pay-note" placeholder="Note optionnelle..."></div>
+    <div class="form-group"><label data-i18n="Note">Note</label><input type="text" id="pay-note" placeholder="Note optionnelle..."></div>
     <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:10px;background:#FFF8E1;border-radius:8px;border:1px solid #FFD54F;">
       <input type="checkbox" id="pay-remis-bailleur" style="width:18px;height:18px;cursor:pointer;">
-      <label for="pay-remis-bailleur" style="font-weight:700;color:#E65100;cursor:pointer;margin:0;">💰 Remis au bailleur directement</label>
+      <label for="pay-remis-bailleur" style="font-weight:700;color:#E65100;cursor:pointer;margin:0;" data-i18n="💰 Remis au bailleur directement">💰 Remis au bailleur directement</label>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-primary" onclick="savePaiement()">Enregistrer</button>
+      <button class="btn btn-primary" onclick="savePaiement()" data-i18n="Enregistrer">Enregistrer</button>
     </div>
   </div>
 </div>
@@ -691,31 +699,30 @@
   <div class="modal">
     <h3 id="modal-imm-title">🏢 Nouvel immeuble</h3>
     <input type="hidden" id="imm-id">
-    <div class="form-group"><label>Nom de l'immeuble *</label><input type="text" id="imm-nom-immeuble" placeholder="Ex: Résidence Les Bougainvillées"></div>
+    <div class="form-group"><label data-i18n="Nom de l'immeuble *">Nom de l'immeuble *</label><input type="text" id="imm-nom-immeuble" placeholder="Ex: Résidence Les Bougainvillées"></div>
     <div class="form-row">
-      <div class="form-group"><label>Nom du propriétaire *</label><input type="text" id="imm-nom" placeholder="Nom complet du propriétaire"></div>
-      <div class="form-group"><label>Téléphone propriétaire *</label><input type="text" id="imm-tel-proprio" placeholder="Ex: 699000000"></div>
+      <div class="form-group"><label data-i18n="Nom du propriétaire *">Nom du propriétaire *</label><input type="text" id="imm-nom" placeholder="Nom complet du propriétaire"></div>
+      <div class="form-group"><label data-i18n="Téléphone propriétaire *">Téléphone propriétaire *</label><input type="text" id="imm-tel-proprio" placeholder="Ex: 699000000"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Ville *</label><input type="text" id="imm-ville" placeholder="Douala"></div>
-      <div class="form-group"><label>Quartier</label><input type="text" id="imm-quartier" placeholder="Makepe..."></div>
+      <div class="form-group"><label data-i18n="Ville *">Ville *</label><input type="text" id="imm-ville" placeholder="Douala"></div>
+      <div class="form-group"><label data-i18n="Quartier">Quartier</label><input type="text" id="imm-quartier" placeholder="Makepe..."></div>
     </div>
-    <div class="form-group"><label>Couleur</label>
+    <div class="form-group"><label data-i18n="Couleur">Couleur</label>
       <input type="color" id="imm-couleur" value="#4f8ef7" style="height:38px;cursor:pointer;">
     </div>
     <div class="form-group">
-      <label>Commission Cabinet</label>
+      <label data-i18n="Commission Cabinet">Commission Cabinet</label>
       <div style="display:flex;gap:10px;align-items:center;">
         <select id="imm-commission-type" style="width:140px;padding:8px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
-          <option value="forfait">Forfait (FCFA)</option>
-          <option value="pct">Pourcentage (%)</option>
+          <option value="forfait" data-i18n="Forfait (FCFA)">Forfait (FCFA)</option>
+          <option value="pct" data-i18n="Pourcentage (%)">Pourcentage (%)</option>
         </select>
         <input type="number" id="imm-commission-valeur" placeholder="0" min="0" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
       </div>
-      <div style="font-size:11px;color:var(--text2);margin-top:4px;">Ex: 50000 pour 50 000 F forfait, ou 5 pour 5%</div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-primary" onclick="saveImmeuble()">Enregistrer</button>
+      <button class="btn btn-primary" onclick="saveImmeuble()" data-i18n="Enregistrer">Enregistrer</button>
     </div>
   </div>
 </div>
@@ -1104,7 +1111,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="docx.bundle.js"></script>
-<script src="js/app.js?v=202605312322"></script>
+<script src="js/app.js?v=20260602b"></script>
 
 <!-- Context menu for locaux -->
 
@@ -1251,8 +1258,8 @@ self.addEventListener('fetch', (event) => {
   <div class="modal" style="width: 900px; max-width: 98vw; max-height: 95vh; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
     <!-- Header du modal -->
     <div style="display:flex; justify-content:space-between; align-items:center; padding: 14px 20px; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, #0E6AAF 0%, #0a4a7a 100%); color: #fff; flex-shrink: 0;">
-      <div style="font-size: 16px; font-weight: 700;">🏠 Espace Locataire</div>
-      <button class="btn btn-ghost btn-sm" onclick="closePortailLocataire()" style="color: #fff; border-color: rgba(255,255,255,0.3);">✕ Fermer</button>
+      <div style="font-size: 16px; font-weight: 700;" data-i18n="🏠 Espace Locataire">🏠 Espace Locataire</div>
+      <button class="btn btn-ghost btn-sm" onclick="closePortailLocataire()" style="color: #fff; border-color: rgba(255,255,255,0.3);" data-i18n="✕ Fermer">✕ Fermer</button>
     </div>
     <!-- Bannière pub sticky bas -->
     <div id="ad-slot-portail-sticky" class="ad-slot-sticky"></div>
@@ -1274,13 +1281,13 @@ self.addEventListener('fetch', (event) => {
 
 <!-- Navigation -->
 <div class="tenant-nav">
-  <button class="active" onclick="showTab('dashboard')">📊 Tableau de bord</button>
-  <button onclick="showTab('payment')">💳 Paiement</button>
-  <button onclick="showTab('maintenance')">🔧 Maintenance</button>
-  <button onclick="showTab('chat')">💬 Messages</button>
-  <button onclick="showTab('documents')">📄 Documents</button>
-  <button onclick="showTab('notifications')">🔔 Notifications</button>
-  <button onclick="showTab('mafiche')">📋 Ma fiche</button>
+  <button class="active" onclick="showTab('dashboard')" data-i18n="📊 Tableau de bord">📊 Tableau de bord</button>
+  <button onclick="showTab('payment')" data-i18n="💳 Paiement">💳 Paiement</button>
+  <button onclick="showTab('maintenance')" data-i18n="🔧 Maintenance">🔧 Maintenance</button>
+  <button onclick="showTab('chat')" data-i18n="💬 Messages">💬 Messages</button>
+  <button onclick="showTab('documents')" data-i18n="📄 Documents">📄 Documents</button>
+  <button onclick="showTab('notifications')" data-i18n="🔔 Notifications">🔔 Notifications</button>
+  <button onclick="showTab('mafiche')" data-i18n="📋 Ma fiche">📋 Ma fiche</button>
 </div>
 
 <!-- Tab: Dashboard -->
@@ -1288,22 +1295,22 @@ self.addEventListener('fetch', (event) => {
   <div class="dashboard-grid">
     <div class="stat-card">
       <div class="stat-value" id="dashboard-rent">–</div>
-      <div class="stat-label">Loyer mensuel</div>
+      <div class="stat-label" data-i18n="Loyer mensuel">Loyer mensuel</div>
       <div class="stat-trend" id="dashboard-rent-trend">–</div>
     </div>
     <div class="stat-card">
       <div class="stat-value" id="dashboard-balance" style="">–</div>
-      <div class="stat-label">Solde courant</div>
+      <div class="stat-label" data-i18n="Solde courant">Solde courant</div>
       <div class="stat-trend" id="dashboard-balance-trend">–</div>
     </div>
     <div class="stat-card">
       <div class="stat-value" id="dashboard-lease">–</div>
-      <div class="stat-label">Mois restants sur le bail</div>
+      <div class="stat-label" data-i18n="Mois restants sur le bail">Mois restants sur le bail</div>
       <div class="stat-trend" id="dashboard-lease-trend">–</div>
     </div>
     <div class="stat-card">
       <div class="stat-value" id="dashboard-requests">–</div>
-      <div class="stat-label">Demandes en cours</div>
+      <div class="stat-label" data-i18n="Demandes en cours">Demandes en cours</div>
       <div class="stat-trend">–</div>
     </div>
   </div>
@@ -1501,7 +1508,7 @@ self.addEventListener('fetch', (event) => {
 <!-- Voice Command Button (6. Commandes Vocales) -->
 <button class="voice-btn" id="voice-btn" onclick="toggleVoice()">🎤</button>
 
-<script src="js/portail-locataire.js?v=202605312322"></script>
+<script src="js/portail-locataire.js?v=20260602b"></script>
 <script src="js/ads.js?v=20260601"></script>
 
 
