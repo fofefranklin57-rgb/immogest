@@ -2242,6 +2242,55 @@ function ouvrirFicheSuivi(locId) {
   }
 }
 
+// Fiche de suivi en lecture seule (pour propriétaire)
+function ouvrirFicheSuiviReadOnly(locId) {
+  const l = DATA.locataires.find(x => x.id === locId);
+  if (!l) return;
+
+  const currentYear = new Date().getFullYear();
+  const entreeYear  = l.entree ? new Date(l.entree).getFullYear() : null;
+  const firstYear   = entreeYear ? Math.min(entreeYear, currentYear) : currentYear;
+  const years = [];
+  for (let y = firstYear; y <= currentYear + 1; y++) years.push(y);
+
+  const fd = buildFicheData(locId, currentYear);
+  if (!fd) return;
+  const ficheContent = genFicheHtml(fd);
+
+  const html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <h3 style="margin:0;">📋 Fiche de suivi — ${l.nom}</h3>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:11px;color:var(--text3);font-style:italic;">🔒 Lecture seule</span>
+        <label style="font-size:12px;color:var(--text3);">Année :</label>
+        <select id="fiche-annee" onchange="rafraichirFicheReadOnly(${locId})" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);font-size:13px;">
+          ${years.map(y => `<option value="${y}" ${y===currentYear?'selected':''}>${y}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div id="fiche-preview">${ficheContent}</div>
+    <div class="modal-footer" style="margin-top:12px;">
+      <button class="btn btn-ghost" onclick="closeModals()">Fermer</button>
+    </div>
+  `;
+
+  const modal = document.getElementById('modal-apercu-recu');
+  if (modal) {
+    modal.querySelector('.modal').innerHTML = html;
+    modal.classList.add('open');
+  }
+}
+
+function rafraichirFicheReadOnly(locId) {
+  const anneeEl = document.getElementById('fiche-annee');
+  if (!anneeEl) return;
+  const annee = parseInt(anneeEl.value);
+  const fd = buildFicheData(locId, annee);
+  if (!fd) return;
+  const el = document.getElementById('fiche-preview');
+  if (el) el.innerHTML = genFicheHtml(fd);
+}
+
 function rafraichirFiche(locId) {
   const anneeEl = document.getElementById('fiche-annee');
   const annee = anneeEl ? parseInt(anneeEl.value) : new Date().getFullYear();
@@ -9755,6 +9804,7 @@ function renderPortailProprietaire(immeubles, tab) {
               <th style="padding:10px 12px;text-align:right;color:var(--text3);font-weight:600;">Loyer</th>
               <th style="padding:10px 12px;text-align:center;color:var(--text3);font-weight:600;">Statut</th>
               <th style="padding:10px 12px;text-align:right;color:var(--text3);font-weight:600;">Reste dû</th>
+              <th style="padding:10px 12px;"></th>
             </tr>
           </thead>
           <tbody>
@@ -9773,6 +9823,12 @@ function renderPortailProprietaire(immeubles, tab) {
                 </td>
                 <td style="padding:10px 12px;text-align:right;font-family:var(--mono);color:${(l.reste||0)>0?'var(--red)':'var(--green)'};">
                   ${(l.reste||0)>0?fmt(l.reste):'–'}
+                </td>
+                <td style="padding:10px 12px;text-align:center;">
+                  <button onclick="ouvrirFicheSuiviReadOnly(${l.id})"
+                    style="padding:5px 10px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit;white-space:nowrap;">
+                    👁 Fiche
+                  </button>
                 </td>
               </tr>`;
             }).join('')}
