@@ -425,26 +425,26 @@ function renderDashboard() {
           <div class="imm-card-name">${im.nom}</div>
           <div class="imm-card-loc">📍 ${im.ville}${im.quartier?' · '+im.quartier:''}</div>
         </div>
-        ${has?`<span class="badge ${tx===100?'badge-green':tx>50?'badge-yellow':'badge-red'}">${tx}%</span>`:`<span class="badge badge-neutral">En attente</span>`}
+        ${has?`<span class="badge ${tx===100?'badge-green':tx>50?'badge-yellow':'badge-red'}">${tx}%</span>`:`<span class="badge badge-neutral">${t('En attente')}</span>`}
       </div>
       <div class="imm-card-body">
         ${has?`
           <div class="imm-stats">
-            <div class="imm-stat"><span>${locs.length}</span>locataires</div>
+            <div class="imm-stat"><span>${locs.length}</span>${t('locataires')}</div>
             <div class="imm-stat"><span>${nbP}</span>${t('à jour')}</div>
-            ${lib?`<div class="imm-stat"><span>${lib}</span>libre(s)</div>`:''}
-            <div class="imm-stat"><span style="font-size:12px;">${fmtShort(tot)}</span>/mois</div>
+            ${lib?`<div class="imm-stat"><span>${lib}</span>${t('libre(s)')}</div>`:''}
+            <div class="imm-stat"><span style="font-size:12px;">${fmtShort(tot)}</span>${t('/mois')}</div>
           </div>
           <div class="pb"><div class="pb-fill" style="width:${tx}%;background:${im.col};"></div></div>
-          ${rest>0?`<div style="font-size:11px;color:var(--red);margin-top:6px;">Impayés : ${fmt(rest)}</div>`:''}`
-          :`<div style="font-size:12px;color:var(--text3);font-style:italic;margin-top:8px;">Données non encore saisies</div>`}
+          ${rest>0?`<div style="font-size:11px;color:var(--red);margin-top:6px;">${t('Impayés :')} ${fmt(rest)}</div>`:''}`
+          :`<div style="font-size:12px;color:var(--text3);font-style:italic;margin-top:8px;">${t('Données non encore saisies')}</div>`}
       </div>
     </div>`;
   });
   html += `</div>`;
 
   // Chart
-  html += `<div class="card"><div class="card-header"><div class="card-title">Comparatif encaissements vs impayés</div></div>
+  html += `<div class="card"><div class="card-header"><div class="card-title">${t('Comparatif encaissements vs impayés')}</div></div>
     <div class="chart-wrap"><canvas id="chart-db"></canvas></div></div>`;
 
   document.getElementById('content').innerHTML = html;
@@ -455,8 +455,8 @@ function renderDashboard() {
   if (ctx) window._chartDB = new Chart(ctx, {
     type:'bar',
     data:{labels:immD.map(i=>i.nom.split(' ')[0]),datasets:[
-      {label:'Loyers à jour',data:immD.map(i=>DATA.locataires.filter(l=>l.iid===i.id&&l.s==='payé').reduce((s,l)=>s+l.loyer,0)),backgroundColor:'rgba(46,204,138,.7)',borderRadius:4},
-      {label:'Impayés cumulés',data:immD.map(i=>DATA.locataires.filter(l=>l.iid===i.id&&l.s!=='libre').reduce((s,l)=>s+l.reste,0)),backgroundColor:'rgba(242,92,92,.7)',borderRadius:4},
+      {label:t('Loyers à jour'),data:immD.map(i=>DATA.locataires.filter(l=>l.iid===i.id&&l.s==='payé').reduce((s,l)=>s+l.loyer,0)),backgroundColor:'rgba(46,204,138,.7)',borderRadius:4},
+      {label:t('Impayés cumulés'),data:immD.map(i=>DATA.locataires.filter(l=>l.iid===i.id&&l.s!=='libre').reduce((s,l)=>s+l.reste,0)),backgroundColor:'rgba(242,92,92,.7)',borderRadius:4},
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:true,position:'top',labels:{color:'#9196a8',font:{size:11},boxWidth:10,boxHeight:10}}},

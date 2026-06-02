@@ -428,11 +428,11 @@
     <div style="background:linear-gradient(135deg,#0E6AAF 0%,#1A6B45 100%);padding:24px 28px 20px;color:#fff;position:relative;">
       <button onclick="closeModals()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.2);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
       <div style="text-align:center;">
-        <div style="font-size:22px;font-weight:800;margin-bottom:4px;">⭐ Choisissez votre plan</div>
-        <div style="font-size:13px;opacity:.8;margin-bottom:12px;">Gérez vos biens immobiliers sans limites</div>
+        <div style="font-size:22px;font-weight:800;margin-bottom:4px;">⭐ <span data-i18n="Choisissez votre plan">Choisissez votre plan</span></div>
+        <div style="font-size:13px;opacity:.8;margin-bottom:12px;" data-i18n="Gérez vos biens immobiliers sans limites">Gérez vos biens immobiliers sans limites</div>
         <div>
           <span id="current-plan-badge" class="plan-badge plan-free">FREE</span>
-          <span style="font-size:12px;opacity:.7;margin-left:8px;">Plan actuel</span>
+          <span style="font-size:12px;opacity:.7;margin-left:8px;" data-i18n="Plan actuel">Plan actuel</span>
         </div>
       </div>
     </div>
@@ -443,83 +443,83 @@
 
         <!-- Gratuit -->
         <div style="background:var(--bg2);border:2px solid var(--border);border-radius:14px;padding:20px 16px;display:flex;flex-direction:column;gap:0;position:relative;">
-          <div style="font-size:13px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Gratuit</div>
+          <div style="font-size:13px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;" data-i18n="Gratuit">Gratuit</div>
           <div style="font-size:28px;font-weight:900;color:var(--text1);line-height:1;">0 <span style="font-size:14px;font-weight:600;color:var(--text3);">FCFA</span></div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">Pour toujours</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:14px;" data-i18n="Pour toujours">Pour toujours</div>
           <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:7px;flex:1;">
-            <div style="font-size:12px;color:var(--text2);">✅ 1 immeuble</div>
-            <div style="font-size:12px;color:var(--text2);">✅ 10 locataires</div>
-            <div style="font-size:12px;color:var(--text2);">✅ 2 utilisateurs</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Rapports PDF</div>
-            <div style="font-size:12px;color:var(--text2);">✅ 1 rapport Word/mois</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Fiche de suivi</div>
-            <div style="font-size:12px;color:var(--text2);">✅ 3 relances/mois</div>
-            <div style="font-size:12px;color:var(--text3);">❌ Assistant IA</div>
-            <div style="font-size:12px;color:var(--text3);">❌ Export données</div>
-            <div style="font-size:12px;color:var(--text3);">⚠️ Publicités</div>
+            <div style="font-size:12px;color:var(--text2);">✅ 1 <span data-i18n="Immeuble">immeuble</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ 10 <span data-i18n="locataires">locataires</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ 2 <span data-i18n="Utilisateurs">utilisateurs</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Rapports PDF">Rapports PDF</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="1 rapport Word/mois">1 rapport Word/mois</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Fiche suivi">Fiche de suivi</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="3 relances/mois">3 relances/mois</span></div>
+            <div style="font-size:12px;color:var(--text3);">❌ <span data-i18n="Assistant IA">Assistant IA</span></div>
+            <div style="font-size:12px;color:var(--text3);">❌ <span data-i18n="Export données">Export données</span></div>
+            <div style="font-size:12px;color:var(--text3);">⚠️ <span data-i18n="Publicités">Publicités</span></div>
           </div>
-          <button class="btn" style="width:100%;margin-top:16px;opacity:.5;cursor:default;" disabled>Plan actuel</button>
+          <button class="btn" style="width:100%;margin-top:16px;opacity:.5;cursor:default;" disabled data-i18n="Plan actuel">Plan actuel</button>
         </div>
 
         <!-- Starter -->
         <div style="background:linear-gradient(180deg,#e8f4fd 0%,#fff 100%);border:2px solid #0E6AAF;border-radius:14px;padding:20px 16px;display:flex;flex-direction:column;position:relative;">
-          <div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#0E6AAF;color:#fff;font-size:10px;font-weight:800;padding:3px 12px;border-radius:99px;white-space:nowrap;letter-spacing:.05em;">⭐ POPULAIRE</div>
+          <div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#0E6AAF;color:#fff;font-size:10px;font-weight:800;padding:3px 12px;border-radius:99px;white-space:nowrap;letter-spacing:.05em;">⭐ <span data-i18n="POPULAIRE">POPULAIRE</span></div>
           <div style="font-size:13px;font-weight:800;color:#0E6AAF;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Starter</div>
           <div style="font-size:28px;font-weight:900;color:#0E6AAF;line-height:1;">9 999 <span style="font-size:14px;font-weight:600;color:var(--text3);">FCFA/mois</span></div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">99 900 FCFA/an <span style="color:#0E6AAF;font-weight:700;">2 mois offerts</span></div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">99 900 FCFA/an <span style="color:#0E6AAF;font-weight:700;" data-i18n="2 mois offerts">2 mois offerts</span></div>
           <div style="border-top:1px solid #c8dff5;padding-top:14px;display:flex;flex-direction:column;gap:7px;flex:1;">
-            <div style="font-size:12px;color:var(--text2);">✅ 3 immeubles</div>
-            <div style="font-size:12px;color:var(--text2);">✅ 50 locataires</div>
-            <div style="font-size:12px;color:var(--text2);">✅ 5 utilisateurs</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Rapports PDF + Word illimités</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Fiche de suivi</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Relances illimitées</div>
-            <div style="font-size:12px;color:var(--text2);">✅ IA 10 msgs/jour</div>
-            <div style="font-size:12px;color:var(--text3);">❌ Export données</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Sans publicité</div>
+            <div style="font-size:12px;color:var(--text2);">✅ 3 <span data-i18n="Immeubles">immeubles</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ 50 <span data-i18n="locataires">locataires</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ 5 <span data-i18n="Utilisateurs">utilisateurs</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Rapports PDF + Word illimités">Rapports PDF + Word illimités</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Fiche suivi">Fiche de suivi</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Relances illimitées">Relances illimitées</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="IA 10 msgs/jour">IA 10 msgs/jour</span></div>
+            <div style="font-size:12px;color:var(--text3);">❌ <span data-i18n="Export données">Export données</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Sans publicité">Sans publicité</span></div>
           </div>
-          <button style="width:100%;margin-top:16px;padding:11px;background:#0E6AAF;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s;" onclick="startSubscription('starter')" onmouseover="this.style.background='#0a5a96'" onmouseout="this.style.background='#0E6AAF'">🚀 Passer à Starter</button>
+          <button style="width:100%;margin-top:16px;padding:11px;background:#0E6AAF;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s;" onclick="startSubscription('starter')" onmouseover="this.style.background='#0a5a96'" onmouseout="this.style.background='#0E6AAF'" data-i18n="Passer à Starter">🚀 Passer à Starter</button>
         </div>
 
         <!-- Pro -->
         <div style="background:linear-gradient(180deg,#f0eaff 0%,#fff 100%);border:2px solid #7C3AED;border-radius:14px;padding:20px 16px;display:flex;flex-direction:column;position:relative;">
-          <div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#7C3AED,#5B21B6);color:#fff;font-size:10px;font-weight:800;padding:3px 12px;border-radius:99px;white-space:nowrap;letter-spacing:.05em;">💎 RECOMMANDÉ</div>
+          <div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#7C3AED,#5B21B6);color:#fff;font-size:10px;font-weight:800;padding:3px 12px;border-radius:99px;white-space:nowrap;letter-spacing:.05em;">💎 <span data-i18n="RECOMMANDÉ">RECOMMANDÉ</span></div>
           <div style="font-size:13px;font-weight:800;color:#7C3AED;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Pro</div>
           <div style="font-size:28px;font-weight:900;color:#7C3AED;line-height:1;">19 999 <span style="font-size:14px;font-weight:600;color:var(--text3);">FCFA/mois</span></div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">199 900 FCFA/an <span style="color:#7C3AED;font-weight:700;">2 mois offerts</span></div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">199 900 FCFA/an <span style="color:#7C3AED;font-weight:700;" data-i18n="2 mois offerts">2 mois offerts</span></div>
           <div style="border-top:1px solid #d8c8f5;padding-top:14px;display:flex;flex-direction:column;gap:7px;flex:1;">
-            <div style="font-size:12px;color:var(--text2);">✅ 10 immeubles</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Locataires illimités</div>
-            <div style="font-size:12px;color:var(--text2);">✅ 15 utilisateurs</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Rapports PDF + Word illimités</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Fiche de suivi</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Relances illimitées</div>
-            <div style="font-size:12px;color:var(--text2);">✅ IA illimitée</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Export données</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Sans publicité</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Support prioritaire</div>
+            <div style="font-size:12px;color:var(--text2);">✅ 10 <span data-i18n="Immeubles">immeubles</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Locataires illimités">Locataires illimités</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ 15 <span data-i18n="Utilisateurs">utilisateurs</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Rapports PDF + Word illimités">Rapports PDF + Word illimités</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Fiche suivi">Fiche de suivi</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Relances illimitées">Relances illimitées</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="IA illimitée">IA illimitée</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Export données">Export données</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Sans publicité">Sans publicité</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Support prioritaire">Support prioritaire</span></div>
           </div>
-          <button style="width:100%;margin-top:16px;padding:11px;background:linear-gradient(135deg,#7C3AED,#5B21B6);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s;" onclick="startSubscription('pro')" onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'">💼 Passer à Pro</button>
+          <button style="width:100%;margin-top:16px;padding:11px;background:linear-gradient(135deg,#7C3AED,#5B21B6);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s;" onclick="startSubscription('pro')" onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'" data-i18n="Passer à Pro">💼 Passer à Pro</button>
         </div>
 
         <!-- Agence -->
         <div style="background:linear-gradient(180deg,#fff7e6 0%,#fff 100%);border:2px solid #D97706;border-radius:14px;padding:20px 16px;display:flex;flex-direction:column;position:relative;">
-          <div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#D97706,#B45309);color:#fff;font-size:10px;font-weight:800;padding:3px 12px;border-radius:99px;white-space:nowrap;letter-spacing:.05em;">🏢 ENTREPRISE</div>
+          <div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#D97706,#B45309);color:#fff;font-size:10px;font-weight:800;padding:3px 12px;border-radius:99px;white-space:nowrap;letter-spacing:.05em;">🏢 <span data-i18n="ENTREPRISE">ENTREPRISE</span></div>
           <div style="font-size:13px;font-weight:800;color:#D97706;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Agence</div>
           <div style="font-size:28px;font-weight:900;color:#D97706;line-height:1;">29 999 <span style="font-size:14px;font-weight:600;color:var(--text3);">FCFA/mois</span></div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">299 900 FCFA/an <span style="color:#D97706;font-weight:700;">2 mois offerts</span></div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">299 900 FCFA/an <span style="color:#D97706;font-weight:700;" data-i18n="2 mois offerts">2 mois offerts</span></div>
           <div style="border-top:1px solid #f5dca8;padding-top:14px;display:flex;flex-direction:column;gap:7px;flex:1;">
-            <div style="font-size:12px;color:var(--text2);">✅ Immeubles illimités</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Locataires illimités</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Utilisateurs illimités</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Tout inclus</div>
-            <div style="font-size:12px;color:var(--text2);">✅ IA illimitée</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Export données</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Sans publicité</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Support dédié 24h</div>
-            <div style="font-size:12px;color:var(--text2);">✅ Portail locataire</div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Immeubles illimités">Immeubles illimités</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Locataires illimités">Locataires illimités</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Utilisateurs illimités">Utilisateurs illimités</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Tout inclus">Tout inclus</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="IA illimitée">IA illimitée</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Export données">Export données</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Sans publicité">Sans publicité</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Support dédié 24h">Support dédié 24h</span></div>
+            <div style="font-size:12px;color:var(--text2);">✅ <span data-i18n="Portail locataire">Portail locataire</span></div>
           </div>
-          <button style="width:100%;margin-top:16px;padding:11px;background:linear-gradient(135deg,#D97706,#B45309);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s;" onclick="startSubscription('entreprise')" onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'">🏢 Passer Agence</button>
+          <button style="width:100%;margin-top:16px;padding:11px;background:linear-gradient(135deg,#D97706,#B45309);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s;" onclick="startSubscription('entreprise')" onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'" data-i18n="Passer Agence">🏢 Passer Agence</button>
         </div>
 
       </div>
