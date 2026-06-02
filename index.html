@@ -296,16 +296,23 @@
         <span id="badge-corbeille" class="nav-badge" style="display:none;background:#e74c3c;">0</span>
       </div>
 
-      <button onclick="showChangerMotDePasse(false)" style="margin-top:4px;width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:11px;cursor:pointer;font-family:var(--font);">
-        🔒 <span data-i18n="Changer mot de passe">Changer mot de passe</span>
-      </button>
-      <button id="btn-changer-nom" onclick="changerNomAdmin()" style="display:none;margin-top:4px;width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:11px;cursor:pointer;font-family:var(--font);">
-        ✏️ <span data-i18n="Modifier mon nom">Modifier mon nom</span>
-      </button>
-      <button id="btn-theme-toggle" onclick="toggleTheme()" style="margin-top:4px;width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:11px;cursor:pointer;font-family:var(--font);">
-        🌙 <span data-i18n="Mode sombre">Mode sombre</span>
-      </button>
-      <button onclick="logout()" style="margin-top:6px;width:100%;padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;">
+      <!-- Actions rapides : icônes compactes -->
+      <div style="display:flex;gap:5px;margin-top:8px;">
+        <button id="btn-theme-toggle" onclick="toggleTheme()"
+          style="flex:1;padding:8px 0;border-radius:8px;border:none;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.85);cursor:pointer;font-size:15px;line-height:1;"
+          title="Thème clair / sombre">🌙</button>
+        <button onclick="showChangerMotDePasse(false)"
+          style="flex:1;padding:8px 0;border-radius:8px;border:none;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.85);cursor:pointer;font-size:15px;line-height:1;"
+          title="Changer mot de passe">🔒</button>
+        <button id="btn-changer-nom" onclick="changerNomAdmin()"
+          style="display:none;flex:1;padding:8px 0;border-radius:8px;border:none;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.85);cursor:pointer;font-size:15px;line-height:1;"
+          title="Modifier mon nom">✏️</button>
+      </div>
+      <!-- Déconnexion -->
+      <button onclick="logout()"
+        style="margin-top:6px;width:100%;padding:9px;border-radius:8px;border:none;background:rgba(220,53,69,0.18);color:#ff7b8a;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);letter-spacing:0.3px;transition:background .2s;"
+        onmouseover="this.style.background='rgba(220,53,69,0.35)'"
+        onmouseout="this.style.background='rgba(220,53,69,0.18)'">
         ⏻ <span data-i18n="Se déconnecter">Se déconnecter</span>
       </button>
       
