@@ -4277,7 +4277,10 @@ function _applyTheme(theme) {
     document.body.classList.remove('dark');
   }
   var btn = document.getElementById('btn-theme-toggle');
-  if (btn) btn.textContent = theme === 'dark' ? '☀️ Mode clair' : '🌙 Mode sombre';
+  if (btn) {
+    btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+    btn.title = typeof t === 'function' ? (theme === 'dark' ? t('☀️ Mode clair') : t('🌙 Mode sombre')) : '';
+  }
 }
 
 function toggleTheme() {
@@ -4286,8 +4289,6 @@ function toggleTheme() {
   if (!DATA.settings) DATA.settings = {};
   DATA.settings.theme = next;
   _applyTheme(next);
-  var btn = document.getElementById('btn-theme-toggle');
-  if (btn) btn.querySelector('[data-i18n]').setAttribute('data-i18n', next === 'dark' ? 'Mode clair' : 'Mode sombre');
   saveData();
   if (SESSION) saveParametresToSupabase(DATA.settings);
 }
@@ -4965,6 +4966,8 @@ function initApp() {
   applyStaticI18n(); // appliquer les traductions aux éléments statiques
   var _lc = document.getElementById('lang-code');
   if (_lc) _lc.textContent = (typeof LANG !== 'undefined' ? LANG.toUpperCase() : 'FR');
+  var _alc = document.getElementById('auth-lang-code');
+  if (_alc) _alc.textContent = (typeof LANG !== 'undefined' ? LANG.toUpperCase() : 'FR');
   if (typeof LANG !== 'undefined' && LANG === 'ar') document.documentElement.setAttribute('dir', 'rtl');
   document.getElementById('sel-mois').value = new Date().getMonth();
   document.getElementById('sel-annee').value = new Date().getFullYear();
@@ -10206,6 +10209,11 @@ window.addEventListener('DOMContentLoaded', () => {
   } else {
     var as = document.getElementById('auth-screen');
     if(as) as.style.display = 'flex';
+    // Appliquer les traductions sur l'écran de connexion
+    if (typeof applyStaticI18n === 'function') applyStaticI18n();
+    // Initialiser le code langue sur le bouton auth
+    var _alc2 = document.getElementById('auth-lang-code');
+    if (_alc2) _alc2.textContent = (typeof LANG !== 'undefined' ? LANG.toUpperCase() : 'FR');
     // Verifie si un portail est demande dans l'URL
     checkPortailParam();
   }

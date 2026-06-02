@@ -488,6 +488,29 @@ var TR = { en: {
   'Réponse rapide': 'Quick reply',
   'Loyer mensuel': 'Monthly rent',
 
+  // ── Page de connexion ─────────────────────────────────────────
+  'Gestion Immobilière Professionnelle': 'Professional Property Management',
+  'La plateforme complète de gestion immobilière. Locataires, encaissements, rapports et bien plus.': 'The complete property management platform. Tenants, payments, reports and more.',
+  'Intégré': 'Integrated',
+  'Collaboratif': 'Collaborative',
+  'Intuitif': 'Intuitive',
+  'Gestion Immobilière': 'Property Management',
+  'Mode Personnel': 'Personal Mode',
+  'Propriétaires & Locataires': 'Owners & Tenants',
+  'Mode Entreprise': 'Business Mode',
+  'Équipe Gestion Immobilière': 'Property Management Team',
+  'ImmoGest v2.0 · Gestion Immobilière': 'ImmoGest v2.0 · Property Management',
+  'Vous êtes...': 'You are...',
+  'Administrateur': 'Administrator',
+  'Accès complet — gestion de tout': 'Full access — manage everything',
+  'Accéder': 'Access',
+  'Accéder à mon espace': 'Access my space',
+  'Se connecter': 'Log in',
+  '← Retour': '← Back',
+  'Retour connexion staff': '← Staff login',
+  'Mot de passe': 'Password',
+  'Identifiant': 'Username',
+
   // ── Modal Plans / Upgrade ─────────────────────────────────────
   'Choisissez votre plan': 'Choose your plan',
   'Gérez vos biens immobiliers sans limites': 'Manage your properties without limits',
@@ -989,6 +1012,25 @@ ha: {
   '✕ Fermer': '✕ Rufe',
   'Réponse rapide': 'Amsa cikin hanzari',
   'Loyer mensuel': 'Haya ta wata',
+  'Gestion Immobilière Professionnelle': 'Ƙwararren gudanar da gidaje',
+  'La plateforme complète de gestion immobilière. Locataires, encaissements, rapports et bien plus.': 'Cikakken dandali na gudanar da gidaje. Masu haya, biyan kuɗi, rahotanni da ƙari.',
+  'Intégré': 'Hada-hadar',
+  'Collaboratif': 'Haɗin gwiwa',
+  'Intuitif': 'Mai sauƙi',
+  'Gestion Immobilière': 'Gudanar da gidaje',
+  'Mode Personnel': 'Yanayin mutum ɗaya',
+  'Propriétaires & Locataires': 'Masu gida & Masu haya',
+  'Mode Entreprise': 'Yanayin kamfani',
+  'Équipe Gestion Immobilière': 'Ƙungiyar gudanar da gidaje',
+  'ImmoGest v2.0 · Gestion Immobilière': 'ImmoGest v2.0 · Gudanar da gidaje',
+  'Vous êtes...': 'Kai ne...',
+  'Administrateur': 'Mai gudanarwa',
+  'Accès complet — gestion de tout': 'Shiga cikakke — sarrafa komai',
+  'Accéder': 'Shiga',
+  'Accéder à mon espace': 'Shiga wurina',
+  'Se connecter': 'Haɗa',
+  '← Retour': '← Koma',
+  'Retour connexion staff': '← Haɗar ma\'aikata',
   'Choisissez votre plan': 'Zaɓi shirin ka',
   'Gérez vos biens immobiliers sans limites': 'Sarrafa dukiyar ka ba iyaka',
   'Pour toujours': 'Har abada',
@@ -1287,6 +1329,25 @@ ff: {
   '📤 Soumettre la demande': '📤 Nelanaade hay',
   'Historique des demandes': 'Tindirde gollannde',
   'Aucune demande pour l\'instant': 'Gollannde alaa jooni',
+  'Gestion Immobilière Professionnelle': 'Hooreende galledji ɓurnooje',
+  'La plateforme complète de gestion immobilière. Locataires, encaissements, rapports et bien plus.': 'Laatordi cikkunde e hooreende galledji. Jeyaaɓe, heɓɓitaade, tindirde e ɗum fof.',
+  'Intégré': 'Ɓannditaɗo',
+  'Collaboratif': 'Juɓɓinoowo',
+  'Intuitif': 'Yiɗɗoowo',
+  'Gestion Immobilière': 'Hooreende galledji',
+  'Mode Personnel': 'Yanayi neɗɗo',
+  'Propriétaires & Locataires': 'Jom galledji & Jeyaaɓe',
+  'Mode Entreprise': 'Yanayi kampaañi',
+  'Équipe Gestion Immobilière': 'Ɗoyanno hooreende galledji',
+  'ImmoGest v2.0 · Gestion Immobilière': 'ImmoGest v2.0 · Hooreende galledji',
+  'Vous êtes...': 'Aan ne...',
+  'Administrateur': 'Hooreeɗo',
+  'Accès complet — gestion de tout': 'Naatgol cikkundo — hooreede fof',
+  'Accéder': 'Naatde',
+  'Accéder à mon espace': 'Naatde suudu am',
+  'Se connecter': 'Hollaade',
+  '← Retour': '← Artude',
+  'Retour connexion staff': '← Hollaade ɗoyanno',
   'Choisissez votre plan': 'Suɓo laataare maa',
   'Gérez vos biens immobiliers sans limites': 'Hooreede jawdi maa timmungal',
   'Pour toujours': 'Haa abada',
@@ -1757,6 +1818,25 @@ ar: {
   '✕ Fermer': '✕ إغلاق',
   'Réponse rapide': 'رد سريع',
   'Loyer mensuel': 'الإيجار الشهري',
+  'Gestion Immobilière Professionnelle': 'إدارة عقارية احترافية',
+  'La plateforme complète de gestion immobilière. Locataires, encaissements, rapports et bien plus.': 'المنصة المتكاملة لإدارة العقارات. مستأجرون، مدفوعات، تقارير والمزيد.',
+  'Intégré': 'متكامل',
+  'Collaboratif': 'تعاوني',
+  'Intuitif': 'سهل الاستخدام',
+  'Gestion Immobilière': 'إدارة عقارية',
+  'Mode Personnel': 'الوضع الشخصي',
+  'Propriétaires & Locataires': 'الملاك والمستأجرون',
+  'Mode Entreprise': 'وضع الشركة',
+  'Équipe Gestion Immobilière': 'فريق الإدارة العقارية',
+  'ImmoGest v2.0 · Gestion Immobilière': 'ImmoGest v2.0 · إدارة عقارية',
+  'Vous êtes...': 'أنت...',
+  'Administrateur': 'المشرف',
+  'Accès complet — gestion de tout': 'وصول كامل — إدارة كل شيء',
+  'Accéder': 'دخول',
+  'Accéder à mon espace': 'الدخول إلى مساحتي',
+  'Se connecter': 'تسجيل الدخول',
+  '← Retour': '← رجوع',
+  'Retour connexion staff': '← تسجيل دخول الفريق',
   'Choisissez votre plan': 'اختر خطتك',
   'Gérez vos biens immobiliers sans limites': 'أدر عقاراتك بلا حدود',
   'Pour toujours': 'إلى الأبد',
@@ -1882,6 +1962,35 @@ function applyStaticI18n() {
   });
 }
 
+// ── Menu langue sur la page de connexion ────────────────────────
+function toggleAuthLangMenu() {
+  var menu = document.getElementById('auth-lang-menu');
+  if (!menu) return;
+  var isOpen = menu.style.display !== 'none';
+  menu.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    setTimeout(function() {
+      document.addEventListener('click', function _c(e) {
+        var sel = document.getElementById('auth-lang-selector');
+        if (sel && !sel.contains(e.target)) { menu.style.display = 'none'; document.removeEventListener('click', _c); }
+      });
+    }, 10);
+  }
+}
+
+function setAuthLang(lang) {
+  setLang(lang);
+  // Mettre à jour le code visible dans le bouton auth
+  var ac = document.getElementById('auth-lang-code');
+  if (ac) ac.textContent = lang.toUpperCase();
+  // Mettre à jour aussi le bouton principal de la topbar
+  var lc = document.getElementById('lang-code');
+  if (lc) lc.textContent = lang.toUpperCase();
+  // Fermer le menu
+  var menu = document.getElementById('auth-lang-menu');
+  if (menu) menu.style.display = 'none';
+}
+
 // ── Ouvrir / fermer le menu langue ──────────────────────────────
 function toggleLangMenu() {
   var menu = document.getElementById('lang-menu');
@@ -1919,11 +2028,12 @@ function setLang(lang) {
   // Mettre à jour le code langue affiché
   var codeEl = document.getElementById('lang-code');
   if (codeEl) codeEl.textContent = lang.toUpperCase();
-  // Mettre à jour le bouton thème
+  // Mettre à jour le bouton thème (icon only — juste le title)
   var themeBtn = document.getElementById('btn-theme-toggle');
   if (themeBtn) {
     var isDark = document.body.classList.contains('dark');
-    themeBtn.textContent = isDark ? t('☀️ Mode clair') : t('🌙 Mode sombre');
+    themeBtn.title = isDark ? t('☀️ Mode clair') : t('🌙 Mode sombre');
+    themeBtn.textContent = isDark ? '☀️' : '🌙';
   }
   // Re-render la page courante
   if (typeof renderCurrent === 'function') renderCurrent();
