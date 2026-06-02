@@ -110,6 +110,7 @@ function showTab(tab) {
   if (tab === 'maintenance') loadMaintHistory();
   if (tab === 'documents') loadDocumentsLocataire();
   if (tab === 'chat') locMsgCharger();
+  if (tab === 'mafiche') loadMaFiche();
 }
 
 // 7. Paiement Mobile Money
@@ -892,4 +893,73 @@ async function locMsgEnvoyer() {
   } catch(e) {
     if (typeof showToast === 'function') showToast('Erreur : ' + e.message, 'red');
   }
+}
+
+// ── MA FICHE — lecture seule ──────────────────────────────────────
+function loadMaFiche() {
+  const el = document.getElementById('tab-mafiche');
+  if (!el) return;
+  const l = _getLocataireConnecte();
+  if (!l) { el.innerHTML = '<div class="card"><p style="color:var(--text3);padding:20px;">Fiche introuvable.</p></div>'; return; }
+
+  const im = DATA.immeubles.find(i => i.id === l.iid) || {};
+  const MNOMS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const pays = DATA.paiements.filter(p => p.locId === l.id).sort((a,b) => b.date.localeCompare(a.date));
+
+  const statutColors = { payé:'var(--green)', impayé:'var(--red)', partiel:'var(--yellow)', libre:'var(--text3)' };
+  const statutColor  = statutColors[l.s] || 'var(--text3)';
+  const solde = l.reste || 0;
+  const soldeColor = solde > 0 ? 'var(--red)' : 'var(--green)';
+  const soldeLabel = solde > 0 ? '⚠️ Arriéré de ' + Number(solde).toLocaleString('fr-FR') + ' FCFA'
+                   : solde < 0 ? '✅ Avance de ' + Number(Math.abs(solde)).toLocaleString('fr-FR') + ' FCFA'
+                   : '✅ À jour';
+
+  const histo = pays.slice(0, 10).map(p => {
+    const mLabel = (p.moisC !== undefined ? MNOMS[p.moisC] : (p.mois ? MNOMS[p.mois-1] : '—')) + ' ' + (p.anneeC || p.annee || '');
+    return `<tr>
+      <td style="font-size:12px;">${new Date(p.date).toLocaleDateString('fr-FR')}</td>
+      <td style="font-size:12px;">${mLabel}</td>
+      <td style="font-size:12px;font-weight:600;color:var(--green);">${Number(p.montant||0).toLocaleString('fr-FR')} FCFA</td>
+      <td style="font-size:11px;color:var(--text3);">${p.mode||'—'}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px;font-style:italic;">Aucun paiement enregistré</td></tr>';
+
+  el.innerHTML = `
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <div class="card-title">📋 Ma fiche locative</div>
+        <span style="font-size:11px;color:var(--text3);font-style:italic;">🔒 Lecture seule</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 0;">
+        ${ficheRow('🏠 Immeuble', im.nom || '—')}
+        ${ficheRow('📍 Ville', [im.ville, im.quartier].filter(Boolean).join(' · ') || '—')}
+        ${ficheRow('🚪 Local / Appt', l.appt || '—')}
+        ${ficheRow('📦 Type', l.type || '—')}
+        ${ficheRow('📅 Date d\'entrée', l.entree ? new Date(l.entree).toLocaleDateString('fr-FR') : '—')}
+        ${ficheRow('💰 Loyer mensuel', Number(l.loyer||0).toLocaleString('fr-FR') + ' FCFA')}
+        ${ficheRow('🔐 Caution versée', Number(l.caution||0).toLocaleString('fr-FR') + ' FCFA')}
+        ${ficheRow('📊 Statut', '<span style="color:'+statutColor+';font-weight:700;">'+(l.s||'—')+'</span>')}
+        ${ficheRow('💳 Solde', '<span style="color:'+soldeColor+';font-weight:700;">'+soldeLabel+'</span>')}
+        ${l.obs ? ficheRow('📝 Observations', l.obs) : ''}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">💳 Historique des paiements</div>
+        <span style="font-size:11px;color:var(--text3);">${pays.length} paiement(s) au total</span>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>Date</th><th>Période</th><th>Montant</th><th>Mode</th></tr></thead>
+          <tbody>${histo}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function ficheRow(label, val) {
+  return '<div style="padding:10px 14px;background:var(--bg4);border-radius:8px;">'
+    + '<div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:4px;">'+label+'</div>'
+    + '<div style="font-size:13px;font-weight:600;color:var(--text1);">'+val+'</div>'
+    + '</div>';
 }

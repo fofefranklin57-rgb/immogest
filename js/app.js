@@ -9659,6 +9659,7 @@ function renderPortailProprietaire(immeubles, tab) {
     {id:'locataires', label:'👥 Locataires'},
     {id:'encaissements', label:'💰 Encaissements'},
     {id:'rapports', label:'📄 Rapports'},
+    {id:'mafiche', label:'📋 Ma fiche'},
   ];
 
   let html = `
@@ -9858,8 +9859,74 @@ function renderPortailProprietaire(immeubles, tab) {
       </div>`;
   }
 
+  else if (tab === 'mafiche') {
+    // Infos du propriétaire connecté
+    const proprio = SESSION ? USERS.find(u => u.id === SESSION.userId) : null;
+    const propNom = SESSION ? SESSION.nom : '—';
+    const propTel = proprio ? (proprio.tel || proprio.telephone || '—') : '—';
+    const propUser = proprio ? (proprio.username || '—') : '—';
+
+    const ficheRowP = (label, val) =>
+      `<div style="padding:10px 14px;background:var(--bg4);border-radius:8px;">
+        <div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:4px;">${label}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text1);">${val}</div>
+      </div>`;
+
+    html += `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.05em;">Ma fiche</div>
+        <span style="font-size:11px;color:var(--text3);font-style:italic;">🔒 Lecture seule</span>
+      </div>
+
+      <!-- Infos personnelles -->
+      <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:12px;">Informations personnelles</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          ${ficheRowP('👤 Nom complet', propNom)}
+          ${ficheRowP('📱 Téléphone', propTel)}
+          ${ficheRowP('🔑 Identifiant', propUser)}
+          ${ficheRowP('🏢 Immeubles assignés', immeubles.length + ' immeuble(s)')}
+        </div>
+      </div>
+
+      <!-- Mes immeubles -->
+      <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:12px;">Mes immeubles</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${immeubles.map(im => {
+            const locs = DATA.locataires.filter(l => l.iid === im.id && l.s !== 'libre');
+            const libres = DATA.locataires.filter(l => l.iid === im.id && l.s === 'libre').length;
+            const impayes = locs.filter(l => (l.reste||0) > 0).length;
+            return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg4);border-radius:8px;">
+              <span style="width:12px;height:12px;border-radius:50%;background:${im.col||'#0E6AAF'};flex-shrink:0;"></span>
+              <div style="flex:1;">
+                <div style="font-weight:700;font-size:13px;">${im.nom}</div>
+                <div style="font-size:11px;color:var(--text3);">${[im.ville,im.quartier].filter(Boolean).join(' · ')}</div>
+              </div>
+              <div style="text-align:right;font-size:11px;">
+                <div style="color:var(--green);font-weight:600;">${locs.length} occupé(s)</div>
+                ${libres > 0 ? `<div style="color:var(--text3);">${libres} libre(s)</div>` : ''}
+                ${impayes > 0 ? `<div style="color:var(--red);">${impayes} impayé(s)</div>` : ''}
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- Résumé financier -->
+      <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:12px;">Résumé financier</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          ${ficheRowP('💰 Total loyers/mois', Number(totalLoyers).toLocaleString('fr-FR') + ' FCFA')}
+          ${ficheRowP('✅ Encaissé ce mois', Number(encaisséMois).toLocaleString('fr-FR') + ' FCFA')}
+          ${ficheRowP('⚠️ Impayés cumulés', '<span style="color:var(--red);">' + Number(totalImpayés).toLocaleString('fr-FR') + ' FCFA</span>')}
+          ${ficheRowP('📊 Taux recouvrement', '<span style="color:' + (tauxRecouvrement>=80?'var(--green)':tauxRecouvrement>=50?'var(--yellow)':'var(--red)') + ';">' + tauxRecouvrement + '%</span>')}
+        </div>
+      </div>`;
+  }
+
   html += `</div></div>`;
-  
+
   const modalInner = modal.querySelector('.modal');
   if (modalInner) {
     modalInner.innerHTML = html;

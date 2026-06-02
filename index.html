@@ -1243,6 +1243,7 @@ self.addEventListener('fetch', (event) => {
   <button onclick="showTab('chat')">💬 Messages</button>
   <button onclick="showTab('documents')">📄 Documents</button>
   <button onclick="showTab('notifications')">🔔 Notifications</button>
+  <button onclick="showTab('mafiche')">📋 Ma fiche</button>
 </div>
 
 <!-- Tab: Dashboard -->
@@ -1453,6 +1454,9 @@ self.addEventListener('fetch', (event) => {
     </div>
   </div>
 </div>
+
+<!-- Tab Ma Fiche (lecture seule) -->
+<div id="tab-mafiche" class="tab-content" style="display:none;"></div>
 
 <!-- Voice Command Button (6. Commandes Vocales) -->
 <button class="voice-btn" id="voice-btn" onclick="toggleVoice()">🎤</button>
