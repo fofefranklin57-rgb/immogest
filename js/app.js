@@ -598,7 +598,7 @@ function renderImmeuble(iid) {
             ${getAlertLabel(l) ? '<br><span style="font-size:10px;font-weight:700;">' + getAlertLabel(l) + '</span>' : ''}
             ${l.reste > 0 && l.loyer > 0 ? '<br><span style="font-size:10px;color:var(--red);">' + (l.reste/l.loyer).toFixed(1) + ' mois dus</span>' : ''}
           </td>
-          <td><span class="badge ${l.s==='payé'?'badge-green':'badge-red'}">${l.s}</span></td>
+          <td><span class="badge ${l.s==='payé'?'badge-green':'badge-red'}">${t(l.s)}</span></td>
           <td class="td-amount ${l.reste>0?'red':l.reste<0?'blue':'green'}" style="font-size:11px;">
             ${l.reste>0 ? fmtReste(l) : l.reste<0 ? fmtReste(l) : '–'}
           </td>
@@ -670,7 +670,7 @@ function _filterImmLocs(iid) {
 
 function openModalLocataire(iid, preAppt, preType) {
   if (!can('canEditLocataires')) {
-    showToast('Accès refusé – modification non autorisée', 'red');
+    showToast(t('Accès refusé – modification non autorisée'), 'red');
     return;
   }
   // Reset form
@@ -702,20 +702,20 @@ function openModalLocataire(iid, preAppt, preType) {
   // Set jour paiement default
   const jourEl = document.getElementById('loc-jour-paiement');
   if (jourEl) jourEl.value = 1;
-  document.getElementById('modal-loc-title').textContent = '＋ Nouveau locataire';
+  document.getElementById('modal-loc-title').textContent = t('＋ Nouveau locataire');
   document.getElementById('modal-locataire').classList.add('open');
 }
 
 function clicLocalLibre(locId, iid) {
   if (!can('canEditLocataires')) {
-    showToast('Accès refusé', 'red'); return;
+    showToast(t('Accès refusé'), 'red'); return;
   }
   ouvrirNouveauLocataireLocal(locId, iid);
 }
 
 function clicLocalVide(iid) {
   if (!can('canEditLocataires')) {
-    showToast('Accès refusé', 'red'); return;
+    showToast(t('Accès refusé'), 'red'); return;
   }
   openModalLocataireVide(iid);
 }
@@ -757,18 +757,18 @@ function renderEncaissements() {
     <input type="text" id="search-enc-global" placeholder="🔍 Rechercher locataire, immeuble, mois..." oninput="_filterEncGlobal()" style="width:100%;padding:9px 16px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font);background:var(--bg4);box-sizing:border-box;">
   </div>
   <div class="metrics-grid">
-    <div class="metric-card"><div class="metric-label">Encaissé (loyers)</div><div class="metric-value green" style="font-size:17px;">${fmtShort(encLoyer)}</div></div>
-    <div class="metric-card"><div class="metric-label">Cautions reçues</div><div class="metric-value accent" style="font-size:17px;">${fmtShort(encCaution)}</div></div>
-    <div class="metric-card"><div class="metric-label">Versements</div><div class="metric-value">${pays.length}</div></div>
+    <div class="metric-card"><div class="metric-label">${t('Encaissé (loyers)')}</div><div class="metric-value green" style="font-size:17px;">${fmtShort(encLoyer)}</div></div>
+    <div class="metric-card"><div class="metric-label">${t('Cautions reçues')}</div><div class="metric-value accent" style="font-size:17px;">${fmtShort(encCaution)}</div></div>
+    <div class="metric-card"><div class="metric-label">${t('Versements')}</div><div class="metric-value">${pays.length}</div></div>
   </div>`;
 
   // Par immeuble ce mois
-  html += `<div class="card" style="margin-bottom:16px;"><div class="card-header"><div class="card-title">Détail ${MNOMS[m]} ${a}</div></div>`;
+  html += `<div class="card" style="margin-bottom:16px;"><div class="card-header"><div class="card-title">${t('Détail')} ${tMois(m)} ${a}</div></div>`;
   if (pays.length === 0) {
-    html += `<div class="empty"><div class="empty-icon">💸</div><div class="empty-text">Aucun paiement enregistré pour ${MNOMS[m]} ${a}</div></div>`;
+    html += `<div class="empty"><div class="empty-icon">💸</div><div class="empty-text">${t('Aucun paiement enregistré pour')} ${tMois(m)} ${a}</div></div>`;
   } else {
     html += `<div class="table-wrap"><table>
-      <thead><tr><th>Date versement</th><th>Immeuble</th><th>Local</th><th>Locataire</th><th>Mois concerné</th><th>Type</th><th>Mode</th><th>Montant</th><th>Note</th><th></th></tr></thead>
+      <thead><tr><th>${t('Date versement')}</th><th>${t('Immeuble')}</th><th>${t('Local')}</th><th>${t('Locataire')}</th><th>${t('Mois concerné')}</th><th>${t('Type')}</th><th>${t('Mode')}</th><th>${t('Montant')}</th><th>${t('Note')}</th><th></th></tr></thead>
       <tbody>`;
     pays.sort((a,b)=>b.date.localeCompare(a.date)).forEach(p => {
       const l = DATA.locataires.find(x=>x.id===p.locId);
@@ -778,13 +778,13 @@ function renderEncaissements() {
         <td style="font-size:11px;">${im?`<span style="color:${im.col};">●</span> ${im.nom.split(' ')[0]}`:'–'}</td>
         <td>${l?localBadge(l.appt):''}</td>
         <td class="td-name">${l?l.nom:'–'}</td>
-        <td style="font-size:11px;">${MNOMS[p.moisC]} ${p.anneeC}</td>
-        <td><span class="badge ${p.type==='caution'?'badge-purple':p.type==='loyer'?'badge-green':'badge-neutral'}">${p.type}</span></td>
-        <td style="font-size:11px;color:var(--text3);">${p.mode}</td>
+        <td style="font-size:11px;">${tMois(p.moisC)} ${p.anneeC}</td>
+        <td><span class="badge ${p.type==='caution'?'badge-purple':p.type==='loyer'?'badge-green':'badge-neutral'}">${t(p.type)}</span></td>
+        <td style="font-size:11px;color:var(--text3);">${t(p.mode)}</td>
         <td class="td-amount green">${fmt(p.montant)}</td>
         <td style="font-size:11px;color:var(--text3);">${p.note||'–'}${p.remisAuBailleur?'<span style="margin-left:4px;background:#FFF3E0;color:#E65100;padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700;">🏠 bailleur</span>':''}</td>
         <td style="white-space:nowrap;">
-        ${can('canFinance')||(SESSION&&SESSION.role==='admin')?`<button class="btn btn-sm" onclick="genQuittance(${p.id})">⬇ Quittance</button>`:''}
+        ${can('canFinance')||(SESSION&&SESSION.role==='admin')?`<button class="btn btn-sm" onclick="genQuittance(${p.id})">⬇ ${t('Quittance')}</button>`:''}
         <button class="btn btn-ghost btn-icon btn-sm" onclick="supprimerPaiement(${p.id})" title="Supprimer">🗑</button>
       </td>
       </tr>`;
@@ -1199,7 +1199,7 @@ function genPdfSyntheseGlobale() {
   }
 
   doc.save(`Synthese_${MNOMS_L[m]}_${a}.pdf`);
-  showToast('PDF généré ✓');
+  showToast(t('PDF généré ✓'));
 }
 
 function renderRapportPage() {
@@ -1595,7 +1595,7 @@ function ouvrirRapportAnnuelImmeuble(iid) {
 
 function ouvrirLiberation(locId) {
   if (!can('canEditLocataires')) {
-    showToast('Accès refusé – modification non autorisée', 'red');
+    showToast(t('Accès refusé – modification non autorisée'), 'red');
     return;
   }
   const l = DATA.locataires.find(x=>x.id===locId);
@@ -1624,7 +1624,7 @@ function savePaiement() {
   const montant = parseInt(document.getElementById('pay-montant').value)||0;
   const date = document.getElementById('pay-date').value;
   if (!locId || !montant || !date) {
-    showToast('Locataire, date et montant obligatoires', 'red');
+    showToast(t('Locataire, date et montant obligatoires'), 'red');
     return;
   }
   const type = document.getElementById('pay-type').value;
@@ -1650,7 +1650,7 @@ function savePaiement() {
       });
       l.reste = Math.max(0, l.reste - montant);
       l.s = l.reste === 0 ? 'payé' : 'impayé';
-      showToast('Paiement enregistré ✓');
+      showToast(t('Paiement enregistré ✓'));
       saveData();
       if (SESSION) { savePaiementToSupabase(DATA.paiements[DATA.paiements.length-1]); saveLocataireToSupabase(l); }
       if (typeof notifPaiementRecu === 'function') notifPaiementRecu(l, montant);
@@ -1734,7 +1734,7 @@ function savePaiement() {
 function saveNouveauApresLib() {
   const nom = document.getElementById('nal-nom').value.trim();
   const loyer = parseInt(document.getElementById('nal-loyer').value)||0;
-  if (!nom||!loyer) { showToast('Nom et loyer obligatoires','red'); return; }
+  if (!nom||!loyer) { showToast(t('Nom et loyer obligatoires'),'red'); return; }
   const iid = parseInt(document.getElementById('nal-iid').value);
   const appt = document.getElementById('nal-appt').value;
   const type = document.getElementById('nal-type').value;
@@ -1803,7 +1803,7 @@ async function confirmerLiberation() {
   l.entree = '';
   saveData();
   closeModals();
-  showToast('Local libéré et archivé ✓');
+  showToast(t('Local libéré et archivé ✓'));
   // Proposer nouveau locataire
   setTimeout(() => {
     document.getElementById('nal-iid').value = l.iid;
@@ -1825,7 +1825,7 @@ async function confirmerLiberation() {
 }
 
 function openModalPaiement(iid, locId) {
-  if (!can('canRecordPayment')) { showToast('Accès refusé', 'red'); return; }
+  if (!can('canRecordPayment')) { showToast(t('Accès refusé'), 'red'); return; }
   const immSel = document.getElementById('pay-imm');
   if (immSel) {
     immSel.innerHTML = getVisibleImmeubles().map(im =>
@@ -1898,7 +1898,7 @@ function updatePayPeriode() {
 }
 
 function editLocataire(locId) {
-  if (!can('canEditLocataires')) { showToast('Accès refusé', 'red'); return; }
+  if (!can('canEditLocataires')) { showToast(t('Accès refusé'), 'red'); return; }
   const l = DATA.locataires.find(x => x.id === locId);
   if (!l) return;
   document.getElementById('loc-id').value = l.id;
@@ -1931,7 +1931,7 @@ function editLocataire(locId) {
 }
 
 function ouvrirGenDocx(locId) {
-  if (!can('canJuridique')) { showToast('Accès refusé', 'red'); return; }
+  if (!can('canJuridique')) { showToast(t('Accès refusé'), 'red'); return; }
   const l = DATA.locataires.find(x => x.id === locId);
   if (!l) return;
   const im = DATA.immeubles.find(i => i.id === l.iid);
@@ -2038,13 +2038,13 @@ function calcResteFromMois() {
 }
 
 async function saveLocataire() {
-  if (!can('canEditLocataires')) { showToast('Accès refusé', 'red'); return; }
+  if (!can('canEditLocataires')) { showToast(t('Accès refusé'), 'red'); return; }
   const nom = document.getElementById('loc-nom') ? document.getElementById('loc-nom').value.trim() : '';
   const loyerVal = document.getElementById('loc-loyer') ? document.getElementById('loc-loyer').value.trim() : '';
   const loyer = parseInt(loyerVal) || 0;
 
-  if (!nom) { showToast('Le nom du locataire est obligatoire', 'red'); return; }
-  if (!loyerVal && loyerVal !== '0') { showToast('Le loyer mensuel est obligatoire', 'red'); return; }
+  if (!nom) { showToast(t('Le nom du locataire est obligatoire'), 'red'); return; }
+  if (!loyerVal && loyerVal !== '0') { showToast(t('Le loyer mensuel est obligatoire'), 'red'); return; }
   
   const existId = parseInt(document.getElementById('loc-id').value)||0;
 
@@ -2091,12 +2091,12 @@ async function saveLocataire() {
     const locIdx = DATA.locataires.findIndex(l => l.id === existId);
     if (locIdx >= 0) {
       DATA.locataires[locIdx] = { ...DATA.locataires[locIdx], ...obj, id: existId };
-      showToast('Locataire modifié ✓');
+      showToast(t('Locataire modifié ✓'));
     } else {
       // Not found - add as new
       obj.id = existId;
       DATA.locataires.push(obj);
-      showToast('Locataire enregistré ✓');
+      showToast(t('Locataire enregistré ✓'));
     }
   } else {
     // Check if there's a libre local with same appt in same immeuble
@@ -3182,7 +3182,7 @@ async function genDocxRapportMensuel(iidFilter) {
     : 'Tous';
   link.download = `Rapport_${label}_${MNOMS[m]}_${a}.docx`;
   link.click();
-  showToast('Rapport téléchargé ✓');
+  showToast(t('Rapport téléchargé ✓'));
 }
 
 // ── Rapport annuel DOCX ─────────────────────────────────────────────────────
@@ -3329,7 +3329,7 @@ async function genDocxRapportAnnuel() {
   link.href  = URL.createObjectURL(blob);
   link.download = im ? `RapportAnnuel_${im.nom.replace(/\s+/g,'_')}_${annee}.docx` : `RapportAnnuel_Tous_${annee}.docx`;
   link.click();
-  showToast('Rapport annuel téléchargé ✓');
+  showToast(t('Rapport annuel téléchargé ✓'));
 }
 
 async function genDocxRapportPeriode(debStr, finStr, iidFilter) {
@@ -3953,7 +3953,7 @@ function importerSauvegarde(file) {
     try {
       const backup = JSON.parse(e.target.result);
       if (!backup.data) { showToast('Fichier invalide', 'red'); return; }
-      if (!confirm('Importer ? Les donnees actuelles seront remplacees.')) return;
+      if (!confirm(t('Importer ? Les donnees actuelles seront remplacees.'))) return;
       localStorage.setItem('immogest_data', JSON.stringify(backup.data));
       if (backup.users) localStorage.setItem('immogest_users_v6', JSON.stringify(backup.users));
       showToast('Importee ! Rechargement...');
@@ -4922,7 +4922,7 @@ function editUser(userId) {
 }
 
 function deleteUser(userId) {
-  if (!confirm('Supprimer cet utilisateur ?')) return;
+  if (!confirm(t('Supprimer cet utilisateur ?'))) return;
   USERS = USERS.filter(u=>u.id!==userId);
   saveUsers();
   if (SESSION) deleteUserFromSupabase(userId);
@@ -6420,7 +6420,7 @@ function annulerPaiement(payId) {
 }
 
 function restaurerLocataire(archiveId) {
-  if (!confirm('Restaurer ce locataire ? Il sera remis dans son local.')) return;
+  if (!confirm(t('Restaurer ce locataire ? Il sera remis dans son local.'))) return;
   const a = DATA.archives.find(x=>x.id===archiveId);
   if (!a) { showToast('Archive introuvable','red'); return; }
 
@@ -6627,11 +6627,11 @@ function renderLocTable(iid) {
     : DATA.locataires.filter(l => l.iid === iid && l.s !== 'libre' && (!immsAutorisés || immsAutorisés.includes(l.iid)));
 
   if (!locs.length) {
-    wrap.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);">Aucun locataire' + (iid !== -1 ? ' pour cet immeuble' : '') + '</div>';
+    wrap.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);">' + t('Aucun locataire') + (iid !== -1 ? ' ' + t('pour cet immeuble') : '') + '</div>';
     return;
   }
   let html = '<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr>' +
-    '<th>Immeuble</th><th>Local</th><th>Nom</th><th>Tél</th><th>Loyer</th><th>Statut</th><th>Reste dû</th><th>Actions</th>' +
+    `<th>${t('Immeuble')}</th><th>${t('Local')}</th><th>${t('Nom')}</th><th>${t('Tél')}</th><th>${t('Loyer')}</th><th>${t('Statut')}</th><th>${t('Reste dû')}</th><th>${t('Actions')}</th>` +
     '</tr></thead><tbody>';
   locs.forEach(l => {
     const im = DATA.immeubles.find(i => i.id === l.iid);
@@ -6642,18 +6642,18 @@ function renderLocTable(iid) {
       <td class="td-name">${l.nom}</td>
       <td style="font-size:12px;">${l.tel || '–'}</td>
       <td class="td-amount">${fmt(l.loyer)}</td>
-      <td><span class="badge ${l.s==='payé'?'badge-green':'badge-red'}">${l.s}</span></td>
+      <td><span class="badge ${l.s==='payé'?'badge-green':'badge-red'}">${t(l.s)}</span></td>
       <td class="td-amount ${l.reste>0?'red':l.reste<0?'':'green'}" style="font-size:11px;">${l.reste>0?fmtReste(l):l.reste<0?fmtReste(l):'–'}</td>
       <td style="white-space:nowrap;">
         <div class="action-menu">
           <button class="action-menu-btn" onclick="toggleActionMenu(this)">⋯</button>
           <div class="action-dropdown">
-            ${can('canRecordPayment')?`<div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 Paiement</div>`:''}
-            ${can('canEditLocataires')?`<div class="action-dropdown-item" onclick="editLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📝 Modifier</div>`:''}
-            <div class="action-dropdown-item" onclick="ouvrirFicheSuivi(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📊 Fiche suivi</div>
-            ${l.tel?`<div class="action-dropdown-item" onclick="envoyerAccesWhatsApp(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📲 Envoyer accès WhatsApp</div>`:''}
+            ${can('canRecordPayment')?`<div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 ${t('Paiement')}</div>`:''}
+            ${can('canEditLocataires')?`<div class="action-dropdown-item" onclick="editLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📝 ${t('Modifier')}</div>`:''}
+            <div class="action-dropdown-item" onclick="ouvrirFicheSuivi(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📊 ${t('Fiche suivi')}</div>
+            ${l.tel?`<div class="action-dropdown-item" onclick="envoyerAccesWhatsApp(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📲 ${t('Envoyer accès WhatsApp')}</div>`:''}
             <div class="action-dropdown-sep"></div>
-            ${can('canEditLocataires')?`<div class="action-dropdown-item danger" onclick="supprimerLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">🗑️ Supprimer</div>`:''}
+            ${can('canEditLocataires')?`<div class="action-dropdown-item danger" onclick="supprimerLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">🗑️ ${t('Supprimer')}</div>`:''}
           </div>
         </div>
       </td>
@@ -7173,7 +7173,7 @@ function saveParametresCabinet() {
   };
   saveData();
   if (SESSION) saveParametresToSupabase(DATA.settings);
-  showToast('Infos cabinet enregistrées ✓', 'green');
+  showToast(t('Infos cabinet enregistrées ✓'), 'green');
 }
 
 function saveParametresMomo() {
@@ -7505,7 +7505,7 @@ function renderStatistiques() {
                 :`<span style="color:var(--green);font-size:12px;">✓ À jour</span>`}
             </td>
             <td class="td-amount ${l.reste>0?'red':'green'}">${l.reste>0?fmt(l.reste):'–'}</td>
-            <td><span class="badge ${l.s==='payé'?'badge-green':'badge-red'}">${l.s}</span></td>
+            <td><span class="badge ${l.s==='payé'?'badge-green':'badge-red'}">${t(l.s)}</span></td>
             <td style="white-space:nowrap;">
               ${l.s==='impayé'?`
                 <button class="btn btn-primary btn-sm" onclick="openModalPaiement(${l.iid},${l.id})">＋ Paiement</button>
