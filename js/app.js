@@ -4964,7 +4964,7 @@ function initApp() {
   _applyTheme((DATA.settings && DATA.settings.theme) || 'light');
   applyStaticI18n(); // appliquer les traductions aux éléments statiques
   var _lb = document.getElementById('btn-lang-toggle');
-  if (_lb) _lb.textContent = LANG === 'fr' ? '🇬🇧 EN' : '🇫🇷 FR';
+  if (_lb) _lb.textContent = (typeof LANGS_LABEL !== 'undefined' ? LANGS_LABEL[LANG] : null) || (LANG === 'fr' ? '🇫🇷 FR' : '🇬🇧 EN');
   document.getElementById('sel-mois').value = new Date().getMonth();
   document.getElementById('sel-annee').value = new Date().getFullYear();
 

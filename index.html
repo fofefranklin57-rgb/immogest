@@ -21,7 +21,7 @@
 
 <!-- ── SUPABASE CLIENT ── -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/i18n.js"></script>
+<script src="js/i18n.js?v=20260603"></script>
 <script src="js/supabase.js"></script>
 </head>
 <body>
@@ -305,7 +305,7 @@
       <button id="btn-theme-toggle" onclick="toggleTheme()" style="margin-top:4px;width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:11px;cursor:pointer;font-family:var(--font);">
         🌙 <span data-i18n="Mode sombre">Mode sombre</span>
       </button>
-      <button id="btn-lang-toggle" onclick="setLang(LANG==='fr'?'en':'fr')" style="margin-top:4px;width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:11px;cursor:pointer;font-family:var(--font);">
+      <button id="btn-lang-toggle" onclick="cycleLang()" title="Changer la langue / Change language" style="margin-top:4px;width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:11px;cursor:pointer;font-family:var(--font);">🇫🇷 FR
         🇬🇧 EN
       </button>
       <button onclick="logout()" style="margin-top:6px;width:100%;padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;">
@@ -1342,14 +1342,14 @@ self.addEventListener('fetch', (event) => {
 <!-- Tab: Payment (7. Paiement Mobile Money) -->
 <div id="tab-payment" class="tab-content" style="display:none;">
   <div class="card">
-    <div class="card-title">💳 Effectuer un paiement</div>
-    
+    <div class="card-title" data-i18n="💳 Paiement">💳 Effectuer un paiement</div>
+
     <div class="form-group" style="margin-bottom: 20px;">
-      <label>Montant à payer</label>
+      <label data-i18n="Montant à payer">Montant à payer</label>
       <input type="number" id="pay-amount" value="85000" style="font-size: 24px; font-weight: 700; color: var(--primary);">
     </div>
 
-    <div style="font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 12px;">Choisir le mode de paiement</div>
+    <div style="font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 12px;" data-i18n="Choisir le mode de paiement">Choisir le mode de paiement</div>
     <div class="momo-grid">
       <div class="momo-btn" onclick="selectMomo(this, 'mtn')">
         <div class="icon">
@@ -1391,11 +1391,11 @@ self.addEventListener('fetch', (event) => {
     </div>
 
     <div class="form-group">
-      <label>Numéro de téléphone</label>
+      <label data-i18n="Numéro de téléphone">Numéro de téléphone</label>
       <input type="tel" id="pay-phone" placeholder="6XX XXX XXX">
     </div>
 
-    <button class="btn btn-success" style="width: 100%; margin-top: 16px;" onclick="processPayment()">
+    <button class="btn btn-success" style="width: 100%; margin-top: 16px;" onclick="processPayment()" data-i18n="🔒 Payer maintenant">
       🔒 Payer maintenant
     </button>
 
@@ -1413,49 +1413,49 @@ self.addEventListener('fetch', (event) => {
     <div class="card-title">🔧 Nouvelle demande de maintenance</div>
     <form class="maintenance-form" onsubmit="submitMaintenance(event)">
       <div class="form-group">
-        <label>Type de problème</label>
+        <label data-i18n="Type de problème">Type de problème</label>
         <select id="maint-type" required>
           <option value="">Sélectionner...</option>
-          <option value="plumbing">🚿 Plomberie</option>
-          <option value="electric">⚡ Électricité</option>
-          <option value="appliance">🔌 Électroménager</option>
-          <option value="lock">🔐 Serrurerie</option>
-          <option value="paint">🎨 Peinture</option>
-          <option value="other">📦 Autre</option>
+          <option value="plumbing" data-i18n="Plomberie">🚿 Plomberie</option>
+          <option value="electric" data-i18n="Électricité">⚡ Électricité</option>
+          <option value="appliance" data-i18n="Électroménager">🔌 Électroménager</option>
+          <option value="lock" data-i18n="Serrurerie">🔐 Serrurerie</option>
+          <option value="paint" data-i18n="Peinture">🎨 Peinture</option>
+          <option value="other" data-i18n="Autre">📦 Autre</option>
         </select>
       </div>
-      
+
       <div class="form-group">
-        <label>Description détaillée</label>
+        <label data-i18n="Description détaillée">Description détaillée</label>
         <textarea id="maint-desc" placeholder="Décrivez le problème en détail..." required></textarea>
       </div>
 
       <div class="form-group">
-        <label>Photos / Vidéos</label>
+        <label data-i18n="Photos / Vidéos">Photos / Vidéos</label>
         <div class="photo-upload" onclick="document.getElementById('maint-files').click()">
           <div style="font-size: 48px;">📷</div>
-          <div style="font-weight: 600; margin-top: 8px;">Cliquez pour ajouter des photos</div>
-          <div style="font-size: 12px; color: var(--text2); margin-top: 4px;">Jusqu'à 5 fichiers (max 10Mo)</div>
+          <div style="font-weight: 600; margin-top: 8px;" data-i18n="Cliquez pour ajouter des photos">Cliquez pour ajouter des photos</div>
+          <div style="font-size: 12px; color: var(--text2); margin-top: 4px;" data-i18n="Jusqu'à 5 fichiers (max 10Mo)">Jusqu'à 5 fichiers (max 10Mo)</div>
         </div>
         <input type="file" id="maint-files" multiple accept="image/*,video/*" style="display: none;" onchange="handleFileSelect(this)">
         <div id="file-preview" style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;"></div>
       </div>
 
       <div class="form-group">
-        <label>Autorisation d'accès</label>
+        <label data-i18n="Autorisation d'accès">Autorisation d'accès</label>
         <select id="maint-access">
-          <option value="present">Je serai présent</option>
-          <option value="key">Laisser la clé au gardien</option>
-          <option value="code">Donner le code porte</option>
+          <option value="present" data-i18n="Je serai présent">Je serai présent</option>
+          <option value="key" data-i18n="Laisser la clé au gardien">Laisser la clé au gardien</option>
+          <option value="code" data-i18n="Donner le code porte">Donner le code porte</option>
         </select>
       </div>
 
-      <button type="submit" class="btn btn-primary" style="width: 100%;">📤 Soumettre la demande</button>
+      <button type="submit" class="btn btn-primary" style="width: 100%;" data-i18n="📤 Soumettre la demande">📤 Soumettre la demande</button>
     </form>
   </div>
 
   <div class="card">
-    <div class="card-title">📋 Historique des demandes</div>
+    <div class="card-title" data-i18n="Historique des demandes">📋 Historique des demandes</div>
     <div id="maint-history"></div>
   </div>
 </div>
