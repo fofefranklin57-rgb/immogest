@@ -4213,6 +4213,13 @@ function startSession(user, version) {
   document.getElementById('app-shell').style.display = 'flex';
   var aib = document.getElementById('ai-float-btn');
   if (aib) aib.style.display = 'flex';
+  // Persister le mode choisi dans Supabase settings
+  var _mode = getAuthMode();
+  if (_mode) {
+    if (!DATA.settings) DATA.settings = {};
+    DATA.settings.mode = _mode;
+    saveParametresToSupabase(DATA.settings);
+  }
   initApp();
   setTimeout(function() { if (window.initAds) initAds(); }, 2000);
   if (window._firstLaunch) {
@@ -4961,6 +4968,10 @@ function initApp() {
   });
   // Load data
   loadData();
+  // Restaurer le mode depuis Supabase settings si disponible
+  if (DATA.settings && DATA.settings.mode && !getAuthMode()) {
+    localStorage.setItem('immogest_mode', DATA.settings.mode);
+  }
   syncUsersAfterLogin(); // sync multi-device (fire & forget)
   _applyTheme((DATA.settings && DATA.settings.theme) || 'light');
   applyStaticI18n(); // appliquer les traductions aux éléments statiques
@@ -9052,6 +9063,30 @@ function setAuthModeNew(mode) {
   else authGoStep('2-ent');
 }
 
+// ── GESTION DU MODE D'ACCÈS (perso / entreprise) ─────────────────────────────
+function getAuthMode() {
+  return localStorage.getItem('immogest_mode');
+}
+
+function chooseMode(mode) {
+  localStorage.setItem('immogest_mode', mode);
+  if (mode === 'perso') authGoStep('2-perso');
+  else authGoStep('2-ent');
+}
+
+function resetAuthMode() {
+  if (!confirm('Changer de type d\'accès effacera votre préférence. Continuer ?')) return;
+  localStorage.removeItem('immogest_mode');
+  authGoStep('1');
+}
+
+function initAuthDisplay() {
+  var mode = getAuthMode();
+  if (mode === 'perso') authGoStep('2-perso');
+  else if (mode === 'entreprise') authGoStep('2-ent');
+  else authGoStep('1');
+}
+
 // ── NOUVEAU SYSTEME DE NAVIGATION AUTH ───────────────────────────────────────
 function authGoStep(step) {
   // Cache toutes les etapes
@@ -9177,9 +9212,12 @@ function checkPortailParam() {
   var portail = params.get('portail');
   if (portail === 'locataire') {
     authGoStep('3-locataire');
+    return true;
   } else if (portail === 'proprietaire') {
     authGoStep('3-proprio');
+    return true;
   }
+  return false;
 }
 
 function editImmeuble(immId) { openModalImmeuble(immId); }
@@ -10209,13 +10247,11 @@ window.addEventListener('DOMContentLoaded', () => {
   } else {
     var as = document.getElementById('auth-screen');
     if(as) as.style.display = 'flex';
-    // Appliquer les traductions sur l'écran de connexion
     if (typeof applyStaticI18n === 'function') applyStaticI18n();
-    // Initialiser le code langue sur le bouton auth
     var _alc2 = document.getElementById('auth-lang-code');
     if (_alc2) _alc2.textContent = (typeof LANG !== 'undefined' ? LANG.toUpperCase() : 'FR');
-    // Verifie si un portail est demande dans l'URL
-    checkPortailParam();
+    // Router vers le bon mode ou afficher l'onboarding
+    if (!checkPortailParam()) initAuthDisplay();
   }
   // else show auth screen (already visible by default)
 });

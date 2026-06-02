@@ -21,7 +21,7 @@
 
 <!-- ── SUPABASE CLIENT ── -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/i18n.js?v=20260603c"></script>
+<script src="js/i18n.js?v=20260603d"></script>
 <script src="js/supabase.js"></script>
 </head>
 <body>
@@ -80,24 +80,28 @@
 
       <!-- STEP 1: Choix du mode -->
       <div id="auth-step-1" class="auth-step active">
-        <div style="text-align:center;margin-bottom:28px;">
+        <div style="text-align:center;margin-bottom:24px;">
           <div style="margin-bottom:10px;display:flex;justify-content:center;"><svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="8" width="28" height="24" rx="2" fill="rgba(79,142,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="8" y="4" width="20" height="6" rx="1" fill="rgba(79,142,247,0.2)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="9" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="16" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="9" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="16" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="14" y="27" width="8" height="5" rx="1" fill="#4f8ef7" opacity=".9"/></svg></div>
-          <div style="font-size:20px;font-weight:800;color:#e8f0fe;letter-spacing:-.5px;">ImmoGest</div>
-          <div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:5px;letter-spacing:1px;text-transform:uppercase;" data-i18n="Gestion Immobilière">Gestion Immobilière</div>
+          <div style="font-size:18px;font-weight:800;color:#e8f0fe;letter-spacing:-.5px;" data-i18n="Bienvenue sur ImmoGest">Bienvenue sur ImmoGest</div>
+          <div style="font-size:12px;color:rgba(232,240,254,0.5);margin-top:6px;line-height:1.5;" data-i18n="Comment allez-vous utiliser l'application ?">Comment allez-vous utiliser l'application ?</div>
         </div>
-        <div style="display:flex;gap:12px;margin-bottom:12px;">
-          <div class="auth-card-btn" style="border-radius:12px;" onclick="authGoStep('2-perso')">
-            <div style="margin-bottom:10px;display:flex;justify-content:center;"><svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="18" cy="11" r="6" fill="rgba(79,142,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><path d="M6 30c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="#4f8ef7" stroke-width="1.5" stroke-linecap="round" fill="rgba(79,142,247,0.1)"/></svg></div>
-            <div style="font-weight:700;font-size:13px;color:#e8f0fe;" data-i18n="Mode Personnel">Mode Personnel</div>
-            <div style="font-size:11px;color:rgba(232,240,254,0.5);margin-top:4px;line-height:1.4;" data-i18n="Propriétaires & Locataires">Propriétaires &amp; Locataires</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+          <div class="auth-card-btn" style="display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px;border-radius:12px;" onclick="chooseMode('perso')">
+            <svg width="32" height="32" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;"><circle cx="18" cy="11" r="6" fill="rgba(79,142,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><path d="M6 30c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="#4f8ef7" stroke-width="1.5" stroke-linecap="round" fill="rgba(79,142,247,0.1)"/></svg>
+            <div>
+              <div style="font-weight:700;font-size:13px;color:#e8f0fe;" data-i18n="Seul ou en famille">Seul ou en famille</div>
+              <div style="font-size:11px;color:rgba(232,240,254,0.5);margin-top:3px;line-height:1.4;" data-i18n="Je gère mes propres biens immobiliers">Je gère mes propres biens immobiliers</div>
+            </div>
           </div>
-          <div class="auth-card-btn" style="border-radius:12px;" onclick="authGoStep('2-ent')">
-            <div style="margin-bottom:10px;display:flex;justify-content:center;"><svg width="26" height="26" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="8" width="28" height="24" rx="2" fill="rgba(79,142,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="8" y="4" width="20" height="6" rx="1" fill="rgba(79,142,247,0.2)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="9" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="16" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="9" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="14" y="27" width="8" height="5" rx="1" fill="#4f8ef7" opacity=".9"/></svg></div>
-            <div style="font-weight:700;font-size:13px;color:#e8f0fe;" data-i18n="Mode Entreprise">Mode Entreprise</div>
-            <div style="font-size:11px;color:rgba(232,240,254,0.5);margin-top:4px;line-height:1.4;" data-i18n="Équipe Gestion Immobilière">Équipe Gestion Immobilière</div>
+          <div class="auth-card-btn" style="display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px;border-radius:12px;" onclick="chooseMode('entreprise')">
+            <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;"><rect x="4" y="8" width="28" height="24" rx="2" fill="rgba(79,142,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="8" y="4" width="20" height="6" rx="1" fill="rgba(79,142,247,0.2)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="9" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="16" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="9" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="14" y="27" width="8" height="5" rx="1" fill="#4f8ef7" opacity=".9"/></svg>
+            <div>
+              <div style="font-weight:700;font-size:13px;color:#e8f0fe;" data-i18n="Cabinet ou Agence">Cabinet ou Agence</div>
+              <div style="font-size:11px;color:rgba(232,240,254,0.5);margin-top:3px;line-height:1.4;" data-i18n="Nous sommes une équipe avec plusieurs rôles">Nous sommes une équipe avec plusieurs rôles</div>
+            </div>
           </div>
         </div>
-        <div style="text-align:center;margin-top:16px;font-size:10px;color:rgba(232,240,254,0.25);letter-spacing:1px;" data-i18n="ImmoGest v2.0 · Gestion Immobilière">ImmoGest v2.0 · Gestion Immobilière</div>
+        <div style="text-align:center;font-size:10px;color:rgba(232,240,254,0.2);letter-spacing:1px;" data-i18n="ImmoGest v2.0 · Gestion Immobilière">ImmoGest v2.0 · Gestion Immobilière</div>
       </div>
 
       <!-- STEP 2A: Mode Personnel — choix role -->
@@ -146,6 +150,9 @@
             <div style="font-weight:700;font-size:12px;color:#e8f4ff;" data-i18n="Locataire">Locataire</div>
             <div style="font-size:10px;color:rgba(200,223,248,0.45);margin-top:3px;" data-i18n="Votre espace">Votre espace</div>
           </div>
+        </div>
+        <div style="text-align:center;margin-top:18px;">
+          <button onclick="resetAuthMode()" style="background:none;border:none;color:rgba(200,223,248,0.3);font-size:11px;cursor:pointer;font-family:inherit;text-decoration:underline;" data-i18n="⚙ Changer de type d'accès">⚙ Changer de type d'accès</button>
         </div>
       </div>
 
@@ -257,6 +264,9 @@
           </div>
           <button class="auth-btn-primary" style="margin-top:16px;" onclick="loginEntrepriseLocataire()" data-i18n="Accéder à mon espace">Accéder à mon espace</button>
           <div id="err-entreprise-loc" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>
+        </div>
+        <div style="text-align:center;margin-top:18px;">
+          <button onclick="resetAuthMode()" style="background:none;border:none;color:rgba(200,223,248,0.3);font-size:11px;cursor:pointer;font-family:inherit;text-decoration:underline;" data-i18n="⚙ Changer de type d'accès">⚙ Changer de type d'accès</button>
         </div>
       </div>
 
@@ -1150,7 +1160,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="docx.bundle.js"></script>
-<script src="js/app.js?v=20260603c"></script>
+<script src="js/app.js?v=20260603d"></script>
 
 <!-- Context menu for locaux -->
 
