@@ -738,7 +738,7 @@ ha: {
   'Type de problème': 'Nau\'in matsala',
   'Plomberie': 'Bututu',
   'Électricité': 'Wutar lantarki',
-  'Électroménager': 'Na'urar gida',
+  'Électroménager': 'Na\'urar gida',
   'Serrurerie': 'Makulli',
   'Peinture': 'Fenti',
   'Description détaillée': 'Bayani cikakke',
