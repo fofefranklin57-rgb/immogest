@@ -431,7 +431,7 @@ function renderDashboard() {
         ${has?`
           <div class="imm-stats">
             <div class="imm-stat"><span>${locs.length}</span>locataires</div>
-            <div class="imm-stat"><span>${nbP}</span>à jour</div>
+            <div class="imm-stat"><span>${nbP}</span>${t('à jour')}</div>
             ${lib?`<div class="imm-stat"><span>${lib}</span>libre(s)</div>`:''}
             <div class="imm-stat"><span style="font-size:12px;">${fmtShort(tot)}</span>/mois</div>
           </div>
@@ -527,7 +527,7 @@ function renderImmeuble(iid) {
     <div class="metric-card">
       <div class="metric-label">Loyers / mois</div>
       <div class="metric-value accent">${fmtShort(tLoyer)}</div>
-      <div class="metric-sub">${nbAjour} à jour · ${nbImp} impayés</div>
+      <div class="metric-sub">${nbAjour} ${t('à jour')} · ${nbImp} ${t('impayé')}</div>
     </div>
     <div class="metric-card" style="border-left:4px solid var(--red);">
       <div class="metric-label">Impayés cumulés</div>
@@ -868,27 +868,27 @@ function renderRelances() {
 
   let html = `<div class="metrics-grid">
     <div class="metric-card" style="border-left:4px solid #C0392B;">
-      <div class="metric-label">🚨 Dossiers en alerte (≥ 2 mois)</div>
+      <div class="metric-label">🚨 ${t('Dossiers en alerte (≥ 2 mois)')}</div>
       <div class="metric-value red">${alertes.length}</div>
-      <div class="metric-sub">Mise en demeure + Plainte prêtes</div>
+      <div class="metric-sub">${t('Mise en demeure + Plainte prêtes')}</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">⚠️ Retards simples (&lt; 2 mois)</div>
+      <div class="metric-label">⚠️ ${t('Retards simples (< 2 mois)')}</div>
       <div class="metric-value" style="color:var(--yellow);">${simples.length}</div>
-      <div class="metric-sub">Relance amiable</div>
+      <div class="metric-sub">${t('Relance amiable')}</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">💰 Total à recouvrer</div>
+      <div class="metric-label">💰 ${t('Total à recouvrer')}</div>
       <div class="metric-value red" style="font-size:16px;">${fmtShort(totalReste)}</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">🏢 Immeubles concernés</div>
+      <div class="metric-label">🏢 ${t('Immeubles concernés')}</div>
       <div class="metric-value">${new Set(imps.map(l=>l.iid)).size}</div>
     </div>
   </div>`;
 
   if (imps.length === 0) {
-    html += `<div class="card"><div class="empty"><div class="empty-icon">✅</div><div class="empty-text">Aucun impayé ! Tous les locataires sont à jour.</div></div></div>`;
+    html += `<div class="card"><div class="empty"><div class="empty-icon">✅</div><div class="empty-text">${t('Aucun impayé ! Tous les locataires sont à jour.')}</div></div></div>`;
     document.getElementById('content').innerHTML = html;
     return;
   }
@@ -897,10 +897,10 @@ function renderRelances() {
   if (alertes.length > 0) {
     html += `<div id="section-lettres" style="background:#FDF0F0;border:1.5px solid #C0392B;border-radius:8px;padding:10px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
       <div>
-        <div style="font-weight:700;color:#C0392B;font-size:14px;">🚨 DOSSIERS EN ALERTE — ${alertes.length} locataire(s) avec ≥ 2 mois d'arriérés</div>
-        <div style="font-size:12px;color:#888;margin-top:2px;">Mise en demeure et plainte générées automatiquement</div>
+        <div style="font-weight:700;color:#C0392B;font-size:14px;">🚨 ${t('Dossiers en alerte (≥ 2 mois)')} — ${alertes.length} ${t('locataire(s) avec ≥ 2 mois d\'arriérés')}</div>
+        <div style="font-size:12px;color:#888;margin-top:2px;">${t('Mise en demeure et plainte générées automatiquement')}</div>
       </div>
-      <button class="btn btn-sm" style="background:#C0392B;color:#fff;border-color:#C0392B;" onclick="telechargerTousAlertes()">⬇ Tout télécharger (${alertes.length} dossiers)</button>
+      <button class="btn btn-sm" style="background:#C0392B;color:#fff;border-color:#C0392B;" onclick="telechargerTousAlertes()">⬇ ${t('Tout télécharger')} (${alertes.length} ${t('dossiers')})</button>
     </div>`;
 
     // Group alertes by immeuble
@@ -914,16 +914,16 @@ function renderRelances() {
         <div class="card-header">
           <div class="card-title" style="display:flex;align-items:center;gap:8px;">
             <span style="width:8px;height:8px;border-radius:50%;background:${im.col};"></span>${im.nom}
-            <span class="badge badge-red">🚨 ${byImmAlertes[iid].length} en alerte</span>
+            <span class="badge badge-red">🚨 ${byImmAlertes[iid].length} ${t('en alerte')}</span>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button class="btn btn-sm" onclick="genRelanceImm(${im.id})">📄 Rapport</button>
+            <button class="btn btn-sm" onclick="genRelanceImm(${im.id})">📄 ${t('Rapport')}</button>
             <button class="btn btn-primary btn-sm" onclick="genDocxRelances(${im.id})">⬇ Relances</button>
           </div>
         </div>
         <div class="table-wrap"><table>
           <thead><tr>
-            <th>Local</th><th>Nom</th><th>Tél</th><th>Loyer</th><th>Arriérés</th><th>Reste dû</th><th>Situation</th><th>Documents</th>
+            <th>${t('Local')}</th><th>${t('Nom')}</th><th>${t('Tél')}</th><th>${t('Loyer')}</th><th>${t('Arriérés')}</th><th>${t('Reste dû')}</th><th>${t('Situation')}</th><th>${t('Documents')}</th>
           </tr></thead>
           <tbody>`;
       byImmAlertes[iid].forEach(l => {
@@ -945,8 +945,8 @@ function renderRelances() {
               <button class="action-menu-btn" onclick="toggleActionMenu(this)" style="font-size:18px;padding:4px 10px;">⋯</button>
               <div class="action-dropdown">
                 <div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 Paiement</div>
-                <div class="action-dropdown-item" onclick="previewMiseEnDemeure(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📄 Lettre</div>
-                <div class="action-dropdown-item" style="color:var(--red);" onclick="previewPlainte(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">⚖️ Plainte</div>
+                <div class="action-dropdown-item" onclick="previewMiseEnDemeure(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📄 ${t('Lettre')}</div>
+                <div class="action-dropdown-item" style="color:var(--red);" onclick="previewPlainte(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">⚖️ ${t('Plainte')}</div>
               </div>
             </div>
           </td>
@@ -959,8 +959,8 @@ function renderRelances() {
   // ── SECTION 2 : RETARDS SIMPLES <2 mois ────────────────────────────────
   if (simples.length > 0) {
     html += `<div style="background:#FFFBEB;border:1.5px solid #F0B429;border-radius:8px;padding:10px 16px;margin-bottom:16px;margin-top:8px;">
-      <div style="font-weight:700;color:#92400E;font-size:13px;">⚠️ RETARDS SIMPLES — ${simples.length} locataire(s) avec moins de 2 mois d'arriérés</div>
-      <div style="font-size:12px;color:#888;margin-top:2px;">Relance amiable recommandée</div>
+      <div style="font-weight:700;color:#92400E;font-size:13px;">⚠️ ${t('Retards simples (< 2 mois)')} — ${simples.length} ${t('locataire(s) avec moins de 2 mois d\'arriérés')}</div>
+      <div style="font-size:12px;color:#888;margin-top:2px;">${t('Relance amiable recommandée')}</div>
     </div>`;
 
     const byImmSimples = {};
@@ -976,7 +976,7 @@ function renderRelances() {
           </div>
         </div>
         <div class="table-wrap"><table>
-          <thead><tr><th>Local</th><th>Nom</th><th>Tél</th><th>Loyer</th><th>Reste dû</th><th>Situation</th><th>Actions</th></tr></thead>
+          <thead><tr><th>${t('Local')}</th><th>${t('Nom')}</th><th>${t('Tél')}</th><th>${t('Loyer')}</th><th>${t('Reste dû')}</th><th>${t('Situation')}</th><th>${t('Actions')}</th></tr></thead>
           <tbody>`;
       byImmSimples[iid].forEach(l => {
         const im3 = DATA.immeubles.find(i=>i.id===l.iid);
@@ -997,7 +997,7 @@ function renderRelances() {
               <button class="action-menu-btn" onclick="toggleActionMenu(this)" style="font-size:18px;padding:4px 10px;">⋯</button>
               <div class="action-dropdown">
                 <div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 Paiement</div>
-                <div class="action-dropdown-item" onclick="previewMiseEnDemeure(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📄 Lettre</div>
+                <div class="action-dropdown-item" onclick="previewMiseEnDemeure(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📄 ${t('Lettre')}</div>
               </div>
             </div>
           </td>
@@ -1232,24 +1232,24 @@ function renderRapportPage() {
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
           <div style="background:var(--bg2);border-radius:8px;padding:8px;">
-            <div style="font-size:10px;color:var(--text3);">Locataires</div>
+            <div style="font-size:10px;color:var(--text3);">${t('Locataires')}</div>
             <div style="font-size:18px;font-weight:700;color:var(--text);">${locs.length}</div>
           </div>
           <div style="background:var(--bg2);border-radius:8px;padding:8px;">
-            <div style="font-size:10px;color:var(--text3);">Impayés</div>
+            <div style="font-size:10px;color:var(--text3);">${t('Impayés cumulés')}</div>
             <div style="font-size:18px;font-weight:700;color:${nbImp>0?'var(--red)':'var(--green)'};">${nbImp}</div>
           </div>
           <div style="background:var(--bg2);border-radius:8px;padding:8px;">
-            <div style="font-size:10px;color:var(--text3);">Loyers/mois</div>
+            <div style="font-size:10px;color:var(--text3);">${t('Loyers/mois')}</div>
             <div style="font-size:13px;font-weight:700;color:var(--accent);">${fmtShort(totalLoyer)}</div>
           </div>
           <div style="background:var(--bg2);border-radius:8px;padding:8px;">
-            <div style="font-size:10px;color:var(--text3);">Arriérés</div>
+            <div style="font-size:10px;color:var(--text3);">${t('Arriérés')}</div>
             <div style="font-size:13px;font-weight:700;color:${totalReste>0?'var(--red)':'var(--green)'};">${fmtShort(totalReste)}</div>
           </div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <span style="font-size:10px;background:var(--accent-bg);color:var(--accent);padding:3px 8px;border-radius:99px;font-weight:600;">📊 Voir rapports</span>
+          <span style="font-size:10px;background:var(--accent-bg);color:var(--accent);padding:3px 8px;border-radius:99px;font-weight:600;">📊 ${t('Voir rapports')}</span>
         </div>
       </div>`;
   });
@@ -1275,15 +1275,15 @@ function ouvrirRapportImmeuble(iid) {
   let html = `
   <!-- Sélecteurs période -->
   <div class="card" style="margin-bottom:16px;">
-    <div class="card-header"><div class="card-title">📅 Choisir la période</div></div>
+    <div class="card-header"><div class="card-title">📅 ${t('Choisir la période')}</div></div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;padding:4px 0;">
       <div>
         <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Mode</label>
         <div style="display:flex;gap:6px;">
           <button id="btn-mode-mois" class="btn btn-sm ${window._rptMode!=='periode'?'btn-primary':'btn-ghost'}" 
-                  onclick="window._rptMode='mois';ouvrirRapportImmeuble(${iid})">Par mois</button>
+                  onclick="window._rptMode='mois';ouvrirRapportImmeuble(${iid})">${t('Par mois')}</button>
           <button id="btn-mode-periode" class="btn btn-sm ${window._rptMode==='periode'?'btn-primary':'btn-ghost'}"
-                  onclick="window._rptMode='periode';ouvrirRapportImmeuble(${iid})">Par période</button>
+                  onclick="window._rptMode='periode';ouvrirRapportImmeuble(${iid})">${t('Par période')}</button>
         </div>
       </div>
       ${window._rptMode !== 'periode' ? `
@@ -1346,9 +1346,9 @@ function ouvrirRapportImmeuble(iid) {
     </div>
     <div class="table-wrap"><table class="tbl">
       <thead><tr>
-        <th>Local</th><th>Nom</th><th>Loyer</th>
-        <th>Statut ${['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'][mois]} ${annee}</th>
-        <th>Arriérés</th><th>Actions</th>
+        <th>${t('Local')}</th><th>${t('Nom')}</th><th>${t('Loyer')}</th>
+        <th>${t('Statut')} ${['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'][mois]} ${annee}</th>
+        <th>${t('Arriérés')}</th><th>${t('Actions')}</th>
       </tr></thead>
       <tbody>
       ${locs.map(l => {
@@ -1405,7 +1405,7 @@ function ouvrirRapportImmeuble(iid) {
   // Add back button at top of html
   html = `<div style="margin-bottom:12px;">
     <button class="btn btn-ghost" onclick="renderRapportPage()" style="display:flex;align-items:center;gap:6px;">
-      ← Tous les immeubles
+      ← ${t('Tous les immeubles')}
     </button>
   </div>` + html;
   
@@ -1474,11 +1474,11 @@ function renderRapportAnnuelPage() {
             <div style="font-size:18px;font-weight:700;color:${tauxRecouvrement>=80?'var(--green)':tauxRecouvrement>=50?'var(--yellow)':'var(--red)'};">${tauxRecouvrement}%</div>
           </div>
           <div style="background:var(--bg2);border-radius:8px;padding:8px;">
-            <div style="font-size:10px;color:var(--text3);">Locataires</div>
+            <div style="font-size:10px;color:var(--text3);">${t('Locataires')}</div>
             <div style="font-size:18px;font-weight:700;">${locs.length}</div>
           </div>
           <div style="background:var(--bg2);border-radius:8px;padding:8px;">
-            <div style="font-size:10px;color:var(--text3);">Arriérés</div>
+            <div style="font-size:10px;color:var(--text3);">${t('Arriérés')}</div>
             <div style="font-size:13px;font-weight:700;color:var(--red);">${fmtShort(locs.reduce((s,l)=>s+Math.max(0,l.reste),0))}</div>
           </div>
         </div>
@@ -1531,11 +1531,11 @@ function ouvrirRapportAnnuelImmeuble(iid) {
       <table class="tbl" style="min-width:900px;">
         <thead>
           <tr>
-            <th style="min-width:140px;">Locataire</th>
-            <th>Local</th>
+            <th style="min-width:140px;">${t('Locataire')}</th>
+            <th>${t('Local')}</th>
             ${MOIS.map(m=>`<th style="min-width:60px;font-size:10px;">${m.substring(0,3)}</th>`).join('')}
-            <th>Total</th>
-            <th>Arriérés</th>
+            <th>${t('Total')}</th>
+            <th>${t('Arriérés')}</th>
           </tr>
         </thead>
         <tbody>
@@ -1582,7 +1582,7 @@ function ouvrirRapportAnnuelImmeuble(iid) {
 
   html = `<div style="margin-bottom:12px;">
     <button class="btn btn-ghost" onclick="renderRapportAnnuelPage()" style="display:flex;align-items:center;gap:6px;">
-      ← Tous les immeubles
+      ← ${t('Tous les immeubles')}
     </button>
   </div>` + html;
 
@@ -1955,7 +1955,7 @@ function ouvrirHistoriqueLocal(locId) {
   if (!pays.length) {
     html += '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Aucun paiement enregistré</div></div>';
   } else {
-    html += '<div class="table-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Période</th><th>Montant</th><th>Mode</th></tr></thead><tbody>';
+    html += '<div class="table-wrap"><table class="tbl"><thead><tr><th>${t('Date')}</th><th>${t('Période')}</th><th>${t('Montant')}</th><th>${t('Mode de paiement')}</th></tr></thead><tbody>';
     pays.forEach(p => {
       html += `<tr>
         <td>${p.date||'–'}</td>
@@ -5573,20 +5573,20 @@ function renderLocataireDashboard() {
   <!-- KPIs -->
   <div class="metrics-grid">
     <div class="metric-card">
-      <div class="metric-label">Mon loyer mensuel</div>
+      <div class="metric-label">${t('Loyer mensuel')}</div>
       <div class="metric-value accent">${fmt(l.loyer)}</div>
     </div>
     <div class="metric-card" style="border-left:4px solid ${l.reste>0?'var(--red)':'var(--green)'};">
-      <div class="metric-label">Situation actuelle</div>
-      <div class="metric-value ${l.reste>0?'red':'green'}">${l.reste>0?fmt(l.reste)+' dû':'À jour ✓'}</div>
+      <div class="metric-label">${t('Situation locative')}</div>
+      <div class="metric-value ${l.reste>0?'red':'green'}">${l.reste>0?fmt(l.reste)+' '+t('Montant dû'):''+t('À jour')+' ✓'}</div>
       <div class="metric-sub">${l.obs||''}</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">Total payé</div>
+      <div class="metric-label">${t('Total')}</div>
       <div class="metric-value green">${fmt(totalPaye)}</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">Immeuble</div>
+      <div class="metric-label">${t('Immeuble')}</div>
       <div class="metric-value" style="font-size:13px;">${im?im.nom:'–'}</div>
       <div class="metric-sub">${im?im.ville:''}</div>
     </div>
@@ -5595,22 +5595,22 @@ function renderLocataireDashboard() {
   <!-- Alerte impayé -->
   ${l.reste>0?`<div style="background:var(--red-bg);border:1.5px solid var(--red);border-radius:var(--radius);padding:14px 18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
     <div>
-      <div style="font-weight:700;color:var(--red);">⚠️ Arriérés de loyer : ${fmt(l.reste)}</div>
-      <div style="font-size:12px;color:var(--text3);margin-top:3px;">Veuillez régulariser votre situation</div>
+      <div style="font-weight:700;color:var(--red);">⚠️ ${t('Arriérés')} : ${fmt(l.reste)}</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:3px;">${t('Relance amiable recommandée')}</div>
     </div>
     <button class="btn" style="background:var(--red);color:#fff;border-color:var(--red);" onclick="ouvrirDeclarationPaiement(${l.id})">💳 Payer maintenant</button>
   </div>`:''}
 
   <!-- Bouton payer si à jour -->
   ${l.reste===0?`<div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
-    <button class="btn btn-primary" onclick="ouvrirDeclarationPaiement(${l.id})">💳 Déclarer un paiement</button>
+    <button class="btn btn-primary" onclick="ouvrirDeclarationPaiement(${l.id})">💳 ${t('Déclarer un paiement')}</button>
   </div>`:''}
 
   <!-- Déclarations en attente -->
   ${pendingDecls.length>0?`
   <div class="card" style="margin-bottom:16px;border-left:4px solid var(--yellow);">
     <div class="card-header">
-      <div class="card-title">⏳ Paiements en attente de validation (${pendingDecls.length})</div>
+      <div class="card-title">⏳ ${t('En attente de validation')} (${pendingDecls.length})</div>
     </div>
     ${pendingDecls.map(d=>`
     <div class="decl-card pending">
@@ -5632,7 +5632,7 @@ function renderLocataireDashboard() {
     </div>
     ${pays.length>0?`
     <div class="table-wrap"><table class="tbl">
-      <thead><tr><th>Date</th><th>Mois</th><th>Mode</th><th>Montant</th><th>Réçu PDF</th></tr></thead>
+      <thead><tr><th>${t('Date')}</th><th>${t('Mois')}</th><th>${t('Mode de paiement')}</th><th>${t('Montant')}</th><th>${t('Réçu PDF')}</th></tr></thead>
       <tbody>
       ${pays.map(p=>`
         <tr>
@@ -6017,7 +6017,7 @@ async function renderValidationComptable() {
       <div class="card-title">🏠 ${t('Paiements déclarés par le propriétaire')} (${pendingBailleur.length})</div>
     </div>
     <div class="table-wrap"><table class="tbl">
-      <thead><tr><th>Date</th><th>Locataire</th><th>Immeuble</th><th>Note</th><th>Montant</th><th>Action</th></tr></thead>
+      <thead><tr><th>${t('Date')}</th><th>${t('Locataire')}</th><th>${t('Immeuble')}</th><th>${t('Note')}</th><th>${t('Montant')}</th><th>${t('Action')}</th></tr></thead>
       <tbody>
       ${pendingBailleur.map(d=>{
         const l = DATA.locataires.find(x=>x.id===d.locId);
@@ -7197,9 +7197,9 @@ function renderImmeublesConfig() {
   let html = '<div style="margin-bottom:14px;">';
   html += '<input type="text" id="search-imm-config" placeholder="🔍 Rechercher un immeuble..." oninput="_filterImmConfig()" style="width:100%;padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font);background:var(--bg4);">';
   html += '</div>';
-  html += '<div class="card"><div class="card-header"><div class="card-title">Immeubles enregistrés</div></div>';
+  html += '<div class="card"><div class="card-header"><div class="card-title">' + t('Immeubles enregistrés') + '</div></div>';
   html += '<div class="table-wrap"><table class="tbl"><thead><tr>';
-  html += '<th>Nom</th><th>Ville</th><th>Apparts</th><th>Studios</th><th>Chambres</th><th>Total locaux</th><th>Occupés</th><th>Actions</th>';
+  html += '<th>${t('Nom')}</th><th>${t('Ville')}</th><th>${t('Apparts')}</th><th>${t('Studios')}</th><th>${t('Chambres')}</th><th>${t('Total locaux')}</th><th>${t('Occupés')}</th><th>${t('Actions')}</th>';
   html += '</tr></thead><tbody>';
   DATA.immeubles.forEach(im => {
     const locs = DATA.locataires.filter(l=>l.iid===im.id&&l.s!=='libre');
@@ -7229,7 +7229,7 @@ function renderImmeublesConfig() {
     // Sur PC : bouton Ajouter visible + message appui long masqué
     // Sur mobile : message appui long visible, bouton topbar suffit
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-bottom:4px;flex-wrap:wrap;gap:8px;">'
-      + '<button onclick="openModalImmeuble()" class="btn btn-primary btn-sm" style="display:flex;align-items:center;gap:6px;"><span style="font-size:15px;">＋</span> Ajouter un immeuble</button>'
+      + '<button onclick="openModalImmeuble()" class="btn btn-primary btn-sm" style="display:flex;align-items:center;gap:6px;"><span style="font-size:15px;">＋</span> ' + t('Ajouter un immeuble') + '</button>'
       + '<span class="mobile-only-hint" style="font-size:11px;color:var(--text3);">💡 Appui long sur une ligne pour modifier ou supprimer</span>'
       + '</div>';
   }
@@ -7354,21 +7354,21 @@ function renderStatistiques() {
       <div>
         <div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;">Immeuble</div>
         <select onchange="window._statsIid=parseInt(this.value);renderStatistiques();" style="font-size:13px;padding:6px 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg3);color:var(--text);">
-          <option value="-1" ${selIid===-1?'selected':''}>Tous les immeubles</option>
+          <option value="-1" ${selIid===-1?'selected':''}>${t('Tous les immeubles')}</option>
           ${DATA.immeubles.map(im=>`<option value="${im.id}" ${selIid===im.id?'selected':''}>${im.nom}</option>`).join('')}
         </select>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;">Tri par</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;">${t('Tri par')}</div>
         <select onchange="window._statsSens=this.value;renderStatistiques();" style="font-size:13px;padding:6px 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg3);color:var(--text);">
-          <option value="retard" ${selSens==='retard'?'selected':''}>Arriérés (mois de retard)</option>
-          <option value="avance" ${selSens==='avance'?'selected':''}>Avance (mois payés d\'avance)</option>
-          <option value="montant" ${selSens==='montant'?'selected':''}>Montant dû</option>
-          <option value="alpha" ${selSens==='alpha'?'selected':''}>Nom (A-Z)</option>
+          <option value="retard" ${selSens==='retard'?'selected':''}>${t('Arriérés (mois de retard)')}</option>
+          <option value="avance" ${selSens==='avance'?'selected':''}>${t('Avance (mois payés d\'avance)')}</option>
+          <option value="montant" ${selSens==='montant'?'selected':''}>${t('Montant dû')}</option>
+          <option value="alpha" ${selSens==='alpha'?'selected':''}>${t('Nom (A-Z)')}</option>
         </select>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;">Seuil minimum (mois)</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;">${t('Seuil minimum (mois)')}</div>
         <select onchange="window._statsSeuil=parseInt(this.value);renderStatistiques();" style="font-size:13px;padding:6px 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg3);color:var(--text);">
           <option value="0" ${selSeuil===0?'selected':''}>Tous</option>
           <option value="1" ${selSeuil===1?'selected':''}>≥ 1 mois</option>
@@ -7379,7 +7379,7 @@ function renderStatistiques() {
           <option value="6" ${selSeuil===6?'selected':''}>≥ 6 mois</option>
         </select>
       </div>
-      <button class="btn btn-sm" onclick="window._statsIid=-1;window._statsSeuil=0;window._statsSens='retard';renderStatistiques();">↺ Réinitialiser</button>
+      <button class="btn btn-sm" onclick="window._statsIid=-1;window._statsSeuil=0;window._statsSens='retard';renderStatistiques();">↺ ${t('Réinitialiser')}</button>
     </div>
   </div>`;
 
@@ -7437,35 +7437,35 @@ function renderStatistiques() {
       <!-- KPIs immeuble -->
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px;">
         <div style="background:var(--bg3);border-radius:6px;padding:10px 12px;">
-          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;">Locataires</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;">${t('Locataires')}</div>
           <div style="font-size:20px;font-weight:600;">${tousLocs.length}</div>
-          <div style="font-size:11px;color:var(--text3);">${libres} libre(s)</div>
+          <div style="font-size:11px;color:var(--text3);">${libres} ${t('libre(s)')}</div>
         </div>
         <div style="background:var(--green-bg);border-radius:6px;padding:10px 12px;">
-          <div style="font-size:10px;color:var(--green);text-transform:uppercase;">À jour</div>
+          <div style="font-size:10px;color:var(--green);text-transform:uppercase;">${t('À jour')}</div>
           <div style="font-size:20px;font-weight:600;color:var(--green);">${nbAJour}</div>
           <div style="font-size:11px;color:var(--text3);">${tousLocs.length>0?Math.round(nbAJour/tousLocs.length*100):0}%</div>
         </div>
         <div style="background:var(--red-bg);border-radius:6px;padding:10px 12px;">
-          <div style="font-size:10px;color:var(--red);text-transform:uppercase;">En retard</div>
+          <div style="font-size:10px;color:var(--red);text-transform:uppercase;">${t('En retard')}</div>
           <div style="font-size:20px;font-weight:600;color:var(--red);">${nbEnRetard}</div>
           <div style="font-size:11px;color:var(--text3);">${fmt(totalReste)}</div>
         </div>
         <div style="background:var(--bg3);border-radius:6px;padding:10px 12px;">
-          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;">Loyers/mois</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;">${t('Loyers/mois')}</div>
           <div style="font-size:16px;font-weight:600;">${fmtShort(totalLoyers)}</div>
         </div>
         <div style="background:var(--bg3);border-radius:6px;padding:10px 12px;">
-          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;">≥2 mois retard</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;">${t('≥2 mois retard')}</div>
           <div style="font-size:20px;font-weight:600;color:var(--red);">${tousLocs.filter(l=>l.s==='impayé'&&l.loyer>0&&l.reste/l.loyer>=2).length}</div>
-          <div style="font-size:11px;color:var(--text3);">dossiers</div>
+          <div style="font-size:11px;color:var(--text3);">${t('dossiers')}</div>
         </div>
       </div>
 
       <!-- Histogramme retards -->
       ${tousLocs.filter(l=>l.s==='impayé').length>0?`
       <div style="margin-bottom:16px;">
-        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;">Répartition par nombre de mois de retard</div>
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;">${t('Répartition par nombre de mois de retard')}</div>
         <div style="display:flex;gap:8px;align-items:flex-end;height:60px;">
           ${[1,2,3,4,5,6].map(m=>{
             const cnt = tousLocs.filter(l=>l.s==='impayé'&&l.loyer>0&&Math.round(l.reste/l.loyer)===m).length;
@@ -7475,7 +7475,7 @@ function renderStatistiques() {
             return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;">
               <div style="font-size:10px;color:var(--text3);margin-bottom:2px;">${cnt}</div>
               <div style="width:100%;background:${col};border-radius:3px 3px 0 0;height:${h}px;opacity:.85;"></div>
-              <div style="font-size:10px;color:var(--text3);margin-top:2px;">${m}${m===6?'+':''} mois</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px;">${m}${m===6?'+':''} ${t('mois')}</div>
             </div>`;
           }).join('')}
         </div>
@@ -7483,13 +7483,13 @@ function renderStatistiques() {
 
       <!-- Tableau filtré -->
       <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;">
-        ${filtered.length} locataire(s) affiché(s)
+        ${filtered.length} ${t('locataire(s) affiché(s)')}
         ${selSeuil>0?`<span style="background:var(--red-bg);color:var(--red);padding:1px 7px;border-radius:99px;margin-left:6px;">≥ ${selSeuil} mois</span>`:''}
       </div>
       <div style="overflow-x:auto;"><table class="tbl">
         <thead><tr>
-          <th>Local</th><th>Nom</th><th>Téléphone</th><th>Loyer</th>
-          <th>Mois retard</th><th>Reste dû</th><th>Statut</th><th>Actions</th>
+          <th>${t('Local')}</th><th>${t('Nom')}</th><th>${t('Téléphone')}</th><th>${t('Loyer')}</th>
+          <th>${t('Mois retard')}</th><th>${t('Reste dû')}</th><th>${t('Statut')}</th><th>${t('Actions')}</th>
         </tr></thead>
         <tbody>
         ${filtered.map((l,i)=>{
@@ -7502,15 +7502,15 @@ function renderStatistiques() {
             <td class="td-amount">${fmt(l.loyer)}</td>
             <td style="text-align:center;">
               ${l.s==='impayé'&&mois>0?
-                `<span style="background:${coulMois}22;color:${coulMois};font-weight:700;padding:2px 10px;border-radius:99px;font-size:12px;">${mois} mois</span>`
-                :`<span style="color:var(--green);font-size:12px;">✓ À jour</span>`}
+                `<span style="background:${coulMois}22;color:${coulMois};font-weight:700;padding:2px 10px;border-radius:99px;font-size:12px;">${mois} ${t('mois')}</span>`
+                :`<span style="color:var(--green);font-size:12px;">✓ ${t('À jour')}</span>`}
             </td>
             <td class="td-amount ${l.reste>0?'red':'green'}">${l.reste>0?fmt(l.reste):'–'}</td>
             <td><span class="badge ${l.s==='payé'?'badge-green':'badge-red'}">${t(l.s)}</span></td>
             <td style="white-space:nowrap;">
               ${l.s==='impayé'?`
                 <button class="btn btn-primary btn-sm" onclick="openModalPaiement(${l.iid},${l.id})">＋ Paiement</button>
-                ${mois>=2?`<button class="btn btn-sm" style="background:#C0392B;color:#fff;border-color:#C0392B;" onclick="previewPlainte(${l.id})">⚖ Plainte</button>`:''}
+                ${mois>=2?`<button class="btn btn-sm" style="background:#C0392B;color:#fff;border-color:#C0392B;" onclick="previewPlainte(${l.id})">⚖ ${t('Plainte')}</button>`:''}
               `:''}
             </td>
           </tr>`;
@@ -7600,15 +7600,15 @@ function renderStatistiquesProprietaire() {
       <div class="metric-sub">${tousLocs.filter(l=>l.reste>0).length} en retard</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">Taux d'occupation</div>
+      <div class="metric-label">${t('Taux d\'occupation')}</div>
       <div class="metric-value accent">${txOccup}%</div>
       <div class="metric-sub">${tousLocs.length} occupé(s) · ${nbLibres} libre(s)</div>
     </div>
   </div>`;
 
-  html += `<div class="card" style="margin-bottom:20px;"><div class="card-header"><div class="card-title">Détail par immeuble</div></div>
+  html += `<div class="card" style="margin-bottom:20px;"><div class="card-header"><div class="card-title">${t('Détail par immeuble')}</div></div>
   <div class="table-wrap"><table class="tbl">
-    <thead><tr><th>Immeuble</th><th>Locataires</th><th>Occupation</th><th>Attendu/mois</th><th>Encaissé ${MNOMS_L[m]}</th><th>Impayés</th><th>Taux paiement</th></tr></thead>
+    <thead><tr><th>${t('Immeuble')}</th><th>${t('Locataires')}</th><th>${t('Occupation')}</th><th>${t('Attendu/mois')}</th><th>${t('Encaissé')} ${MNOMS_L[m]}</th><th>${t('Impayés cumulés')}</th><th>${t('Taux paiement')}</th></tr></thead>
     <tbody>`;
 
   mesImm.forEach(im => {
@@ -7643,7 +7643,7 @@ function renderStatistiquesProprietaire() {
     enc6.push(encPour(mo, an));
   }
 
-  html += `<div class="card"><div class="card-header"><div class="card-title">Évolution encaissements — 6 mois</div></div>
+  html += `<div class="card"><div class="card-header"><div class="card-title">${t('Évolution encaissements — 6 mois')}</div></div>
     <div class="chart-wrap"><canvas id="chart-proprio"></canvas></div></div>`;
 
   document.getElementById('content').innerHTML = html;
@@ -7655,8 +7655,8 @@ function renderStatistiquesProprietaire() {
     data: {
       labels: labels6,
       datasets: [
-        { label: 'Attendu', data: att6, backgroundColor: 'rgba(14,106,175,.25)', borderColor: 'rgba(14,106,175,.6)', borderWidth: 1.5, borderRadius: 4 },
-        { label: 'Encaissé', data: enc6, backgroundColor: 'rgba(46,204,138,.7)', borderRadius: 4 },
+        { label: t('Attendu'), data: att6, backgroundColor: 'rgba(14,106,175,.25)', borderColor: 'rgba(14,106,175,.6)', borderWidth: 1.5, borderRadius: 4 },
+        { label: t('Encaissé'), data: enc6, backgroundColor: 'rgba(46,204,138,.7)', borderRadius: 4 },
       ]
     },
     options: {
@@ -7733,7 +7733,7 @@ function _msgGetDestinataires() {
 // ── Construire le <select> des destinataires ─────────────────
 function _msgBuildDestSelect(preselectId) {
   var dest = _msgGetDestinataires();
-  if (!dest.length) return '<option disabled>Aucun destinataire disponible</option>';
+  if (!dest.length) return '<option disabled>' + t('Aucun destinataire disponible') + '</option>';
   // Grouper
   var groupes = {};
   dest.forEach(function(d){
@@ -7945,7 +7945,7 @@ async function _msgRepondreRapide(destId, destNom, sujetOriginal) {
 function _openNewMessageModal(preselectId) {
   var destSelect = _msgBuildDestSelect(preselectId||null);
   if (!destSelect || destSelect.includes('Aucun destinataire')) {
-    showToast('Aucun destinataire disponible pour votre rôle', 'red'); return;
+    showToast(t('Aucun destinataire disponible'), 'red'); return;
   }
   showModal(`<div style="max-width:500px;">
     <div style="font-weight:700;font-size:16px;margin-bottom:16px;">✉️ Nouveau message</div>
@@ -8328,8 +8328,8 @@ function renderArchives() {
     } else {
       html += `<div class="card"><div class="table-wrap"><table class="tbl">
         <thead><tr>
-          <th>Nom</th><th>Immeuble</th><th>Local</th><th>Loyer</th>
-          <th>Entrée</th><th>Sortie</th><th>Solde départ</th><th>Motif</th><th>Actions</th>
+          <th>${t('Nom')}</th><th>${t('Immeuble')}</th><th>${t('Local')}</th><th>${t('Loyer')}</th>
+          <th>${t('Entrée')}</th><th>${t('Sortie')}</th><th>${t('Solde départ')}</th><th>${t('Motif')}</th><th>${t('Actions')}</th>
         </tr></thead><tbody>`;
 
       archives.slice().sort((a,b)=>(b.dateArchivage||'').localeCompare(a.dateArchivage||'')).forEach(a => {
@@ -8367,8 +8367,8 @@ function renderArchives() {
     } else {
       html += `<div class="card"><div class="table-wrap"><table class="tbl">
         <thead><tr>
-          <th>Immeuble</th><th>Adresse</th><th>Propriétaire</th><th>Locataires</th>
-          <th>Retiré le</th><th>Actions</th>
+          <th>${t('Immeuble')}</th><th>Adresse</th><th>${t('Propriétaire')}</th><th>${t('Locataires')}</th>
+          <th>${t('Retiré le')}</th><th>${t('Actions')}</th>
         </tr></thead><tbody>`;
 
       corbImm.slice().sort((a,b)=>(b._deletedAt||'').localeCompare(a._deletedAt||'')).forEach(im => {
@@ -8400,8 +8400,8 @@ function renderArchives() {
       html += `<div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Historique permanent des locataires. Le score de fiabilité est calculé sur la base des paiements et incidents.</div>`;
       html += `<div class="card"><div class="table-wrap"><table class="tbl">
         <thead><tr>
-          <th>Nom</th><th>Immeuble</th><th>Local</th><th>Loyer</th>
-          <th>Score</th><th>Supprimé le</th><th>Archivé le</th>
+          <th>${t('Nom')}</th><th>${t('Immeuble')}</th><th>${t('Local')}</th><th>${t('Loyer')}</th>
+          <th>${t('Score')}</th><th>${t('Supprimé le')}</th><th>${t('Archivé le')}</th>
         </tr></thead><tbody>`;
 
       permanentes.slice().sort((a,b)=>(b._archivedAt||'').localeCompare(a._archivedAt||'')).forEach(l => {
@@ -8780,8 +8780,8 @@ function renderCorbeille() {
   } else {
     html += `<div class="card"><div class="table-wrap"><table class="tbl">
       <thead><tr>
-        <th>Nom</th><th>Immeuble</th><th>Local</th><th>Loyer</th>
-        <th>Supprimé le</th><th>Jours restants</th><th>Actions</th>
+        <th>${t('Nom')}</th><th>${t('Immeuble')}</th><th>${t('Local')}</th><th>${t('Loyer')}</th>
+        <th>${t('Supprimé le')}</th><th>${t('Jours restants')}</th><th>${t('Actions')}</th>
       </tr></thead>
       <tbody>`;
     
@@ -8937,7 +8937,7 @@ function showCtxRelance(e, locId) {
   const items = document.getElementById('ctx-menu-items');
   items.innerHTML =
     '<div class="ctx-item" onclick="previewMiseEnDemeure(' + locId + ');hideCtxMenu()">📄 Mise en demeure</div>' +
-    '<div class="ctx-item" onclick="previewPlainte(' + locId + ');hideCtxMenu()">⚖️ Plainte</div>' +
+    '<div class="ctx-item" onclick="previewPlainte(' + locId + ');hideCtxMenu()">⚖️ ${t('Plainte')}</div>' +
     '<div class="ctx-item" onclick="openModalPaiement(' + (l?l.iid:0) + ',' + locId + ');hideCtxMenu()">💳 Enregistrer paiement</div>' +
     '<div class="ctx-sep"></div>' +
     '<div class="ctx-item" onclick="ouvrirFicheSuivi(' + locId + ');hideCtxMenu()">📊 Fiche de suivi</div>';
