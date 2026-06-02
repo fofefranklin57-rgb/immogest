@@ -6,7 +6,8 @@
 // ════════════════════════════════════════════════════════════════
 
 var LANGS_ORDER = ['fr', 'en', 'ha', 'ff', 'ar'];
-var LANGS_LABEL = { fr:'🇫🇷 FR', en:'🇬🇧 EN', ha:'🌍 HA', ff:'🌍 FF', ar:'🇸🇦 AR' };
+var LANGS_LABEL = { fr:'🌐 FR', en:'🌐 EN', ha:'🌐 HA', ff:'🌐 FF', ar:'🌐 AR' };
+var LANGS_NAME  = { fr:'Français', en:'English', ha:'Hausa', ff:'Fulfulde', ar:'العربية' };
 
 var LANG = (function() {
   var saved = localStorage.getItem('immogest_lang');
@@ -487,6 +488,10 @@ var TR = { en: {
   'Réponse rapide': 'Quick reply',
   'Loyer mensuel': 'Monthly rent',
 
+  // ── Bannière setup cabinet ────────────────────────────────────
+  'Configurez l\'identité de votre cabinet': 'Set up your agency identity',
+  'Nom, logo, coordonnées — apparaissent sur tous vos documents (reçus, contrats, rapports).': 'Name, logo, contact — appear on all your documents (receipts, contracts, reports).',
+
 } ,
 
 // ────────────────────────────────────────────────────────────────
@@ -859,6 +864,8 @@ ha: {
   '✕ Fermer': '✕ Rufe',
   'Réponse rapide': 'Amsa cikin hanzari',
   'Loyer mensuel': 'Haya ta wata',
+  'Configurez l\'identité de votre cabinet': 'Saita bayanan ofis ɗinka',
+  'Nom, logo, coordonnées — apparaissent sur tous vos documents (reçus, contrats, rapports).': 'Suna, tambari, lambobi — suna bayyana a dukan takardun ka.',
 
 },
 
@@ -1063,6 +1070,8 @@ ff: {
   '📤 Soumettre la demande': '📤 Nelanaade hay',
   'Historique des demandes': 'Tindirde gollannde',
   'Aucune demande pour l\'instant': 'Gollannde alaa jooni',
+  'Configurez l\'identité de votre cabinet': 'Laɓɓin innde biiro maa',
+  'Nom, logo, coordonnées — apparaissent sur tous vos documents (reçus, contrats, rapports).': 'Innde, seedu, telefon — njoftete e takarɗe maa fof.',
 
 },
 
@@ -1439,6 +1448,8 @@ ar: {
   '✕ Fermer': '✕ إغلاق',
   'Réponse rapide': 'رد سريع',
   'Loyer mensuel': 'الإيجار الشهري',
+  'Configurez l\'identité de votre cabinet': 'أعِدّ هوية مكتبك',
+  'Nom, logo, coordonnées — apparaissent sur tous vos documents (reçus, contrats, rapports).': 'الاسم والشعار ومعلومات الاتصال — تظهر في جميع مستنداتك.',
 
 } }; // fin TR
 
@@ -1470,7 +1481,27 @@ function applyStaticI18n() {
   });
 }
 
-// ── Cycle à travers les 5 langues ───────────────────────────────
+// ── Ouvrir / fermer le menu langue ──────────────────────────────
+function toggleLangMenu() {
+  var menu = document.getElementById('lang-menu');
+  if (!menu) return;
+  var isOpen = menu.style.display !== 'none';
+  menu.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    // Fermer en cliquant ailleurs
+    setTimeout(function() {
+      document.addEventListener('click', function _close(e) {
+        var sel = document.getElementById('lang-selector');
+        if (sel && !sel.contains(e.target)) {
+          menu.style.display = 'none';
+          document.removeEventListener('click', _close);
+        }
+      });
+    }, 10);
+  }
+}
+
+// ── Cycle à travers les 5 langues (fallback bouton simple) ───────
 function cycleLang() {
   var idx = LANGS_ORDER.indexOf(LANG);
   setLang(LANGS_ORDER[(idx + 1) % LANGS_ORDER.length]);
@@ -1484,9 +1515,9 @@ function setLang(lang) {
   // RTL pour arabe
   document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
   applyStaticI18n();
-  // Mettre à jour le bouton langue
-  var btn = document.getElementById('btn-lang-toggle');
-  if (btn) btn.textContent = LANGS_LABEL[lang] || lang.toUpperCase();
+  // Mettre à jour le code langue affiché
+  var codeEl = document.getElementById('lang-code');
+  if (codeEl) codeEl.textContent = lang.toUpperCase();
   // Mettre à jour le bouton thème
   var themeBtn = document.getElementById('btn-theme-toggle');
   if (themeBtn) {

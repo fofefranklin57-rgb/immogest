@@ -394,8 +394,8 @@ function renderDashboard() {
     <div onclick="navigateTo('parametres')" style="display:flex;align-items:center;gap:14px;background:linear-gradient(90deg,#0E6AAF,#1a82d4);color:#fff;border-radius:12px;padding:14px 18px;margin-bottom:16px;cursor:pointer;box-shadow:0 2px 12px rgba(14,106,175,.3);">
       <div style="font-size:28px;flex-shrink:0;">🏢</div>
       <div style="flex:1;">
-        <div style="font-weight:700;font-size:14px;">Configurez l'identité de votre cabinet</div>
-        <div style="font-size:12px;opacity:.85;margin-top:2px;">Nom, logo, coordonnées — apparaissent sur tous vos documents (reçus, contrats, rapports).</div>
+        <div style="font-weight:700;font-size:14px;">${t('Configurez l\'identité de votre cabinet')}</div>
+        <div style="font-size:12px;opacity:.85;margin-top:2px;">${t('Nom, logo, coordonnées — apparaissent sur tous vos documents (reçus, contrats, rapports).')}</div>
       </div>
       <div style="font-size:20px;flex-shrink:0;">→</div>
     </div>` : '';
@@ -4963,8 +4963,9 @@ function initApp() {
   syncUsersAfterLogin(); // sync multi-device (fire & forget)
   _applyTheme((DATA.settings && DATA.settings.theme) || 'light');
   applyStaticI18n(); // appliquer les traductions aux éléments statiques
-  var _lb = document.getElementById('btn-lang-toggle');
-  if (_lb) _lb.textContent = (typeof LANGS_LABEL !== 'undefined' ? LANGS_LABEL[LANG] : null) || (LANG === 'fr' ? '🇫🇷 FR' : '🇬🇧 EN');
+  var _lc = document.getElementById('lang-code');
+  if (_lc) _lc.textContent = (typeof LANG !== 'undefined' ? LANG.toUpperCase() : 'FR');
+  if (typeof LANG !== 'undefined' && LANG === 'ar') document.documentElement.setAttribute('dir', 'rtl');
   document.getElementById('sel-mois').value = new Date().getMonth();
   document.getElementById('sel-annee').value = new Date().getFullYear();
 

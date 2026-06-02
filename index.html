@@ -21,7 +21,7 @@
 
 <!-- ── SUPABASE CLIENT ── -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/i18n.js?v=20260603"></script>
+<script src="js/i18n.js?v=20260603b"></script>
 <script src="js/supabase.js"></script>
 </head>
 <body>
@@ -305,9 +305,6 @@
       <button id="btn-theme-toggle" onclick="toggleTheme()" style="margin-top:4px;width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:11px;cursor:pointer;font-family:var(--font);">
         🌙 <span data-i18n="Mode sombre">Mode sombre</span>
       </button>
-      <button id="btn-lang-toggle" onclick="cycleLang()" title="Changer la langue / Change language" style="margin-top:4px;width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:11px;cursor:pointer;font-family:var(--font);">🇫🇷 FR
-        🇬🇧 EN
-      </button>
       <button onclick="logout()" style="margin-top:6px;width:100%;padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;">
         ⏻ <span data-i18n="Se déconnecter">Se déconnecter</span>
       </button>
@@ -351,6 +348,20 @@
         </div>
       </div>
       <div class="topbar-actions">
+        <!-- Sélecteur de langue -->
+        <div id="lang-selector" style="position:relative;display:inline-block;">
+          <button id="btn-lang-toggle" onclick="toggleLangMenu()" title="Language / Langue"
+            style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);white-space:nowrap;">
+            🌐 <span id="lang-code">FR</span> <span style="font-size:9px;opacity:0.6;">▾</span>
+          </button>
+          <div id="lang-menu" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--bg2);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.15);padding:4px;z-index:9999;min-width:140px;">
+            <div onclick="setLang('fr');toggleLangMenu()" style="padding:8px 12px;border-radius:7px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"><span style="font-size:15px;">🇫🇷</span> Français</div>
+            <div onclick="setLang('en');toggleLangMenu()" style="padding:8px 12px;border-radius:7px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"><span style="font-size:15px;">🇬🇧</span> English</div>
+            <div onclick="setLang('ha');toggleLangMenu()" style="padding:8px 12px;border-radius:7px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"><span style="font-size:15px;">🌍</span> Hausa</div>
+            <div onclick="setLang('ff');toggleLangMenu()" style="padding:8px 12px;border-radius:7px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"><span style="font-size:15px;">🌍</span> Fulfulde</div>
+            <div onclick="setLang('ar');toggleLangMenu()" style="padding:8px 12px;border-radius:7px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"><span style="font-size:15px;">🇸🇦</span> العربية</div>
+          </div>
+        </div>
         <!-- Badge plan — toujours présent, mis à jour par updatePlanBadge() -->
         <span id="topbar-plan-badge"
               class="plan-badge plan-free"
@@ -1111,7 +1122,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="docx.bundle.js"></script>
-<script src="js/app.js?v=20260602b"></script>
+<script src="js/app.js?v=20260603b"></script>
 
 <!-- Context menu for locaux -->
 
