@@ -358,7 +358,7 @@ function updateSidebarBadges() {
   }).join('');
   // Lien Espace Propriétaire uniquement pour le rôle proprietaire
   if (SESSION && SESSION.role === 'proprietaire') {
-    sideHtml += '<div class="nav-item" onclick="openPortailProprietaire()" style="margin-top:4px;border-top:1px solid rgba(255,255,255,0.1);padding-top:6px;"><span class="nav-icon">📊</span> Mon espace</div>';
+    sideHtml += '<div class="nav-item" onclick="openPortailProprietaire()" style="margin-top:4px;border-top:1px solid rgba(255,255,255,0.1);padding-top:6px;"><span class="nav-icon">📊</span> ' + t('Mon espace') + '</div>';
   }
   sideImm.innerHTML = sideHtml;
 }
@@ -375,9 +375,9 @@ function topbarAction() {
 // DASHBOARD
 // ============================================================
 function renderDashboard() {
-  document.getElementById('page-title').textContent = 'Tableau de bord';
-  document.getElementById('page-sub').textContent = MNOMS[gM()] + ' ' + gA();
-  document.getElementById('topbar-main-btn').textContent = '＋ Paiement';
+  document.getElementById('page-title').textContent = t('Tableau de bord');
+  document.getElementById('page-sub').textContent = tMois(gM()) + ' ' + gA();
+  document.getElementById('topbar-main-btn').textContent = t('＋ Paiement');
 
   const ac = actifs();
   const tL = ac.reduce((s,l)=>s+l.loyer,0);
@@ -401,11 +401,11 @@ function renderDashboard() {
     </div>` : '';
 
   html += `<div class="metrics-grid">
-    <div class="metric-card"><div class="metric-label">Immeubles</div><div class="metric-value accent">${nbImm}</div><div class="metric-sub">${getVisibleImmeubles().length} renseignés</div></div>
-    <div class="metric-card"><div class="metric-label">Locataires actifs</div><div class="metric-value">${ac.length}</div><div class="metric-sub">${nbJ} à jour · ${nbLib} libre(s)</div></div>
-    <div class="metric-card"><div class="metric-label">Loyers / mois</div><div class="metric-value" style="font-size:17px;">${fmtShort(tL)}</div><div class="metric-sub">attendu total</div></div>
-    <div class="metric-card"><div class="metric-label">Encaissé ${MNOMS[gM()]}</div><div class="metric-value green" style="font-size:17px;">${fmtShort(encMois)}</div><div class="metric-sub">${pays.length} versement(s)</div></div>
-    <div class="metric-card"><div class="metric-label">Impayés cumulés</div><div class="metric-value red" style="font-size:17px;">${fmtShort(tR)}</div><div class="metric-sub">${ac.filter(l=>l.reste>0).length} locataire(s)</div></div>
+    <div class="metric-card"><div class="metric-label">${t('Immeubles')}</div><div class="metric-value accent">${nbImm}</div><div class="metric-sub">${getVisibleImmeubles().length} ${t('renseignés')}</div></div>
+    <div class="metric-card"><div class="metric-label">${t('Locataires actifs')}</div><div class="metric-value">${ac.length}</div><div class="metric-sub">${nbJ} ${t('à jour')} · ${nbLib} ${t('libre(s)')}</div></div>
+    <div class="metric-card"><div class="metric-label">${t('Loyers / mois')}</div><div class="metric-value" style="font-size:17px;">${fmtShort(tL)}</div><div class="metric-sub">${t('attendu total')}</div></div>
+    <div class="metric-card"><div class="metric-label">${t('Encaissé')} ${tMois(gM())}</div><div class="metric-value green" style="font-size:17px;">${fmtShort(encMois)}</div><div class="metric-sub">${pays.length} ${t('versement(s)')}</div></div>
+    <div class="metric-card"><div class="metric-label">${t('Impayés cumulés')}</div><div class="metric-value red" style="font-size:17px;">${fmtShort(tR)}</div><div class="metric-sub">${ac.filter(l=>l.reste>0).length} ${t('locataires actifs').split(' ')[0]}(s)</div></div>
   </div>`;
 
   // Immeuble cards
@@ -744,9 +744,9 @@ function openModalLocataireVide(iid) {
 
 
 function renderEncaissements() {
-  document.getElementById('page-title').textContent = 'Encaissements';
-  document.getElementById('page-sub').textContent = MNOMS[gM()] + ' ' + gA();
-  document.getElementById('topbar-main-btn').textContent = '＋ Paiement';
+  document.getElementById('page-title').textContent = t('Encaissements');
+  document.getElementById('page-sub').textContent = tMois(gM()) + ' ' + gA();
+  document.getElementById('topbar-main-btn').textContent = t('＋ Paiement');
 
   const m=gM(), a=gA();
   const pays = paiementsDuMois(m, a);
@@ -856,9 +856,9 @@ function renderEncaissements() {
 // RELANCES
 // ============================================================
 function renderRelances() {
-  document.getElementById('page-title').textContent = 'Relances & Alertes';
-  document.getElementById('page-sub').textContent = 'Documents générés automatiquement à partir de 2 mois d\'arriérés';
-  document.getElementById('topbar-main-btn').textContent = '＋ Paiement';
+  document.getElementById('page-title').textContent = t('Relances & Alertes');
+  document.getElementById('page-sub').textContent = t("Documents générés automatiquement à partir de 2 mois d'arriérés");
+  document.getElementById('topbar-main-btn').textContent = t('＋ Paiement');
 
   const imps    = DATA.locataires.filter(l=>l.s==='impayé'&&l.reste>0);
   const alertes = imps.filter(l => locataireEnAlerte(l));   // >= 2 mois
@@ -1203,9 +1203,9 @@ function genPdfSyntheseGlobale() {
 }
 
 function renderRapportPage() {
-  document.getElementById('page-title').textContent = 'Rapports';
-  document.getElementById('page-sub').textContent = 'Sélectionnez un immeuble';
-  document.getElementById('topbar-main-btn').textContent = '📄 PDF Synthèse globale';
+  document.getElementById('page-title').textContent = t('Rapports');
+  document.getElementById('page-sub').textContent = t('Sélectionnez un immeuble');
+  document.getElementById('topbar-main-btn').textContent = t('📄 PDF Synthèse globale');
   document.getElementById('topbar-main-btn').style.display = 'flex';
   document.getElementById('topbar-main-btn').onclick = genPdfSyntheseGlobale;
 
@@ -1433,9 +1433,9 @@ function previewRapportImmeubleModal(iid) {
 
 
 function renderRapportAnnuelPage() {
-  document.getElementById('page-title').textContent = 'Rapport Annuel';
-  document.getElementById('page-sub').textContent = 'Sélectionnez un immeuble';
-  document.getElementById('topbar-main-btn').textContent = '📅 Générer';
+  document.getElementById('page-title').textContent = t('Rapport Annuel');
+  document.getElementById('page-sub').textContent = t('Sélectionnez un immeuble');
+  document.getElementById('topbar-main-btn').textContent = t('📅 Générer');
   document.getElementById('topbar-main-btn').style.display = 'none';
 
   const imms = getVisibleImmeubles();
@@ -1588,7 +1588,7 @@ function ouvrirRapportAnnuelImmeuble(iid) {
 
   document.getElementById('content').innerHTML = html;
   document.getElementById('topbar-main-btn').style.display = 'flex';
-  document.getElementById('topbar-main-btn').textContent = '📊 Télécharger DOCX';
+  document.getElementById('topbar-main-btn').textContent = t('📊 Télécharger DOCX');
   window._rapAnnIid = iid;
 }
 
@@ -4286,6 +4286,8 @@ function toggleTheme() {
   if (!DATA.settings) DATA.settings = {};
   DATA.settings.theme = next;
   _applyTheme(next);
+  var btn = document.getElementById('btn-theme-toggle');
+  if (btn) btn.querySelector('[data-i18n]').setAttribute('data-i18n', next === 'dark' ? 'Mode clair' : 'Mode sombre');
   saveData();
   if (SESSION) saveParametresToSupabase(DATA.settings);
 }
@@ -4528,7 +4530,7 @@ function renderUtilisateurs(tab) {
     document.getElementById('content').innerHTML = '<div class="perm-denied"><div class="icon">🔒</div><div>Accès réservé à l\'administrateur</div></div>';
     return;
   }
-  document.getElementById('page-title').textContent = 'Gestion des utilisateurs';
+  document.getElementById('page-title').textContent = t('Gestion des utilisateurs');
   document.getElementById('topbar-main-btn').style.display = 'none';
 
   if (SESSION && SESSION.version === 'individuel') {
@@ -4960,6 +4962,9 @@ function initApp() {
   loadData();
   syncUsersAfterLogin(); // sync multi-device (fire & forget)
   _applyTheme((DATA.settings && DATA.settings.theme) || 'light');
+  applyStaticI18n(); // appliquer les traductions aux éléments statiques
+  var _lb = document.getElementById('btn-lang-toggle');
+  if (_lb) _lb.textContent = LANG === 'fr' ? '🇬🇧 EN' : '🇫🇷 FR';
   document.getElementById('sel-mois').value = new Date().getMonth();
   document.getElementById('sel-annee').value = new Date().getFullYear();
 
@@ -4979,7 +4984,7 @@ function initApp() {
   if (can('canManageUsers')) {
     const sidebarNav = document.querySelector('.sidebar-nav');
     const userNavItem = document.createElement('div');
-    userNavItem.innerHTML = '<div class="nav-section">Administration</div><div class="nav-item" onclick="navigate(\'utilisateurs\')"><span class="nav-icon">👥</span> Utilisateurs</div>';
+    userNavItem.innerHTML = '<div class="nav-section">' + t('Administration') + '</div><div class="nav-item" onclick="navigate(\'utilisateurs\')"><span class="nav-icon">👥</span> ' + t('Utilisateurs') + '</div>';
     sidebarNav.appendChild(userNavItem);
   }
 
@@ -4989,7 +4994,7 @@ function initApp() {
     const sidebarNav = document.querySelector('.sidebar-nav');
     if (sidebarNav) {
       const valDiv = document.createElement('div');
-      valDiv.innerHTML = "<div class=\"nav-section\">Comptabilité</div><div class=\"nav-item\" onclick=\"navigate('validation')\" style=\"position:relative;\"><span class=\"nav-icon\">\u2705</span> Valider paiements<span id=\"badge-validation\" class=\"nav-badge\" style=\"display:none;\">0</span></div>";
+      valDiv.innerHTML = "<div class=\"nav-section\">" + t('Comptabilité') + "</div><div class=\"nav-item\" onclick=\"navigate('validation')\" style=\"position:relative;\"><span class=\"nav-icon\">✅</span> " + t('Valider paiements') + "<span id=\"badge-validation\" class=\"nav-badge\" style=\"display:none;\">0</span></div>";
       sidebarNav.appendChild(valDiv);
     }
   }
@@ -5944,9 +5949,9 @@ async function telechargerRecuValide(payId) {
 
 // ── COMPTABLE: liste des déclarations à valider ───────────────────────────────
 async function renderValidationComptable() {
-  document.getElementById('page-title').textContent = 'Validation des paiements';
-  document.getElementById('page-sub').textContent = 'Paiements déclarés par les locataires et propriétaires';
-  document.getElementById('topbar-main-btn').textContent = '+ Paiement manuel';
+  document.getElementById('page-title').textContent = t('Validation des paiements');
+  document.getElementById('page-sub').textContent = t('Paiements déclarés par les locataires et propriétaires');
+  document.getElementById('topbar-main-btn').textContent = t('+ Paiement manuel');
   document.getElementById('content').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);">⏳ Chargement...</div>';
 
   // Sync depuis Supabase
@@ -6554,7 +6559,7 @@ function _saveDataNow() {
     const storeKey = SESSION && SESSION.version === 'individuel' ? STORE_KEY_IND : 'immogest_data';
     localStorage.setItem(storeKey, JSON.stringify(DATA));
     const el = document.getElementById('last-save');
-    if (el) el.textContent = 'Sauvegarde ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    if (el) el.textContent = t('Sauvegarde') + ' ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
   } catch(e) { console.error('saveData:', e); }
 }
 
@@ -6593,9 +6598,9 @@ function renderLocataires() {
     ? DATA.locataires.filter(l => l.s !== 'libre' && (SESSION.immeubles||[]).includes(l.iid))
     : actifs();
 
-  document.getElementById('page-title').textContent = 'Locataires';
-  document.getElementById('page-sub').textContent = locsFiltres.length + ' locataires actifs';
-  document.getElementById('topbar-main-btn').textContent = isProprietaire ? '' : '＋ Locataire';
+  document.getElementById('page-title').textContent = t('Locataires');
+  document.getElementById('page-sub').textContent = locsFiltres.length + ' ' + t('locataires actifs');
+  document.getElementById('topbar-main-btn').textContent = isProprietaire ? '' : t('＋ Locataire');
   if (isProprietaire) document.getElementById('topbar-main-btn').style.display = 'none';
 
   // Barre de recherche persistante (pas dans loc-table-wrap pour ne pas être écrasée)
@@ -6740,7 +6745,7 @@ function renderSignalements() {
     document.getElementById('content').innerHTML = '<div class="perm-denied"><div class="icon">🔒</div><div>Accès réservé à l\'administrateur</div></div>';
     return;
   }
-  document.getElementById('page-title').textContent = 'Signalements';
+  document.getElementById('page-title').textContent = t('Signalements');
   document.getElementById('topbar-main-btn').style.display = 'none';
 
   const sigs = (DATA.signalements || []).sort((a,b) => b.date.localeCompare(a.date));
@@ -6858,8 +6863,8 @@ function renderParametres() {
   }
   // Mode individuel : afficher aussi la section "Mon compte" pour modifier le nom
   const isIndiv = SESSION && SESSION.version === 'individuel';
-  document.getElementById('page-title').textContent = 'Paramètres';
-  document.getElementById('page-sub').textContent = 'Configuration Mobile Money';
+  document.getElementById('page-title').textContent = t('Paramètres');
+  document.getElementById('page-sub').textContent = t('Configuration Mobile Money');
   document.getElementById('topbar-main-btn').textContent = '';
 
   if (!DATA.settings) DATA.settings = {};
@@ -7183,9 +7188,9 @@ function saveParametresMomo() {
 }
 
 function renderImmeublesConfig() {
-  document.getElementById('page-title').textContent = 'Configuration des immeubles';
-  document.getElementById('page-sub').textContent = DATA.immeubles.length + ' immeubles';
-  var _tbi=document.getElementById('topbar-main-btn'); if(_tbi){_tbi.style.display='flex';_tbi.textContent='＋ Immeuble';}
+  document.getElementById('page-title').textContent = t('Configuration des immeubles');
+  document.getElementById('page-sub').textContent = DATA.immeubles.length + ' ' + t('immeubles');
+  var _tbi=document.getElementById('topbar-main-btn'); if(_tbi){_tbi.style.display='flex';_tbi.textContent=t('＋ Immeuble');}
 
   const canEdit = can('canEdit');
   let html = '<div style="margin-bottom:14px;">';
@@ -7327,9 +7332,9 @@ function _filterImmConfig() {
 
 function renderStatistiques() {
   if (SESSION && SESSION.role === 'proprietaire') { renderStatistiquesProprietaire(); return; }
-  document.getElementById('page-title').textContent = 'Statistiques';
-  document.getElementById('page-sub').textContent = 'Analyses par immeuble';
-  document.getElementById('topbar-main-btn').textContent = '📄 Exporter';
+  document.getElementById('page-title').textContent = t('Statistiques');
+  document.getElementById('page-sub').textContent = t('Analyses par immeuble');
+  document.getElementById('topbar-main-btn').textContent = t('📄 Exporter');
 
   // Filtre immeuble sélectionné
   const selIid = window._statsIid !== undefined ? window._statsIid : -1;
@@ -7547,8 +7552,8 @@ function renderStatistiques() {
 // STATISTIQUES PROPRIÉTAIRE
 // ============================================================
 function renderStatistiquesProprietaire() {
-  document.getElementById('page-title').textContent = 'Mes Statistiques';
-  document.getElementById('page-sub').textContent = 'Revenus & occupation';
+  document.getElementById('page-title').textContent = t('Mes Statistiques');
+  document.getElementById('page-sub').textContent = t('Revenus & occupation');
   const tb = document.getElementById('topbar-main-btn');
   if (tb) { tb.textContent = ''; tb.style.display = 'none'; }
 
@@ -7785,8 +7790,8 @@ var _msgFiltreTab = 'tous'; // 'tous' | 'recus' | 'envoyes'
 var _msgSearch = '';
 
 async function renderMessagerie() {
-  document.getElementById('page-title').textContent = 'Messagerie';
-  document.getElementById('page-sub').textContent = 'Échanges internes';
+  document.getElementById('page-title').textContent = t('Messagerie');
+  document.getElementById('page-sub').textContent = t('Échanges internes');
   var tb = document.getElementById('topbar-main-btn');
   if (tb) { tb.textContent = '✉️ Nouveau message'; tb.style.display = 'flex'; tb.onclick = function(){ _openNewMessageModal(); }; }
 
@@ -8284,8 +8289,8 @@ function updateCorbeilleBadge() {
 }
 
 function renderArchives() {
-  document.getElementById('page-title').textContent = 'Archives';
-  document.getElementById('page-sub').textContent = 'Dossiers permanents — locataires libérés, immeubles retirés, historiques';
+  document.getElementById('page-title').textContent = t('Archives');
+  document.getElementById('page-sub').textContent = t('Dossiers permanents — locataires libérés, immeubles retirés, historiques');
   var _tbtn = document.getElementById('topbar-main-btn');
   if (_tbtn) { _tbtn.style.display='flex'; _tbtn.textContent='← Tableau de bord'; _tbtn.onclick=function(){navigate('dashboard');}; }
 
@@ -8639,8 +8644,8 @@ const BIBLIOTHEQUE = [
 if (!window._biblio) window._biblio = { searchQ: '', openId: null, openArt: null };
 
 function renderBibliotheque() {
-  document.getElementById('page-title').textContent = 'Bibliothèque juridique';
-  document.getElementById('page-sub').textContent = 'Textes de loi — droit immobilier camerounais';
+  document.getElementById('page-title').textContent = t('Bibliothèque juridique');
+  document.getElementById('page-sub').textContent = t('Textes de loi — droit immobilier camerounais');
   var btn = document.getElementById('topbar-main-btn');
   if (btn) { btn.style.display = 'flex'; btn.textContent = '← Tableau de bord'; btn.onclick = function(){ navigate('dashboard'); }; }
 
@@ -8751,8 +8756,8 @@ function _biblioCopier(catId, ref) {
 }
 
 function renderCorbeille() {
-  document.getElementById('page-title').textContent = 'Corbeille';
-  document.getElementById('page-sub').textContent = 'Locataires supprimés — restauration possible sous 30 jours';
+  document.getElementById('page-title').textContent = t('Corbeille');
+  document.getElementById('page-sub').textContent = t('Locataires supprimés — restauration possible sous 30 jours');
   document.getElementById('topbar-main-btn').style.display = 'none';
   
   const corbeille = DATA.corbeille || [];
@@ -10214,9 +10219,9 @@ let _maintData = [];
 let _edlData = [];
 
 async function renderMaintenanceEdl() {
-  document.getElementById('page-title').textContent = 'Maintenance & État des lieux';
+  document.getElementById('page-title').textContent = t('Maintenance & État des lieux');
   document.getElementById('topbar-main-btn').style.display = 'none';
-  document.getElementById('page-sub').textContent = 'Chargement...';
+  document.getElementById('page-sub').textContent = t('Chargement...');
   const content = document.getElementById('content');
   content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text3);">⏳ Chargement...</div>`;
 
@@ -11040,4 +11045,5 @@ async function signerEdl(id) {
     showToast('Erreur', 'red');
   }
 }
+
 

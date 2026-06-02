@@ -21,6 +21,7 @@
 
 <!-- ── SUPABASE CLIENT ── -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/i18n.js"></script>
 <script src="js/supabase.js"></script>
 </head>
 <body>
@@ -255,31 +256,31 @@
       <div class="logo-sub">Gestion immobilière</div>
     </div>
     <div class="sidebar-nav">
-      <div class="nav-section">Principal</div>
-      <div class="nav-item active" onclick="navigate('dashboard')"><span class="nav-icon">⊞</span> Tableau de bord</div>
-      <div class="nav-item" onclick="navigate('encaissements')"><span class="nav-icon">💰</span> Encaissements</div>
-      <div class="nav-item" onclick="navigate('relances')" id="nav-relances"><span class="nav-icon">🔔</span> Relances <span class="nav-badge" id="badge-relances">0</span></div>
-      <div class="nav-item" onclick="navigate('rapport')"><span class="nav-icon">📊</span> Rapports</div>
-      <div class="nav-item" onclick="navigate('statistiques')"><span class="nav-icon">📈</span> Statistiques</div>
-      <div class="nav-item" onclick="navigate('messagerie')" style="position:relative;"><span class="nav-icon">💬</span> Messagerie <span class="nav-badge" id="badge-messagerie" style="display:none;">0</span></div>
-      <div class="nav-item" onclick="navigate('rapport-annuel')"><span class="nav-icon">📅</span> Rapport annuel</div>
-      <div class="nav-item" onclick="navigate('bibliotheque')"><span class="nav-icon">📚</span> Bibliothèque juridique</div>
-      <div class="nav-section" 
-           onclick="toggleSidebarImmeubles()" 
+      <div class="nav-section"><span data-i18n="Principal">Principal</span></div>
+      <div class="nav-item active" onclick="navigate('dashboard')"><span class="nav-icon">⊞</span> <span data-i18n="Tableau de bord">Tableau de bord</span></div>
+      <div class="nav-item" onclick="navigate('encaissements')"><span class="nav-icon">💰</span> <span data-i18n="Encaissements">Encaissements</span></div>
+      <div class="nav-item" onclick="navigate('relances')" id="nav-relances"><span class="nav-icon">🔔</span> <span data-i18n="Relances">Relances</span> <span class="nav-badge" id="badge-relances">0</span></div>
+      <div class="nav-item" onclick="navigate('rapport')"><span class="nav-icon">📊</span> <span data-i18n="Rapports">Rapports</span></div>
+      <div class="nav-item" onclick="navigate('statistiques')"><span class="nav-icon">📈</span> <span data-i18n="Statistiques">Statistiques</span></div>
+      <div class="nav-item" onclick="navigate('messagerie')" style="position:relative;"><span class="nav-icon">💬</span> <span data-i18n="Messagerie">Messagerie</span> <span class="nav-badge" id="badge-messagerie" style="display:none;">0</span></div>
+      <div class="nav-item" onclick="navigate('rapport-annuel')"><span class="nav-icon">📅</span> <span data-i18n="Rapport annuel">Rapport annuel</span></div>
+      <div class="nav-item" onclick="navigate('bibliotheque')"><span class="nav-icon">📚</span> <span data-i18n="Bibliothèque juridique">Bibliothèque juridique</span></div>
+      <div class="nav-section"
+           onclick="toggleSidebarImmeubles()"
            style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;">
-        Immeubles <span id="imm-toggle-icon">▾</span>
+        <span data-i18n="Immeubles">Immeubles</span> <span id="imm-toggle-icon">▾</span>
       </div>
       <div id="sidebar-immeubles"></div>
-      <div class="nav-section" 
-           onclick="toggleSidebarGestion()" 
+      <div class="nav-section"
+           onclick="toggleSidebarGestion()"
            style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;">
-        Gestion <span id="gest-toggle-icon">▾</span>
+        <span data-i18n="Gestion">Gestion</span> <span id="gest-toggle-icon">▾</span>
       </div>
       <div id="sidebar-gestion">
-        <div class="nav-item" onclick="navigate('locataires')"><span class="nav-icon">👤</span> Locataires</div>
-        <div class="nav-item" onclick="navigate('maintenance-edl')"><span class="nav-icon">🔧</span> Maintenance &amp; EDL <span class="nav-badge" id="badge-maintenance" style="display:none;">0</span></div>
-        <div class="nav-item" onclick="navigate('immeubles-config')"><span class="nav-icon">⚙</span> Gérer les immeubles</div>
-        <div class="nav-item" id="nav-parametres" onclick="navigate('parametres')"><span class="nav-icon">⚙️</span> Paramètres</div>
+        <div class="nav-item" onclick="navigate('locataires')"><span class="nav-icon">👤</span> <span data-i18n="Locataires">Locataires</span></div>
+        <div class="nav-item" onclick="navigate('maintenance-edl')"><span class="nav-icon">🔧</span> <span data-i18n="Maintenance & EDL">Maintenance &amp; EDL</span> <span class="nav-badge" id="badge-maintenance" style="display:none;">0</span></div>
+        <div class="nav-item" onclick="navigate('immeubles-config')"><span class="nav-icon">⚙</span> <span data-i18n="Gérer les immeubles">Gérer les immeubles</span></div>
+        <div class="nav-item" id="nav-parametres" onclick="navigate('parametres')"><span class="nav-icon">⚙️</span> <span data-i18n="Paramètres">Paramètres</span></div>
       </div>
     </div>
     <div class="sidebar-footer">
@@ -287,26 +288,28 @@
       <div id="last-save" style="margin-top:2px;"></div>
 
       <div onclick="navigate('archives')" style="margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;cursor:pointer;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.8);">
-        <span>🗄️ Archives</span>
+        <span>🗄️ <span data-i18n="Archives">Archives</span></span>
         <span id="badge-archives" class="nav-badge" style="display:none;background:#3498db;">0</span>
       </div>
       <div onclick="navigate('corbeille')" style="margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;cursor:pointer;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.8);">
-        <span>🗑️ Corbeille</span>
+        <span>🗑️ <span data-i18n="Corbeille">Corbeille</span></span>
         <span id="badge-corbeille" class="nav-badge" style="display:none;background:#e74c3c;">0</span>
       </div>
 
-
       <button onclick="showChangerMotDePasse(false)" style="margin-top:4px;width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:11px;cursor:pointer;font-family:var(--font);">
-        🔒 Changer mot de passe
+        🔒 <span data-i18n="Changer mot de passe">Changer mot de passe</span>
       </button>
       <button id="btn-changer-nom" onclick="changerNomAdmin()" style="display:none;margin-top:4px;width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:11px;cursor:pointer;font-family:var(--font);">
-        ✏️ Modifier mon nom
+        ✏️ <span data-i18n="Modifier mon nom">Modifier mon nom</span>
       </button>
       <button id="btn-theme-toggle" onclick="toggleTheme()" style="margin-top:4px;width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:11px;cursor:pointer;font-family:var(--font);">
-        🌙 Mode sombre
+        🌙 <span data-i18n="Mode sombre">Mode sombre</span>
+      </button>
+      <button id="btn-lang-toggle" onclick="setLang(LANG==='fr'?'en':'fr')" style="margin-top:4px;width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:11px;cursor:pointer;font-family:var(--font);">
+        🇬🇧 EN
       </button>
       <button onclick="logout()" style="margin-top:6px;width:100%;padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;">
-        ⏻ Se déconnecter
+        ⏻ <span data-i18n="Se déconnecter">Se déconnecter</span>
       </button>
       
     </div>
