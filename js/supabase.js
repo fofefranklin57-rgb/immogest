@@ -270,10 +270,11 @@ async function getContratTemplateUrl(immeubleId) {
 async function loadDataFromSupabase() {
   try {
     showToast('Chargement des données...', 'blue');
-    const [immeubles, locataires, paiements] = await Promise.all([
+    const [immeubles, locataires, paiements, _sbSettings] = await Promise.all([
       sbLoad('immeubles'),
       sbLoad('locataires'),
-      sbLoad('paiements')
+      sbLoad('paiements'),
+      loadParametresFromSupabase()
     ]);
 
     if (immeubles === null || locataires === null) {
@@ -318,8 +319,7 @@ async function loadDataFromSupabase() {
     DATA.nextLocId = Math.max(0, ...DATA.locataires.map(l => l.id)) + 1;
     DATA.nextPayId = Math.max(0, ...DATA.paiements.map(p => p.id)) + 1;
 
-    // Charger les settings depuis Supabase (theme, momo, cabinet)
-    const _sbSettings = await loadParametresFromSupabase();
+    // Appliquer les settings chargés en parallèle
     if (_sbSettings) {
       if (!DATA.settings) DATA.settings = {};
       Object.assign(DATA.settings, _sbSettings);
