@@ -401,102 +401,117 @@
 
 <!-- Modal Upgrade / Paywall -->
 <div class="overlay" id="modal-upgrade">
-  <div class="modal" style="width:780px;max-width:98vw;padding:24px;">
-    <h3 style="text-align:center;margin-bottom:6px;">⭐ Choisissez votre plan</h3>
-    <div style="text-align:center;margin-bottom:20px;">
-      <span id="current-plan-badge" class="plan-badge plan-free">FREE</span>
-      <span style="font-size:12px;color:var(--text3);margin-left:8px;">Plan actuel</span>
-    </div>
+  <div class="modal" style="width:860px;max-width:98vw;padding:0;overflow:hidden;border-radius:16px;">
 
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
-
-      <!-- Gratuit -->
-      <div class="pricing-card">
-        <div class="pricing-name">Gratuit</div>
-        <div class="pricing-price">0 <span>FCFA</span></div>
-        <div class="pricing-period">Pour toujours</div>
-        <ul class="pricing-features">
-          <li class="included">1 immeuble</li>
-          <li class="included">10 locataires</li>
-          <li class="included">2 utilisateurs</li>
-          <li class="included">Rapports PDF</li>
-          <li class="included">1 rapport Word/mois</li>
-          <li class="included">Fiche de suivi</li>
-          <li class="included">3 relances/mois</li>
-          <li class="not-included">Assistant IA</li>
-          <li class="not-included">Export données</li>
-          <li class="not-included">Publicités</li>
-        </ul>
-        <button class="btn" style="width:100%;margin-top:auto;" disabled>Plan actuel</button>
-      </div>
-
-      <!-- Starter -->
-      <div class="pricing-card recommended">
-        <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px;white-space:nowrap;">POPULAIRE</div>
-        <div class="pricing-name">Starter</div>
-        <div class="pricing-price">9 999 <span>FCFA/mois</span></div>
-        <div class="pricing-period">99 900 FCFA/an (2 mois offerts)</div>
-        <ul class="pricing-features">
-          <li class="included">3 immeubles</li>
-          <li class="included">50 locataires</li>
-          <li class="included">5 utilisateurs</li>
-          <li class="included">Rapports PDF + Word illimités</li>
-          <li class="included">Fiche de suivi</li>
-          <li class="included">Relances illimitées</li>
-          <li class="included">IA 10 msgs/jour</li>
-          <li class="not-included">Export données</li>
-          <li class="included">Sans publicité</li>
-        </ul>
-        <button class="btn btn-primary" style="width:100%;margin-top:auto;" onclick="startSubscription('starter')">🚀 Passer à Starter</button>
-      </div>
-
-      <!-- Pro -->
-      <div class="pricing-card" style="border-color:var(--purple);position:relative;">
-        <div class="pricing-name" style="color:var(--purple);">Pro</div>
-        <div class="pricing-price">19 999 <span>FCFA/mois</span></div>
-        <div class="pricing-period">199 900 FCFA/an (2 mois offerts)</div>
-        <ul class="pricing-features">
-          <li class="included">10 immeubles</li>
-          <li class="included">Locataires illimités</li>
-          <li class="included">15 utilisateurs</li>
-          <li class="included">Rapports PDF + Word illimités</li>
-          <li class="included">Fiche de suivi</li>
-          <li class="included">Relances illimitées</li>
-          <li class="included">IA illimitée</li>
-          <li class="included">Export données</li>
-          <li class="included">Sans publicité</li>
-          <li class="included">Support prioritaire</li>
-        </ul>
-        <button class="btn btn-primary" style="width:100%;margin-top:auto;background:var(--purple);border-color:var(--purple);" onclick="startSubscription('pro')">💼 Passer à Pro</button>
-      </div>
-
-      <!-- Agence -->
-      <div class="pricing-card">
-        <div class="pricing-name">Agence</div>
-        <div class="pricing-price">29 999 <span>FCFA/mois</span></div>
-        <div class="pricing-period">299 900 FCFA/an (2 mois offerts)</div>
-        <ul class="pricing-features">
-          <li class="included">Immeubles illimités</li>
-          <li class="included">Locataires illimités</li>
-          <li class="included">Utilisateurs illimités</li>
-          <li class="included">Tout inclus</li>
-          <li class="included">IA illimitée</li>
-          <li class="included">Export données</li>
-          <li class="included">Sans publicité</li>
-          <li class="included">Support dédié 24h</li>
-          <li class="included">Portail locataire</li>
-        </ul>
-        <button class="btn btn-primary" style="width:100%;margin-top:auto;" onclick="startSubscription('entreprise')">🏢 Agence</button>
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#0E6AAF 0%,#1A6B45 100%);padding:24px 28px 20px;color:#fff;position:relative;">
+      <button onclick="closeModals()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.2);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+      <div style="text-align:center;">
+        <div style="font-size:22px;font-weight:800;margin-bottom:4px;">⭐ Choisissez votre plan</div>
+        <div style="font-size:13px;opacity:.8;margin-bottom:12px;">Gérez vos biens immobiliers sans limites</div>
+        <div>
+          <span id="current-plan-badge" class="plan-badge plan-free">FREE</span>
+          <span style="font-size:12px;opacity:.7;margin-left:8px;">Plan actuel</span>
+        </div>
       </div>
     </div>
 
-    <div id="upgrade-modal-contact" style="background:var(--bg4);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text3);margin-top:16px;text-align:center;">
-      💳 Paiement par MTN MoMo · Orange Money · Virement
+    <!-- Plans -->
+    <div style="padding:20px 24px;background:var(--bg);overflow-x:auto;">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;min-width:600px;">
+
+        <!-- Gratuit -->
+        <div style="background:var(--bg2);border:2px solid var(--border);border-radius:14px;padding:20px 16px;display:flex;flex-direction:column;gap:0;position:relative;">
+          <div style="font-size:13px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Gratuit</div>
+          <div style="font-size:28px;font-weight:900;color:var(--text1);line-height:1;">0 <span style="font-size:14px;font-weight:600;color:var(--text3);">FCFA</span></div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">Pour toujours</div>
+          <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:7px;flex:1;">
+            <div style="font-size:12px;color:var(--text2);">✅ 1 immeuble</div>
+            <div style="font-size:12px;color:var(--text2);">✅ 10 locataires</div>
+            <div style="font-size:12px;color:var(--text2);">✅ 2 utilisateurs</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Rapports PDF</div>
+            <div style="font-size:12px;color:var(--text2);">✅ 1 rapport Word/mois</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Fiche de suivi</div>
+            <div style="font-size:12px;color:var(--text2);">✅ 3 relances/mois</div>
+            <div style="font-size:12px;color:var(--text3);">❌ Assistant IA</div>
+            <div style="font-size:12px;color:var(--text3);">❌ Export données</div>
+            <div style="font-size:12px;color:var(--text3);">⚠️ Publicités</div>
+          </div>
+          <button class="btn" style="width:100%;margin-top:16px;opacity:.5;cursor:default;" disabled>Plan actuel</button>
+        </div>
+
+        <!-- Starter -->
+        <div style="background:linear-gradient(180deg,#e8f4fd 0%,#fff 100%);border:2px solid #0E6AAF;border-radius:14px;padding:20px 16px;display:flex;flex-direction:column;position:relative;">
+          <div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#0E6AAF;color:#fff;font-size:10px;font-weight:800;padding:3px 12px;border-radius:99px;white-space:nowrap;letter-spacing:.05em;">⭐ POPULAIRE</div>
+          <div style="font-size:13px;font-weight:800;color:#0E6AAF;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Starter</div>
+          <div style="font-size:28px;font-weight:900;color:#0E6AAF;line-height:1;">9 999 <span style="font-size:14px;font-weight:600;color:var(--text3);">FCFA/mois</span></div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">99 900 FCFA/an <span style="color:#0E6AAF;font-weight:700;">2 mois offerts</span></div>
+          <div style="border-top:1px solid #c8dff5;padding-top:14px;display:flex;flex-direction:column;gap:7px;flex:1;">
+            <div style="font-size:12px;color:var(--text2);">✅ 3 immeubles</div>
+            <div style="font-size:12px;color:var(--text2);">✅ 50 locataires</div>
+            <div style="font-size:12px;color:var(--text2);">✅ 5 utilisateurs</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Rapports PDF + Word illimités</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Fiche de suivi</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Relances illimitées</div>
+            <div style="font-size:12px;color:var(--text2);">✅ IA 10 msgs/jour</div>
+            <div style="font-size:12px;color:var(--text3);">❌ Export données</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Sans publicité</div>
+          </div>
+          <button style="width:100%;margin-top:16px;padding:11px;background:#0E6AAF;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s;" onclick="startSubscription('starter')" onmouseover="this.style.background='#0a5a96'" onmouseout="this.style.background='#0E6AAF'">🚀 Passer à Starter</button>
+        </div>
+
+        <!-- Pro -->
+        <div style="background:linear-gradient(180deg,#f0eaff 0%,#fff 100%);border:2px solid #7C3AED;border-radius:14px;padding:20px 16px;display:flex;flex-direction:column;position:relative;">
+          <div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#7C3AED,#5B21B6);color:#fff;font-size:10px;font-weight:800;padding:3px 12px;border-radius:99px;white-space:nowrap;letter-spacing:.05em;">💎 RECOMMANDÉ</div>
+          <div style="font-size:13px;font-weight:800;color:#7C3AED;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Pro</div>
+          <div style="font-size:28px;font-weight:900;color:#7C3AED;line-height:1;">19 999 <span style="font-size:14px;font-weight:600;color:var(--text3);">FCFA/mois</span></div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">199 900 FCFA/an <span style="color:#7C3AED;font-weight:700;">2 mois offerts</span></div>
+          <div style="border-top:1px solid #d8c8f5;padding-top:14px;display:flex;flex-direction:column;gap:7px;flex:1;">
+            <div style="font-size:12px;color:var(--text2);">✅ 10 immeubles</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Locataires illimités</div>
+            <div style="font-size:12px;color:var(--text2);">✅ 15 utilisateurs</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Rapports PDF + Word illimités</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Fiche de suivi</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Relances illimitées</div>
+            <div style="font-size:12px;color:var(--text2);">✅ IA illimitée</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Export données</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Sans publicité</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Support prioritaire</div>
+          </div>
+          <button style="width:100%;margin-top:16px;padding:11px;background:linear-gradient(135deg,#7C3AED,#5B21B6);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s;" onclick="startSubscription('pro')" onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'">💼 Passer à Pro</button>
+        </div>
+
+        <!-- Agence -->
+        <div style="background:linear-gradient(180deg,#fff7e6 0%,#fff 100%);border:2px solid #D97706;border-radius:14px;padding:20px 16px;display:flex;flex-direction:column;position:relative;">
+          <div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#D97706,#B45309);color:#fff;font-size:10px;font-weight:800;padding:3px 12px;border-radius:99px;white-space:nowrap;letter-spacing:.05em;">🏢 ENTREPRISE</div>
+          <div style="font-size:13px;font-weight:800;color:#D97706;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Agence</div>
+          <div style="font-size:28px;font-weight:900;color:#D97706;line-height:1;">29 999 <span style="font-size:14px;font-weight:600;color:var(--text3);">FCFA/mois</span></div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">299 900 FCFA/an <span style="color:#D97706;font-weight:700;">2 mois offerts</span></div>
+          <div style="border-top:1px solid #f5dca8;padding-top:14px;display:flex;flex-direction:column;gap:7px;flex:1;">
+            <div style="font-size:12px;color:var(--text2);">✅ Immeubles illimités</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Locataires illimités</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Utilisateurs illimités</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Tout inclus</div>
+            <div style="font-size:12px;color:var(--text2);">✅ IA illimitée</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Export données</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Sans publicité</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Support dédié 24h</div>
+            <div style="font-size:12px;color:var(--text2);">✅ Portail locataire</div>
+          </div>
+          <button style="width:100%;margin-top:16px;padding:11px;background:linear-gradient(135deg,#D97706,#B45309);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s;" onclick="startSubscription('entreprise')" onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'">🏢 Passer Agence</button>
+        </div>
+
+      </div>
     </div>
 
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModals()">Fermer</button>
+    <!-- Footer -->
+    <div style="padding:14px 24px;background:var(--bg4);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div id="upgrade-modal-contact" style="font-size:12px;color:var(--text3);">
+        💳 Paiement par MTN MoMo · Orange Money · Virement &nbsp;·&nbsp; Contactez-nous au <strong>+237 690 40 99 29</strong>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="closeModals()">Fermer</button>
     </div>
+
   </div>
 </div>
 
