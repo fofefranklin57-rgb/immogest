@@ -170,3 +170,47 @@ CREATE POLICY "acces_corbeille" ON corbeille FOR ALL USING (true) WITH CHECK (tr
 SELECT 'archives'  AS table_name, COUNT(*) AS lignes FROM archives
 UNION ALL
 SELECT 'corbeille' AS table_name, COUNT(*) AS lignes FROM corbeille;
+
+
+-- ═══════════════════════════════════════════════════════════════
+--  ImmoGest — Migration : table declarations
+--  À exécuter dans Supabase → SQL Editor → New query
+-- ═══════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS declarations (
+  id               SERIAL PRIMARY KEY,
+  locataire_id     INTEGER,
+  montant          INTEGER NOT NULL DEFAULT 0,
+  date_paiement    DATE,
+  mois_c           INTEGER,
+  annee_c          INTEGER,
+  mois_fin         INTEGER,
+  annee_fin        INTEGER,
+  periode_label    TEXT,
+  mode             TEXT    DEFAULT 'especes',
+  ref              TEXT,
+  obs              TEXT,
+  statut           TEXT    DEFAULT 'pending',
+  date_declaration TIMESTAMPTZ DEFAULT now(),
+  date_validation  DATE,
+  note_comptable   TEXT,
+  montant_valide   INTEGER,
+  pay_id           INTEGER,
+  receipt_id       TEXT,
+  nom_locataire    TEXT,
+  appt_locataire   TEXT,
+  nom_immeuble     TEXT,
+  photo_url        TEXT,
+  declared_by      TEXT    DEFAULT 'locataire',
+  type             TEXT    DEFAULT 'locataire'
+);
+
+CREATE INDEX IF NOT EXISTS idx_declarations_locataire ON declarations (locataire_id);
+CREATE INDEX IF NOT EXISTS idx_declarations_statut    ON declarations (statut);
+
+ALTER TABLE declarations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "acces_declarations" ON declarations FOR ALL USING (true) WITH CHECK (true);
+
+-- Bucket Storage pour les photos de reçus (à créer dans Supabase Dashboard → Storage)
+-- Nom du bucket : declarations
+-- Public : true

@@ -949,9 +949,22 @@
       <label>Observations</label>
       <textarea id="decl-obs" rows="2" placeholder="Informations complémentaires..."></textarea>
     </div>
+    <!-- Zone photo reçu -->
+    <div class="form-group">
+      <label>📎 Capture d'écran / Photo du reçu <span style="color:var(--text3);font-weight:400;">(optionnel)</span></label>
+      <input type="file" id="decl-photo" accept="image/*" style="display:none;" onchange="previewDeclPhoto(this)">
+      <div id="decl-photo-zone" onclick="document.getElementById('decl-photo').click()"
+        style="border:2px dashed var(--border2);border-radius:10px;padding:16px;text-align:center;cursor:pointer;background:var(--bg4);transition:border-color .2s;min-height:60px;display:flex;align-items:center;justify-content:center;">
+        <div id="decl-photo-placeholder" style="color:var(--text3);font-size:13px;">
+          📷 Appuyer pour ajouter une photo du reçu
+        </div>
+        <img id="decl-photo-preview" src="" style="display:none;max-width:100%;max-height:160px;border-radius:8px;object-fit:contain;">
+      </div>
+      <div id="decl-photo-name" style="font-size:11px;color:var(--text3);margin-top:4px;"></div>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModals()">Annuler</button>
-      <button class="btn btn-primary" onclick="soumettreDeclaration()">📤 Soumettre</button>
+      <button class="btn btn-primary" id="btn-soumettre-decl" onclick="soumettreDeclaration()">📤 Soumettre</button>
     </div>
   </div>
 </div>
@@ -962,6 +975,12 @@
     <h3>✅ Valider un paiement</h3>
     <input type="hidden" id="val-decl-id">
     <div id="val-decl-info" style="background:var(--bg3);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;"></div>
+    <!-- Photo reçu si disponible -->
+    <div id="val-photo-zone" style="display:none;margin-bottom:14px;">
+      <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:8px;">📎 Pièce justificative</div>
+      <img id="val-photo-img" src="" style="max-width:100%;max-height:220px;border-radius:10px;object-fit:contain;border:1px solid var(--border);cursor:pointer;" onclick="window.open(this.src,'_blank')">
+      <div style="font-size:11px;color:var(--text3);margin-top:4px;">Cliquer pour agrandir</div>
+    </div>
     <div class="form-row">
       <div class="form-group">
         <label>Montant validé (FCFA) *</label>
@@ -1282,6 +1301,9 @@ self.addEventListener('fetch', (event) => {
 
   <!-- Pub native entre sections -->
   <div id="ad-slot-portail-native" class="ad-slot-native"></div>
+
+  <!-- Zone déclarations en cours -->
+  <div id="decl-status-zone" style="margin-bottom:14px;display:none;"></div>
 
   <div class="card" style="margin-bottom:60px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">

@@ -447,9 +447,23 @@ function _getLocataireConnecte() {
   return null;
 }
 
-function loadDashboard() {
+async function loadDashboard() {
   const l = _getLocataireConnecte();
   if (!l) return;
+
+  // Charger les déclarations depuis Supabase pour ce locataire
+  if (typeof loadDeclarationsByLocataireFromSupabase === 'function') {
+    const sbDecls = await loadDeclarationsByLocataireFromSupabase(l.id);
+    if (sbDecls && sbDecls.length >= 0) {
+      // Fusionner avec DATA.declarations (garder les locales non encore synchros)
+      if (!DATA.declarations) DATA.declarations = [];
+      sbDecls.forEach(sd => {
+        const idx = DATA.declarations.findIndex(d => d.id === sd.id);
+        if (idx >= 0) DATA.declarations[idx] = sd;
+        else DATA.declarations.push(sd);
+      });
+    }
+  }
 
   const im   = DATA.immeubles.find(i => i.id === l.iid) || {};
   const pays = DATA.paiements.filter(p => p.locId === l.id)
@@ -608,6 +622,56 @@ function loadDashboard() {
     }
     if (!docsHtml) docsHtml = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">Aucun document disponible</div>';
     docList.innerHTML = docsHtml;
+  }
+
+  // ── Déclarations en cours (tous statuts) ──
+  const declZone = document.getElementById('decl-status-zone');
+  if (declZone) {
+    const allDecls = (DATA.declarations||[]).filter(d => d.locId === l.id)
+      .sort((a,b) => b.dateDeclaration.localeCompare(a.dateDeclaration))
+      .slice(0, 5);
+
+    const pending  = allDecls.filter(d => d.statut === 'pending');
+    const rejected = allDecls.filter(d => d.statut === 'rejected');
+
+    if (pending.length > 0 || rejected.length > 0) {
+      declZone.style.display = 'block';
+      let dhtml = '';
+
+      if (pending.length > 0) {
+        dhtml += `<div style="background:var(--yellow-bg);border:1.5px solid var(--yellow);border-radius:10px;padding:12px 16px;margin-bottom:10px;">
+          <div style="font-weight:700;color:var(--yellow);font-size:13px;margin-bottom:8px;">⏳ ${pending.length} paiement(s) en attente de validation</div>`;
+        pending.forEach(d => {
+          dhtml += `<div style="font-size:12px;color:var(--text2);display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-top:1px solid rgba(0,0,0,.05);">
+            <span>${MNOMS[d.moisC]||''} ${d.anneeC||''} — ${Number(d.montant).toLocaleString('fr-FR')} FCFA (${d.mode||''})</span>
+            <span style="font-size:11px;color:var(--text3);">Déclaré le ${new Date(d.dateDeclaration).toLocaleDateString('fr-FR')}</span>
+          </div>`;
+          if (d.photoUrl) {
+            dhtml += `<div style="margin-top:6px;"><img src="${d.photoUrl}" onclick="window.open('${d.photoUrl}','_blank')" style="max-height:80px;border-radius:6px;cursor:pointer;border:1px solid var(--border);" title="Voir le reçu"></div>`;
+          }
+        });
+        dhtml += '</div>';
+      }
+
+      if (rejected.length > 0) {
+        dhtml += `<div style="background:var(--red-bg);border:1.5px solid var(--red);border-radius:10px;padding:12px 16px;">
+          <div style="font-weight:700;color:var(--red);font-size:13px;margin-bottom:8px;">❌ ${rejected.length} paiement(s) rejeté(s)</div>`;
+        rejected.forEach(d => {
+          dhtml += `<div style="font-size:12px;color:var(--text2);padding:4px 0;border-top:1px solid rgba(0,0,0,.05);">
+            <div style="display:flex;justify-content:space-between;">
+              <span>${MNOMS[d.moisC]||''} ${d.anneeC||''} — ${Number(d.montant).toLocaleString('fr-FR')} FCFA</span>
+              <span style="font-size:11px;color:var(--text3);">${d.dateValidation||''}</span>
+            </div>
+            ${d.noteComptable ? `<div style="font-size:11px;color:var(--red);margin-top:2px;">Motif : ${d.noteComptable}</div>` : ''}
+          </div>`;
+        });
+        dhtml += '</div>';
+      }
+
+      declZone.innerHTML = dhtml;
+    } else {
+      declZone.style.display = 'none';
+    }
   }
 
   // ── Notifications depuis paiements récents ──

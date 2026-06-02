@@ -422,3 +422,114 @@ async function verifierLocataireArchives(nom, tel) {
     return data || [];
   } catch(e) { return []; }
 }
+
+// ── Helpers Déclarations ──────────────────────────────────────
+
+function _mapDeclaration(r) {
+  return {
+    id:             r.id,
+    locId:          r.locataire_id,
+    montant:        r.montant || 0,
+    date:           r.date_paiement || '',
+    moisC:          r.mois_c,
+    anneeC:         r.annee_c,
+    moisFin:        r.mois_fin,
+    anneeFin:       r.annee_fin,
+    periodeLabel:   r.periode_label || '',
+    mode:           r.mode || 'especes',
+    ref:            r.ref || null,
+    obs:            r.obs || null,
+    statut:         r.statut || 'pending',
+    dateDeclaration:r.date_declaration || new Date().toISOString(),
+    dateValidation: r.date_validation || null,
+    noteComptable:  r.note_comptable || null,
+    montantValidé:  r.montant_valide || null,
+    payId:          r.pay_id || null,
+    receiptId:      r.receipt_id || null,
+    nomLocataire:   r.nom_locataire || '',
+    apptLocataire:  r.appt_locataire || '',
+    nomImmeuble:    r.nom_immeuble || '',
+    photoUrl:       r.photo_url || null,
+    declaredBy:     r.declared_by || 'locataire',
+    type:           r.type || 'locataire'
+  };
+}
+
+async function saveDeclarationToSupabase(decl) {
+  try {
+    const row = {
+      locataire_id:  decl.locId,
+      montant:       decl.montant,
+      date_paiement: decl.date || null,
+      mois_c:        decl.moisC,
+      annee_c:       decl.anneeC,
+      mois_fin:      decl.moisFin,
+      annee_fin:     decl.anneeFin,
+      periode_label: decl.periodeLabel || null,
+      mode:          decl.mode || 'especes',
+      ref:           decl.ref || null,
+      obs:           decl.obs || null,
+      statut:        decl.statut || 'pending',
+      nom_locataire: decl.nomLocataire || '',
+      appt_locataire:decl.apptLocataire || '',
+      nom_immeuble:  decl.nomImmeuble || '',
+      photo_url:     decl.photoUrl || null,
+      declared_by:   decl.declaredBy || 'locataire',
+      type:          decl.type || 'locataire'
+    };
+    const { data, error } = await _sb.from('declarations').insert(row).select().single();
+    if (error) throw error;
+    return data;
+  } catch(e) {
+    console.warn('saveDeclaration error:', e.message || e);
+    return null;
+  }
+}
+
+async function loadDeclarationsFromSupabase() {
+  try {
+    const { data, error } = await _sb.from('declarations').select('*').order('date_declaration', { ascending: false });
+    if (error) throw error;
+    return (data || []).map(_mapDeclaration);
+  } catch(e) {
+    console.warn('loadDeclarations error:', e.message || e);
+    return null;
+  }
+}
+
+async function loadDeclarationsByLocataireFromSupabase(locataireId) {
+  try {
+    const { data, error } = await _sb.from('declarations').select('*')
+      .eq('locataire_id', locataireId).order('date_declaration', { ascending: false });
+    if (error) throw error;
+    return (data || []).map(_mapDeclaration);
+  } catch(e) {
+    console.warn('loadDeclsByLoc error:', e.message || e);
+    return [];
+  }
+}
+
+async function updateDeclarationInSupabase(id, fields) {
+  try {
+    const { error } = await _sb.from('declarations').update(fields).eq('id', id);
+    if (error) throw error;
+    return true;
+  } catch(e) {
+    console.warn('updateDeclaration error:', e.message || e);
+    return false;
+  }
+}
+
+async function uploadPhotoRecu(file, declId) {
+  try {
+    const ext = (file.name || 'img').split('.').pop() || 'jpg';
+    const path = 'receipts/' + declId + '_' + Date.now() + '.' + ext;
+    const { error } = await _sb.storage.from('declarations').upload(path, file, { upsert: true });
+    if (error) throw error;
+    const { data } = _sb.storage.from('declarations').getPublicUrl(path);
+    return data.publicUrl;
+  } catch(e) {
+    console.warn('uploadPhotoRecu error:', e.message || e);
+    return null;
+  }
+}

@@ -5055,7 +5055,22 @@ function ouvrirDeclarationPaiement(locId) {
   document.getElementById('modal-declaration-paiement').classList.add('open');
 }
 
-function soumettreDeclaration() {
+function previewDeclPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  document.getElementById('decl-photo-name').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const prev = document.getElementById('decl-photo-preview');
+    const placeholder = document.getElementById('decl-photo-placeholder');
+    prev.src = e.target.result;
+    prev.style.display = 'block';
+    placeholder.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function soumettreDeclaration() {
   // Gestionnaire records payment directly - it goes to comptable as pending
   // But gestionnaire sees a "Notifier comptable" confirmation
   const locId = parseInt(document.getElementById('decl-loc-id').value);
@@ -5087,6 +5102,14 @@ function soumettreDeclaration() {
   if (!DATA.declarations) DATA.declarations = [];
   if (!DATA.nextDeclId) DATA.nextDeclId = 1;
 
+  // Désactiver bouton pendant traitement
+  const btnSoumettre = document.getElementById('btn-soumettre-decl');
+  if (btnSoumettre) { btnSoumettre.disabled = true; btnSoumettre.textContent = '⏳ Envoi...'; }
+
+  // Upload photo si présente
+  let photoUrl = null;
+  const photoFile = document.getElementById('decl-photo') && document.getElementById('decl-photo').files[0];
+
   const decl = {
     id: DATA.nextDeclId++,
     locId, montant, date, moisC, anneeC,
@@ -5094,7 +5117,7 @@ function soumettreDeclaration() {
     mode: _selectedPayMode,
     ref: ref || null,
     obs: obs || null,
-    statut: 'pending',  // pending | validated | rejected
+    statut: 'pending',
     dateDeclaration: new Date().toISOString(),
     dateValidation: null,
     noteComptable: null,
@@ -5102,17 +5125,45 @@ function soumettreDeclaration() {
     nomLocataire: l.nom,
     apptLocataire: l.appt,
     nomImmeuble: im ? im.nom : '',
+    photoUrl: null,
+    declaredBy: SESSION ? SESSION.role : 'locataire',
+    type: SESSION && SESSION.role === 'proprietaire' ? 'bailleur' : 'locataire',
   };
+
+  // Sauvegarder sur Supabase (obtient l'ID réel)
+  const sbDecl = await saveDeclarationToSupabase(decl);
+  if (sbDecl) {
+    decl.id = sbDecl.id; // Utiliser l'ID Supabase
+
+    // Upload photo avec l'ID réel
+    if (photoFile) {
+      showToast('Upload photo...', 'blue');
+      photoUrl = await uploadPhotoRecu(photoFile, sbDecl.id);
+      if (photoUrl) {
+        decl.photoUrl = photoUrl;
+        await updateDeclarationInSupabase(sbDecl.id, { photo_url: photoUrl });
+      }
+    }
+  }
 
   DATA.declarations.push(decl);
   saveData();
   closeModals();
+
+  // Reset photo
+  const photoInput = document.getElementById('decl-photo');
+  if (photoInput) photoInput.value = '';
+  const prev = document.getElementById('decl-photo-preview');
+  if (prev) { prev.src = ''; prev.style.display = 'none'; }
+  const placeholder = document.getElementById('decl-photo-placeholder');
+  if (placeholder) placeholder.style.display = 'block';
+
+  if (btnSoumettre) { btnSoumettre.disabled = false; btnSoumettre.textContent = '📤 Soumettre'; }
+
   showToast('Paiement déclaré ✓ — En attente de validation');
 
-  // Refresh locataire dashboard
-  if (SESSION && SESSION.role === 'locataire') {
-    renderLocataireDashboard();
-  }
+  // Refresh
+  if (SESSION && SESSION.role === 'locataire') renderLocataireDashboard();
 }
 
 // ── COMPTABLE: validation ────────────────────────────────────────────────────
@@ -5139,6 +5190,18 @@ function ouvrirValidation(declId) {
       ${d.ref?`<div style="grid-column:1/-1;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;">Référence</div><div style="font-family:var(--mono);font-size:12px;">${d.ref}</div></div>`:''}
       ${d.obs?`<div style="grid-column:1/-1;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;">Observations</div><div style="font-size:12px;font-style:italic;">${d.obs}</div></div>`:''}
     </div>`;
+
+  // Afficher photo si disponible
+  const photoZone = document.getElementById('val-photo-zone');
+  const photoImg  = document.getElementById('val-photo-img');
+  if (photoZone && photoImg) {
+    if (d.photoUrl) {
+      photoImg.src = d.photoUrl;
+      photoZone.style.display = 'block';
+    } else {
+      photoZone.style.display = 'none';
+    }
+  }
 
   document.getElementById('modal-validation-paiement').classList.add('open');
 }
@@ -5190,23 +5253,68 @@ async function validerDeclaration() {
   closeModals();
   showToast('Paiement validé ✓ — Reçu PDF généré');
 
+  // Sync Supabase — declaration
+  await updateDeclarationInSupabase(d.id, {
+    statut:         'validated',
+    montant_valide: montant,
+    date_validation:date,
+    note_comptable: note || null,
+    pay_id:         paiement.id,
+    receipt_id:     d.receiptId,
+  });
+
+  // Sync Supabase — paiement
+  await savePaiementToSupabase(paiement);
+
+  // Sync Supabase — locataire (reste mis à jour)
+  if (l) await saveLocataireToSupabase(l);
+
+  // Notification push au locataire
+  if (typeof sendOneSignalNotif === 'function') {
+    sendOneSignalNotif(
+      'loc_' + d.locId,
+      '✅ Paiement validé',
+      'Votre paiement de ' + fmt(montant) + ' pour ' + (MNOMS[d.moisC]||'') + ' ' + d.anneeC + ' a été validé.',
+      { type: 'validation', payId: paiement.id }
+    );
+  }
+
   // Auto-generate PDF receipt
   await genPDFRecu(paiement.id, d);
 
   renderCurrent();
 }
 
-function rejeterDeclaration() {
+async function rejeterDeclaration() {
   const declId = parseInt(document.getElementById('val-decl-id').value);
   const note = document.getElementById('val-note').value.trim() || 'Paiement rejeté';
   const d = DATA.declarations.find(x => x.id === declId);
   if (!d) return;
+  const dateRej = new Date().toISOString().split('T')[0];
   d.statut = 'rejected';
   d.noteComptable = note;
-  d.dateValidation = new Date().toISOString().split('T')[0];
+  d.dateValidation = dateRej;
   saveData();
   closeModals();
   showToast('Paiement rejeté');
+
+  // Sync Supabase
+  await updateDeclarationInSupabase(d.id, {
+    statut: 'rejected',
+    note_comptable: note,
+    date_validation: dateRej,
+  });
+
+  // Notification push au locataire
+  if (typeof sendOneSignalNotif === 'function') {
+    sendOneSignalNotif(
+      'loc_' + d.locId,
+      '❌ Paiement rejeté',
+      note + ' — Veuillez contacter votre gestionnaire.',
+      { type: 'rejet' }
+    );
+  }
+
   renderCurrent();
 }
 
@@ -5809,10 +5917,18 @@ async function telechargerRecuValide(payId) {
 }
 
 // ── COMPTABLE: liste des déclarations à valider ───────────────────────────────
-function renderValidationComptable() {
+async function renderValidationComptable() {
   document.getElementById('page-title').textContent = 'Validation des paiements';
   document.getElementById('page-sub').textContent = 'Paiements déclarés par les locataires et propriétaires';
   document.getElementById('topbar-main-btn').textContent = '+ Paiement manuel';
+  document.getElementById('content').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);">⏳ Chargement...</div>';
+
+  // Sync depuis Supabase
+  const sbDecls = await loadDeclarationsFromSupabase();
+  if (sbDecls !== null) {
+    DATA.declarations = sbDecls;
+    saveData();
+  }
 
   const pending = (DATA.declarations||[]).filter(d=>(d.statut==='pending'||d.statut==='pending_receipt') && d.type !== 'bailleur').sort((a,b)=>b.dateDeclaration.localeCompare(a.dateDeclaration));
   const validated = (DATA.declarations||[]).filter(d=>d.statut==='validated').sort((a,b)=>b.dateValidation.localeCompare(a.dateValidation)).slice(0,10);
@@ -5925,15 +6041,24 @@ function _filterValidation() {
     r.style.display = !q || (r.dataset.search||'').indexOf(q) >= 0 ? '' : 'none';
   });
 }
-function rejeterRapide(declId) {
+async function rejeterRapide(declId) {
   if (!confirm('Rejeter ce paiement ?')) return;
   const d = DATA.declarations.find(x=>x.id===declId);
   if (!d) return;
+  const note = 'Rejeté par le comptable';
+  const dateRej = new Date().toISOString().split('T')[0];
   d.statut = 'rejected';
-  d.noteComptable = 'Rejeté par le comptable';
-  d.dateValidation = new Date().toISOString().split('T')[0];
+  d.noteComptable = note;
+  d.dateValidation = dateRej;
   saveData();
   showToast('Paiement rejeté');
+
+  await updateDeclarationInSupabase(d.id, { statut:'rejected', note_comptable:note, date_validation:dateRej });
+
+  if (typeof sendOneSignalNotif === 'function') {
+    sendOneSignalNotif('loc_' + d.locId, '❌ Paiement rejeté', 'Votre déclaration a été rejetée. Contactez votre gestionnaire.', { type:'rejet' });
+  }
+
   renderValidationComptable();
 }
 
@@ -9824,10 +9949,14 @@ function renderPortailProprietaire(immeubles, tab) {
                 <td style="padding:10px 12px;text-align:right;font-family:var(--mono);color:${(l.reste||0)>0?'var(--red)':'var(--green)'};">
                   ${(l.reste||0)>0?fmt(l.reste):'–'}
                 </td>
-                <td style="padding:10px 12px;text-align:center;">
+                <td style="padding:10px 12px;text-align:center;white-space:nowrap;">
                   <button onclick="ouvrirFicheSuiviReadOnly(${l.id})"
-                    style="padding:5px 10px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit;white-space:nowrap;">
+                    style="padding:5px 10px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit;margin-right:4px;">
                     👁 Fiche
+                  </button>
+                  <button onclick="document.getElementById('modal-portail-proprietaire').classList.remove('open');setTimeout(()=>ouvrirDeclarationPaiement(${l.id}),200)"
+                    style="padding:5px 10px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit;">
+                    💳 Déclarer
                   </button>
                 </td>
               </tr>`;
