@@ -9,7 +9,7 @@
 // - GET  /test-notifs, /health
 // Secrets requis : CAMPAY_TOKEN (permanent access token), CAMPAY_WEBHOOK_KEY,
 //                  CAMPAY_ENV (demo|prod),
-//                  SUPABASE_URL, SUPABASE_KEY,
+//                  SUPABASE_URL, SUPABASE_KEY (anon), SUPABASE_SERVICE_KEY (service_role),
 //                  ONESIGNAL_APP_ID, ONESIGNAL_REST_KEY,
 //                  ANTHROPIC_API_KEY,
 //                  MANAGER_WHATSAPP (ex: 237690409929),
@@ -57,6 +57,10 @@ export default {
       return new Response(JSON.stringify(result, null, 2), {
         headers: { 'Content-Type': 'application/json' }
       });
+    }
+
+    if (url.pathname === '/db' && request.method === 'POST') {
+      return handleDbProxy(request, env);
     }
 
     if (url.pathname === '/health') {
@@ -192,11 +196,12 @@ async function handleCampayWebhook(request, env) {
     const expiry = new Date(Date.now() + duree * 30 * 86400000).toISOString();
 
     // Upsert dans Supabase table abonnements (un enregistrement par cabinet)
+    const _sbKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY;
     const sbResp = await fetch(`${env.SUPABASE_URL}/rest/v1/abonnements`, {
       method:  'POST',
       headers: {
-        'apikey':        env.SUPABASE_KEY,
-        'Authorization': `Bearer ${env.SUPABASE_KEY}`,
+        'apikey':        _sbKey,
+        'Authorization': `Bearer ${_sbKey}`,
         'Content-Type':  'application/json',
         'Prefer':        'resolution=merge-duplicates'
       },
@@ -459,14 +464,123 @@ async function handleWaImpayesPage(request, env) {
 }
 
 // ══════════════════════════════════════════════════════════════
+// PROXY BASE DE DONNÉES SÉCURISÉ
+// POST /db  { op, table, data, filter, userId, pwdHash }
+// ══════════════════════════════════════════════════════════════
+async function handleDbProxy(request, env) {
+  try {
+    const body = await request.json();
+    const { op, table, data, filter, userId, pwdHash } = body;
+
+    // Tables autorisées via ce proxy
+    const ALLOWED = ['immeubles','locataires','paiements','users_app','parametres','archives','corbeille'];
+    if (!ALLOWED.includes(table)) {
+      return jsonResponse({ ok: false, error: 'Table non autorisée' }, 403, request);
+    }
+
+    // Clé service_role (jamais exposée au client)
+    const svcKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY;
+    const sbUrl  = env.SUPABASE_URL;
+
+    // Validation de session — vérifier que userId+pwdHash correspondent à un vrai compte
+    if (!userId || !pwdHash) {
+      return jsonResponse({ ok: false, error: 'Non authentifié' }, 401, request);
+    }
+    const checkResp = await fetch(
+      `${sbUrl}/rest/v1/users_app?id=eq.${encodeURIComponent(userId)}&select=id,password,pin`,
+      { headers: { 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}` } }
+    );
+    const checkUsers = await checkResp.json();
+    if (Array.isArray(checkUsers) && checkUsers.length > 0) {
+      // Utilisateur trouvé — vérifier le hash
+      const dbUser = checkUsers[0];
+      const expected = dbUser.password || dbUser.pin || '';
+      if (expected && expected !== pwdHash) {
+        return jsonResponse({ ok: false, error: 'Session invalide' }, 401, request);
+      }
+    }
+    // Si users_app vide (1er lancement) → bootstrap autorisé sans validation
+
+    // Headers Supabase avec service_role
+    const hdrs = {
+      'apikey':        svcKey,
+      'Authorization': `Bearer ${svcKey}`,
+      'Content-Type':  'application/json'
+    };
+
+    let result, resp;
+
+    if (op === 'select') {
+      let qs = '?select=*';
+      if (filter && filter.eq)    qs += `&${filter.eq.col}=eq.${encodeURIComponent(filter.eq.val)}`;
+      if (filter && filter.order) qs += `&order=${filter.order}`;
+      resp   = await fetch(`${sbUrl}/rest/v1/${table}${qs}`, { headers: hdrs });
+      result = await resp.json();
+
+    } else if (op === 'upsert') {
+      const rows     = Array.isArray(data) ? data : [data];
+      const conflict = (filter && filter.onConflict) ? filter.onConflict : 'id';
+      resp   = await fetch(`${sbUrl}/rest/v1/${table}`, {
+        method: 'POST',
+        headers: { ...hdrs, 'Prefer': `resolution=merge-duplicates,return=representation` },
+        body: JSON.stringify(rows)
+      });
+      result = await resp.json();
+
+    } else if (op === 'insert') {
+      const rows = Array.isArray(data) ? data : [data];
+      resp   = await fetch(`${sbUrl}/rest/v1/${table}`, {
+        method: 'POST',
+        headers: { ...hdrs, 'Prefer': 'return=representation' },
+        body: JSON.stringify(rows)
+      });
+      result = await resp.json();
+
+    } else if (op === 'update') {
+      const col = (filter && filter.col) ? filter.col : 'id';
+      const val = (filter && filter.val !== undefined) ? filter.val : '';
+      resp   = await fetch(`${sbUrl}/rest/v1/${table}?${col}=eq.${encodeURIComponent(val)}`, {
+        method: 'PATCH',
+        headers: { ...hdrs, 'Prefer': 'return=representation' },
+        body: JSON.stringify(data)
+      });
+      result = await resp.json();
+
+    } else if (op === 'delete') {
+      const col = (filter && filter.col) ? filter.col : 'id';
+      const val = (filter && filter.val !== undefined) ? filter.val : '';
+      resp   = await fetch(`${sbUrl}/rest/v1/${table}?${col}=eq.${encodeURIComponent(val)}`, {
+        method: 'DELETE',
+        headers: hdrs
+      });
+      result = [];
+
+    } else {
+      return jsonResponse({ ok: false, error: 'Opération inconnue: ' + op }, 400, request);
+    }
+
+    // Détecter les erreurs Supabase (retournent { code, message })
+    if (result && !Array.isArray(result) && result.code && result.message) {
+      return jsonResponse({ ok: false, error: result.message }, 400, request);
+    }
+
+    return jsonResponse({ ok: true, data: result }, 200, request);
+  } catch(e) {
+    return jsonResponse({ ok: false, error: e.message }, 500, request);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
 // HELPERS
 // ══════════════════════════════════════════════════════════════
 async function querySupabase(env, path) {
   try {
+    // Utiliser service_role si disponible (accès complet même avec RLS)
+    const key = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY;
     const resp = await fetch(`${env.SUPABASE_URL}/rest/v1/${path}`, {
       headers: {
-        'apikey':        env.SUPABASE_KEY,
-        'Authorization': `Bearer ${env.SUPABASE_KEY}`,
+        'apikey':        key,
+        'Authorization': `Bearer ${key}`,
         'Content-Type':  'application/json'
       }
     });

@@ -260,3 +260,55 @@ CREATE POLICY "acces_parametres" ON parametres FOR ALL USING (true) WITH CHECK (
 SELECT 'users_app'  AS table_name, COUNT(*) AS lignes FROM users_app
 UNION ALL
 SELECT 'parametres' AS table_name, COUNT(*) AS lignes FROM parametres;
+
+
+-- ═══════════════════════════════════════════════════════════════
+--  ImmoGest — RLS Sécurité : bloquer l'accès anon direct
+--  À exécuter après avoir ajouté SUPABASE_SERVICE_KEY dans Cloudflare
+--  La service_role key bypass le RLS automatiquement (seul le Worker y accède)
+-- ═══════════════════════════════════════════════════════════════
+
+-- ── immeubles ──────────────────────────────────────────────────
+ALTER TABLE immeubles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "acces_immeubles" ON immeubles;
+-- Aucune politique anon → accès bloqué pour la clé anon
+-- Le Worker utilise service_role (bypasse RLS) → accès total
+
+-- ── locataires ─────────────────────────────────────────────────
+ALTER TABLE locataires ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "acces_locataires" ON locataires;
+
+-- ── paiements ──────────────────────────────────────────────────
+ALTER TABLE paiements ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "acces_paiements" ON paiements;
+
+-- ── users_app ──────────────────────────────────────────────────
+-- (déjà créé avec RLS, on s'assure qu'il n'y a pas de politique permissive)
+DROP POLICY IF EXISTS "acces_users_app" ON users_app;
+
+-- ── parametres ─────────────────────────────────────────────────
+DROP POLICY IF EXISTS "acces_parametres" ON parametres;
+
+-- ── Tables secondaires : interdire DELETE via anon ─────────────
+ALTER TABLE maintenances  ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "acces_maintenances" ON maintenances;
+CREATE POLICY "maintenances_no_delete" ON maintenances
+  FOR SELECT USING (true);
+CREATE POLICY "maintenances_insert" ON maintenances
+  FOR INSERT WITH CHECK (true);
+CREATE POLICY "maintenances_update" ON maintenances
+  FOR UPDATE USING (true) WITH CHECK (true);
+
+ALTER TABLE declarations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "acces_declarations" ON declarations;
+CREATE POLICY "declarations_no_delete" ON declarations
+  FOR SELECT USING (true);
+CREATE POLICY "declarations_insert" ON declarations
+  FOR INSERT WITH CHECK (true);
+CREATE POLICY "declarations_update" ON declarations
+  FOR UPDATE USING (true) WITH CHECK (true);
+
+-- Vérification finale
+SELECT tablename, rowsecurity FROM pg_tables
+WHERE tablename IN ('immeubles','locataires','paiements','users_app','parametres','maintenances','declarations')
+ORDER BY tablename;

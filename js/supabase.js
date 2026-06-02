@@ -1,10 +1,37 @@
 const SUPABASE_URL  = 'https://uggxfmwpttfsfcirmeqx.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZ3hmbXdwdHRmc2ZjaXJtZXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNTA4MjIsImV4cCI6MjA5NDYyNjgyMn0.l8iYlJHOt6evNlBQ3zRskZasn_J2BjAUs1l2vKOZNvY';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const WORKER_URL = 'https://immogest1.fofefranklin57.workers.dev';
+
+// ── Proxy sécurisé via Cloudflare Worker ──────────────────────
+// Toutes les opérations sur les tables critiques passent par le Worker
+// (service_role key côté serveur, jamais exposée au client)
+async function _dbProxy(op, table, data, filter) {
+  const res = await fetch(WORKER_URL + '/db', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      op, table, data, filter,
+      userId:  SESSION && SESSION.userId,
+      pwdHash: SESSION && SESSION._pwdHash
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(function() { return {}; });
+    throw new Error(err.error || 'Worker /db error ' + res.status);
+  }
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'DB proxy error');
+  return json.data;
+}
 
 // ── Helpers Supabase ──────────────────────────────────────────
 async function sbLoad(table) {
   try {
+    if (SESSION) {
+      const data = await _dbProxy('select', table, null, null);
+      return data || [];
+    }
     const { data, error } = await _sb.from(table).select('*');
     if (error) throw error;
     return data || [];
@@ -16,6 +43,10 @@ async function sbLoad(table) {
 
 async function sbUpsert(table, rows) {
   try {
+    if (SESSION) {
+      await _dbProxy('upsert', table, rows, null);
+      return true;
+    }
     const { error } = await _sb.from(table).upsert(rows, { onConflict: 'id' });
     if (error) throw error;
     return true;
@@ -27,6 +58,10 @@ async function sbUpsert(table, rows) {
 
 async function sbDelete(table, id) {
   try {
+    if (SESSION) {
+      await _dbProxy('delete', table, null, { col: 'id', val: id });
+      return true;
+    }
     const { error } = await _sb.from(table).delete().eq('id', id);
     if (error) throw error;
     return true;
@@ -586,8 +621,7 @@ function _userToRow(u) {
 
 async function loadUsersFromSupabase() {
   try {
-    const { data, error } = await _sb.from('users_app').select('*');
-    if (error) throw error;
+    const data = await _dbProxy('select', 'users_app', null, null);
     return data ? data.map(_mapUser) : null;
   } catch(e) {
     console.warn('loadUsers Supabase error:', e.message || e);
@@ -598,9 +632,7 @@ async function loadUsersFromSupabase() {
 async function saveAllUsersToSupabase(users) {
   if (!users || !users.length) return false;
   try {
-    const rows = users.map(_userToRow);
-    const { error } = await _sb.from('users_app').upsert(rows, { onConflict: 'id' });
-    if (error) throw error;
+    await _dbProxy('upsert', 'users_app', users.map(_userToRow), null);
     return true;
   } catch(e) {
     console.warn('saveAllUsers Supabase error:', e.message || e);
@@ -610,8 +642,7 @@ async function saveAllUsersToSupabase(users) {
 
 async function deleteUserFromSupabase(userId) {
   try {
-    const { error } = await _sb.from('users_app').delete().eq('id', userId);
-    if (error) throw error;
+    await _dbProxy('delete', 'users_app', null, { col: 'id', val: userId });
     return true;
   } catch(e) {
     console.warn('deleteUser Supabase error:', e.message || e);
@@ -623,6 +654,10 @@ async function deleteUserFromSupabase(userId) {
 
 async function loadParametresFromSupabase() {
   try {
+    if (SESSION) {
+      const data = await _dbProxy('select', 'parametres', null, { eq: { col: 'id', val: 'global' } });
+      return (data && data[0]) ? data[0].settings : null;
+    }
     const { data, error } = await _sb.from('parametres').select('*').eq('id', 'global').maybeSingle();
     if (error) throw error;
     return data ? data.settings : null;
@@ -634,6 +669,10 @@ async function loadParametresFromSupabase() {
 
 async function saveParametresToSupabase(settings) {
   try {
+    if (SESSION) {
+      await _dbProxy('upsert', 'parametres', { id: 'global', settings: settings || {}, updated_at: new Date().toISOString() }, null);
+      return true;
+    }
     const { error } = await _sb.from('parametres')
       .upsert({ id: 'global', settings: settings || {}, updated_at: new Date().toISOString() }, { onConflict: 'id' });
     if (error) throw error;

@@ -4195,7 +4195,8 @@ function startSession(user, version) {
     userId: user.id, role: user.role, version,
     nom: user.nom, immeubles: user.immeubles||[],
     locId: user.locId||null,
-    customPerms: user.customPerms||{}
+    customPerms: user.customPerms||{},
+    _pwdHash: user.password || user.pin || '' // token Worker (jamais affiché dans l'UI)
   };
   saveSession();
 
