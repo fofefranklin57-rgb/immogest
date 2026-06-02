@@ -318,6 +318,13 @@ async function loadDataFromSupabase() {
     DATA.nextLocId = Math.max(0, ...DATA.locataires.map(l => l.id)) + 1;
     DATA.nextPayId = Math.max(0, ...DATA.paiements.map(p => p.id)) + 1;
 
+    // Charger les settings depuis Supabase (theme, momo, cabinet)
+    const _sbSettings = await loadParametresFromSupabase();
+    if (_sbSettings) {
+      if (!DATA.settings) DATA.settings = {};
+      Object.assign(DATA.settings, _sbSettings);
+    }
+
     const _cacheKey = (SESSION && SESSION.version === 'individuel') ? STORE_KEY_IND : 'immogest_data';
     localStorage.setItem(_cacheKey, JSON.stringify(DATA));
     console.log('Supabase chargé:', DATA.immeubles.length, 'imm,', DATA.locataires.length, 'loc,', DATA.paiements.length, 'pay');
@@ -381,17 +388,18 @@ async function savePaiementToSupabase(p) {
 async function archiverLocataireSupabase(l, motif, paiements, dateSortie, obs) {
   try {
     await _sb.from('archives').insert([{
-      locataire_id: l.id,
-      immeuble_id:  l.iid,
-      nom:          l.nom || '',
-      telephone:    l.tel || '',
-      appt:         l.appt || '',
-      loyer:        l.loyer || 0,
-      entree:       l.entree || null,
-      date_sortie:  dateSortie || null,
-      solde_final:  l.reste || 0,
-      motif:        motif || 'inconnu',
-      obs_depart:   obs || l.obs || ''
+      locataire_id:  String(l.id),
+      immeuble_id:   String(l.iid || ''),
+      nom:           l.nom || '',
+      telephone:     l.tel || '',
+      local_num:     l.appt || '',
+      loyer:         l.loyer || 0,
+      date_entree:   l.entree || null,
+      date_sortie:   dateSortie || null,
+      montant_impaye:l.reste || 0,
+      motif:         motif || 'inconnu',
+      note:          obs || l.obs || '',
+      nb_paiements:  (paiements || []).length
     }]);
   } catch(e) { console.warn('archiverLocataire error:', e); }
 }
@@ -531,5 +539,107 @@ async function uploadPhotoRecu(file, declId) {
   } catch(e) {
     console.warn('uploadPhotoRecu error:', e.message || e);
     return null;
+  }
+}
+
+// ── Users Supabase (sync multi-device) ────────────────────────
+
+function _mapUser(r) {
+  return {
+    id:                 r.id,
+    version:            r.version || 'entreprise',
+    role:               r.role || 'locataire',
+    nom:                r.nom || '',
+    username:           r.username || null,
+    tel:                r.tel || null,
+    password:           r.password || null,
+    pin:                r.pin || null,
+    immeubles:          r.immeubles || [],
+    locId:              r.locataire_id || null,
+    iid:                r.iid || null,
+    customPerms:        r.custom_perms || {},
+    firstLogin:         r.first_login || false,
+    mustChangePassword: r.must_change_password || false,
+    actif:              r.actif !== false
+  };
+}
+
+function _userToRow(u) {
+  return {
+    id:                   u.id,
+    version:              u.version || 'entreprise',
+    role:                 u.role || 'locataire',
+    nom:                  u.nom || '',
+    username:             u.username || null,
+    tel:                  u.tel || null,
+    password:             u.password || null,
+    pin:                  u.pin || null,
+    immeubles:            u.immeubles || [],
+    locataire_id:         u.locId || null,
+    iid:                  u.iid || null,
+    custom_perms:         u.customPerms || {},
+    first_login:          u.firstLogin || false,
+    must_change_password: u.mustChangePassword || false,
+    actif:                u.actif !== false
+  };
+}
+
+async function loadUsersFromSupabase() {
+  try {
+    const { data, error } = await _sb.from('users_app').select('*');
+    if (error) throw error;
+    return data ? data.map(_mapUser) : null;
+  } catch(e) {
+    console.warn('loadUsers Supabase error:', e.message || e);
+    return null;
+  }
+}
+
+async function saveAllUsersToSupabase(users) {
+  if (!users || !users.length) return false;
+  try {
+    const rows = users.map(_userToRow);
+    const { error } = await _sb.from('users_app').upsert(rows, { onConflict: 'id' });
+    if (error) throw error;
+    return true;
+  } catch(e) {
+    console.warn('saveAllUsers Supabase error:', e.message || e);
+    return false;
+  }
+}
+
+async function deleteUserFromSupabase(userId) {
+  try {
+    const { error } = await _sb.from('users_app').delete().eq('id', userId);
+    if (error) throw error;
+    return true;
+  } catch(e) {
+    console.warn('deleteUser Supabase error:', e.message || e);
+    return false;
+  }
+}
+
+// ── Parametres Supabase (theme, momo, cabinet) ─────────────────
+
+async function loadParametresFromSupabase() {
+  try {
+    const { data, error } = await _sb.from('parametres').select('*').eq('id', 'global').maybeSingle();
+    if (error) throw error;
+    return data ? data.settings : null;
+  } catch(e) {
+    console.warn('loadParametres Supabase error:', e.message || e);
+    return null;
+  }
+}
+
+async function saveParametresToSupabase(settings) {
+  try {
+    const { error } = await _sb.from('parametres')
+      .upsert({ id: 'global', settings: settings || {}, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+    if (error) throw error;
+    return true;
+  } catch(e) {
+    console.warn('saveParametres Supabase error:', e.message || e);
+    return false;
   }
 }

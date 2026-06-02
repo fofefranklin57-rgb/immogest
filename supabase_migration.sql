@@ -214,3 +214,49 @@ CREATE POLICY "acces_declarations" ON declarations FOR ALL USING (true) WITH CHE
 -- Bucket Storage pour les photos de reçus (à créer dans Supabase Dashboard → Storage)
 -- Nom du bucket : declarations
 -- Public : true
+
+
+-- ═══════════════════════════════════════════════════════════════
+--  ImmoGest — Migration : users_app + parametres (sync multi-device)
+--  À exécuter dans Supabase → SQL Editor → New query
+-- ═══════════════════════════════════════════════════════════════
+
+-- ── 1. TABLE users_app (comptes utilisateurs synchronisés) ─────
+
+CREATE TABLE IF NOT EXISTS users_app (
+  id                   TEXT PRIMARY KEY,
+  version              TEXT NOT NULL DEFAULT 'entreprise',
+  role                 TEXT NOT NULL DEFAULT 'locataire',
+  nom                  TEXT NOT NULL DEFAULT '',
+  username             TEXT,
+  tel                  TEXT,
+  password             TEXT,
+  pin                  TEXT,
+  immeubles            JSONB DEFAULT '[]'::jsonb,
+  locataire_id         INTEGER,
+  iid                  INTEGER,
+  custom_perms         JSONB DEFAULT '{}'::jsonb,
+  first_login          BOOLEAN DEFAULT false,
+  must_change_password BOOLEAN DEFAULT false,
+  actif                BOOLEAN DEFAULT true,
+  created_at           TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE users_app ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "acces_users_app" ON users_app FOR ALL USING (true) WITH CHECK (true);
+
+-- ── 2. TABLE parametres (settings globaux : theme, momo, cabinet) ──
+
+CREATE TABLE IF NOT EXISTS parametres (
+  id         TEXT PRIMARY KEY,
+  settings   JSONB DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE parametres ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "acces_parametres" ON parametres FOR ALL USING (true) WITH CHECK (true);
+
+-- ── Vérification ───────────────────────────────────────────────
+SELECT 'users_app'  AS table_name, COUNT(*) AS lignes FROM users_app
+UNION ALL
+SELECT 'parametres' AS table_name, COUNT(*) AS lignes FROM parametres;

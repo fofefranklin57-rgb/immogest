@@ -3933,6 +3933,7 @@ function loadUsers() {
 
 function saveUsers() {
   try { localStorage.setItem('immogest_users_v6', JSON.stringify(USERS)); } catch(e) {}
+  if (SESSION) saveAllUsersToSupabase(USERS); // sync multi-device (fire & forget)
 }
 
 function exporterSauvegarde() {
@@ -4285,6 +4286,7 @@ function toggleTheme() {
   DATA.settings.theme = next;
   _applyTheme(next);
   saveData();
+  if (SESSION) saveParametresToSupabase(DATA.settings);
 }
 
 // ── NOTIFICATION CIBLÉE ───────────────────────────────────────────────────────
@@ -4920,8 +4922,30 @@ function deleteUser(userId) {
   if (!confirm('Supprimer cet utilisateur ?')) return;
   USERS = USERS.filter(u=>u.id!==userId);
   saveUsers();
+  if (SESSION) deleteUserFromSupabase(userId);
   showToast('Utilisateur supprimé');
   renderUtilisateurs();
+}
+
+// ── Sync utilisateurs Supabase → localStorage après login ─────────────────────
+async function syncUsersAfterLogin() {
+  const sbUsers = await loadUsersFromSupabase();
+  if (sbUsers === null) return; // erreur réseau — garder localStorage
+
+  if (sbUsers.length === 0) {
+    // Premier appareil : pousser les utilisateurs locaux vers Supabase
+    await saveAllUsersToSupabase(USERS);
+    return;
+  }
+
+  // Merger : Supabase est autoritatif pour les IDs communs
+  // Les users locaux absents de Supabase sont conservés et poussés
+  const sbIds = new Set(sbUsers.map(function(u) { return u.id; }));
+  const localOnly = USERS.filter(function(u) { return !sbIds.has(u.id); });
+  USERS = sbUsers.concat(localOnly);
+  localStorage.setItem('immogest_users_v6', JSON.stringify(USERS));
+  if (localOnly.length > 0) saveAllUsersToSupabase(localOnly);
+  console.log('Users synced:', USERS.length, 'comptes');
 }
 
 // ── INIT APP AFTER LOGIN ──────────────────────────────────────────────────────
@@ -4933,6 +4957,7 @@ function initApp() {
   });
   // Load data
   loadData();
+  syncUsersAfterLogin(); // sync multi-device (fire & forget)
   _applyTheme((DATA.settings && DATA.settings.theme) || 'light');
   document.getElementById('sel-mois').value = new Date().getMonth();
   document.getElementById('sel-annee').value = new Date().getFullYear();
@@ -7141,6 +7166,7 @@ function saveParametresCabinet() {
     logo_url: (document.getElementById('cab-logo-url').value || '').trim(),
   };
   saveData();
+  if (SESSION) saveParametresToSupabase(DATA.settings);
   showToast('Infos cabinet enregistrées ✓', 'green');
 }
 
@@ -7151,6 +7177,7 @@ function saveParametresMomo() {
   DATA.settings.momo.orange = (document.getElementById('momo-orange').value || '').trim();
   DATA.settings.momo.wave   = (document.getElementById('momo-wave').value   || '').trim();
   saveData();
+  if (SESSION) saveParametresToSupabase(DATA.settings);
   alert('✅ Numéros Mobile Money enregistrés !');
 }
 
