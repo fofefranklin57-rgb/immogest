@@ -1955,7 +1955,7 @@ function ouvrirHistoriqueLocal(locId) {
   if (!pays.length) {
     html += '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Aucun paiement enregistré</div></div>';
   } else {
-    html += '<div class="table-wrap"><table class="tbl"><thead><tr><th>${t('Date')}</th><th>${t('Période')}</th><th>${t('Montant')}</th><th>${t('Mode de paiement')}</th></tr></thead><tbody>';
+    html += '<div class="table-wrap"><table class="tbl"><thead><tr><th>'+t('Date')+'</th><th>'+t('Période')+'</th><th>'+t('Montant')+'</th><th>'+t('Mode de paiement')+'</th></tr></thead><tbody>';
     pays.forEach(p => {
       html += `<tr>
         <td>${p.date||'–'}</td>
@@ -7199,7 +7199,7 @@ function renderImmeublesConfig() {
   html += '</div>';
   html += '<div class="card"><div class="card-header"><div class="card-title">' + t('Immeubles enregistrés') + '</div></div>';
   html += '<div class="table-wrap"><table class="tbl"><thead><tr>';
-  html += '<th>${t('Nom')}</th><th>${t('Ville')}</th><th>${t('Apparts')}</th><th>${t('Studios')}</th><th>${t('Chambres')}</th><th>${t('Total locaux')}</th><th>${t('Occupés')}</th><th>${t('Actions')}</th>';
+  html += '<th>'+t('Nom')+'</th><th>'+t('Ville')+'</th><th>'+t('Apparts')+'</th><th>'+t('Studios')+'</th><th>'+t('Chambres')+'</th><th>'+t('Total locaux')+'</th><th>'+t('Occupés')+'</th><th>'+t('Actions')+'</th>';
   html += '</tr></thead><tbody>';
   DATA.immeubles.forEach(im => {
     const locs = DATA.locataires.filter(l=>l.iid===im.id&&l.s!=='libre');
@@ -8937,7 +8937,7 @@ function showCtxRelance(e, locId) {
   const items = document.getElementById('ctx-menu-items');
   items.innerHTML =
     '<div class="ctx-item" onclick="previewMiseEnDemeure(' + locId + ');hideCtxMenu()">📄 Mise en demeure</div>' +
-    '<div class="ctx-item" onclick="previewPlainte(' + locId + ');hideCtxMenu()">⚖️ ${t('Plainte')}</div>' +
+    '<div class="ctx-item" onclick="previewPlainte(' + locId + ');hideCtxMenu()">⚖️ '+t('Plainte')+'</div>' +
     '<div class="ctx-item" onclick="openModalPaiement(' + (l?l.iid:0) + ',' + locId + ');hideCtxMenu()">💳 Enregistrer paiement</div>' +
     '<div class="ctx-sep"></div>' +
     '<div class="ctx-item" onclick="ouvrirFicheSuivi(' + locId + ');hideCtxMenu()">📊 Fiche de suivi</div>';
