@@ -9220,6 +9220,55 @@ function checkPortailParam() {
   return false;
 }
 
+// ── Création automatique des locaux libres lors de l'enregistrement d'un immeuble ──
+function _autoCreerLocaux(iid, apparts, studios, chambres, duplex) {
+  const types = [
+    { type: 'appartement', prefix: 'A', count: apparts  },
+    { type: 'studio',      prefix: 'S', count: studios  },
+    { type: 'chambre',     prefix: 'C', count: chambres },
+    { type: 'duplex',      prefix: 'D', count: duplex   },
+  ];
+  let created = 0;
+  const newLocs = [];
+
+  types.forEach(function({ type, prefix, count }) {
+    if (!count || count <= 0) return;
+    for (var i = 1; i <= count; i++) {
+      const apptCode = prefix + i;
+      // Ne pas recréer un local qui existe déjà (même appt + même iid)
+      const alreadyExists = DATA.locataires.some(function(l) {
+        return l.iid === iid && l.appt === apptCode;
+      });
+      if (!alreadyExists) {
+        const loc = {
+          id:     DATA.nextLocId++,
+          nom:    '(Libre)',
+          tel:    '',
+          iid:    iid,
+          appt:   apptCode,
+          type:   type,
+          loyer:  0,
+          reste:  0,
+          obs:    '',
+          s:      'libre',
+          caution:0,
+          entree: ''
+        };
+        DATA.locataires.push(loc);
+        newLocs.push(loc);
+        created++;
+      }
+    }
+  });
+
+  // Sync Supabase pour chaque nouveau local
+  if (SESSION && newLocs.length > 0) {
+    newLocs.forEach(function(l) { saveLocataireToSupabase(l); });
+  }
+
+  return created;
+}
+
 function _updateImmTotalLocaux() {
   const a = parseInt(document.getElementById('imm-apparts').value)  || 0;
   const s = parseInt(document.getElementById('imm-studios').value)  || 0;
@@ -9281,7 +9330,9 @@ function saveImmeuble() {
     if (idx >= 0) {
       DATA.immeubles[idx] = { ...DATA.immeubles[idx], nom, nomImmeuble, nomProprio, telProprio, ville, quartier, col, commission, apparts, studios, chambres, duplex };
     }
-    showToast('Immeuble modifié ✓', 'green');
+    // Édition : créer les locaux manquants si la composition a augmenté
+    const nbCrees = _autoCreerLocaux(existId, apparts, studios, chambres, duplex);
+    showToast('Immeuble modifié ✓' + (nbCrees > 0 ? ' · ' + nbCrees + ' nouveau(x) local(aux) créé(s)' : ''), 'green');
   } else {
     const newId = Math.max(0, ...DATA.immeubles.map(i => i.id)) + 1;
     DATA.immeubles.push({ id: newId, nom, nomImmeuble, nomProprio, telProprio, ville, quartier, col, commission, apparts, studios, chambres, duplex });
@@ -9318,7 +9369,13 @@ function saveImmeuble() {
         showToast('Compte proprio créé (tel: ' + telProprio + ', mdp: immo1234) ✓', 'green');
       }
     }
-    showToast('Immeuble ajouté ✓', 'green');
+    // Nouveau bâtiment : créer tous les locaux définis
+    const nbCreesNew = _autoCreerLocaux(newId, apparts, studios, chambres, duplex);
+    if (nbCreesNew > 0) {
+      showToast(nbCreesNew + ' local(aux) créé(s) automatiquement ✓', 'green');
+    } else {
+      showToast('Immeuble ajouté ✓', 'green');
+    }
   }
   saveData();
   // Sync Supabase
