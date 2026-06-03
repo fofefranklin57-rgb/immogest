@@ -514,7 +514,7 @@ function renderImmeuble(iid) {
     <div class="metric-card">
       <div class="metric-label">Locaux total</div>
       <div class="metric-value accent">${totalLocaux||locs.length}</div>
-      <div class="metric-sub">${im.apparts||0} apparts · ${im.studios||0} studios · ${im.chambres||0} chambres</div>
+      <div class="metric-sub">${im.apparts||0} apparts · ${im.studios||0} studios · ${im.chambres||0} chambres${(im.duplex||0)>0?' · '+(im.duplex)+' duplex':''}</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">Occupés / Libres</div>
@@ -7212,11 +7212,11 @@ function renderImmeublesConfig() {
   html += '</div>';
   html += '<div class="card"><div class="card-header"><div class="card-title">' + t('Immeubles enregistrés') + '</div></div>';
   html += '<div class="table-wrap"><table class="tbl"><thead><tr>';
-  html += '<th>'+t('Nom')+'</th><th>'+t('Ville')+'</th><th>'+t('Apparts')+'</th><th>'+t('Studios')+'</th><th>'+t('Chambres')+'</th><th>'+t('Total locaux')+'</th><th>'+t('Occupés')+'</th><th>'+t('Actions')+'</th>';
+  html += '<th>'+t('Nom')+'</th><th>'+t('Ville')+'</th><th>'+t('Apparts')+'</th><th>'+t('Studios')+'</th><th>'+t('Chambres')+'</th><th>'+t('Duplex')+'</th><th>'+t('Total locaux')+'</th><th>'+t('Occupés')+'</th><th>'+t('Actions')+'</th>';
   html += '</tr></thead><tbody>';
   DATA.immeubles.forEach(im => {
     const locs = DATA.locataires.filter(l=>l.iid===im.id&&l.s!=='libre');
-    const total = (im.apparts||0)+(im.studios||0)+(im.chambres||0);
+    const total = (im.apparts||0)+(im.studios||0)+(im.chambres||0)+(im.duplex||0);
     const searchData = (im.nom+' '+(im.ville||'')+' '+(im.quartier||'')).toLowerCase();
     const actionsImm = canEdit
       ? '<div style="position:relative;display:inline-block;"><button class="btn btn-ghost btn-sm" onclick="toggleImmDropdown('+im.id+',event)" style="padding:4px 10px;font-size:16px;line-height:1;">⋮</button>'
@@ -7232,6 +7232,7 @@ function renderImmeublesConfig() {
       + '<td style="text-align:center;">'+(im.apparts||0)+'</td>'
       + '<td style="text-align:center;">'+(im.studios||0)+'</td>'
       + '<td style="text-align:center;">'+(im.chambres||0)+'</td>'
+      + '<td style="text-align:center;">'+(im.duplex||0)+'</td>'
       + '<td style="text-align:center;font-weight:700;">'+(total||locs.length)+'</td>'
       + '<td style="text-align:center;">'+locs.length+'</td>'
       + '<td style="position:relative;white-space:nowrap;">'+actionsImm+'</td>'
@@ -9219,6 +9220,16 @@ function checkPortailParam() {
   return false;
 }
 
+function _updateImmTotalLocaux() {
+  const a = parseInt(document.getElementById('imm-apparts').value)  || 0;
+  const s = parseInt(document.getElementById('imm-studios').value)  || 0;
+  const c = parseInt(document.getElementById('imm-chambres').value) || 0;
+  const d = parseInt(document.getElementById('imm-duplex').value)   || 0;
+  const total = a + s + c + d;
+  const el = document.getElementById('imm-total-locaux');
+  if (el) el.textContent = total > 0 ? '🏠 ' + t('Total locaux') + ' : ' + total : '';
+}
+
 function editImmeuble(immId) { openModalImmeuble(immId); }
 
 function openModalImmeuble(immId) {
@@ -9232,6 +9243,15 @@ function openModalImmeuble(immId) {
   document.getElementById('imm-ville').value = im ? im.ville : '';
   document.getElementById('imm-quartier').value = im ? (im.quartier||'') : '';
   document.getElementById('imm-couleur').value = im ? im.col : '#4f8ef7';
+  // Composition
+  document.getElementById('imm-apparts').value  = im ? (im.apparts  || 0) : 0;
+  document.getElementById('imm-studios').value   = im ? (im.studios  || 0) : 0;
+  document.getElementById('imm-chambres').value  = im ? (im.chambres || 0) : 0;
+  document.getElementById('imm-duplex').value    = im ? (im.duplex   || 0) : 0;
+  _updateImmTotalLocaux();
+  ['imm-apparts','imm-studios','imm-chambres','imm-duplex'].forEach(id => {
+    document.getElementById(id).oninput = _updateImmTotalLocaux;
+  });
   const comm = im && im.commission ? im.commission : { type: 'forfait', valeur: 0 };
   document.getElementById('imm-commission-type').value = comm.type || 'forfait';
   document.getElementById('imm-commission-valeur').value = comm.valeur || 0;
@@ -9250,17 +9270,21 @@ function saveImmeuble() {
   const commType  = document.getElementById('imm-commission-type').value || 'forfait';
   const commValeur= parseFloat(document.getElementById('imm-commission-valeur').value) || 0;
   const commission= { type: commType, valeur: commValeur };
+  const apparts   = parseInt(document.getElementById('imm-apparts').value)  || 0;
+  const studios   = parseInt(document.getElementById('imm-studios').value)  || 0;
+  const chambres  = parseInt(document.getElementById('imm-chambres').value) || 0;
+  const duplex    = parseInt(document.getElementById('imm-duplex').value)   || 0;
   // nom (affiché) = nomImmeuble pour la sidebar/cards
   const nom = nomImmeuble;
   if (existId > 0) {
     const idx = DATA.immeubles.findIndex(i => i.id === existId);
     if (idx >= 0) {
-      DATA.immeubles[idx] = { ...DATA.immeubles[idx], nom, nomImmeuble, nomProprio, telProprio, ville, quartier, col, commission };
+      DATA.immeubles[idx] = { ...DATA.immeubles[idx], nom, nomImmeuble, nomProprio, telProprio, ville, quartier, col, commission, apparts, studios, chambres, duplex };
     }
     showToast('Immeuble modifié ✓', 'green');
   } else {
     const newId = Math.max(0, ...DATA.immeubles.map(i => i.id)) + 1;
-    DATA.immeubles.push({ id: newId, nom, nomImmeuble, nomProprio, telProprio, ville, quartier, col, commission, apparts:0, studios:0, chambres:0 });
+    DATA.immeubles.push({ id: newId, nom, nomImmeuble, nomProprio, telProprio, ville, quartier, col, commission, apparts, studios, chambres, duplex });
     // ── Étape 3 : création automatique compte propriétaire ──────────────────
     if (telProprio) {
       const telClean = telProprio.replace(/[^0-9]/g, '');

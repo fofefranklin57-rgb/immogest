@@ -675,16 +675,41 @@
       <div class="form-group"><label data-i18n="Quartier">Quartier</label><input type="text" id="imm-quartier" placeholder="Makepe..."></div>
     </div>
     <div class="form-group"><label data-i18n="Couleur">Couleur</label>
-      <input type="color" id="imm-couleur" value="#4f8ef7" style="height:38px;cursor:pointer;">
+      <input type="color" id="imm-couleur" value="#4f8ef7" style="height:38px;cursor:pointer;border:1px solid var(--border);border-radius:8px;background:var(--bg4);">
     </div>
+
+    <!-- Composition de l'immeuble -->
+    <div class="form-group">
+      <label>🏠 <span data-i18n="Composition de l'immeuble">Composition de l'immeuble</span> <span style="font-size:11px;color:var(--text3);font-weight:400;">(nombre de locaux par type)</span></label>
+      <div class="form-row" style="margin-top:6px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label style="font-size:11px;color:var(--text3);" data-i18n="Appartements">Appartements</label>
+          <input type="number" id="imm-apparts" placeholder="0" min="0" class="form-control" style="text-align:center;">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label style="font-size:11px;color:var(--text3);" data-i18n="Studios">Studios</label>
+          <input type="number" id="imm-studios" placeholder="0" min="0" class="form-control" style="text-align:center;">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label style="font-size:11px;color:var(--text3);" data-i18n="Chambres">Chambres</label>
+          <input type="number" id="imm-chambres" placeholder="0" min="0" class="form-control" style="text-align:center;">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label style="font-size:11px;color:var(--text3);" data-i18n="Duplex">Duplex</label>
+          <input type="number" id="imm-duplex" placeholder="0" min="0" class="form-control" style="text-align:center;">
+        </div>
+      </div>
+      <div id="imm-total-locaux" style="margin-top:6px;font-size:11px;color:var(--text3);text-align:right;"></div>
+    </div>
+
     <div class="form-group">
       <label data-i18n="Commission Cabinet">Commission Cabinet</label>
       <div style="display:flex;gap:10px;align-items:center;">
-        <select id="imm-commission-type" style="width:140px;padding:8px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
+        <select id="imm-commission-type" class="form-control" style="width:140px;">
           <option value="forfait" data-i18n="Forfait (FCFA)">Forfait (FCFA)</option>
           <option value="pct" data-i18n="Pourcentage (%)">Pourcentage (%)</option>
         </select>
-        <input type="number" id="imm-commission-valeur" placeholder="0" min="0" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);">
+        <input type="number" id="imm-commission-valeur" placeholder="0" min="0" class="form-control" style="flex:1;">
       </div>
     </div>
     <div class="modal-footer">

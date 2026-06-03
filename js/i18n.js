@@ -638,6 +638,11 @@ var TR = { en: {
   'Total locaux': 'Total units',
   'Occupés': 'Occupied',
   'Ajouter un immeuble': 'Add a building',
+  'Composition de l\'immeuble': 'Building composition',
+  'Appartements': 'Apartments',
+  'Studios': 'Studios',
+  'Chambres': 'Rooms',
+  'Duplex': 'Duplexes',
 
   // ── Archives / Corbeille ──────────────────────────────────────
   'Solde départ': 'Exit balance',
