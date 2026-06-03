@@ -3887,9 +3887,9 @@ const AUTH_KEY = 'immogest_auth';
 // Default users
 const DEFAULT_USERS = [
   // Individuel — admin uniquement (proprios et locataires créés dynamiquement)
-  { id:'ind1', version:'individuel', role:'admin', nom:'Administrateur', password:'immo2024', immeubles:[], customPerms:{} },
+  { id:'ind1', version:'individuel', role:'admin', nom:'Administrateur', password:'8237a8d86b7038877840cd600b135f4edc8966be05cf3ba12727535f2670c058', immeubles:[], customPerms:{} },
   // Entreprise — compte admin uniquement (propriétaires et locataires créés par l'admin)
-  { id:'adm1', version:'entreprise', role:'admin',         nom:'Administrateur',    username:'admin',        password:'admin2024',  immeubles:[], pin:null, customPerms:{} },
+  { id:'adm1', version:'entreprise', role:'admin', nom:'Administrateur', username:'admin', password:'b8b8eb83374c0bf3b1c3224159f6119dbfff1b7ed6dfecdd80d4e8a895790a34', immeubles:[], pin:null, customPerms:{} },
 ];
 
 let USERS = [];
@@ -4785,9 +4785,10 @@ function reinitMdpUser(userId) {
   const u = USERS.find(x => x.id === userId);
   if (!u) return;
   if (!confirm('Réinitialiser le mot de passe de ' + u.nom + ' à "immo1234" ?')) return;
-  u.password = 'immo1234';
+  u.password = '47029b1d74defbf012c3357fb79ec40ba6c3ec78ebfe874a47f1aab7cd1d5ae7'; // SHA-256('immo1234')
+  u.mustChangePassword = true;
   saveUsers();
-  showToast('Mot de passe réinitialisé → immo1234 ✓', 'green');
+  showToast('Mot de passe réinitialisé → immo1234 ✓ (changement requis au prochain login)', 'green');
   renderUtilisateurs();
 }
 
@@ -4824,8 +4825,8 @@ function _openUserModal(userId, tabContext) {
     '<input id="mu-tel" class="auth-input" style="margin-bottom:12px;" value="' + (u&&u.tel ? u.tel : '') + '" placeholder="Ex: 699 00 00 00">' +
     '</div>' +
     '<div id="mu-pwd-row">' +
-    '<label class="auth-label" style="margin-bottom:6px;">' + (isEdit ? 'NOUVEAU MOT DE PASSE (laisser vide = inchangé)' : 'MOT DE PASSE (défaut: immo1234)') + '</label>' +
-    '<input id="mu-pwd" class="auth-input" type="password" style="margin-bottom:12px;" placeholder="' + (isEdit ? 'Laisser vide pour conserver' : 'immo1234') + '">' +
+    '<label class="auth-label" style="margin-bottom:6px;">' + (isEdit ? 'NOUVEAU MOT DE PASSE (laisser vide = inchangé)' : 'MOT DE PASSE') + '</label>' +
+    '<input id="mu-pwd" class="auth-input" type="password" style="margin-bottom:12px;" placeholder="' + (isEdit ? 'Laisser vide pour conserver' : 'Choisir un mot de passe') + '">' +
     '</div>' +
     '<div id="mu-pin-row" style="display:none;">' +
     '<label style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.5px;display:block;margin-bottom:6px;">CODE PIN (défaut: immo1234)</label>' +
