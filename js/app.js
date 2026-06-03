@@ -2992,29 +2992,29 @@ async function genDocxRapportMensuel(iidFilter) {
       br(),
       // Titre
       new Paragraph({
-        children:[new TextRun({text:`RAPPORT MENSUEL – IMMEUBLE ${im.nom.toUpperCase()}`,bold:true,size:26,color:BLUE,font:'Berlin Sans FB'})],
+        children:[new TextRun({text:`${t('RAPPORT MENSUEL')} – ${t('IMMEUBLE')} ${im.nom.toUpperCase()}`,bold:true,size:26,color:BLUE,font:'Berlin Sans FB'})],
         alignment:AlignmentType.CENTER,
         border:{bottom:{style:BorderStyle.SINGLE,size:6,color:PINK,space:4}},
         spacing:{after:60}
       }),
       new Paragraph({
-        children:[new TextRun({text:`${im.ville}${im.quartier?' · '+im.quartier:''}  ·  ${MNOMS[m]} ${a}  ·  Au ${today}`,size:20,color:GRAY,font:'Calibri'})],
+        children:[new TextRun({text:`${im.ville}${im.quartier?' · '+im.quartier:''}  ·  ${tMois(m)} ${a}  ·  ${t('Au')} ${today}`,size:20,color:GRAY,font:'Calibri'})],
         alignment:AlignmentType.CENTER,spacing:{after:240}
       }),
 
       // ── Section 1 : Liste locataires ──────────────────────────────
-      secTitle('  LISTE DES LOCATAIRES ET SITUATION LOCATIVE'),
+      secTitle('  '+t('LISTE DES LOCATAIRES ET SITUATION LOCATIVE')),
       new Table({
         width:{size:9926,type:WidthType.DXA},
         columnWidths:[650,2900,820,1980,1576,2000],
         rows:[
           new TableRow({children:[
-            mkCell('Local',            {bg:BLUE,bold:true,color:WHITE,size:18,align:AlignmentType.CENTER,...thinB}),
-            mkCell('NOM & TÉLÉPHONE',  {bg:BLUE,bold:true,color:WHITE,size:18,...thinB}),
-            mkCell('LOYER',            {bg:BLUE,bold:true,color:WHITE,size:18,align:AlignmentType.RIGHT,...thinB}),
-            mkCell('DERNIER PAIEMENT', {bg:BLUE,bold:true,color:WHITE,size:18,align:AlignmentType.CENTER,...thinB}),
-            mkCell('OBSERVATIONS',     {bg:BLUE,bold:true,color:WHITE,size:18,...thinB}),
-            mkCell('RESTE À PAYER',    {bg:BLUE,bold:true,color:WHITE,size:18,align:AlignmentType.RIGHT,...thinB}),
+            mkCell(t('Local'),                         {bg:BLUE,bold:true,color:WHITE,size:18,align:AlignmentType.CENTER,...thinB}),
+            mkCell(t('Nom & Téléphone').toUpperCase(), {bg:BLUE,bold:true,color:WHITE,size:18,...thinB}),
+            mkCell(t('Loyer').toUpperCase(),           {bg:BLUE,bold:true,color:WHITE,size:18,align:AlignmentType.RIGHT,...thinB}),
+            mkCell(t('Dernier paiement').toUpperCase(),{bg:BLUE,bold:true,color:WHITE,size:18,align:AlignmentType.CENTER,...thinB}),
+            mkCell(t('Observations').toUpperCase(),    {bg:BLUE,bold:true,color:WHITE,size:18,...thinB}),
+            mkCell(t('Reste à payer').toUpperCase(),   {bg:BLUE,bold:true,color:WHITE,size:18,align:AlignmentType.RIGHT,...thinB}),
           ]}),
           ...locs.map((l,i) => {
             const libre=l.s==='libre';
@@ -3060,20 +3060,20 @@ async function genDocxRapportMensuel(iidFilter) {
       br(),br(),
 
       // ── Section 2 : Encaissements ─────────────────────────────────
-      secTitle(`  ENCAISSEMENTS – ${MNOMS[m].toUpperCase()} ${a}`),
+      secTitle(`  ${t('ENCAISSEMENTS')} – ${tMois(m).toUpperCase()} ${a}`),
       ...(paysImm.length === 0 ? [
-        new Paragraph({children:[new TextRun({text:"Aucun versement enregistré pour ce mois.",size:20,color:GRAY,italics:true,font:'Calibri'})],spacing:{before:120,after:120}})
+        new Paragraph({children:[new TextRun({text:t('Aucun versement enregistré pour ce mois.'),size:20,color:GRAY,italics:true,font:'Calibri'})],spacing:{before:120,after:120}})
       ] : [
         new Table({
           width:{size:9926,type:WidthType.DXA},
           columnWidths:[1400,700,3100,2326,2400],
           rows:[
             new TableRow({children:[
-              mkCell('DATE',      {bg:BLUE,bold:true,color:WHITE,size:18,align:AlignmentType.CENTER,...thinB}),
-              mkCell('LOCAL',     {bg:BLUE,bold:true,color:WHITE,size:18,align:AlignmentType.CENTER,...thinB}),
-              mkCell('LOCATAIRE', {bg:BLUE,bold:true,color:WHITE,size:18,...thinB}),
-              mkCell('NOTE',      {bg:BLUE,bold:true,color:WHITE,size:18,...thinB}),
-              mkCell('MONTANT',   {bg:BLUE,bold:true,color:WHITE,size:18,align:AlignmentType.RIGHT,...thinB}),
+              mkCell(t('Date').toUpperCase(),     {bg:BLUE,bold:true,color:WHITE,size:18,align:AlignmentType.CENTER,...thinB}),
+              mkCell(t('Local').toUpperCase(),    {bg:BLUE,bold:true,color:WHITE,size:18,align:AlignmentType.CENTER,...thinB}),
+              mkCell(t('Locataire').toUpperCase(),{bg:BLUE,bold:true,color:WHITE,size:18,...thinB}),
+              mkCell(t('Note').toUpperCase(),     {bg:BLUE,bold:true,color:WHITE,size:18,...thinB}),
+              mkCell(t('Montant').toUpperCase(),  {bg:BLUE,bold:true,color:WHITE,size:18,align:AlignmentType.RIGHT,...thinB}),
             ]}),
             ...groupPayments(paysImm).map((p,i) => {
               const l=DATA.locataires.find(x=>x.id===p.locId);
@@ -3088,31 +3088,31 @@ async function genDocxRapportMensuel(iidFilter) {
               ]});
             }),
             new TableRow({children:[
-              mkCell('Loyers encaissés',{bg:LGRAY,color:GRAY,size:17,italic:true,colspan:4,align:AlignmentType.RIGHT,...thinB}),
+              mkCell(t('Loyers encaissés'),{bg:LGRAY,color:GRAY,size:17,italic:true,colspan:4,align:AlignmentType.RIGHT,...thinB}),
               mkCell(fmtK(encLoyers),  {bg:LGRAY,bold:true,color:GREEN,size:18,align:AlignmentType.RIGHT,...thinB}),
             ]}),
             ...(encCautions>0?[new TableRow({children:[
-              mkCell('Cautions reçues',{bg:LGRAY,color:GRAY,size:17,italic:true,colspan:4,align:AlignmentType.RIGHT,...thinB}),
+              mkCell(t('Cautions reçues'),{bg:LGRAY,color:GRAY,size:17,italic:true,colspan:4,align:AlignmentType.RIGHT,...thinB}),
               mkCell(fmtK(encCautions),{bg:LGRAY,bold:true,color:'7F5AB0',size:18,align:AlignmentType.RIGHT,...thinB}),
             ]})]:[]),
             new TableRow({children:[
-              mkCell('TOTAL COLLECTÉ',{bg:BLUE_L,bold:true,color:BLUE,size:19,colspan:4,align:AlignmentType.RIGHT,...thinB}),
+              mkCell(t('TOTAL COLLECTÉ'),{bg:BLUE_L,bold:true,color:BLUE,size:19,colspan:4,align:AlignmentType.RIGHT,...thinB}),
               mkCell(fmtK(encTotal),  {bg:BLUE_L,bold:true,color:BLUE,size:20,align:AlignmentType.RIGHT,...thinB}),
             ]}),
             ...(encBailleur>0?[new TableRow({children:[
-              mkCell('Loyer reçu par le bailleur',{bg:'FFF8E1',color:'E65100',size:17,italic:true,colspan:4,align:AlignmentType.RIGHT,...thinB}),
+              mkCell(t('Loyer reçu par le bailleur'),{bg:'FFF8E1',color:'E65100',size:17,italic:true,colspan:4,align:AlignmentType.RIGHT,...thinB}),
               mkCell(fmtK(encBailleur),{bg:'FFF8E1',bold:true,color:'E65100',size:18,align:AlignmentType.RIGHT,...thinB}),
             ]})]:[]),
             ...(encBailleur>0?[new TableRow({children:[
-              mkCell('TOTAL COLLECTÉ AU CABINET',{bg:BLUE_L,bold:true,color:BLUE,size:18,colspan:4,align:AlignmentType.RIGHT,...thinB}),
+              mkCell(t('TOTAL COLLECTÉ AU CABINET'),{bg:BLUE_L,bold:true,color:BLUE,size:18,colspan:4,align:AlignmentType.RIGHT,...thinB}),
               mkCell(fmtK(encCabinet),{bg:BLUE_L,bold:true,color:BLUE,size:19,align:AlignmentType.RIGHT,...thinB}),
             ]})]:[]),
             ...(commMontant>0?[new TableRow({children:[
-              mkCell('Commission Cabinet'+(comm.type==='pct'?' ('+comm.valeur+'%)':''),{bg:LGRAY,color:GRAY,size:17,italic:true,colspan:4,align:AlignmentType.RIGHT,...thinB}),
+              mkCell(t('Commission Cabinet')+(comm.type==='pct'?' ('+comm.valeur+'%)':''),{bg:LGRAY,color:GRAY,size:17,italic:true,colspan:4,align:AlignmentType.RIGHT,...thinB}),
               mkCell(fmtK(commMontant),{bg:LGRAY,bold:true,color:GRAY,size:18,align:AlignmentType.RIGHT,...thinB}),
             ]})]:[]),
             ...(commMontant>0?[new TableRow({children:[
-              mkCell('NET À PERCEVOIR',{bg:'E8F5E9',bold:true,color:'1A6B45',size:19,colspan:4,align:AlignmentType.RIGHT,...thinB}),
+              mkCell(t('NET À PERCEVOIR'),{bg:'E8F5E9',bold:true,color:'1A6B45',size:19,colspan:4,align:AlignmentType.RIGHT,...thinB}),
               mkCell(fmtK(netAPercevoir),{bg:'E8F5E9',bold:true,color:'1A6B45',size:20,align:AlignmentType.RIGHT,...thinB}),
             ]})]:[]),
           ],
@@ -3122,8 +3122,8 @@ async function genDocxRapportMensuel(iidFilter) {
       // Mention en toutes lettres
       ...(encLoyers > 0 ? [new Paragraph({
         children:[
-          new TextRun({text:'Soit : ',bold:true,size:20,color:BLUE,font:'Calibri'}),
-          new TextRun({text:`${enToutesLettres(encLoyers)} (${fmtK(encLoyers)}) versés au titre des loyers de ${MNOMS[m]} ${a}.`,size:20,color:DGRAY,italics:true,font:'Calibri'}),
+          new TextRun({text:t('Soit :')+' ',bold:true,size:20,color:BLUE,font:'Calibri'}),
+          new TextRun({text:`${enToutesLettres(encLoyers)} (${fmtK(encLoyers)}) ${t('versés au titre des loyers de')} ${tMois(m)} ${a}.`,size:20,color:DGRAY,italics:true,font:'Calibri'}),
         ],
         border:{left:{style:BorderStyle.THICK,size:12,color:PINK,space:8}},
         indent:{left:200},spacing:{before:120,after:240},
@@ -3137,9 +3137,9 @@ async function genDocxRapportMensuel(iidFilter) {
         rows:[new TableRow({children:[
           new TableCell({
             children:[
-              new Paragraph({children:[new TextRun({text:'Le Gestionnaire',bold:true,size:20,color:BLUE,font:'Calibri'})],spacing:{after:80}}),
+              new Paragraph({children:[new TextRun({text:t('Le Gestionnaire'),bold:true,size:20,color:BLUE,font:'Calibri'})],spacing:{after:80}}),
               new Paragraph({children:[new TextRun({text:_cabInfo().nom,size:18,color:GRAY,font:'Calibri',italics:true})],spacing:{after:400}}),
-              new Paragraph({children:[new TextRun({text:'Signature & Cachet :',size:18,color:GRAY,font:'Calibri'})]}),
+              new Paragraph({children:[new TextRun({text:t('Signature & Cachet :'),size:18,color:GRAY,font:'Calibri'})]}),
               new Paragraph({border:{bottom:{style:BorderStyle.SINGLE,size:4,color:BLUE}},spacing:{before:560,after:0}}),
             ],
             borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.NONE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE}},
@@ -3147,9 +3147,9 @@ async function genDocxRapportMensuel(iidFilter) {
           }),
           new TableCell({
             children:[
-              new Paragraph({children:[new TextRun({text:"Lu et approuvé – Le Propriétaire",bold:true,size:20,color:BLUE,font:'Calibri'})],alignment:AlignmentType.RIGHT,spacing:{after:80}}),
+              new Paragraph({children:[new TextRun({text:t('Lu et approuvé – Le Propriétaire'),bold:true,size:20,color:BLUE,font:'Calibri'})],alignment:AlignmentType.RIGHT,spacing:{after:80}}),
               new Paragraph({children:[new TextRun({text:im.nom,size:18,color:GRAY,font:'Calibri',italics:true})],alignment:AlignmentType.RIGHT,spacing:{after:400}}),
-              new Paragraph({children:[new TextRun({text:'Signature :',size:18,color:GRAY,font:'Calibri'})],alignment:AlignmentType.RIGHT}),
+              new Paragraph({children:[new TextRun({text:t('Signature :'),size:18,color:GRAY,font:'Calibri'})],alignment:AlignmentType.RIGHT}),
               new Paragraph({border:{bottom:{style:BorderStyle.SINGLE,size:4,color:BLUE}},spacing:{before:560,after:0}}),
             ],
             borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.NONE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE}},
@@ -3159,7 +3159,7 @@ async function genDocxRapportMensuel(iidFilter) {
       }),
       br(),
       new Paragraph({
-        children:[new TextRun({text:`Document généré le ${today} par ImmoGest · ${_cabInfo().nom}`,size:16,color:'BBBBBB',italics:true,font:'Calibri'})],
+        children:[new TextRun({text:`${t('Document généré le')} ${today} par ImmoGest · ${_cabInfo().nom}`,size:16,color:'BBBBBB',italics:true,font:'Calibri'})],
         alignment:AlignmentType.CENTER,spacing:{before:200}
       }),
     ];
@@ -3344,8 +3344,6 @@ async function genDocxRapportPeriode(debStr, finStr, iidFilter) {
 function previewRapportMensuel(iidFilter) {
   _previewIidFilter = iidFilter;
   const m=gM(), a=gA();
-  const MNOMS_L = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-
   const immsToReport = iidFilter !== undefined
     ? DATA.immeubles.filter(i=>i.id===iidFilter)
     : DATA.immeubles.filter(im=>DATA.locataires.some(l=>l.iid===im.id&&l.s!=='libre'));
@@ -3417,26 +3415,26 @@ function previewRapportMensuel(iidFilter) {
     html += `
     <div style="text-align:center;margin-bottom:4px;">
       <div style="font-size:16px;font-weight:700;color:#0E6AAF;font-family:'Berlin Sans FB',Calibri,sans-serif;border-bottom:3px solid #F8CACB;display:inline-block;padding-bottom:4px;">
-        RAPPORT MENSUEL – IMMEUBLE ${im.nom.toUpperCase()}
+        ${t('RAPPORT MENSUEL')} – ${t('IMMEUBLE')} ${im.nom.toUpperCase()}
       </div>
     </div>
     <div style="text-align:center;font-size:12px;color:#888;margin-bottom:20px;">
-      ${im.ville}${im.quartier?' · '+im.quartier:''}  ·  ${MNOMS_L[m]} ${a}  ·  Au ${today}
+      ${im.ville}${im.quartier?' · '+im.quartier:''}  ·  ${tMois(m)} ${a}  ·  ${t('Au')} ${today}
     </div>`;
 
     // ── SECTION 1 : LOCATAIRES ──────────────────────────────────────
     html += `<div style="background:#0E6AAF;color:#fff;font-weight:700;font-size:12px;padding:6px 12px;margin-bottom:0;font-family:'Berlin Sans FB',Calibri,sans-serif;">
-      LISTE DES LOCATAIRES ET SITUATION LOCATIVE
+      ${t('LISTE DES LOCATAIRES ET SITUATION LOCATIVE')}
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px;">
       <thead>
         <tr style="background:#0E6AAF;color:#fff;">
-          <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:center;width:48px;">Local</th>
-          <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:left;">Nom & Téléphone</th>
-          <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:right;width:90px;">Loyer</th>
-          <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:center;width:120px;">Dernier paiement</th>
-          <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:left;width:140px;">Observations</th>
-          <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:right;width:100px;">Reste à payer</th>
+          <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:center;width:48px;">${t('Local')}</th>
+          <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:left;">${t('Nom & Téléphone')}</th>
+          <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:right;width:90px;">${t('Loyer')}</th>
+          <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:center;width:120px;">${t('Dernier paiement')}</th>
+          <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:left;width:140px;">${t('Observations')}</th>
+          <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:right;width:100px;">${t('Reste à payer')}</th>
         </tr>
       </thead>
       <tbody>`;
@@ -3468,7 +3466,7 @@ function previewRapportMensuel(iidFilter) {
 
     html += `
         <tr style="background:#D6E9F6;">
-          <td colspan="5" style="padding:7px 8px;border:1px solid #C5DCF0;text-align:right;font-weight:700;color:#0E6AAF;font-size:13px;">TOTAL</td>
+          <td colspan="5" style="padding:7px 8px;border:1px solid #C5DCF0;text-align:right;font-weight:700;color:#0E6AAF;font-size:13px;">${t('Total').toUpperCase()}</td>
           <td style="padding:7px 8px;border:1px solid #C5DCF0;text-align:right;font-weight:700;font-size:14px;color:${totalReste>0?'#C0392B':'#1A6B45'};">${fmtF(totalReste)}</td>
         </tr>
       </tbody>
@@ -3476,20 +3474,20 @@ function previewRapportMensuel(iidFilter) {
 
     // ── SECTION 2 : ENCAISSEMENTS ───────────────────────────────────
     html += `<div style="background:#0E6AAF;color:#fff;font-weight:700;font-size:12px;padding:6px 12px;margin-bottom:0;font-family:'Berlin Sans FB',Calibri,sans-serif;">
-      ENCAISSEMENTS – ${MNOMS_L[m].toUpperCase()} ${a}
+      ${t('ENCAISSEMENTS')} – ${tMois(m).toUpperCase()} ${a}
     </div>`;
 
     if (paysImm.length===0) {
-      html += `<div style="padding:12px;font-style:italic;color:#888;font-size:12px;border:1px solid #C5DCF0;margin-bottom:16px;">Aucun versement enregistré pour ce mois.</div>`;
+      html += `<div style="padding:12px;font-style:italic;color:#888;font-size:12px;border:1px solid #C5DCF0;margin-bottom:16px;">${t('Aucun versement enregistré pour ce mois.')}</div>`;
     } else {
       html += `<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px;">
         <thead>
           <tr style="background:#0E6AAF;color:#fff;">
-            <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:center;width:110px;">Date</th>
-            <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:center;width:60px;">Local</th>
-            <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:left;">Locataire</th>
-            <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:left;width:160px;">Note</th>
-            <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:right;width:120px;">Montant</th>
+            <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:center;width:110px;">${t('Date')}</th>
+            <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:center;width:60px;">${t('Local')}</th>
+            <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:left;">${t('Locataire')}</th>
+            <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:left;width:160px;">${t('Note')}</th>
+            <th style="padding:6px 8px;border:1px solid #C5DCF0;text-align:right;width:120px;">${t('Montant')}</th>
           </tr>
         </thead>
         <tbody>`;
@@ -3508,26 +3506,26 @@ function previewRapportMensuel(iidFilter) {
       });
       html += `
           <tr style="background:#f5f5f5;">
-            <td colspan="4" style="padding:5px 8px;border:1px solid #C5DCF0;text-align:right;color:#666;font-style:italic;">Loyers encaissés</td>
+            <td colspan="4" style="padding:5px 8px;border:1px solid #C5DCF0;text-align:right;color:#666;font-style:italic;">${t('Loyers encaissés')}</td>
             <td style="padding:5px 8px;border:1px solid #C5DCF0;text-align:right;font-weight:700;color:#1A6B45;">${fmtK(encLoyers)}</td>
           </tr>
           ${encCautions>0?`<tr style="background:#f5f5f5;">
-            <td colspan="4" style="padding:5px 8px;border:1px solid #C5DCF0;text-align:right;color:#666;font-style:italic;">Cautions reçues</td>
+            <td colspan="4" style="padding:5px 8px;border:1px solid #C5DCF0;text-align:right;color:#666;font-style:italic;">${t('Cautions reçues')}</td>
             <td style="padding:5px 8px;border:1px solid #C5DCF0;text-align:right;font-weight:700;color:#7F5AB0;">${fmtK(encCautions)}</td>
           </tr>`:''}
           <tr style="background:#D6E9F6;">
-            <td colspan="4" style="padding:7px 8px;border:1px solid #C5DCF0;text-align:right;font-weight:700;color:#0E6AAF;font-size:13px;">TOTAL COLLECTÉ</td>
+            <td colspan="4" style="padding:7px 8px;border:1px solid #C5DCF0;text-align:right;font-weight:700;color:#0E6AAF;font-size:13px;">${t('TOTAL COLLECTÉ')}</td>
             <td style="padding:7px 8px;border:1px solid #C5DCF0;text-align:right;font-weight:700;color:#0E6AAF;font-size:14px;">${fmtK(encTotal)}</td>
           </tr>
         </tbody></table>`;
       if (encBailleur>0) {
         html += '<table style="width:100%;border-collapse:collapse;margin-top:-1px;">'
           + '<tr style="background:#FFF8E1;">'
-          + '<td colspan="4" style="padding:5px 8px;border:1px solid #C5DCF0;text-align:right;color:#E65100;font-style:italic;">Loyer reçu par le bailleur</td>'
+          + '<td colspan="4" style="padding:5px 8px;border:1px solid #C5DCF0;text-align:right;color:#E65100;font-style:italic;">'+t('Loyer reçu par le bailleur')+'</td>'
           + '<td style="padding:5px 8px;border:1px solid #C5DCF0;text-align:right;font-weight:700;color:#E65100;">'+fmtK(encBailleur)+'</td>'
           + '</tr>'
           + '<tr style="background:#D6E9F6;">'
-          + '<td colspan="4" style="padding:7px 8px;border:1px solid #C5DCF0;text-align:right;font-weight:700;color:#0E6AAF;font-size:13px;">TOTAL COLLECTÉ AU CABINET</td>'
+          + '<td colspan="4" style="padding:7px 8px;border:1px solid #C5DCF0;text-align:right;font-weight:700;color:#0E6AAF;font-size:13px;">'+t('TOTAL COLLECTÉ AU CABINET')+'</td>'
           + '<td style="padding:7px 8px;border:1px solid #C5DCF0;text-align:right;font-weight:700;color:#0E6AAF;font-size:14px;">'+fmtK(encCabinet)+'</td>'
           + '</tr></table>';
       }
@@ -3539,15 +3537,15 @@ function previewRapportMensuel(iidFilter) {
           + '<td style="padding:5px 8px;border:1px solid #C5DCF0;text-align:right;font-weight:700;color:#555;">'+fmtK(commMontant2)+'</td>'
           + '</tr>'
           + '<tr style="background:#E8F5E9;">'
-          + '<td colspan="4" style="padding:7px 8px;border:1px solid #C5DCF0;text-align:right;font-weight:700;color:#1A6B45;font-size:13px;">NET À PERCEVOIR</td>'
+          + '<td colspan="4" style="padding:7px 8px;border:1px solid #C5DCF0;text-align:right;font-weight:700;color:#1A6B45;font-size:13px;">'+t('NET À PERCEVOIR')+'</td>'
           + '<td style="padding:7px 8px;border:1px solid #C5DCF0;text-align:right;font-weight:700;color:#1A6B45;font-size:14px;">'+fmtK(netAPercevoir2)+'</td>'
           + '</tr></table>';
       }
       html += '</div>';
       if (encLoyers > 0) {
         html += `<div style="border-left:4px solid #F8CACB;padding:8px 12px;margin-bottom:16px;background:#fffaf9;font-size:12px;">
-          <strong style="color:#0E6AAF;">Soit :</strong>
-          <em style="color:#333;"> ${enToutesLettres(encLoyers)} (${fmtK(encLoyers)}) versés au titre des loyers de ${MNOMS_L[m]} ${a}.</em>
+          <strong style="color:#0E6AAF;">${t('Soit :')}</strong>
+          <em style="color:#333;"> ${enToutesLettres(encLoyers)} (${fmtK(encLoyers)}) ${t('versés au titre des loyers de')} ${tMois(m)} ${a}.</em>
         </div>`;
       }
     }
@@ -3556,20 +3554,20 @@ function previewRapportMensuel(iidFilter) {
     html += `
     <div style="display:flex;gap:40px;margin-top:32px;">
       <div style="flex:1;">
-        <div style="font-weight:700;color:#0E6AAF;font-size:12px;">Le Gestionnaire</div>
+        <div style="font-weight:700;color:#0E6AAF;font-size:12px;">${t('Le Gestionnaire')}</div>
         <div style="font-size:11px;color:#888;font-style:italic;margin-bottom:32px;">${_cabInfo().nom}</div>
-        <div style="font-size:11px;color:#888;">Signature & Cachet :</div>
+        <div style="font-size:11px;color:#888;">${t('Signature & Cachet :')}</div>
         <div style="border-bottom:1.5px solid #0E6AAF;margin-top:40px;"></div>
       </div>
       <div style="flex:1;text-align:right;">
-        <div style="font-weight:700;color:#0E6AAF;font-size:12px;">Lu et approuvé – Le Propriétaire</div>
+        <div style="font-weight:700;color:#0E6AAF;font-size:12px;">${t('Lu et approuvé – Le Propriétaire')}</div>
         <div style="font-size:11px;color:#888;font-style:italic;margin-bottom:32px;">${im.nom}</div>
-        <div style="font-size:11px;color:#888;">Signature :</div>
+        <div style="font-size:11px;color:#888;">${t('Signature :')}</div>
         <div style="border-bottom:1.5px solid #0E6AAF;margin-top:40px;"></div>
       </div>
     </div>
     <div style="text-align:center;font-size:10px;color:#bbb;font-style:italic;margin-top:16px;">
-      Document généré le ${today} par ImmoGest · ${_cabInfo().nom}
+      ${t('Document généré le')} ${today} par ImmoGest · ${_cabInfo().nom}
     </div>`;
   });
 
@@ -3579,7 +3577,7 @@ function previewRapportMensuel(iidFilter) {
   const label = iidFilter !== undefined
     ? DATA.immeubles.find(i=>i.id===iidFilter)?.nom || ''
     : 'Tous immeubles';
-  document.getElementById('preview-title').textContent = '📄 Aperçu – ' + label + ' · ' + MNOMS[m] + ' ' + a;
+  document.getElementById('preview-title').textContent = t('Aperçu –') + ' ' + label + ' · ' + tMois(m) + ' ' + a;
   document.getElementById('modal-rapport').classList.add('open');
 }
 
@@ -3630,34 +3628,34 @@ async function genDocxMiseEnDemeure(locId) {
   const mkP = (text,opts={},align=AlignmentType.LEFT) => new Paragraph({children:[new TextRun({text,...opts})],alignment:align,spacing:{after:200}});
   const doc = new Document({sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:1440,right:1800,bottom:1440,left:1800}}},children:[
     mkP('GESTION IMMOBILIÈRE',{bold:true,size:26}),
-    mkP('Immeuble '+im.nom,{size:22,color:'555555'}),
+    mkP(t('Immeuble')+' '+im.nom,{size:22,color:'555555'}),
     mkP(im.ville+(im.quartier?' · '+im.quartier:''),{size:20,color:'888888'}),
     new Paragraph({children:[],spacing:{after:480}}),
     mkP(im.ville+', le '+today,{italics:true,size:22},AlignmentType.RIGHT),
     new Paragraph({children:[],spacing:{after:320}}),
-    mkP('À l\'attention de :',{bold:true,size:22}),
+    mkP(t('À l\'attention de :'),{bold:true,size:22}),
     mkP(l.nom,{bold:true,size:22}),
-    mkP('Local '+(l.appt||'–')+' – Immeuble '+im.nom,{size:22}),
+    mkP(t('Local')+' '+(l.appt||'–')+' – '+t('Immeuble')+' '+im.nom,{size:22}),
     new Paragraph({children:[],spacing:{after:320}}),
-    new Paragraph({children:[new TextRun({text:'Objet : ',bold:true,size:22}),new TextRun({text:'MISE EN DEMEURE DE PAYER – Arriérés de loyer',bold:true,underline:{},size:22})],spacing:{after:480}}),
-    mkP('Monsieur/Madame,',{size:22}),
-    mkP('Par la présente, nous vous mettons en demeure de procéder au règlement immédiat des sommes dues au titre de votre loyer pour le local '+(l.appt||'–')+' que vous occupez au sein de l\'immeuble '+im.nom+'.',{size:22}),
-    mkP('État de votre compte locatif :',{bold:true,size:22}),
-    mkP('    • Loyer mensuel contractuel : '+fmt(l.loyer),{size:22}),
-    mkP('    • Montant total dû : '+fmt(l.reste),{bold:true,size:22,color:'c0392b'}),
-    mkP('    • Situation : '+l.obs,{size:22,italics:true}),
+    new Paragraph({children:[new TextRun({text:t('Objet :')+' ',bold:true,size:22}),new TextRun({text:t('MISE EN DEMEURE DE PAYER – Arriérés de loyer'),bold:true,underline:{},size:22})],spacing:{after:480}}),
+    mkP(t('Monsieur/Madame')+',',{size:22}),
+    mkP(t('Par la présente, nous vous mettons en demeure de procéder au règlement immédiat des sommes dues au titre de votre loyer pour le local')+' '+(l.appt||'–')+' '+t('que vous occupez au sein de l\'immeuble')+' '+im.nom+'.',{size:22}),
+    mkP(t('État de votre compte locatif :'),{bold:true,size:22}),
+    mkP('    • '+t('Loyer mensuel contractuel :')+' '+fmt(l.loyer),{size:22}),
+    mkP('    • '+t('Montant total dû :')+' '+fmt(l.reste),{bold:true,size:22,color:'c0392b'}),
+    mkP('    • '+t('Situation :')+' '+l.obs,{size:22,italics:true}),
     new Paragraph({children:[],spacing:{after:240}}),
-    new Paragraph({children:[new TextRun({text:'En conséquence, nous vous demandons formellement de procéder au règlement intégral de la somme de ',size:22}),new TextRun({text:fmt(l.reste),bold:true,size:22,color:'c0392b'}),new TextRun({text:' dans un délai de ',size:22}),new TextRun({text:'huit (8) jours',bold:true,size:22}),new TextRun({text:' à compter de la réception de la présente.',size:22})],spacing:{after:240}}),
-    mkP('À défaut, nous nous verrons contraints d\'engager sans autre préavis toutes les procédures légales disponibles, notamment la résiliation judiciaire du bail, la procédure d\'expulsion et le recouvrement de toutes sommes dues.',{size:22}),
+    new Paragraph({children:[new TextRun({text:t('En conséquence, nous vous demandons formellement de procéder au règlement intégral de la somme de')+' ',size:22}),new TextRun({text:fmt(l.reste),bold:true,size:22,color:'c0392b'}),new TextRun({text:' '+t('dans un délai de')+' ',size:22}),new TextRun({text:t('huit (8) jours'),bold:true,size:22}),new TextRun({text:' '+t('à compter de la réception de la présente.'),size:22})],spacing:{after:240}}),
+    mkP(t('À défaut, nous nous verrons contraints d\'engager sans autre préavis toutes les procédures légales disponibles, notamment la résiliation judiciaire du bail, la procédure d\'expulsion et le recouvrement de toutes sommes dues.'),{size:22}),
     new Paragraph({children:[],spacing:{after:240}}),
-    mkP('Nous espérons que vous donnerez suite favorablement à la présente.',{size:22}),
+    mkP(t('Nous espérons que vous donnerez suite favorablement à la présente.'),{size:22}),
     new Paragraph({children:[],spacing:{after:480}}),
-    mkP('Veuillez agréer, Monsieur/Madame, l\'expression de nos salutations distinguées.',{size:22}),
+    mkP(t('Veuillez agréer, Monsieur/Madame, l\'expression de nos salutations distinguées.'),{size:22}),
     new Paragraph({children:[],spacing:{after:480}}),
-    mkP('Le Gestionnaire',{bold:true,size:22},AlignmentType.RIGHT),
-    mkP('Immeuble '+im.nom,{size:20,italics:true},AlignmentType.RIGHT),
+    mkP(t('Le Gestionnaire'),{bold:true,size:22},AlignmentType.RIGHT),
+    mkP(t('Immeuble')+' '+im.nom,{size:20,italics:true},AlignmentType.RIGHT),
     new Paragraph({border:{top:{style:BorderStyle.SINGLE,size:4,color:'888888',space:1}},spacing:{before:600,after:120}}),
-    mkP('Document confidentiel – Généré le '+today+' par ImmoGest',{size:16,color:'aaaaaa',italics:true},AlignmentType.CENTER),
+    mkP(t('Document confidentiel – Généré le')+' '+today+' par ImmoGest',{size:16,color:'aaaaaa',italics:true},AlignmentType.CENTER),
   ]}]});
   const buf = await Packer.toBlob(doc);
   const a=document.createElement('a'); a.href=URL.createObjectURL(buf);
@@ -9409,20 +9407,20 @@ function previewMiseEnDemeure(locId) {
       </div>
       <div style="margin-bottom:24px;">
         <strong>${l.nom}</strong><br>
-        Local ${l.appt || '–'}
+        ${t('Local')} ${l.appt || '–'}
       </div>
       <h3 style="text-align:center;text-transform:uppercase;text-decoration:underline;margin:32px 0 24px;font-size:15px;">
-        MISE EN DEMEURE DE PAYER
+        ${t('MISE EN DEMEURE DE PAYER')}
       </h3>
-      <p>Monsieur/Madame <strong>${l.nom}</strong>,</p>
-      <p>Nous vous mettons en demeure de procéder au règlement de votre loyer impayé d'un montant de <strong>${l.reste ? l.reste.toLocaleString('fr-FR') : 0} FCFA</strong>, représentant environ <strong>${moisDus} mois</strong> de loyer.</p>
-      <p>Malgré nos relances, ce montant demeure impayé à ce jour. Vous êtes donc sommé(e) de régler cette somme dans un délai de <strong>8 jours</strong> à compter de la réception de ce courrier.</p>
-      <p>À défaut de paiement dans ce délai, nous nous verrons dans l\'obligation d\'engager les procédures judiciaires nécessaires pour recouvrer notre dû, ce qui entraînera des frais supplémentaires à votre charge.</p>
-      <p>Dans l\'espoir d\'un règlement amiable, nous vous prions d\'agréer, Monsieur/Madame, l\'expression de nos salutations distinguées.</p>
+      <p>${t('Monsieur/Madame')} <strong>${l.nom}</strong>,</p>
+      <p>${t('Nous vous mettons en demeure de procéder au règlement de votre loyer impayé d\'un montant de')} <strong>${l.reste ? l.reste.toLocaleString('fr-FR') : 0} FCFA</strong>, ${t('représentant environ')} <strong>${moisDus} ${t('mois de loyer')}</strong>.</p>
+      <p>${t('Malgré nos relances, ce montant demeure impayé à ce jour. Vous êtes donc sommé(e) de régler cette somme dans un délai de')} <strong>${t('huit (8) jours')}</strong> ${t('à compter de la réception de ce courrier.')}</p>
+      <p>${t('À défaut de paiement dans ce délai, nous nous verrons dans l\'obligation d\'engager les procédures judiciaires nécessaires pour recouvrer notre dû, ce qui entraînera des frais supplémentaires à votre charge.')}</p>
+      <p>${t('Dans l\'espoir d\'un règlement amiable, nous vous prions d\'agréer, Monsieur/Madame, l\'expression de nos salutations distinguées.')}</p>
       <div style="margin-top:48px;text-align:right;">
-        <p>Le Propriétaire / La Gérance</p>
+        <p>${t('Le Propriétaire / La Gérance')}</p>
         <p style="margin-top:32px;">___________________________</p>
-        <p style="font-size:12px;color:#888;">Signature et cachet</p>
+        <p style="font-size:12px;color:#888;">${t('Signature et cachet')}</p>
       </div>
     </div>`;
 
