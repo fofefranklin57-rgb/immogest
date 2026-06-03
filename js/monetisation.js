@@ -341,71 +341,113 @@ const IMMOGEST_PAIEMENT = {
 };
 // ══════════════════════════════════════════════════════════════
 
-// ── CONFIGURATION MONÉTISATION ──
-// ═══════════════════════════════════════════════════════════
-// PLANS IMMOGEST — 4 niveaux
-// ═══════════════════════════════════════════════════════════
-const PLANS = {
+// ══════════════════════════════════════════════════════════════
+// PLANS IMMOGEST — MODE PERSONNEL (3 niveaux)
+// ══════════════════════════════════════════════════════════════
+const PLANS_PERSO = {
   gratuit: {
-    label: 'Gratuit', price: 0,
-    immeubles: 1, locataires: 10, utilisateurs: 2,
+    label: 'Gratuit', price: 0, annuel: 0,
+    immeubles: 1, locataires: 10, utilisateurs: 1,
     rapports_word_mois: 1, rapports_pdf: true,
     fiche_suivi: true, relances_mois: 3,
     ia: false, ia_msgs_jour: 0,
-    export: false, support: 'email',
-    ads: true
+    export: false, support: 'email', ads: true
   },
   starter: {
-    label: 'Starter', price: 9999,
-    immeubles: 3, locataires: 50, utilisateurs: 5,
+    label: 'Starter', price: 9999, annuel: 99900,
+    immeubles: 3, locataires: 50, utilisateurs: 3,
     rapports_word_mois: 999, rapports_pdf: true,
     fiche_suivi: true, relances_mois: 999,
     ia: true, ia_msgs_jour: 10,
-    export: false, support: 'email',
-    ads: false
+    export: false, support: 'email', ads: false
   },
   pro: {
-    label: 'Pro', price: 19999,
-    immeubles: 10, locataires: 999, utilisateurs: 15,
+    label: 'Pro', price: 19999, annuel: 199900,
+    immeubles: 999, locataires: 999, utilisateurs: 5,
     rapports_word_mois: 999, rapports_pdf: true,
     fiche_suivi: true, relances_mois: 999,
     ia: true, ia_msgs_jour: 999,
-    export: true, support: 'prioritaire',
-    ads: false
+    export: true, support: 'prioritaire', ads: false
+  }
+};
+
+// ══════════════════════════════════════════════════════════════
+// PLANS IMMOGEST — MODE ENTREPRISE (3 niveaux)
+// ══════════════════════════════════════════════════════════════
+const PLANS_ENT = {
+  gratuit: {
+    label: 'Gratuit', price: 0, annuel: 0,
+    immeubles: 1, locataires: 5, utilisateurs: 2,
+    rapports_word_mois: 0, rapports_pdf: true,
+    fiche_suivi: true, relances_mois: 0,
+    ia: false, ia_msgs_jour: 0,
+    export: false, support: 'none', ads: true,
+    trial_days: 30  // 1 mois d'essai complet
   },
-  entreprise: {
-    label: 'Entreprise', price: 29999,
+  pro: {
+    label: 'Pro', price: 29999, annuel: 299900,
     immeubles: 999, locataires: 999, utilisateurs: 999,
     rapports_word_mois: 999, rapports_pdf: true,
     fiche_suivi: true, relances_mois: 999,
     ia: true, ia_msgs_jour: 999,
-    export: true, support: 'dédié',
-    ads: false
+    export: true, support: 'prioritaire', ads: false
+  },
+  customisation: {
+    label: 'Customisation', price: -1, annuel: -1,
+    immeubles: 999, locataires: 999, utilisateurs: 999,
+    rapports_word_mois: 999, rapports_pdf: true,
+    fiche_suivi: true, relances_mois: 999,
+    ia: true, ia_msgs_jour: 999,
+    export: true, support: 'dédié', ads: false,
+    custom: true
   }
 };
 
+// Retourne le bon jeu de plans selon le mode actif
+function getCurrentPlans() {
+  var mode = (typeof getAuthMode === 'function') ? getAuthMode() : null;
+  return mode === 'entreprise' ? PLANS_ENT : PLANS_PERSO;
+}
+
 const MONETISATION = {
-  version: '3.0',
-  plan: 'gratuit', // 'gratuit' | 'starter' | 'pro' | 'entreprise'
-  trialEnd: null,
+  version: '4.0',
+  plan: 'gratuit',
+  trial_start: null, // timestamp de début d'essai (entreprise)
   usage: {
     rapports_word_ce_mois: 0,
     relances_ce_mois: 0,
     ia_msgs_aujourd_hui: 0,
     last_reset_day: null,
     last_reset_month: null
-  },
-  pricing: {
-    gratuit:    { mensuel: 0,     annuel: 0      },
-    starter:    { mensuel: 9999,  annuel: 99900  },
-    pro:        { mensuel: 19999, annuel: 199900 },
-    entreprise: { mensuel: 29999, annuel: 299900 }
   }
 };
 
 // ── Obtenir le plan actif ──
 function getPlan() {
-  return PLANS[MONETISATION.plan] || PLANS.gratuit;
+  var plans = getCurrentPlans();
+  return plans[MONETISATION.plan] || plans.gratuit;
+}
+
+// ── Trial entreprise ──
+function isTrialActive() {
+  var mode = (typeof getAuthMode === 'function') ? getAuthMode() : null;
+  if (mode !== 'entreprise' || MONETISATION.plan !== 'gratuit') return false;
+  if (!MONETISATION.trial_start) return false;
+  var elapsed = Date.now() - MONETISATION.trial_start;
+  return elapsed < 30 * 24 * 3600 * 1000;
+}
+
+function getTrialDaysLeft() {
+  if (!MONETISATION.trial_start) return 0;
+  var elapsed = Date.now() - MONETISATION.trial_start;
+  return Math.max(0, 30 - Math.floor(elapsed / (24 * 3600 * 1000)));
+}
+
+function activateTrial() {
+  if (!MONETISATION.trial_start) {
+    MONETISATION.trial_start = Date.now();
+    saveMonetisation();
+  }
 }
 
 // ── Vérifier une limite ──
@@ -485,9 +527,15 @@ function initMonetisation() {
   if (saved) {
     try {
       const data = JSON.parse(saved);
-      MONETISATION.plan  = data.plan  || 'gratuit';
-      MONETISATION.usage = data.usage || MONETISATION.usage;
+      MONETISATION.plan        = data.plan        || 'gratuit';
+      MONETISATION.trial_start = data.trial_start || null;
+      MONETISATION.usage       = data.usage       || MONETISATION.usage;
     } catch(e) {}
+  }
+  // Activer l'essai automatiquement en mode entreprise gratuit
+  var _mode = (typeof getAuthMode === 'function') ? getAuthMode() : null;
+  if (_mode === 'entreprise' && MONETISATION.plan === 'gratuit' && !MONETISATION.trial_start) {
+    activateTrial();
   }
 
   // Vérifier abonnement depuis Supabase si connecté
@@ -522,7 +570,7 @@ function initMonetisation() {
 function saveMonetisation() {
   localStorage.setItem('immogest_monetisation', JSON.stringify({
     plan: MONETISATION.plan,
-    trialEnd: MONETISATION.trialEnd,
+    trial_start: MONETISATION.trial_start,
     usage: MONETISATION.usage
   }));
 }
@@ -530,58 +578,48 @@ function saveMonetisation() {
 // ── GESTION DES PLANS ──
 function isFreePlan()       { return MONETISATION.plan === 'gratuit'; }
 function isStarterPlan()    { return MONETISATION.plan === 'starter'; }
-function isProPlan()        { return MONETISATION.plan === 'pro' || MONETISATION.plan === 'entreprise'; }
-function isBusinessPlan()   { return MONETISATION.plan === 'pro'; }
-function isEnterprisePlan() { return MONETISATION.plan === 'entreprise'; }
-function isTrialActive()    { return false; } // Trial supprimé — plans directs
+function isProPlan()        { return MONETISATION.plan === 'pro' || MONETISATION.plan === 'customisation'; }
+function isEnterprisePlan() { return MONETISATION.plan === 'customisation'; }
 
 function applyPlan() {
-  const badge = document.getElementById('current-plan-badge');
-  if (badge) {
-    const planClass = MONETISATION.plan === 'gratuit'    ? 'plan-free'
-      : MONETISATION.plan === 'starter'    ? 'plan-starter'
-      : MONETISATION.plan === 'pro'        ? 'plan-pro'
-      : 'plan-enterprise';
-    const planLabel = MONETISATION.plan === 'gratuit'    ? 'FREE'
-      : MONETISATION.plan === 'starter'   ? 'STARTER'
-      : MONETISATION.plan === 'pro'       ? 'PRO'
-      : 'AGENCE';
-    badge.className = 'plan-badge ' + planClass;
-    badge.textContent = planLabel;
-  }
-
   updatePlanBadge();
+  var badge = document.getElementById('current-plan-badge');
+  if (badge) {
+    var info = _planBadgeInfo();
+    badge.className = 'plan-badge ' + info.cls;
+    badge.textContent = info.label;
+  }
+}
+
+function _planBadgeInfo() {
+  var plan = MONETISATION.plan;
+  var trial = isTrialActive();
+  if (plan === 'gratuit' && trial) return { label: 'ESSAI', cls: 'plan-starter' };
+  if (plan === 'gratuit')         return { label: 'FREE',   cls: 'plan-free' };
+  if (plan === 'starter')         return { label: 'STARTER',cls: 'plan-starter' };
+  if (plan === 'pro')             return { label: 'PRO',    cls: 'plan-pro' };
+  if (plan === 'customisation')   return { label: 'CUSTOM', cls: 'plan-enterprise' };
+  return { label: 'FREE', cls: 'plan-free' };
 }
 
 function updatePlanBadge() {
   var badge = document.getElementById('topbar-plan-badge');
   if (!badge) return;
-
-  // Masquer pour locataire / propriétaire
   if (typeof SESSION !== 'undefined' && SESSION &&
       (SESSION.role === 'locataire' || SESSION.role === 'proprietaire')) {
     badge.style.visibility = 'hidden';
     return;
   }
-
-  var plan = (typeof MONETISATION !== 'undefined') ? MONETISATION.plan : 'gratuit';
-
-  var planLabel = plan === 'starter'   ? 'STARTER'
-                : plan === 'pro'       ? 'PRO'
-                : plan === 'entreprise' ? 'AGENCE'
-                : 'FREE ▲';
-  var planClass = plan === 'starter'    ? 'plan-starter'
-                : plan === 'pro'        ? 'plan-pro'
-                : plan === 'entreprise' ? 'plan-enterprise'
-                : 'plan-free';
-
-  badge.className     = 'plan-badge ' + planClass;
-  badge.textContent   = planLabel;
+  var info = _planBadgeInfo();
+  var trial = isTrialActive();
+  badge.className = 'plan-badge ' + info.cls;
+  badge.textContent = info.label + (MONETISATION.plan === 'gratuit' && !trial ? ' ▲' : '');
   badge.style.visibility = 'visible';
-  badge.style.display    = 'inline-flex';
-  badge.title = (plan === 'gratuit')
+  badge.style.display = 'inline-flex';
+  badge.title = (MONETISATION.plan === 'gratuit' && !trial)
     ? 'Plan FREE — Cliquez pour voir les offres'
-    : 'Abonnement ' + planLabel + ' actif';
+    : trial ? 'Essai gratuit — ' + getTrialDaysLeft() + ' jours restants'
+    : 'Abonnement ' + info.label + ' actif';
 }
 
 function showLimitWarning(check) {
@@ -601,35 +639,118 @@ function renderUsageCounter(type, current, limit) {
 }
 
 // ── PAYWALL & CONVERSION ──
+function renderPlanCards() {
+  var grid = document.getElementById('plans-grid');
+  if (!grid) return;
+  var mode = (typeof getAuthMode === 'function') ? getAuthMode() : 'perso';
+  var plans = getCurrentPlans();
+  var cur = MONETISATION.plan;
+  var trial = isTrialActive();
+
+  function card(key, planData, badge, accentColor, gradFrom, gradTo, borderColor) {
+    var isCurrent = cur === key;
+    var isCustom = planData.custom;
+    var price = isCustom ? 'Sur devis' : (planData.price === 0 ? '0 <span style="font-size:14px;font-weight:600;color:var(--text3);">FCFA</span>' : planData.price.toLocaleString() + ' <span style="font-size:14px;font-weight:600;color:var(--text3);">FCFA/mois</span>');
+    var sub = planData.price === 0 && !isCustom
+      ? (key === 'gratuit' && mode === 'entreprise' ? '<span style="color:' + accentColor + ';font-weight:700;">30 jours d\'essai complet</span>' : 'Pour toujours')
+      : isCustom ? '<span style="color:' + accentColor + ';font-weight:700;">Branding · API · Support dédié</span>'
+      : (planData.annuel / 1000).toFixed(0) + ' 900 FCFA/an <span style="color:' + accentColor + ';font-weight:700;">2 mois offerts</span>';
+
+    var features = _planFeatures(key, planData, mode, accentColor);
+    var btn = isCurrent
+      ? '<button class="btn" style="width:100%;margin-top:16px;opacity:.5;cursor:default;" disabled>Plan actuel</button>'
+      : isCustom
+        ? '<button style="width:100%;margin-top:16px;padding:11px;background:linear-gradient(135deg,' + gradFrom + ',' + gradTo + ');color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;" onclick="startSubscription(\'customisation\')">📞 Nous contacter</button>'
+        : key === 'gratuit'
+          ? '<button class="btn" style="width:100%;margin-top:16px;opacity:.5;cursor:default;" disabled>' + (trial ? 'Essai en cours' : 'Plan actuel') + '</button>'
+          : '<button style="width:100%;margin-top:16px;padding:11px;background:linear-gradient(135deg,' + gradFrom + ',' + gradTo + ');color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;" onclick="startSubscription(\'' + key + '\')" onmouseover="this.style.opacity=\'.85\'" onmouseout="this.style.opacity=\'1\'">🚀 Passer à ' + planData.label + '</button>';
+
+    return '<div style="background:linear-gradient(180deg,' + gradFrom + '1a 0%,var(--bg) 100%);border:2px solid ' + borderColor + ';border-radius:14px;padding:20px 16px;display:flex;flex-direction:column;position:relative;">'
+      + (badge ? '<div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,' + gradFrom + ',' + gradTo + ');color:#fff;font-size:10px;font-weight:800;padding:3px 12px;border-radius:99px;white-space:nowrap;">' + badge + '</div>' : '')
+      + '<div style="font-size:13px;font-weight:800;color:' + accentColor + ';text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">' + planData.label + '</div>'
+      + '<div style="font-size:28px;font-weight:900;color:' + accentColor + ';line-height:1;">' + price + '</div>'
+      + '<div style="font-size:11px;color:var(--text3);margin-bottom:14px;">' + sub + '</div>'
+      + '<div style="border-top:1px solid ' + borderColor + ';padding-top:14px;display:flex;flex-direction:column;gap:7px;flex:1;">' + features + '</div>'
+      + btn
+      + '</div>';
+  }
+
+  var html = '';
+  if (mode === 'entreprise') {
+    var trialLabel = trial ? '⏳ ' + getTrialDaysLeft() + ' jours restants' : '🆓 ESSAI 30 JOURS';
+    html += card('gratuit',      plans.gratuit,      trialLabel,  'var(--text2)', '#6b7280', '#4b5563', 'var(--border)');
+    html += card('pro',          plans.pro,          '⭐ POPULAIRE', '#0E6AAF',  '#0E6AAF', '#0a5a96', '#0E6AAF');
+    html += card('customisation',plans.customisation,'🏢 SUR MESURE','#D97706', '#D97706', '#B45309', '#D97706');
+  } else {
+    html += card('gratuit', plans.gratuit, null,           'var(--text2)', '#6b7280', '#4b5563', 'var(--border)');
+    html += card('starter', plans.starter, '⭐ POPULAIRE', '#0E6AAF',  '#0E6AAF', '#0a5a96', '#0E6AAF');
+    html += card('pro',     plans.pro,     '💎 RECOMMANDÉ','#7C3AED',  '#7C3AED', '#5B21B6', '#7C3AED');
+  }
+
+  var cols = mode === 'entreprise' ? 3 : 3;
+  grid.style.gridTemplateColumns = 'repeat(' + cols + ',1fr)';
+  grid.innerHTML = html;
+}
+
+function _planFeatures(key, p, mode, accent) {
+  var f = '';
+  var chk = '<div style="font-size:12px;color:var(--text2);">✅ ';
+  var nok = '<div style="font-size:12px;color:var(--text3);">❌ ';
+  var warn= '<div style="font-size:12px;color:var(--text3);">⚠️ ';
+  var end = '</div>';
+
+  if (p.custom) {
+    return [
+      chk + 'Immeubles illimités' + end,
+      chk + 'Utilisateurs illimités' + end,
+      chk + 'Tous les rapports' + end,
+      chk + 'IA illimitée' + end,
+      chk + 'Export données' + end,
+      chk + 'Branding cabinet' + end,
+      chk + 'API & intégrations' + end,
+      chk + 'Support dédié 24h' + end
+    ].join('');
+  }
+
+  f += chk + (p.immeubles >= 999 ? 'Immeubles illimités' : p.immeubles + ' immeuble' + (p.immeubles > 1 ? 's' : '')) + end;
+  f += chk + (p.locataires >= 999 ? 'Locataires illimités' : p.locataires + ' locataires max') + end;
+  if (mode === 'entreprise' || p.utilisateurs > 1)
+    f += chk + (p.utilisateurs >= 999 ? 'Utilisateurs illimités' : p.utilisateurs + ' utilisateur' + (p.utilisateurs > 1 ? 's' : '')) + end;
+  f += chk + 'Rapports PDF' + end;
+  if (p.rapports_word_mois === 0)
+    f += nok + 'Rapports Word' + end;
+  else if (p.rapports_word_mois === 1)
+    f += chk + '1 rapport Word/mois' + end;
+  else
+    f += chk + 'Rapports Word illimités' + end;
+  f += (p.relances_mois === 0 ? nok : p.relances_mois <= 3 ? chk + p.relances_mois : chk + 'Relances illimitées') + (p.relances_mois > 0 && p.relances_mois <= 3 ? ' relances/mois' : '') + end;
+  f += p.ia ? chk + (p.ia_msgs_jour >= 999 ? 'IA illimitée' : 'IA ' + p.ia_msgs_jour + ' msgs/jour') + end : nok + 'Assistant IA' + end;
+  f += p.export ? chk + 'Export données' + end : nok + 'Export données' + end;
+  f += p.ads ? warn + 'Publicités' + end : chk + 'Sans publicité' + end;
+  return f;
+}
+
 function showUpgradeModal() {
-  // Le modal d'upgrade ne concerne pas les locataires ni les proprios
   if (typeof SESSION !== 'undefined' && SESSION &&
       (SESSION.role === 'locataire' || SESSION.role === 'proprietaire')) return;
   var modal = document.getElementById('modal-upgrade');
   if (!modal) { console.warn('[ImmoGest] modal-upgrade introuvable'); return; }
 
-  // Injecter le numéro de contact depuis IMMOGEST_PAIEMENT
+  renderPlanCards();
+
   var contactEl = document.getElementById('upgrade-modal-contact');
   if (contactEl && typeof IMMOGEST_PAIEMENT !== 'undefined') {
-    contactEl.innerHTML =
-      '💳 Paiement par MTN MoMo · Orange Money · Virement &nbsp;·&nbsp; ' +
-      'Contactez-nous au <strong>' + IMMOGEST_PAIEMENT.telephone + '</strong>';
+    contactEl.innerHTML = '💳 Paiement par MTN MoMo · Orange Money &nbsp;·&nbsp; Contactez-nous au <strong>' + IMMOGEST_PAIEMENT.telephone + '</strong>';
   }
 
-  // Mettre à jour le badge du plan actuel
   var currentBadge = document.getElementById('current-plan-badge');
-  if (currentBadge && typeof MONETISATION !== 'undefined') {
-    var p = MONETISATION.plan;
-    currentBadge.className = 'plan-badge ' +
-      (p === 'starter' ? 'plan-starter' : p === 'pro' ? 'plan-pro' :
-       p === 'entreprise' ? 'plan-enterprise' : 'plan-free');
-    currentBadge.textContent =
-      p === 'starter' ? 'STARTER' : p === 'pro' ? 'PRO' :
-      p === 'entreprise' ? 'AGENCE' : 'FREE';
+  if (currentBadge) {
+    var info = _planBadgeInfo();
+    currentBadge.className = 'plan-badge ' + info.cls;
+    currentBadge.textContent = info.label;
   }
 
   modal.classList.add('open');
-  console.log('[Monetisation] Upgrade modal ouvert — plan:', MONETISATION.plan);
 }
 
 function showPaywall(message, feature) {
@@ -677,8 +798,15 @@ function selectPaymentMethod(el, method) {
 }
 
 function startSubscription(plan) {
+  // Plan Customisation → formulaire contact WhatsApp
+  if (plan === 'customisation') {
+    var msg = encodeURIComponent('Bonjour, je suis intéressé par le plan Customisation ImmoGest pour mon cabinet. Pouvez-vous me contacter ?');
+    window.open('https://wa.me/' + IMMOGEST_PAIEMENT.whatsapp + '?text=' + msg, '_blank');
+    closeModals();
+    return;
+  }
   selectedPlan = plan;
-  const planInfo = PLANS[plan];
+  const planInfo = getCurrentPlans()[plan];
   if (!planInfo) return;
 
 
@@ -707,7 +835,8 @@ function startSubscription(plan) {
 
 function calculateTotal() {
   const duree = parseInt(document.getElementById('pay-duree') ? document.getElementById('pay-duree').value : 1) || 1;
-  const planInfo = PLANS[selectedPlan] || PLANS.starter;
+  const plans = getCurrentPlans();
+  const planInfo = plans[selectedPlan] || plans.starter || plans.pro;
   const monthly = planInfo.price;
 
   let discount = 0;
@@ -733,7 +862,7 @@ function calculateTotal() {
 // ── PAIEMENT ABONNEMENT (flux complet) ──────────────────────
 
 function processPaymentAbonnement() {
-  var planInfo = PLANS[selectedPlan] || PLANS.starter;
+  var planInfo = getCurrentPlans()[selectedPlan] || getCurrentPlans().pro || getCurrentPlans().starter;
   var dureeEl  = document.getElementById('pay-duree');
   var phoneEl  = document.getElementById('pay-phone');
   var duree    = dureeEl ? parseInt(dureeEl.value) : 1;
