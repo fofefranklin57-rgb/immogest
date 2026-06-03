@@ -1264,7 +1264,7 @@ function ouvrirRapportImmeuble(iid) {
   window._currentRapportIid = iid; // for auto-refresh after payment
   window._currentRapportIid = iid;
   
-  document.getElementById('page-title').textContent = 'Rapports — ' + im.nom;
+  document.getElementById('page-title').textContent = t('Rapports') + ' — ' + im.nom;
   document.getElementById('page-sub').textContent = im.ville + (im.quartier ? ' · ' + im.quartier : '');
   document.getElementById('topbar-main-btn').style.display = 'none';
 
@@ -1278,7 +1278,7 @@ function ouvrirRapportImmeuble(iid) {
     <div class="card-header"><div class="card-title">📅 ${t('Choisir la période')}</div></div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;padding:4px 0;">
       <div>
-        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Mode</label>
+        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">${t('Mode')}</label>
         <div style="display:flex;gap:6px;">
           <button id="btn-mode-mois" class="btn btn-sm ${window._rptMode!=='periode'?'btn-primary':'btn-ghost'}" 
                   onclick="window._rptMode='mois';ouvrirRapportImmeuble(${iid})">${t('Par mois')}</button>
@@ -1288,15 +1288,15 @@ function ouvrirRapportImmeuble(iid) {
       </div>
       ${window._rptMode !== 'periode' ? `
       <div>
-        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Mois</label>
+        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">${t('Mois')}</label>
         <select class="form-control" style="height:36px;" onchange="window._rptMois=parseInt(this.value);ouvrirRapportImmeuble(${iid})">
-          ${['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'].map((m,i)=>
+          ${Array.from({length:12},(_,i)=>tMois(i).substring(0,3)).map((m,i)=>
             `<option value="${i}" ${(window._rptMois!==undefined?window._rptMois:moisActuel)===i?'selected':''}>${m}</option>`
           ).join('')}
         </select>
       </div>
       <div>
-        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Année</label>
+        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">${t('Année')}</label>
         <select class="form-control" style="height:36px;" onchange="window._rptAnnee=parseInt(this.value);ouvrirRapportImmeuble(${iid})">
           ${[anneeActuelle-1, anneeActuelle, anneeActuelle+1].map(y=>
             `<option value="${y}" ${(window._rptAnnee||anneeActuelle)===y?'selected':''}>${y}</option>`
@@ -1304,12 +1304,12 @@ function ouvrirRapportImmeuble(iid) {
         </select>
       </div>` : `
       <div>
-        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Du</label>
+        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">${t('Du')}</label>
         <input type="date" class="form-control" style="height:36px;" value="${window._rptDeb||anneeActuelle+'-01-01'}"
                onchange="window._rptDeb=this.value;ouvrirRapportImmeuble(${iid})">
       </div>
       <div>
-        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Au</label>
+        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">${t('Au')}</label>
         <input type="date" class="form-control" style="height:36px;" value="${window._rptFin||anneeActuelle+'-12-31'}"
                onchange="window._rptFin=this.value;ouvrirRapportImmeuble(${iid})">
       </div>`}
@@ -1318,17 +1318,17 @@ function ouvrirRapportImmeuble(iid) {
 
   <!-- Actions rapports -->
   <div class="card" style="margin-bottom:16px;">
-    <div class="card-header"><div class="card-title">📄 Générer des rapports</div></div>
+    <div class="card-header"><div class="card-title">📄 ${t('Générer des rapports')}</div></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;padding:4px 0;">
       <button class="btn btn-primary" onclick="genRapportImmeubleDocx(${iid})">
-        📊 Rapport ${window._rptMode==='periode'?'période':'mensuel'} (.docx)
+        📊 ${window._rptMode==='periode'?t('Rapport période (.docx)'):t('Rapport mensuel (.docx)')}
       </button>
       <button class="btn btn-ghost" onclick="previewRapportImmeubleModal(${iid})">
-        👁 Aperçu rapport
+        👁 ${t('Aperçu rapport')}
       </button>
       ${can('canJuridique') ? `
       <button class="btn btn-ghost" onclick="genDocxRelances(${iid})">
-        🔔 Relances locataires
+        🔔 ${t('Relances locataires')}
       </button>` : ''}
     </div>
   </div>`;
@@ -1341,13 +1341,13 @@ function ouvrirRapportImmeuble(iid) {
   html += `
   <div class="card">
     <div class="card-header">
-      <div class="card-title">👥 Locataires — ${im.nom}</div>
-      <div style="font-size:12px;color:var(--text3);">${locs.length} locataires actifs</div>
+      <div class="card-title">👥 ${t('Locataires')} — ${im.nom}</div>
+      <div style="font-size:12px;color:var(--text3);">${locs.length} ${t('locataires actifs')}</div>
     </div>
     <div class="table-wrap"><table class="tbl">
       <thead><tr>
         <th>${t('Local')}</th><th>${t('Nom')}</th><th>${t('Loyer')}</th>
-        <th>${t('Statut')} ${['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'][mois]} ${annee}</th>
+        <th>${t('Statut')} ${tMois(mois).substring(0,3)} ${annee}</th>
         <th>${t('Arriérés')}</th><th>${t('Actions')}</th>
       </tr></thead>
       <tbody>
@@ -1364,26 +1364,26 @@ function ouvrirRapportImmeuble(iid) {
           return false;
         });
         const totalPaye = paysMois.reduce((s,p)=>s+p.montant,0);
-        const statutMois = totalPaye >= l.loyer ? '✓ Payé' : totalPaye > 0 ? '½ Partiel' : '✗ Impayé';
+        const statutMois = totalPaye >= l.loyer ? t('✓ Payé') : totalPaye > 0 ? t('½ Partiel') : t('✗ Impayé');
         const couleur = totalPaye >= l.loyer ? 'var(--green)' : totalPaye > 0 ? 'var(--yellow)' : 'var(--red)';
         return `<tr>
           <td>${localBadge(l.appt)}</td>
           <td style="font-weight:600;">${l.nom}</td>
           <td class="td-amount">${fmt(l.loyer)}</td>
-          <td><span style="color:${couleur};font-weight:700;font-size:12px;">${statutMois}</span>${totalPaye>0&&totalPaye<l.loyer?`<br><span style="font-size:10px;color:var(--text3);">${fmt(totalPaye)} versé</span>`:''}</td>
+          <td><span style="color:${couleur};font-weight:700;font-size:12px;">${statutMois}</span>${totalPaye>0&&totalPaye<l.loyer?`<br><span style="font-size:10px;color:var(--text3);">${fmt(totalPaye)} ${t('versé')}</span>`:''}</td>
           <td class="td-amount ${l.reste>0?'red':'green'}" style="font-size:11px;">${fmtReste(l)}</td>
           <td style="white-space:nowrap;">
             <div class="action-menu">
               <button class="action-menu-btn" onclick="toggleActionMenu(this)">⋯</button>
               <div class="action-dropdown">
-                ${can('canRecordPayment')?`<div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 Paiement</div>`:''}
-                ${can('canEditLocataires')?`<div class="action-dropdown-item" onclick="editLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📝 Modifier</div>`:''}
-                <div class="action-dropdown-item" onclick="ouvrirFicheSuivi(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📊 Fiche de suivi</div>
-                <div class="action-dropdown-item" onclick="_closeDropdowns();_openNewMessageModal('loc_${l.id}')">💬 Envoyer un message</div>
-                <div class="action-dropdown-item" onclick="_closeDropdowns();notifCiblee(${l.id})">🔔 Notification push</div>
-                ${can('canJuridique')?`<div class="action-dropdown-item" onclick="previewMiseEnDemeure(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📄 Mise en demeure</div>`:''}
+                ${can('canRecordPayment')?`<div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 ${t('Paiement')}</div>`:''}
+                ${can('canEditLocataires')?`<div class="action-dropdown-item" onclick="editLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📝 ${t('Modifier')}</div>`:''}
+                <div class="action-dropdown-item" onclick="ouvrirFicheSuivi(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📊 ${t('Fiche de suivi')}</div>
+                <div class="action-dropdown-item" onclick="_closeDropdowns();_openNewMessageModal('loc_${l.id}')">💬 ${t('Envoyer un message')}</div>
+                <div class="action-dropdown-item" onclick="_closeDropdowns();notifCiblee(${l.id})">🔔 ${t('Notification push')}</div>
+                ${can('canJuridique')?`<div class="action-dropdown-item" onclick="previewMiseEnDemeure(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📄 ${t('Mise en demeure')}</div>`:''}
                 <div class="action-dropdown-sep"></div>
-                ${can('canEditLocataires')?`<div class="action-dropdown-item danger" onclick="supprimerLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">🗑️ Supprimer</div>`:''}
+                ${can('canEditLocataires')?`<div class="action-dropdown-item danger" onclick="supprimerLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">🗑️ ${t('Supprimer')}</div>`:''}
               </div>
             </div>
           </td>
@@ -1392,9 +1392,9 @@ function ouvrirRapportImmeuble(iid) {
       </tbody>
       <tfoot>
         <tr style="font-weight:700;background:var(--bg2);">
-          <td colspan="2">TOTAL</td>
+          <td colspan="2">${t('Total').toUpperCase()}</td>
           <td class="td-amount">${fmt(locs.reduce((s,l)=>s+l.loyer,0))}</td>
-          <td>${fmt(DATA.paiements.filter(p=>locs.some(l=>l.id===p.locId)&&p.moisC===mois&&p.anneeC===annee).reduce((s,p)=>s+p.montant,0))} encaissé</td>
+          <td>${fmt(DATA.paiements.filter(p=>locs.some(l=>l.id===p.locId)&&p.moisC===mois&&p.anneeC===annee).reduce((s,p)=>s+p.montant,0))} ${t('encaissé')}</td>
           <td class="td-amount red">${fmt(locs.reduce((s,l)=>s+Math.max(0,l.reste),0))}</td>
           <td></td>
         </tr>
@@ -1466,11 +1466,11 @@ function renderRapportAnnuelPage() {
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
           <div style="background:var(--bg2);border-radius:8px;padding:8px;">
-            <div style="font-size:10px;color:var(--text3);">Encaissé ${annee}</div>
+            <div style="font-size:10px;color:var(--text3);">${t('Encaissé')} ${annee}</div>
             <div style="font-size:13px;font-weight:700;color:var(--green);">${fmtShort(totalEncaisse)}</div>
           </div>
           <div style="background:var(--bg2);border-radius:8px;padding:8px;">
-            <div style="font-size:10px;color:var(--text3);">Recouvrement</div>
+            <div style="font-size:10px;color:var(--text3);">${t('Recouvrement')}</div>
             <div style="font-size:18px;font-weight:700;color:${tauxRecouvrement>=80?'var(--green)':tauxRecouvrement>=50?'var(--yellow)':'var(--red)'};">${tauxRecouvrement}%</div>
           </div>
           <div style="background:var(--bg2);border-radius:8px;padding:8px;">
@@ -1483,7 +1483,7 @@ function renderRapportAnnuelPage() {
           </div>
         </div>
         <div style="display:flex;gap:6px;">
-          <span style="font-size:10px;background:var(--accent-bg);color:var(--accent);padding:3px 8px;border-radius:99px;font-weight:600;">📅 Voir rapport annuel</span>
+          <span style="font-size:10px;background:var(--accent-bg);color:var(--accent);padding:3px 8px;border-radius:99px;font-weight:600;">📅 ${t('Voir rapport annuel')}</span>
         </div>
       </div>`;
   });
@@ -1497,11 +1497,11 @@ function ouvrirRapportAnnuelImmeuble(iid) {
   if (!im) return;
   const annee = window._rapAnnee || new Date().getFullYear();
 
-  document.getElementById('page-title').textContent = 'Rapport Annuel — ' + im.nom;
+  document.getElementById('page-title').textContent = t('Rapport Annuel') + ' — ' + im.nom;
   document.getElementById('page-sub').textContent = im.ville + (im.quartier ? ' · ' + im.quartier : '');
   document.getElementById('topbar-main-btn').style.display = 'none';
 
-  const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const MOIS = Array.from({length:12}, (_, i) => tMois(i));
   const locs = DATA.locataires.filter(l => l.iid === iid && l.s !== 'libre');
 
   let html = `
@@ -1509,7 +1509,7 @@ function ouvrirRapportAnnuelImmeuble(iid) {
   <div class="card" style="margin-bottom:16px;">
     <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;padding:4px 0;">
       <div>
-        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Année</label>
+        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">${t('Année')}</label>
         <select class="form-control" style="height:36px;" onchange="window._rapAnnee=parseInt(this.value);ouvrirRapportAnnuelImmeuble(${iid})">
           ${[annee-2,annee-1,annee,annee+1].map(y=>
             `<option value="${y}" ${y===annee?'selected':''}>${y}</option>`
@@ -1517,7 +1517,7 @@ function ouvrirRapportAnnuelImmeuble(iid) {
         </select>
       </div>
       <button class="btn btn-primary" onclick="window._rapAnnIid=${iid};genDocxRapportAnnuel()">
-        📊 Télécharger rapport annuel (.docx)
+        📊 ${t('Télécharger rapport annuel (.docx)')}
       </button>
     </div>
   </div>
@@ -1525,7 +1525,7 @@ function ouvrirRapportAnnuelImmeuble(iid) {
   <!-- Tableau mensuel par locataire -->
   <div class="card">
     <div class="card-header">
-      <div class="card-title">📅 Synthèse annuelle ${annee} — ${im.nom}</div>
+      <div class="card-title">📅 ${t('Synthèse annuelle')} ${annee} — ${im.nom}</div>
     </div>
     <div class="table-wrap" style="overflow-x:auto;">
       <table class="tbl" style="min-width:900px;">
@@ -1562,7 +1562,7 @@ function ouvrirRapportAnnuelImmeuble(iid) {
         </tbody>
         <tfoot>
           <tr style="font-weight:700;background:var(--bg2);">
-            <td colspan="2">TOTAL</td>
+            <td colspan="2">${t('Total').toUpperCase()}</td>
             ${MOIS.map((_,moisIdx) => {
               const total = DATA.paiements.filter(p=>locs.some(l=>l.id===p.locId)&&p.moisC===moisIdx&&p.anneeC===annee).reduce((s,p)=>s+p.montant,0);
               return `<td style="font-size:10px;text-align:center;">${total>0?fmtShort(total):''}</td>`;
@@ -1574,9 +1574,9 @@ function ouvrirRapportAnnuelImmeuble(iid) {
       </table>
     </div>
     <div style="margin-top:10px;display:flex;gap:12px;flex-wrap:wrap;font-size:11px;">
-      <span style="color:var(--green);">✓ = Payé complet</span>
-      <span style="color:var(--yellow);">% = Paiement partiel</span>
-      <span style="color:#ccc;">– = Non payé</span>
+      <span style="color:var(--green);">${t('✓ = Payé complet')}</span>
+      <span style="color:var(--yellow);">${t('% = Paiement partiel')}</span>
+      <span style="color:#ccc;">${t('– = Non payé')}</span>
     </div>
   </div>`;
 
