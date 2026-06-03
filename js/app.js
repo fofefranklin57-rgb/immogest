@@ -4357,7 +4357,7 @@ function renderUserChip() {
     <div class="avatar" style="background:${col};">${initials}</div>
     <span style="font-weight:500;">${SESSION.nom}</span>
     <span class="role-badge role-${SESSION.role}">${roleLabels[SESSION.role]}</span>
-    <button onclick="logout()" title="Se déconnecter" style="margin-left:4px;padding:4px 10px;border-radius:5px;border:1px solid #C0392B;background:#FDF0F0;color:#C0392B;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">⏻ Déconnexion</button>
+    <button onclick="logout()" title="${t('Se déconnecter')}" style="margin-left:4px;padding:4px 10px;border-radius:5px;border:1px solid #C0392B;background:#FDF0F0;color:#C0392B;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">⏻ ${t('Déconnexion')}</button>
   `;
   const topbarActions = document.querySelector('.topbar-actions');
   if (topbarActions) topbarActions.prepend(chip);
