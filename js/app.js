@@ -685,6 +685,10 @@ function openModalLocataire(iid, preAppt, preType) {
   document.getElementById('loc-caution').value = '0';
   document.getElementById('loc-entree').value = new Date().toISOString().split('T')[0];
   document.getElementById('loc-obs').value = '';
+  const moisAvEl = document.getElementById('loc-mois-avance');
+  if (moisAvEl) { moisAvEl.value = '0'; moisAvEl.closest('.form-group').style.display=''; }
+  const avPrev = document.getElementById('loc-avance-preview');
+  if (avPrev) { avPrev.textContent = ''; avPrev.closest('.form-group').style.display=''; }
   // Populate immeuble select
   const immSel = document.getElementById('loc-imm');
   const visibles = getVisibleImmeubles();
@@ -1927,6 +1931,11 @@ function editLocataire(locId) {
   // Set jour paiement
   const jourEl = document.getElementById('loc-jour-paiement');
   if (jourEl) jourEl.value = l.jourPaiement || 1;
+  // En mode édition, masquer le champ "mois payés d'avance" (déjà pris en compte)
+  const moisAvEdit = document.getElementById('loc-mois-avance');
+  if (moisAvEdit) { moisAvEdit.value = '0'; moisAvEdit.closest('.form-group').style.display='none'; }
+  const avPrevEdit = document.getElementById('loc-avance-preview');
+  if (avPrevEdit) avPrevEdit.closest('.form-group').style.display='none';
   document.getElementById('modal-locataire').classList.add('open');
 }
 
@@ -2037,6 +2046,28 @@ function calcResteFromMois() {
   if (resteEl) resteEl.value = mois * loyer;
 }
 
+function previewMoisAvance() {
+  const loyer = parseInt(document.getElementById('loc-loyer').value)||0;
+  const nb = parseInt(document.getElementById('loc-mois-avance').value)||0;
+  const prev = document.getElementById('loc-avance-preview');
+  if (!prev) return;
+  if (nb <= 0 || loyer <= 0) { prev.textContent = ''; return; }
+  const total = nb * loyer;
+  const MNOMS2 = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  const entreeVal = document.getElementById('loc-entree').value;
+  let moisStr = '';
+  if (entreeVal) {
+    const d = new Date(entreeVal);
+    const mois = [];
+    for (let i = 0; i < nb; i++) {
+      const y = d.getFullYear(), mo = (d.getMonth() + i) % 12;
+      mois.push(MNOMS2[mo]);
+    }
+    moisStr = ' (' + mois.join(', ') + ')';
+  }
+  prev.innerHTML = `✅ ${nb} mois couverts${moisStr}<br><strong>${total.toLocaleString('fr-FR')} FCFA</strong> à créer`;
+}
+
 async function saveLocataire() {
   if (!can('canEditLocataires')) { showToast(t('Accès refusé'), 'red'); return; }
   const nom = document.getElementById('loc-nom') ? document.getElementById('loc-nom').value.trim() : '';
@@ -2125,15 +2156,16 @@ async function saveLocataire() {
     }
   }
 
-  // Auto caution payment for new locataires
-  // finalId must be calculated AFTER locataire is saved (obj.id assigned)
+  // Auto caution + mois avance pour nouveau locataire
   if (!(existId && existId > 0)) {
-    const cautionVal = parseInt(document.getElementById('loc-caution').value)||0;
-    const entreeVal = document.getElementById('loc-entree').value || new Date().toISOString().split('T')[0];
+    const cautionVal  = parseInt(document.getElementById('loc-caution').value)||0;
+    const moisAvance  = parseInt(document.getElementById('loc-mois-avance') ? document.getElementById('loc-mois-avance').value : '0')||0;
+    const entreeVal   = document.getElementById('loc-entree').value || new Date().toISOString().split('T')[0];
+    const entreeDate  = new Date(entreeVal);
+    const newLocId    = obj.id;
+
+    // ── Caution ──
     if (cautionVal > 0) {
-      // obj.id is now set by the save block above
-      const newLocId = obj.id;
-      const entreeDate = new Date(entreeVal);
       DATA.paiements.push({
         id: DATA.nextPayId++,
         locId: newLocId,
@@ -2147,6 +2179,34 @@ async function saveLocataire() {
         mode: 'especes',
         note: "Caution entrée"
       });
+    }
+
+    // ── Mois payés d'avance ──
+    if (moisAvance > 0 && loyer > 0) {
+      for (let i = 0; i < moisAvance; i++) {
+        const moisPay  = (entreeDate.getMonth() + i) % 12;
+        const anneePay = entreeDate.getFullYear() + Math.floor((entreeDate.getMonth() + i) / 12);
+        // Date du paiement = date d'entrée pour tous (paiement groupé)
+        DATA.paiements.push({
+          id: DATA.nextPayId++,
+          locId: newLocId,
+          date: entreeVal,
+          montant: loyer,
+          moisC: moisPay,
+          anneeC: anneePay,
+          moisFin: moisPay,
+          anneeFin: anneePay,
+          type: 'loyer',
+          mode: 'especes',
+          note: 'Paiement groupé'
+        });
+      }
+      // Mettre le statut à "payé" si des avances couvrent le mois en cours
+      obj.s = 'payé';
+      obj.reste = 0;
+      // Mettre à jour dans DATA
+      const locIdx2 = DATA.locataires.findIndex(x => x.id === newLocId);
+      if (locIdx2 >= 0) { DATA.locataires[locIdx2].s = 'payé'; DATA.locataires[locIdx2].reste = 0; }
     }
   }
 
@@ -2307,10 +2367,18 @@ function genFicheHtml(fd) {
 
   const rows = lignes.map((lg, i) => {
     const bg = i % 2 === 0 ? '#fff' : '#f8f9fa';
+    // Mois avant la date d'entrée : ligne grisée vide
+    if (lg.avant_entree) {
+      return `<tr style="background:#f0f0f0;color:#bbb;">
+        <td style="${td}font-weight:600;">${lg.periode}</td>
+        <td style="${td}text-align:center;font-size:10px;font-style:italic;" colspan="6">–</td>
+      </tr>`;
+    }
     if (lg.versements.length === 0) {
       return `<tr style="background:${bg};">
         <td style="${td}font-weight:600;">${lg.periode}</td>
-        <td style="${td}"></td><td style="${td}"></td><td style="${td}"></td>
+        <td style="${td}text-align:center;color:#e74c3c;font-weight:700;">Impayé</td>
+        <td style="${td}"></td><td style="${td}text-align:right;color:#e74c3c;">${fmt(l.loyer)}</td>
         <td style="${td}"></td><td style="${td}"></td><td style="${td}"></td>
       </tr>`;
     }
@@ -2318,7 +2386,7 @@ function genFicheHtml(fd) {
     const restes   = lg.versements.map(v => `<span style="color:${v.reste > 0 ? '#e74c3c' : ''}">${v.reste === 0 ? '0' : fmt(v.reste)}</span>`).join('<br>');
     const dates    = lg.versements.map(v => v.date ? new Date(v.date).toLocaleDateString('fr-FR') : '').join('<br>');
     const modes    = lg.versements.map(v => v.mode || '').join('<br>');
-    const obs      = lg.versements.length > 1 ? lg.versements.length + ' versements' : (lg.versements[0].note || '');
+    const obs      = lg.versements.length > 1 ? 'Paiement groupé' : (lg.versements[0].note || '');
     return `<tr style="background:${bg};">
       <td style="${td}font-weight:600;">${lg.periode}</td>
       <td style="${td}text-align:center;color:${lg.statut ? '#27ae60' : ''};">${lg.statut}</td>
@@ -2384,48 +2452,64 @@ function buildFicheData(locId, annee) {
   const jour = l.jourPaiement || 1;
   const now  = new Date();
 
-  // ── Mois de départ ──
-  let startY, startM;
+  // ── Date d'entrée (pour savoir quels mois sont actifs) ──
+  let entreeY = null, entreeM = null;
   if (l.entree) {
     const d = new Date(l.entree);
-    startY = d.getFullYear(); startM = d.getMonth();
-  } else {
-    const moisDus = (l.loyer > 0 && l.reste > 0) ? Math.ceil(l.reste / l.loyer) : 1;
-    const d = new Date(now.getFullYear(), now.getMonth() - moisDus + 1, 1);
-    startY = d.getFullYear(); startM = d.getMonth();
+    entreeY = d.getFullYear(); entreeM = d.getMonth();
   }
 
-  // ── Slots du début au mois actuel ──
+  // ── Générer TOUJOURS les 12 mois de l'année sélectionnée ──
+  // Les mois avant l'entrée sont marqués avant_entree = true
   const slots = [];
-  let cy = startY, cm = startM;
-  while (cy < now.getFullYear() || (cy === now.getFullYear() && cm <= now.getMonth())) {
-    slots.push({ year: cy, month: cm, versements: [], cumul: 0 });
-    if (++cm > 11) { cm = 0; cy++; }
-    if (slots.length > 120) break;
+  for (let m = 0; m < 12; m++) {
+    const avantEntree = entreeY !== null && (
+      annee < entreeY || (annee === entreeY && m < entreeM)
+    );
+    // On inclut aussi les mois futurs dans l'année en cours/future pour les avances
+    slots.push({ year: annee, month: m, versements: [], cumul: 0, avant_entree: avantEntree });
   }
 
   // ── Dispatcher les paiements (triés par date) ──
+  // On travaille sur TOUS les slots disponibles (toutes années) pour les avances
+  // D'abord construire la liste complète inter-années
+  const allSlots = [];
+  // Slots avant l'année sélectionnée (pour que les paiements anciens soient bien positionnés)
+  if (entreeY !== null) {
+    let cy = entreeY, cm = entreeM;
+    while (cy < annee || (cy === annee && cm < 0)) {
+      allSlots.push({ year: cy, month: cm, versements: [], cumul: 0, avant_entree: false });
+      if (++cm > 11) { cm = 0; cy++; }
+      if (allSlots.length > 120) break;
+    }
+  }
+  // Ajouter les 12 slots de l'année en cours
+  allSlots.push(...slots);
+
   const allPays = DATA.paiements
     .filter(p => p.locId === locId && p.type !== 'caution' && p.montant > 0)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   for (const pay of allPays) {
     let rem = pay.montant;
-    for (const s of slots) {
+    for (const s of allSlots) {
       if (rem <= 0) break;
+      if (s.avant_entree) continue;
       if (s.cumul >= l.loyer) continue;
       const v = Math.min(rem, l.loyer - s.cumul);
       s.cumul += v;
       s.versements.push({ montant: v, reste: Math.max(0, l.loyer - s.cumul), date: pay.date, mode: pay.mode || 'espèces', note: pay.note || '' });
       rem -= v;
     }
-    // Avances : créer de nouveaux slots
-    while (rem > 0 && slots.length < 120) {
-      const last = slots[slots.length - 1];
+    // Avances : créer de nouveaux slots au-delà de l'année
+    while (rem > 0 && allSlots.length < 200) {
+      const last = allSlots[allSlots.length - 1];
       let ny = last.year, nm = last.month + 1;
       if (nm > 11) { nm = 0; ny++; }
-      const ns = { year: ny, month: nm, versements: [], cumul: 0 };
-      slots.push(ns);
+      const ns = { year: ny, month: nm, versements: [], cumul: 0, avant_entree: false };
+      allSlots.push(ns);
+      // Mettre aussi à jour slots si même année
+      if (ny === annee && nm < 12) slots[nm] = ns;
       const v = Math.min(rem, l.loyer);
       ns.cumul += v;
       ns.versements.push({ montant: v, reste: Math.max(0, l.loyer - ns.cumul), date: pay.date, mode: pay.mode || 'espèces', note: pay.note || '' });
@@ -2433,16 +2517,15 @@ function buildFicheData(locId, annee) {
     }
   }
 
-  // ── Filtrer sur l'année affichée ──
-  const lignes = slots
-    .filter(s => s.year === annee)
-    .map(s => ({
-      periode:    jour + ' ' + MC[s.month] + ' - ' + jour + ' ' + MC[(s.month + 1) % 12],
-      statut:     (s.cumul >= l.loyer && s.versements.length > 0) ? 'Payé' : '',
-      versements: s.versements,
-      totalVerse: s.versements.reduce((sum, v) => sum + v.montant, 0),
-      mois:       s.month
-    }));
+  // ── Construire les 12 lignes pour l'année affichée ──
+  const lignes = slots.map(s => ({
+    periode:       jour + ' ' + MC[s.month] + ' - ' + jour + ' ' + MC[(s.month + 1) % 12],
+    statut:        s.avant_entree ? '' : (s.cumul >= l.loyer && s.versements.length > 0) ? 'Payé' : '',
+    versements:    s.versements,
+    totalVerse:    s.versements.reduce((sum, v) => sum + v.montant, 0),
+    mois:          s.month,
+    avant_entree:  s.avant_entree,
+  }));
 
   return { l, im, annee, lignes };
 }
@@ -2852,7 +2935,8 @@ function genRapportPeriodeIim(iid) {
 }
 
 async function genDocxRapportMensuel(iidFilter) {
-  const m=gM(), a=gA();
+  const m = window._rptMoisSel !== undefined ? window._rptMoisSel : gM();
+  const a = window._rptAnneeSel !== undefined ? window._rptAnneeSel : gA();
   if (!window.docx) { showToast('Erreur interne : bibliothèque docx introuvable','red'); return; }
   const {
     Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
@@ -3343,7 +3427,8 @@ async function genDocxRapportPeriode(debStr, finStr, iidFilter) {
 
 function previewRapportMensuel(iidFilter) {
   _previewIidFilter = iidFilter;
-  const m=gM(), a=gA();
+  const m = window._rptMoisSel !== undefined ? window._rptMoisSel : gM();
+  const a = window._rptAnneeSel !== undefined ? window._rptAnneeSel : gA();
   const immsToReport = iidFilter !== undefined
     ? DATA.immeubles.filter(i=>i.id===iidFilter)
     : DATA.immeubles.filter(im=>DATA.locataires.some(l=>l.iid===im.id&&l.s!=='libre'));
