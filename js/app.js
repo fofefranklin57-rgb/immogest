@@ -543,7 +543,7 @@ function renderImmeuble(iid) {
         <span style="font-size:11px;"><span class="local-statut-dot" style="background:var(--red);"></span>Occupé</span>
         <span style="font-size:11px;"><span class="local-statut-dot" style="background:var(--green);"></span>Libre</span>
         <span style="font-size:11px;"><span class="local-statut-dot" style="background:var(--yellow);"></span>En travaux</span>
-        ${can('canEditLocataires')?`<button class="btn btn-primary btn-sm" onclick="openModalLocataire(${iid})">＋ Locataire</button>`:''}
+        ${can('canEditLocataires')?`<button class="btn btn-primary btn-sm" data-tooltip="Ajouter un locataire" onclick="openModalLocataire(${iid})">＋ Locataire</button>`:''}
       </div>
     </div>
     <div class="locaux-grid">
@@ -626,7 +626,7 @@ function renderImmeuble(iid) {
     </table></div>
   </div>`;
 
-  html = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><button class="btn btn-ghost btn-sm" onclick="ajouterLocal(${iid})">+ Ajouter un local</button></div>` + html;
+  html = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><button class="btn btn-ghost btn-sm" data-tooltip="Ajouter un local" onclick="ajouterLocal(${iid})">+ Ajouter un local</button></div>` + html;
 
   // Section charges + contrat template
   html += `
@@ -642,7 +642,7 @@ function renderImmeuble(iid) {
   <div class="card" style="margin-top:16px;">
     <div class="card-header">
       <div class="card-title">📄 Modèle contrat de bail</div>
-      <button class="btn btn-sm" onclick="document.getElementById('upload-contrat-${iid}').click()">📤 Uploader DOCX</button>
+      <button class="btn btn-sm" data-tooltip="Uploader un modèle de contrat" onclick="document.getElementById('upload-contrat-${iid}').click()">📤 Uploader DOCX</button>
     </div>
     <input type="file" id="upload-contrat-${iid}" accept=".docx" style="display:none;" onchange="uploadContratTemplatePourImmeuble(${iid}, this)">
     <div id="contrat-template-status-${iid}" style="font-size:13px;color:var(--text2);padding:8px 0;">
@@ -798,7 +798,7 @@ function renderEncaissements() {
   html += `</div>`;
 
   // Historique tous mois
-  html += `<div class="card"><div class="card-header"><div class="card-title">Historique complet</div><button class="btn btn-sm" onclick="exportData()">↓ Exporter données</button></div>
+  html += `<div class="card"><div class="card-header"><div class="card-title">Historique complet</div><button class="btn btn-sm" data-tooltip="Exporter toutes les données" onclick="exportData()">↓ Exporter données</button></div>
   <div style="padding:0 0 12px 0;">
     <input type="text" id="search-enc-hist" placeholder="🔍 Locataire, immeuble, mois..." oninput="_filterEncGlobal(this.value)" style="width:100%;padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font);background:var(--bg4);">
   </div>`;
@@ -904,7 +904,7 @@ function renderRelances() {
         <div style="font-weight:700;color:#C0392B;font-size:14px;">🚨 ${t('Dossiers en alerte (≥ 2 mois)')} — ${alertes.length} ${t('locataire(s) avec ≥ 2 mois d\'arriérés')}</div>
         <div style="font-size:12px;color:#888;margin-top:2px;">${t('Mise en demeure et plainte générées automatiquement')}</div>
       </div>
-      <button class="btn btn-sm" style="background:#C0392B;color:#fff;border-color:#C0392B;" onclick="telechargerTousAlertes()">⬇ ${t('Tout télécharger')} (${alertes.length} ${t('dossiers')})</button>
+      <button class="btn btn-sm" style="background:#C0392B;color:#fff;border-color:#C0392B;" data-tooltip="Télécharger tous les dossiers d'alerte" onclick="telechargerTousAlertes()">⬇ ${t('Tout télécharger')} (${alertes.length} ${t('dossiers')})</button>
     </div>`;
 
     // Group alertes by immeuble
@@ -921,8 +921,8 @@ function renderRelances() {
             <span class="badge badge-red">🚨 ${byImmAlertes[iid].length} ${t('en alerte')}</span>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button class="btn btn-sm" onclick="genRelanceImm(${im.id})">📄 ${t('Rapport')}</button>
-            <button class="btn btn-primary btn-sm" onclick="genDocxRelances(${im.id})">⬇ Relances</button>
+            <button class="btn btn-sm" data-tooltip="Aperçu rapport impayés" onclick="genRelanceImm(${im.id})">📄 ${t('Rapport')}</button>
+            <button class="btn btn-primary btn-sm" data-tooltip="Télécharger les relances DOCX" onclick="genDocxRelances(${im.id})">⬇ Relances</button>
           </div>
         </div>
         <div class="table-wrap"><table>
@@ -1324,14 +1324,14 @@ function ouvrirRapportImmeuble(iid) {
   <div class="card" style="margin-bottom:16px;">
     <div class="card-header"><div class="card-title">📄 ${t('Générer des rapports')}</div></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;padding:4px 0;">
-      <button class="btn btn-primary" onclick="genRapportImmeubleDocx(${iid})">
+      <button class="btn btn-primary" data-tooltip="Télécharger rapport DOCX" onclick="genRapportImmeubleDocx(${iid})">
         📊 ${window._rptMode==='periode'?t('Rapport période (.docx)'):t('Rapport mensuel (.docx)')}
       </button>
-      <button class="btn btn-ghost" onclick="previewRapportImmeubleModal(${iid})">
+      <button class="btn btn-ghost" data-tooltip="Aperçu du rapport" onclick="previewRapportImmeubleModal(${iid})">
         👁 ${t('Aperçu rapport')}
       </button>
       ${can('canJuridique') ? `
-      <button class="btn btn-ghost" onclick="genDocxRelances(${iid})">
+      <button class="btn btn-ghost" data-tooltip="Télécharger les relances" onclick="genDocxRelances(${iid})">
         🔔 ${t('Relances locataires')}
       </button>` : ''}
     </div>
@@ -1408,11 +1408,11 @@ function ouvrirRapportImmeuble(iid) {
 
   // Add back button at top of html
   html = `<div style="margin-bottom:12px;">
-    <button class="btn btn-ghost" onclick="renderRapportPage()" style="display:flex;align-items:center;gap:6px;">
+    <button class="btn btn-ghost" data-tooltip="Retour à la liste" onclick="renderRapportPage()" style="display:flex;align-items:center;gap:6px;">
       ← ${t('Tous les immeubles')}
     </button>
   </div>` + html;
-  
+
   document.getElementById('content').innerHTML = html;
 }
 
@@ -1520,7 +1520,7 @@ function ouvrirRapportAnnuelImmeuble(iid) {
           ).join('')}
         </select>
       </div>
-      <button class="btn btn-primary" onclick="window._rapAnnIid=${iid};genDocxRapportAnnuel()">
+      <button class="btn btn-primary" data-tooltip="Télécharger rapport annuel DOCX" onclick="window._rapAnnIid=${iid};genDocxRapportAnnuel()">
         📊 ${t('Télécharger rapport annuel (.docx)')}
       </button>
     </div>
@@ -1585,7 +1585,7 @@ function ouvrirRapportAnnuelImmeuble(iid) {
   </div>`;
 
   html = `<div style="margin-bottom:12px;">
-    <button class="btn btn-ghost" onclick="renderRapportAnnuelPage()" style="display:flex;align-items:center;gap:6px;">
+    <button class="btn btn-ghost" data-tooltip="Retour à la liste" onclick="renderRapportAnnuelPage()" style="display:flex;align-items:center;gap:6px;">
       ← ${t('Tous les immeubles')}
     </button>
   </div>` + html;
@@ -4698,7 +4698,7 @@ function _renderTabCabinet(users) {
           var im = DATA.immeubles.find(function(i){return i.id===iid;});
           return im ? '<span class="badge badge-accent" style="margin:1px;font-size:10px;">'+im.nom.split(' ')[0]+'</span>' : '';
         }).join('') || '<span style="color:var(--text3);font-size:12px;">' + t('Aucun') + '</span>';
-    var btnEdit   = '<button class="btn btn-ghost btn-icon btn-sm" onclick="editUser(this.dataset.id)" data-id="'+u.id+'" title="Modifier">✎</button>';
+    var btnEdit   = '<button class="btn btn-ghost btn-icon btn-sm" onclick="editUser(this.dataset.id)" data-id="'+u.id+'" data-tooltip="Modifier" title="Modifier">✎</button>';
     var btnBlock  = '<button class="btn btn-ghost btn-icon btn-sm" onclick="toggleBloquerUser(this.dataset.id)" data-id="'+u.id+'" title="'+(actif?'Bloquer':'Débloquer')+'" style="color:'+(actif?'var(--red)':'var(--green)')+';">'+(actif?'🔒':'🔓')+'</button>';
     var btnDelete = u.id!=='adm1' ? '<button class="btn btn-danger btn-icon btn-sm" onclick="deleteUser(this.dataset.id)" data-id="'+u.id+'" title="Supprimer">🗑</button>' : '';
     rows += '<tr style="opacity:'+(actif?'1':'0.5')+';">'
@@ -4728,8 +4728,8 @@ function _renderTabProprios(users, isIndiv) {
     users.forEach(function(u) {
       var actif = u.actif !== false;
       var imms = DATA.immeubles.filter(function(im){ return (u.immeubles||[]).indexOf(im.id)>=0; });
-      var btnEdit   = '<button class="btn btn-ghost btn-icon btn-sm" onclick="editUser(this.dataset.id)" data-id="'+u.id+'" title="Modifier">✎</button>';
-      var btnReinit = '<button class="btn btn-ghost btn-icon btn-sm" onclick="reinitMdpUser(this.dataset.id)" data-id="'+u.id+'" title="Réinitialiser mot de passe" style="font-size:11px;">🔑</button>';
+      var btnEdit   = '<button class="btn btn-ghost btn-icon btn-sm" onclick="editUser(this.dataset.id)" data-id="'+u.id+'" data-tooltip="Modifier" title="Modifier">✎</button>';
+      var btnReinit = '<button class="btn btn-ghost btn-icon btn-sm" onclick="reinitMdpUser(this.dataset.id)" data-id="'+u.id+'" data-tooltip="Réinitialiser mot de passe" title="Réinitialiser mot de passe" style="font-size:11px;">🔑</button>';
       var btnBlock  = '<button class="btn btn-ghost btn-icon btn-sm" onclick="toggleBloquerUser(this.dataset.id)" data-id="'+u.id+'" title="'+(actif?'Bloquer':'Débloquer')+'" style="color:'+(actif?'var(--red)':'var(--green)')+';">'+(actif?'🔒':'🔓')+'</button>';
       rows += '<tr style="opacity:'+(actif?'1':'0.5')+';">'
         + '<td class="td-name">'+u.nom+'</td>'
@@ -4767,7 +4767,7 @@ function _renderTabLocataires(users, isIndiv) {
       if (!l.pin)          { pinLabel = t('0000 (défaut)'); pinColor = 'var(--text3)'; }
       else if (l.pin==='0000') { pinLabel = '0000';          pinColor = 'var(--yellow)'; }
       else                 { pinLabel = t('●●●● (modifié)'); pinColor = 'var(--green)'; }
-      var btnReinit = '<button class="btn btn-ghost btn-icon btn-sm" onclick="reinitPINLocataire(this.dataset.id)" data-id="'+l.id+'" title="Réinitialiser PIN" style="font-size:11px;">🔑</button>';
+      var btnReinit = '<button class="btn btn-ghost btn-icon btn-sm" onclick="reinitPINLocataire(this.dataset.id)" data-id="'+l.id+'" data-tooltip="Réinitialiser le PIN" title="Réinitialiser PIN" style="font-size:11px;">🔑</button>';
       var btnBlock  = '<button class="btn btn-ghost btn-icon btn-sm" onclick="toggleBloquerLocataire(this.dataset.id)" data-id="'+l.id+'" title="'+(actif?'Bloquer':'Débloquer')+'" style="color:'+(actif?'var(--red)':'var(--green)')+';">'+(actif?'🔒':'🔓')+'</button>';
       rows += '<tr class="loc-user-row" data-search="'+(l.nom+' '+(l.tel||'')+' '+(l.appt||'')).toLowerCase()+'" style="opacity:'+(actif?'1':'0.55')+';">'
         + '<td>'+(l.appt||'—')+'</td>'
@@ -5740,8 +5740,8 @@ function renderLocataireDashboard() {
           <td class="td-amount green">${fmt(p.montant)}</td>
           <td style="white-space:nowrap;">
             ${p.receiptId
-              ? `<button class="btn btn-sm" onclick="previewRecu(${p.id})" style="margin-right:4px;">👁 Voir</button>
-                 <button class="btn btn-primary btn-sm" onclick="telechargerRecuValide(${p.id})">⬇ PDF</button>`
+              ? `<button class="btn btn-sm" data-tooltip="Aperçu du reçu" onclick="previewRecu(${p.id})" style="margin-right:4px;">👁 Voir</button>
+                 <button class="btn btn-primary btn-sm" data-tooltip="Télécharger le reçu PDF" onclick="telechargerRecuValide(${p.id})">⬇ PDF</button>`
               : '<span style="font-size:11px;color:var(--text3);">En attente</span>'}
           </td>
         </tr>`).join('')}
@@ -6100,8 +6100,8 @@ async function renderValidationComptable() {
               : `<span style="background:var(--green-bg);color:var(--green);padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600;">🔑 ${t('Locataire')}</span>`}
           </td>
           <td style="white-space:nowrap;">
-            <button class="btn btn-primary btn-sm" onclick="ouvrirValidation(${d.id})">${t('✅ Valider')}</button>
-            <button class="btn btn-danger btn-sm" onclick="rejeterRapide(${d.id})">✗</button>
+            <button class="btn btn-primary btn-sm" data-tooltip="Valider cette déclaration" onclick="ouvrirValidation(${d.id})">${t('✅ Valider')}</button>
+            <button class="btn btn-danger btn-sm" data-tooltip="Rejeter" onclick="rejeterRapide(${d.id})">✗</button>
           </td>
         </tr>`).join('')}
       </tbody>
@@ -7608,7 +7608,7 @@ function renderStatistiques() {
             <td><span class="badge ${l.s==='payé'?'badge-green':'badge-red'}">${t(l.s)}</span></td>
             <td style="white-space:nowrap;">
               ${l.s==='impayé'?`
-                <button class="btn btn-primary btn-sm" onclick="openModalPaiement(${l.iid},${l.id})">＋ Paiement</button>
+                <button class="btn btn-primary btn-sm" data-tooltip="Enregistrer un paiement" onclick="openModalPaiement(${l.iid},${l.id})">＋ Paiement</button>
                 ${mois>=2?`<button class="btn btn-sm" style="background:#C0392B;color:#fff;border-color:#C0392B;" onclick="previewPlainte(${l.id})">⚖ ${t('Plainte')}</button>`:''}
               `:''}
             </td>
@@ -8448,8 +8448,8 @@ function renderArchives() {
           <td style="font-weight:600;color:${soldeColor};">${solde !== 0 ? fmt(Math.abs(solde)) + (solde>0?' dû':' avoir') : '–'}</td>
           <td style="font-size:11px;color:var(--text3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${a.motif||''}">${a.motif||'–'}</td>
           <td style="white-space:nowrap;">
-            <button class="btn btn-sm" onclick="voirHistoriqueArchive(${a.archiveId})" title="${nbPay} paiement(s)">📋 Historique</button>
-            <button class="btn btn-primary btn-sm" onclick="reaffecterLocataireArchive(${a.archiveId})">↩ Réaffecter</button>
+            <button class="btn btn-sm" data-tooltip="Voir l'historique" onclick="voirHistoriqueArchive(${a.archiveId})" title="${nbPay} paiement(s)">📋 Historique</button>
+            <button class="btn btn-primary btn-sm" data-tooltip="Réaffecter à un local" onclick="reaffecterLocataireArchive(${a.archiveId})">↩ Réaffecter</button>
           </td>
         </tr>`;
       });
@@ -8865,7 +8865,7 @@ function renderCorbeille() {
   
   let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
     <div style="font-size:13px;color:var(--text3);">${corbeille.length} locataire(s) dans la corbeille</div>
-    ${corbeille.length > 0 ? `<button class="btn btn-danger btn-sm" onclick="viderCorbeille()">🗑️ Vider la corbeille</button>` : ''}
+    ${corbeille.length > 0 ? `<button class="btn btn-danger btn-sm" data-tooltip="Supprimer définitivement tous les éléments" onclick="viderCorbeille()">🗑️ Vider la corbeille</button>` : ''}
   </div>`;
   
   if (corbeille.length > 0) {
@@ -8899,8 +8899,8 @@ function renderCorbeille() {
         <td style="color:var(--text3);font-size:12px;">${deleted.toLocaleDateString('fr-FR')}</td>
         <td style="color:${urgence};font-weight:600;">${joursRestants}j</td>
         <td>
-          <button class="btn btn-primary btn-sm" onclick="restaurerDepuisCorbeille(${l.id})">↩ Restaurer</button>
-          <button class="btn btn-danger btn-sm" onclick="supprimerDefinitivement(${l.id})">✕ Supprimer</button>
+          <button class="btn btn-primary btn-sm" data-tooltip="Restaurer ce locataire" onclick="restaurerDepuisCorbeille(${l.id})">↩ Restaurer</button>
+          <button class="btn btn-danger btn-sm" data-tooltip="Suppression définitive" onclick="supprimerDefinitivement(${l.id})">✕ Supprimer</button>
         </td>
       </tr>`;
     });
@@ -10524,7 +10524,7 @@ function _renderMaintenanceTab() {
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
           <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${sc}22;color:${sc};">${sl}</span>
-          <button class="btn btn-sm" onclick="openMaintModal('${m.id}')" style="font-size:12px;">✏️ Gérer</button>
+          <button class="btn btn-sm" data-tooltip="Gérer cette maintenance" onclick="openMaintModal('${m.id}')" style="font-size:12px;">✏️ Gérer</button>
         </div>
       </div>
     </div>`;
@@ -10598,7 +10598,7 @@ function _renderEdlTab() {
   const typeLabels = { entree: '🟢 Entrée', sortie: '🔴 Sortie' };
 
   let html = `<div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
-    <button class="btn btn-primary" onclick="openNewEdlModal()">+ Nouvel état des lieux</button>
+    <button class="btn btn-primary" data-tooltip="Créer un état des lieux" onclick="openNewEdlModal()">+ Nouvel état des lieux</button>
   </div>`;
 
   if (_edlData.length === 0) {
@@ -10627,7 +10627,7 @@ function _renderEdlTab() {
           ${edl.observations ? `<div style="font-size:12px;color:var(--text2);margin-top:6px;">📝 ${edl.observations}</div>` : ''}
           <div style="font-size:11px;margin-top:6px;color:${edl.signe?'#27ae60':'#e67e22'};">${edl.signe ? '✅ Signé' : '⏳ Non signé'}</div>
         </div>
-        <button class="btn btn-sm" onclick="openEdlDetail('${edl.id}')">👁 Détail</button>
+        <button class="btn btn-sm" data-tooltip="Voir le détail" onclick="openEdlDetail('${edl.id}')">👁 Détail</button>
       </div>
     </div>`;
   });

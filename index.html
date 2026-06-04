@@ -340,7 +340,7 @@
           title="Modifier mon nom">✏️</button>
       </div>
       <!-- Déconnexion -->
-      <button onclick="logout()"
+      <button data-tooltip="Se déconnecter" onclick="logout()"
         style="margin-top:6px;width:100%;padding:9px;border-radius:8px;border:none;background:rgba(220,53,69,0.18);color:#ff7b8a;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);letter-spacing:0.3px;transition:background .2s;"
         onmouseover="this.style.background='rgba(220,53,69,0.35)'"
         onmouseout="this.style.background='rgba(220,53,69,0.18)'">
@@ -379,7 +379,7 @@
   <div class="main">
     <div class="topbar">
       <div style="display:flex;align-items:center;gap:10px;">
-        <button id="btn-hamburger" onclick="toggleSidebarMobile()" title="Menu">☰</button>
+        <button id="btn-hamburger" data-tooltip="Ouvrir le menu" onclick="toggleSidebarMobile()" title="Menu">☰</button>
         <div>
           <div class="topbar-title" id="page-title">Tableau de bord</div>
           <div class="topbar-sub" id="page-sub"></div>
