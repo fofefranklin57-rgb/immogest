@@ -604,7 +604,7 @@ function renderImmeuble(iid) {
           </td>
           <td style="white-space:nowrap;">
             <div class="action-menu">
-              <button class="action-menu-btn" onclick="toggleActionMenu(this)">⋯</button>
+              <button class="action-menu-btn" onclick="toggleActionMenu(this)" data-tooltip="Actions">⋯</button>
               <div class="action-dropdown">
                 ${can('canRecordPayment')?`<div class="action-dropdown-item" onclick="openModalPaiement(${iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 Paiement</div>`:''}
                 ${can('canEditLocataires')?`<div class="action-dropdown-item" onclick="editLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📝 Modifier</div>`:''}
@@ -788,8 +788,8 @@ function renderEncaissements() {
         <td class="td-amount green">${fmt(p.montant)}</td>
         <td style="font-size:11px;color:var(--text3);">${p.note||'–'}${p.remisAuBailleur?'<span style="margin-left:4px;background:#FFF3E0;color:#E65100;padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700;">🏠 bailleur</span>':''}</td>
         <td style="white-space:nowrap;">
-        ${can('canFinance')||(SESSION&&SESSION.role==='admin')?`<button class="btn btn-sm" onclick="genQuittance(${p.id})">⬇ ${t('Quittance')}</button>`:''}
-        <button class="btn btn-ghost btn-icon btn-sm" onclick="supprimerPaiement(${p.id})" title="Supprimer">🗑</button>
+        ${can('canFinance')||(SESSION&&SESSION.role==='admin')?`<button class="btn btn-sm" onclick="genQuittance(${p.id})" data-tooltip="Générer quittance PDF">⬇ ${t('Quittance')}</button>`:''}
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="supprimerPaiement(${p.id})" data-tooltip="Supprimer ce paiement">🗑</button>
       </td>
       </tr>`;
     });
@@ -946,7 +946,7 @@ function renderRelances() {
           <td style="font-size:11px;color:var(--text3);max-width:130px;">${l.obs||'–'}</td>
           <td style="white-space:nowrap;position:relative;">
             <div class="action-menu">
-              <button class="action-menu-btn" onclick="toggleActionMenu(this)" style="font-size:18px;padding:4px 10px;">⋯</button>
+              <button class="action-menu-btn" onclick="toggleActionMenu(this)" style="font-size:18px;padding:4px 10px;" data-tooltip="Actions">⋯</button>
               <div class="action-dropdown">
                 <div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 Paiement</div>
                 <div class="action-dropdown-item" onclick="previewMiseEnDemeure(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📄 ${t('Lettre')}</div>
@@ -998,7 +998,7 @@ function renderRelances() {
           </td>
           <td style="white-space:nowrap;position:relative;">
             <div class="action-menu">
-              <button class="action-menu-btn" onclick="toggleActionMenu(this)" style="font-size:18px;padding:4px 10px;">⋯</button>
+              <button class="action-menu-btn" onclick="toggleActionMenu(this)" style="font-size:18px;padding:4px 10px;" data-tooltip="Actions">⋯</button>
               <div class="action-dropdown">
                 <div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 Paiement</div>
                 <div class="action-dropdown-item" onclick="previewMiseEnDemeure(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📄 ${t('Lettre')}</div>
@@ -1378,7 +1378,7 @@ function ouvrirRapportImmeuble(iid) {
           <td class="td-amount ${l.reste>0?'red':'green'}" style="font-size:11px;">${fmtReste(l)}</td>
           <td style="white-space:nowrap;">
             <div class="action-menu">
-              <button class="action-menu-btn" onclick="toggleActionMenu(this)">⋯</button>
+              <button class="action-menu-btn" onclick="toggleActionMenu(this)" data-tooltip="Actions">⋯</button>
               <div class="action-dropdown">
                 ${can('canRecordPayment')?`<div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 ${t('Paiement')}</div>`:''}
                 ${can('canEditLocataires')?`<div class="action-dropdown-item" onclick="editLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📝 ${t('Modifier')}</div>`:''}
@@ -2291,7 +2291,7 @@ function ouvrirFicheSuivi(locId) {
     <div id="fiche-preview">${ficheContent}</div>
     <div class="modal-footer" style="margin-top:12px;">
       <button class="btn btn-ghost" onclick="closeModals()">Fermer</button>
-      <button class="btn btn-primary" onclick="downloadFicheSuivi(${locId})">⬇ Télécharger PDF</button>
+      <button class="btn btn-primary" onclick="downloadFicheSuivi(${locId})" data-tooltip="Télécharger la fiche en PDF">⬇ Télécharger PDF</button>
     </div>
   `;
   
@@ -6745,7 +6745,7 @@ function renderLocTable(iid) {
       <td class="td-amount ${l.reste>0?'red':l.reste<0?'':'green'}" style="font-size:11px;">${l.reste>0?fmtReste(l):l.reste<0?fmtReste(l):'–'}</td>
       <td style="white-space:nowrap;">
         <div class="action-menu">
-          <button class="action-menu-btn" onclick="toggleActionMenu(this)">⋯</button>
+          <button class="action-menu-btn" onclick="toggleActionMenu(this)" data-tooltip="Actions">⋯</button>
           <div class="action-dropdown">
             ${can('canRecordPayment')?`<div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 ${t('Paiement')}</div>`:''}
             ${can('canEditLocataires')?`<div class="action-dropdown-item" onclick="editLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📝 ${t('Modifier')}</div>`:''}

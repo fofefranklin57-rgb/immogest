@@ -16,7 +16,7 @@
 <meta name="apple-mobile-web-app-title" content="ImmoGest">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <title>ImmoGest v18</title>
-<link rel="stylesheet" href="app.css?v=20260604b">
+<link rel="stylesheet" href="app.css?v=20260604c">
 
 
 <!-- ── SUPABASE CLIENT ── -->
@@ -331,10 +331,10 @@
       <div style="display:flex;gap:5px;margin-top:8px;">
         <button id="btn-theme-toggle" onclick="toggleTheme()"
           style="flex:1;padding:8px 0;border-radius:8px;border:none;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.85);cursor:pointer;font-size:15px;line-height:1;"
-          title="Thème clair / sombre">🌙</button>
+          data-tooltip="Mode clair / sombre" data-tooltip-down>🌙</button>
         <button onclick="showChangerMotDePasse(false)"
           style="flex:1;padding:8px 0;border-radius:8px;border:none;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.85);cursor:pointer;font-size:15px;line-height:1;"
-          title="Changer mot de passe">🔒</button>
+          data-tooltip="Changer mot de passe" data-tooltip-down>🔒</button>
         <button id="btn-changer-nom" onclick="changerNomAdmin()"
           style="display:none;flex:1;padding:8px 0;border-radius:8px;border:none;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.85);cursor:pointer;font-size:15px;line-height:1;"
           title="Modifier mon nom">✏️</button>
@@ -416,7 +416,7 @@
         <select id="sel-annee" onchange="renderCurrent()" style="background:#F7FAFC;border:1px solid #CBD5E0;border-radius:var(--radius-sm);color:#1A202C;font-size:12px;padding:6px 10px;font-family:var(--font);">
           <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option>
         </select>
-        <button class="btn btn-primary" id="topbar-main-btn" onclick="topbarAction()">＋ Nouveau</button>
+        <button class="btn btn-primary" id="topbar-main-btn" onclick="topbarAction()" data-tooltip="Ajouter un élément">＋ Nouveau</button>
       </div>
     </div>
     <div class="content" id="content">
