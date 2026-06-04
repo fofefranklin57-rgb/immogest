@@ -632,6 +632,7 @@ tr.row-new td { background: rgba(46,204,138,.04); }
 
 /* ── Context Menu (clic droit) ── */
 #ctx-menu {
+  position:fixed; display:none;
   background:rgba(var(--bg-rgb, 255,255,255), 0.88) !important;
   backdrop-filter:blur(24px) saturate(200%) !important;
   -webkit-backdrop-filter:blur(24px) saturate(200%) !important;
