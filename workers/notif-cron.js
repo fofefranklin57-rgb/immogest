@@ -197,7 +197,8 @@ async function handleCampayWebhook(request, env) {
 
     // Upsert dans Supabase table abonnements (un enregistrement par cabinet)
     const _sbKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY;
-    const sbResp = await fetch(`${env.SUPABASE_URL}/rest/v1/abonnements`, {
+    const _sbUrl0 = env.SUPABASE_URL || 'https://uggxfmwpttfsfcirmeqx.supabase.co';
+    const sbResp = await fetch(`${_sbUrl0}/rest/v1/abonnements`, {
       method:  'POST',
       headers: {
         'apikey':        _sbKey,
@@ -480,7 +481,7 @@ async function handleDbProxy(request, env) {
 
     // Clé service_role (jamais exposée au client)
     const svcKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY;
-    const sbUrl  = env.SUPABASE_URL;
+    const sbUrl  = env.SUPABASE_URL || 'https://uggxfmwpttfsfcirmeqx.supabase.co';
 
     // Validation de session — vérifier que userId+pwdHash correspondent à un vrai compte
     if (!userId || !pwdHash) {
@@ -577,7 +578,8 @@ async function querySupabase(env, path) {
   try {
     // Utiliser service_role si disponible (accès complet même avec RLS)
     const key = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY;
-    const resp = await fetch(`${env.SUPABASE_URL}/rest/v1/${path}`, {
+    const _sbUrlQ = env.SUPABASE_URL || 'https://uggxfmwpttfsfcirmeqx.supabase.co';
+    const resp = await fetch(`${_sbUrlQ}/rest/v1/${path}`, {
       headers: {
         'apikey':        key,
         'Authorization': `Bearer ${key}`,
