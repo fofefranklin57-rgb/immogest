@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // DATA LAYER
 // ============================================================
 const STORE_KEY = 'immogest_v12';
@@ -391,7 +391,7 @@ function renderDashboard() {
   // Bannière setup cabinet si non configuré (admin seulement)
   const _cabNonConfig = (SESSION.role === 'admin') && !(_cabInfo().nom !== 'Cabinet de Gestion Immobilière' || _cabInfo().tel1 || _cabInfo().email);
   let html = _cabNonConfig ? `
-    <div onclick="navigateTo('parametres')" style="display:flex;align-items:center;gap:14px;background:linear-gradient(90deg,#0E6AAF,#1a82d4);color:#fff;border-radius:12px;padding:14px 18px;margin-bottom:16px;cursor:pointer;box-shadow:0 2px 12px rgba(14,106,175,.3);">
+    <div onclick="navigate('parametres')" style="display:flex;align-items:center;gap:14px;background:linear-gradient(90deg,#0E6AAF,#1a82d4);color:#fff;border-radius:12px;padding:14px 18px;margin-bottom:16px;cursor:pointer;box-shadow:0 2px 12px rgba(14,106,175,.3);">
       <div style="font-size:28px;flex-shrink:0;">🏢</div>
       <div style="flex:1;">
         <div style="font-weight:700;font-size:14px;">${t('Configurez l\'identité de votre cabinet')}</div>
@@ -4322,7 +4322,7 @@ function _showBienvenueModal() {
       <p style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.5;">
         Pour personnaliser vos documents (reçus, contrats, rapports), commencez par configurer l'identité de votre cabinet.
       </p>
-      <button onclick="document.getElementById('bienvenue-overlay').remove();navigateTo('parametres')"
+      <button onclick="document.getElementById('bienvenue-overlay').remove();navigate('parametres')"
         style="width:100%;padding:12px;background:#0E6AAF;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;font-family:var(--font);">
         ⚙️ Configurer mon cabinet
       </button>
