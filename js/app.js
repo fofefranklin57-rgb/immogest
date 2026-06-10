@@ -2367,6 +2367,7 @@ function genFicheHtml(fd) {
 
   const rows = lignes.map((lg, i) => {
     const bg = i % 2 === 0 ? '#fff' : '#f8f9fa';
+
     // Mois avant la date d'entrée : ligne grisée vide
     if (lg.avant_entree) {
       return `<tr style="background:#f0f0f0;color:#bbb;">
@@ -2374,28 +2375,45 @@ function genFicheHtml(fd) {
         <td style="${td}text-align:center;font-size:10px;font-style:italic;" colspan="6">–</td>
       </tr>`;
     }
+
+    // Mois sans paiement — ligne vide
     if (lg.versements.length === 0) {
       return `<tr style="background:${bg};">
         <td style="${td}font-weight:600;">${lg.periode}</td>
-        <td style="${td}text-align:center;color:#e74c3c;font-weight:700;">Impayé</td>
-        <td style="${td}"></td><td style="${td}text-align:right;color:#e74c3c;">${fmt(l.loyer)}</td>
+        <td style="${td}"></td><td style="${td}"></td><td style="${td}"></td>
         <td style="${td}"></td><td style="${td}"></td><td style="${td}"></td>
       </tr>`;
     }
-    const montants = lg.versements.map(v => fmt(v.montant)).join('<br>');
-    const restes   = lg.versements.map(v => `<span style="color:${v.reste > 0 ? '#e74c3c' : ''}">${v.reste === 0 ? '0' : fmt(v.reste)}</span>`).join('<br>');
-    const dates    = lg.versements.map(v => v.date ? new Date(v.date).toLocaleDateString('fr-FR') : '').join('<br>');
-    const modes    = lg.versements.map(v => v.mode || '').join('<br>');
-    const obs      = lg.versements.length > 1 ? 'Paiement groupé' : (lg.versements[0].note || '');
-    return `<tr style="background:${bg};">
-      <td style="${td}font-weight:600;">${lg.periode}</td>
-      <td style="${td}text-align:center;color:${lg.statut ? '#27ae60' : ''};">${lg.statut}</td>
-      <td style="${td}text-align:right;">${montants}</td>
-      <td style="${td}text-align:right;">${restes}</td>
-      <td style="${td}text-align:center;">${dates}</td>
-      <td style="${td}text-align:center;">${modes}</td>
-      <td style="${td}">${obs}</td>
-    </tr>`;
+
+    // Mois avec versements — une sous-ligne par versement, rowspan sur la période
+    const nb = lg.versements.length;
+    const estSolde = lg.cumul >= l.loyer;
+    return lg.versements.map((v, vi) => {
+      const resteColor = v.reste > 0 ? '#e74c3c' : '#27ae60';
+      const dateStr = v.date ? new Date(v.date).toLocaleDateString('fr-FR') : '';
+      const statut = vi === nb - 1 && estSolde ? '<span style="color:#27ae60;font-weight:700;">Payé ✓</span>'
+                   : vi === nb - 1 && !estSolde ? `<span style="color:#e67e22;font-weight:700;">Partiel</span>`
+                   : '';
+      if (vi === 0) {
+        return `<tr style="background:${bg};">
+          <td style="${td}font-weight:600;" rowspan="${nb}">${lg.periode}</td>
+          <td style="${td}text-align:right;">${fmt(v.montant)}</td>
+          <td style="${td}text-align:right;color:${resteColor};">${fmt(v.reste)}</td>
+          <td style="${td}text-align:center;">${dateStr}</td>
+          <td style="${td}text-align:center;">${v.mode || ''}</td>
+          <td style="${td}text-align:center;">${statut}</td>
+          <td style="${td}">${v.note || ''}</td>
+        </tr>`;
+      }
+      return `<tr style="background:${bg};">
+        <td style="${td}text-align:right;">${fmt(v.montant)}</td>
+        <td style="${td}text-align:right;color:${resteColor};">${fmt(v.reste)}</td>
+        <td style="${td}text-align:center;">${dateStr}</td>
+        <td style="${td}text-align:center;">${v.mode || ''}</td>
+        <td style="${td}text-align:center;">${statut}</td>
+        <td style="${td}">${v.note || ''}</td>
+      </tr>`;
+    }).join('');
   }).join('');
 
   const total = lignes.reduce((s, lg) => s + lg.totalVerse, 0);
