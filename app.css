@@ -361,11 +361,9 @@ tr.row-new td { background: rgba(46,204,138,.04); }
   #topbar-plan-badge,
   #sel-mois,
   #sel-annee,
-  .user-chip .role-badge,
-  .user-chip span:not(.avatar) {
+  .user-chip {
     display: none !important;
   }
-  /* Garder seulement bouton Nouveau et user avatar */
   .topbar-actions {
     gap: 6px;
     flex-shrink: 0;
