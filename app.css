@@ -346,6 +346,46 @@ tr.row-new td { background: rgba(46,204,138,.04); }
 @media (min-width: 769px) {
   #btn-hamburger { display: none !important; }
 }
+
+/* ── TOPBAR MOBILE ── */
+@media (max-width: 768px) {
+  .topbar {
+    padding: 10px 12px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .topbar-title { font-size: 14px; }
+  .topbar-sub { display: none; }
+  /* Cacher les éléments secondaires sur mobile */
+  #lang-selector,
+  #topbar-plan-badge,
+  #sel-mois,
+  #sel-annee,
+  .user-chip .role-badge,
+  .user-chip span:not(.avatar) {
+    display: none !important;
+  }
+  /* Garder seulement bouton Nouveau et user avatar */
+  .topbar-actions {
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  #topbar-main-btn {
+    font-size: 12px;
+    padding: 6px 10px;
+    white-space: nowrap;
+  }
+  /* Empêcher tout débordement horizontal */
+  .app-shell { overflow-x: hidden; }
+  .main { overflow-x: hidden; }
+  .content { padding: 12px; overflow-x: hidden; }
+  /* Grilles responsive */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+  .metrics-grid { grid-template-columns: 1fr 1fr; }
+  .imm-cards { grid-template-columns: 1fr; }
+  /* Tableaux scrollables */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
 /* PRINT */
 @media print {
   .sidebar, .topbar-actions, .btn, .modal { display: none !important; }
