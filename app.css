@@ -352,28 +352,45 @@ tr.row-new td { background: rgba(46,204,138,.04); }
   .topbar {
     padding: 10px 12px;
     flex-wrap: nowrap;
-    overflow: hidden;
+    overflow: visible;    /* permet aux dropdowns de déborder */
+    position: relative;
+    z-index: 200;
   }
   .topbar-title { font-size: 14px; }
   .topbar-sub { display: none; }
-  /* Cacher éléments secondaires — logout/avatar accessibles via sidebar */
+  /* Cacher sélecteurs mois/année et badge plan */
   #topbar-plan-badge,
   #sel-mois,
-  #sel-annee,
+  #sel-annee { display: none !important; }
+  /* User-chip compact : avatar + bouton logout uniquement */
   .user-chip {
-    display: none !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    background: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
   }
-  /* Garder langue mais compact — icône seulement */
-  #lang-selector #btn-lang-toggle span:not(#lang-code),
-  #lang-selector #btn-lang-toggle span[style*="opacity"] {
-    display: none !important;
+  .user-chip > span { display: none !important; }       /* nom */
+  .user-chip .role-badge { display: none !important; }  /* badge rôle */
+  .user-chip .avatar {
+    width: 28px !important; height: 28px !important;
+    font-size: 11px !important; flex-shrink: 0;
   }
+  .user-chip button {   /* bouton logout */
+    padding: 3px 7px !important;
+    font-size: 11px !important;
+    white-space: nowrap;
+  }
+  /* Langue compact */
   #lang-selector #btn-lang-toggle {
     padding: 5px 7px !important;
-    font-size: 13px !important;
+    font-size: 12px !important;
   }
+  /* Dropdown langue visible (pas coupé) */
+  #lang-menu { z-index: 9999 !important; }
   .topbar-actions {
-    gap: 6px;
+    gap: 5px;
     flex-shrink: 0;
   }
   #topbar-main-btn {
@@ -381,7 +398,7 @@ tr.row-new td { background: rgba(46,204,138,.04); }
     padding: 6px 10px;
     white-space: nowrap;
   }
-  /* Empêcher tout débordement horizontal */
+  /* Empêcher débordement horizontal sauf topbar */
   .app-shell { overflow-x: hidden; }
   .main { overflow-x: hidden; }
   .content { padding: 8px; overflow-x: hidden; }
