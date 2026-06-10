@@ -376,11 +376,34 @@ tr.row-new td { background: rgba(46,204,138,.04); }
   /* Empêcher tout débordement horizontal */
   .app-shell { overflow-x: hidden; }
   .main { overflow-x: hidden; }
-  .content { padding: 12px; overflow-x: hidden; }
+  .content { padding: 8px; overflow-x: hidden; }
   /* Grilles responsive */
   .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
-  .metrics-grid { grid-template-columns: 1fr 1fr; }
-  .imm-cards { grid-template-columns: 1fr; }
+  /* KPI cards compactes — 2 colonnes, hauteur réduite */
+  .metrics-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .metric-card {
+    padding: 10px 12px !important;
+  }
+  .metric-label { font-size: 10px !important; margin-bottom: 4px !important; }
+  .metric-value { font-size: 18px !important; }
+  .metric-sub { font-size: 10px !important; margin-top: 2px !important; }
+  .metric-card::before { height: 2px !important; }
+  /* Cartes immeubles compactes */
+  .imm-cards {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .imm-card { padding: 12px 14px !important; }
+  .imm-card-name { font-size: 13px !important; }
+  .imm-stats { gap: 10px; margin-top: 6px !important; }
+  .imm-stat span { font-size: 13px !important; }
+  /* Section titles plus petits */
+  .section-title, [class*="section-title"] { margin-top: 14px !important; margin-bottom: 8px !important; }
   /* Tableaux scrollables */
   table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 }
