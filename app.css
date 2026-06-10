@@ -402,11 +402,20 @@ tr.row-new td { background: rgba(46,204,138,.04); }
     border-radius: 6px !important;
   }
 
-  /* Langue compact */
+  /* Langue compact — forcer visibilité */
+  #lang-selector { display: inline-block !important; }
   #lang-selector #btn-lang-toggle {
     padding: 4px 6px !important;
     font-size: 12px !important;
+    color: var(--text) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
   }
+  #lang-selector #btn-lang-toggle * {
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  #lang-code { display: inline !important; }
   #lang-menu { z-index: 9999 !important; }
 
   /* Topbar-actions scrollable horizontalement */
