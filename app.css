@@ -309,8 +309,8 @@ tr.row-new td { background: rgba(46,204,138,.04); }
 .progress-steps { display:flex;gap:6px;margin-bottom:16px; }
 .step { flex:1;text-align:center;font-size:11px;color:var(--text3);padding:6px;border-radius:var(--radius-sm);border:1px solid var(--border); }
 .step.active { border-color:var(--accent);color:var(--accent);background:rgba(79,142,247,.08); }
-/* ── SIDEBAR MOBILE — DEPLOY17 ── */
-@media (max-width: 768px) {
+/* ── SIDEBAR MOBILE + TABLETTE — tiroir jusqu'à 1024px ── */
+@media (max-width: 1024px) {
   #sidebar-main {
     position: fixed !important;
     top: 0; left: 0; bottom: 0;
@@ -343,12 +343,12 @@ tr.row-new td { background: rgba(46,204,138,.04); }
   }
   #btn-hamburger:hover { background: var(--bg3); }
 }
-@media (min-width: 769px) {
+@media (min-width: 1025px) {
   #btn-hamburger { display: none !important; }
 }
 
-/* ── TOPBAR MOBILE ── */
-@media (max-width: 768px) {
+/* ── TOPBAR MOBILE + PAYSAGE ── */
+@media (max-width: 1024px) {
   .topbar {
     padding: 10px 12px;
     flex-wrap: nowrap;
@@ -356,13 +356,21 @@ tr.row-new td { background: rgba(46,204,138,.04); }
   }
   .topbar-title { font-size: 14px; }
   .topbar-sub { display: none; }
-  /* Cacher les éléments secondaires sur mobile */
-  #lang-selector,
+  /* Cacher éléments secondaires — logout/avatar accessibles via sidebar */
   #topbar-plan-badge,
   #sel-mois,
   #sel-annee,
   .user-chip {
     display: none !important;
+  }
+  /* Garder langue mais compact — icône seulement */
+  #lang-selector #btn-lang-toggle span:not(#lang-code),
+  #lang-selector #btn-lang-toggle span[style*="opacity"] {
+    display: none !important;
+  }
+  #lang-selector #btn-lang-toggle {
+    padding: 5px 7px !important;
+    font-size: 13px !important;
   }
   .topbar-actions {
     gap: 6px;
@@ -377,7 +385,7 @@ tr.row-new td { background: rgba(46,204,138,.04); }
   .app-shell { overflow-x: hidden; }
   .main { overflow-x: hidden; }
   .content { padding: 8px; overflow-x: hidden; }
-  /* Grilles responsive */
+  /* Grilles responsive — portrait seulement */
   .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
   /* KPI cards — style ligne horizontale, très compact */
   .metrics-grid {
