@@ -409,16 +409,32 @@ tr.row-new td { background: rgba(46,204,138,.04); }
   }
   #lang-menu { z-index: 9999 !important; }
 
+  /* Topbar-actions scrollable horizontalement */
   .topbar-actions {
     gap: 4px;
     flex-shrink: 0;
     align-items: center;
+    overflow-x: auto;
+    overflow-y: visible;
+    max-width: calc(100vw - 160px);
+    scrollbar-width: none;
   }
+  .topbar-actions::-webkit-scrollbar { display: none; }
   #topbar-main-btn {
     font-size: 12px;
     padding: 6px 10px;
     white-space: nowrap;
+    flex-shrink: 0;
   }
+  /* Modales au dessus de la sidebar (z-index 1100) */
+  .overlay { z-index: 1200 !important; }
+  .overlay .modal {
+    width: 96vw !important;
+    max-width: 96vw !important;
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+
   /* Empêcher débordement horizontal sauf topbar */
   .app-shell { overflow-x: hidden; }
   .main { overflow-x: hidden; }
