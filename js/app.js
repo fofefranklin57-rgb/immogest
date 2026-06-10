@@ -2264,27 +2264,36 @@ function ouvrirFicheSuivi(locId) {
   if (!l) return;
 
   const currentYear = new Date().getFullYear();
-  const entreeYear  = l.entree ? new Date(l.entree).getFullYear() : null;
-  const moisDus     = (l.loyer > 0 && l.reste > 0) ? Math.ceil(l.reste / l.loyer) : 1;
-  const calcStart   = new Date(new Date().getFullYear(), new Date().getMonth() - moisDus + 1, 1).getFullYear();
-  const firstYear   = entreeYear ? Math.min(entreeYear, currentYear) : calcStart;
+
+  // Calculer le départ effectif pour choisir la bonne année par défaut
+  const totalVerse0 = DATA.paiements
+    .filter(p => p.locId === locId && p.type !== 'caution' && p.montant > 0)
+    .reduce((s, p) => s + p.montant, 0);
+  const nbArr0 = l.loyer > 0 ? Math.ceil(((l.reste||0) + totalVerse0) / l.loyer) : 0;
+  let effY0 = currentYear;
+  if (l.entree) {
+    const d = new Date(l.entree);
+    effY0 = d.getFullYear();
+    let effM0 = d.getMonth() - Math.max(0, nbArr0 - 1);
+    while (effM0 < 0) { effM0 += 12; effY0--; }
+  }
+  const defaultYear = Math.min(effY0, currentYear);
+  const firstYear   = Math.min(effY0, currentYear);
   const years = [];
   for (let y = firstYear; y <= currentYear + 1; y++) years.push(y);
-  
-  // Build fiche directly with current year
-  const fd = buildFicheData(locId, currentYear);
+
+  const fd = buildFicheData(locId, defaultYear);
   if (!fd) return;
-  const { lignes, im } = fd;
-  
+  const { im } = fd;
   const ficheContent = genFicheHtml(fd);
-  
+
   let html = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
       <h3 style="margin:0;">📋 Fiche de suivi — ${l.nom}</h3>
       <div style="display:flex;align-items:center;gap:8px;">
         <label style="font-size:12px;color:var(--text3);">Année :</label>
         <select id="fiche-annee" onchange="rafraichirFiche(${locId})" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);font-size:13px;">
-          ${years.map(y => `<option value="${y}" ${y===currentYear?'selected':''}>${y}</option>`).join('')}
+          ${years.map(y => `<option value="${y}" ${y===defaultYear?'selected':''}>${y}</option>`).join('')}
         </select>
       </div>
     </div>
@@ -2470,38 +2479,51 @@ function buildFicheData(locId, annee) {
   const jour = l.jourPaiement || 1;
   const now  = new Date();
 
-  // ── Date d'entrée (pour savoir quels mois sont actifs) ──
-  let entreeY = null, entreeM = null;
+  // ── Calcul du départ EFFECTIF (entrée reculée des arriérés) ──
+  // nbArrieres = mois dus actuels + mois déjà payés = solde total initial / loyer
+  // On utilise : total versé + reste = dette initiale
+  const totalVerse = DATA.paiements
+    .filter(p => p.locId === locId && p.type !== 'caution' && p.montant > 0)
+    .reduce((s, p) => s + p.montant, 0);
+  const detteInitiale = (l.reste || 0) + totalVerse;
+  const nbArrInitiaux = l.loyer > 0 ? Math.ceil(detteInitiale / l.loyer) : 0;
+
+  let effY, effM;
   if (l.entree) {
+    // Date d'entrée connue → reculer de (nbArrInitiaux - 1) mois
     const d = new Date(l.entree);
-    entreeY = d.getFullYear(); entreeM = d.getMonth();
+    effY = d.getFullYear();
+    effM = d.getMonth() - Math.max(0, nbArrInitiaux - 1);
+    while (effM < 0) { effM += 12; effY--; }
+  } else {
+    // Pas de date d'entrée → utiliser le 1er paiement ou aujourd'hui - arriérés
+    const paysLoc = DATA.paiements
+      .filter(p => p.locId === locId && p.montant > 0)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    const refDate = paysLoc.length > 0 ? new Date(paysLoc[0].date) : now;
+    effY = refDate.getFullYear();
+    effM = refDate.getMonth() - Math.max(0, nbArrInitiaux - 1);
+    while (effM < 0) { effM += 12; effY--; }
   }
 
-  // ── Générer TOUJOURS les 12 mois de l'année sélectionnée ──
-  // Les mois avant l'entrée sont marqués avant_entree = true
+  // ── Générer les 12 mois de l'année sélectionnée ──
+  // avant_entree = mois situé AVANT le départ effectif
   const slots = [];
   for (let m = 0; m < 12; m++) {
-    const avantEntree = entreeY !== null && (
-      annee < entreeY || (annee === entreeY && m < entreeM)
-    );
-    // On inclut aussi les mois futurs dans l'année en cours/future pour les avances
+    const avantEntree = (annee < effY) || (annee === effY && m < effM);
     slots.push({ year: annee, month: m, versements: [], cumul: 0, avant_entree: avantEntree });
   }
 
   // ── Dispatcher les paiements (triés par date) ──
-  // On travaille sur TOUS les slots disponibles (toutes années) pour les avances
-  // D'abord construire la liste complète inter-années
   const allSlots = [];
-  // Slots avant l'année sélectionnée (pour que les paiements anciens soient bien positionnés)
-  if (entreeY !== null) {
-    let cy = entreeY, cm = entreeM;
-    while (cy < annee || (cy === annee && cm < 0)) {
-      allSlots.push({ year: cy, month: cm, versements: [], cumul: 0, avant_entree: false });
-      if (++cm > 11) { cm = 0; cy++; }
-      if (allSlots.length > 120) break;
-    }
+  // Slots depuis le départ effectif jusqu'à l'année affichée
+  let cy = effY, cm = effM;
+  while (cy < annee || (cy === annee && cm < 0)) {
+    allSlots.push({ year: cy, month: cm, versements: [], cumul: 0, avant_entree: false });
+    if (++cm > 11) { cm = 0; cy++; }
+    if (allSlots.length > 120) break;
   }
-  // Ajouter les 12 slots de l'année en cours
+  // Ajouter les 12 slots de l'année affichée
   allSlots.push(...slots);
 
   const allPays = DATA.paiements
