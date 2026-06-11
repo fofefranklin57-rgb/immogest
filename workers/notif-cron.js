@@ -63,6 +63,22 @@ export default {
       return handleDbProxy(request, env);
     }
 
+    if (url.pathname === '/register' && request.method === 'POST') {
+      return handleRegister(request, env);
+    }
+
+    if (url.pathname === '/login-tenant' && request.method === 'POST') {
+      return handleLoginTenant(request, env);
+    }
+
+    if (url.pathname === '/generate-invite' && request.method === 'POST') {
+      return handleGenerateInvite(request, env);
+    }
+
+    if (url.pathname === '/join' && request.method === 'POST') {
+      return handleJoin(request, env);
+    }
+
     if (url.pathname === '/health') {
       return new Response(JSON.stringify({ status: 'ok', time: new Date().toISOString() }), {
         headers: { 'Content-Type': 'application/json' }
@@ -466,70 +482,80 @@ async function handleWaImpayesPage(request, env) {
 
 // ══════════════════════════════════════════════════════════════
 // PROXY BASE DE DONNÉES SÉCURISÉ
-// POST /db  { op, table, data, filter, userId, pwdHash }
+// POST /db  { op, table, data, filter, userId, pwdHash, tenantId }
 // ══════════════════════════════════════════════════════════════
 async function handleDbProxy(request, env) {
   try {
     const body = await request.json();
-    const { op, table, data, filter, userId, pwdHash } = body;
+    const { op, table, data, filter, userId, pwdHash, tenantId } = body;
 
-    // Tables autorisées via ce proxy
-    const ALLOWED = ['immeubles','locataires','paiements','users_app','parametres','archives','corbeille'];
+    const ALLOWED = ['immeubles','locataires','paiements','users_app','parametres','archives','corbeille','messages_internes','abonnements'];
     if (!ALLOWED.includes(table)) {
       return jsonResponse({ ok: false, error: 'Table non autorisée' }, 403, request);
     }
 
-    // Clé service_role (jamais exposée au client)
     const svcKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY;
     const sbUrl  = env.SUPABASE_URL || 'https://uggxfmwpttfsfcirmeqx.supabase.co';
+    const hdrs   = { 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}`, 'Content-Type': 'application/json' };
 
-    // Validation de session — vérifier que userId+pwdHash correspondent à un vrai compte
     if (!userId || !pwdHash) {
       return jsonResponse({ ok: false, error: 'Non authentifié' }, 401, request);
     }
-    const checkResp = await fetch(
-      `${sbUrl}/rest/v1/users_app?id=eq.${encodeURIComponent(userId)}&select=id,password,pin`,
-      { headers: { 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}` } }
-    );
-    const checkUsers = await checkResp.json();
-    if (Array.isArray(checkUsers) && checkUsers.length > 0) {
-      // Utilisateur trouvé — vérifier le hash
-      const dbUser = checkUsers[0];
-      const expected = dbUser.password || dbUser.pin || '';
-      if (expected && expected !== pwdHash) {
-        return jsonResponse({ ok: false, error: 'Session invalide' }, 401, request);
+
+    // ── Validation session ──────────────────────────────────────
+    let validTenantId = tenantId || null;
+    if (tenantId) {
+      // Essayer admin via table tenants
+      const tResp = await fetch(`${sbUrl}/rest/v1/tenants?id=eq.${encodeURIComponent(tenantId)}&select=id,password_hash`, { headers: hdrs });
+      const tData = await tResp.json();
+      if (tData && tData[0] && tData[0].password_hash === pwdHash) {
+        validTenantId = tenantId; // Admin OK
+      } else {
+        // Essayer sous-utilisateur via users_app
+        const uResp = await fetch(`${sbUrl}/rest/v1/users_app?id=eq.${encodeURIComponent(userId)}&tenant_id=eq.${encodeURIComponent(tenantId)}&select=id,password,pin`, { headers: hdrs });
+        const uData = await uResp.json();
+        if (!uData || !uData[0]) {
+          return jsonResponse({ ok: false, error: 'Session invalide' }, 401, request);
+        }
+        const expected = uData[0].password || uData[0].pin || '';
+        if (expected && expected !== pwdHash) {
+          return jsonResponse({ ok: false, error: 'Session invalide' }, 401, request);
+        }
+        validTenantId = tenantId;
+      }
+    } else {
+      // Legacy : pas de tenantId, vérifier users_app uniquement
+      const checkResp = await fetch(`${sbUrl}/rest/v1/users_app?id=eq.${encodeURIComponent(userId)}&select=id,password,pin`, { headers: hdrs });
+      const checkUsers = await checkResp.json();
+      if (Array.isArray(checkUsers) && checkUsers.length > 0) {
+        const expected = checkUsers[0].password || checkUsers[0].pin || '';
+        if (expected && expected !== pwdHash) {
+          return jsonResponse({ ok: false, error: 'Session invalide' }, 401, request);
+        }
       }
     }
-    // Si users_app vide (1er lancement) → bootstrap autorisé sans validation
-
-    // Headers Supabase avec service_role
-    const hdrs = {
-      'apikey':        svcKey,
-      'Authorization': `Bearer ${svcKey}`,
-      'Content-Type':  'application/json'
-    };
 
     let result, resp;
 
     if (op === 'select') {
       let qs = '?select=*';
+      if (validTenantId) qs += `&tenant_id=eq.${encodeURIComponent(validTenantId)}`;
       if (filter && filter.eq)    qs += `&${filter.eq.col}=eq.${encodeURIComponent(filter.eq.val)}`;
       if (filter && filter.order) qs += `&order=${filter.order}`;
       resp   = await fetch(`${sbUrl}/rest/v1/${table}${qs}`, { headers: hdrs });
       result = await resp.json();
 
     } else if (op === 'upsert') {
-      const rows     = Array.isArray(data) ? data : [data];
-      const conflict = (filter && filter.onConflict) ? filter.onConflict : 'id';
+      const rows = (Array.isArray(data) ? data : [data]).map(r => validTenantId ? { ...r, tenant_id: validTenantId } : r);
       resp   = await fetch(`${sbUrl}/rest/v1/${table}`, {
         method: 'POST',
-        headers: { ...hdrs, 'Prefer': `resolution=merge-duplicates,return=representation` },
+        headers: { ...hdrs, 'Prefer': 'resolution=merge-duplicates,return=representation' },
         body: JSON.stringify(rows)
       });
       result = await resp.json();
 
     } else if (op === 'insert') {
-      const rows = Array.isArray(data) ? data : [data];
+      const rows = (Array.isArray(data) ? data : [data]).map(r => validTenantId ? { ...r, tenant_id: validTenantId } : r);
       resp   = await fetch(`${sbUrl}/rest/v1/${table}`, {
         method: 'POST',
         headers: { ...hdrs, 'Prefer': 'return=representation' },
@@ -540,7 +566,9 @@ async function handleDbProxy(request, env) {
     } else if (op === 'update') {
       const col = (filter && filter.col) ? filter.col : 'id';
       const val = (filter && filter.val !== undefined) ? filter.val : '';
-      resp   = await fetch(`${sbUrl}/rest/v1/${table}?${col}=eq.${encodeURIComponent(val)}`, {
+      let qs = `?${col}=eq.${encodeURIComponent(val)}`;
+      if (validTenantId) qs += `&tenant_id=eq.${encodeURIComponent(validTenantId)}`;
+      resp   = await fetch(`${sbUrl}/rest/v1/${table}${qs}`, {
         method: 'PATCH',
         headers: { ...hdrs, 'Prefer': 'return=representation' },
         body: JSON.stringify(data)
@@ -550,22 +578,167 @@ async function handleDbProxy(request, env) {
     } else if (op === 'delete') {
       const col = (filter && filter.col) ? filter.col : 'id';
       const val = (filter && filter.val !== undefined) ? filter.val : '';
-      resp   = await fetch(`${sbUrl}/rest/v1/${table}?${col}=eq.${encodeURIComponent(val)}`, {
-        method: 'DELETE',
-        headers: hdrs
-      });
+      let qs = `?${col}=eq.${encodeURIComponent(val)}`;
+      if (validTenantId) qs += `&tenant_id=eq.${encodeURIComponent(validTenantId)}`;
+      resp   = await fetch(`${sbUrl}/rest/v1/${table}${qs}`, { method: 'DELETE', headers: hdrs });
       result = [];
 
     } else {
       return jsonResponse({ ok: false, error: 'Opération inconnue: ' + op }, 400, request);
     }
 
-    // Détecter les erreurs Supabase (retournent { code, message })
     if (result && !Array.isArray(result) && result.code && result.message) {
       return jsonResponse({ ok: false, error: result.message }, 400, request);
     }
-
     return jsonResponse({ ok: true, data: result }, 200, request);
+  } catch(e) {
+    return jsonResponse({ ok: false, error: e.message }, 500, request);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// REGISTER — Créer un nouvel espace (tenant)
+// POST /register { nom, telephone, passwordHash, mode, nomCabinet }
+// ══════════════════════════════════════════════════════════════
+async function handleRegister(request, env) {
+  try {
+    const { nom, telephone, passwordHash, mode, nomCabinet } = await request.json();
+    if (!nom || !telephone || !passwordHash || !mode) {
+      return jsonResponse({ ok: false, error: 'Champs manquants' }, 400, request);
+    }
+    const svcKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY;
+    const sbUrl  = env.SUPABASE_URL || 'https://uggxfmwpttfsfcirmeqx.supabase.co';
+    const hdrs   = { 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
+
+    // Vérifier si numéro déjà utilisé
+    const chk = await fetch(`${sbUrl}/rest/v1/tenants?telephone=eq.${encodeURIComponent(telephone)}&select=id`, { headers: hdrs });
+    const existing = await chk.json();
+    if (existing && existing.length > 0) {
+      return jsonResponse({ ok: false, error: 'Ce numéro est déjà enregistré' }, 409, request);
+    }
+
+    // Créer le tenant
+    const tResp = await fetch(`${sbUrl}/rest/v1/tenants`, {
+      method: 'POST', headers: hdrs,
+      body: JSON.stringify([{ nom, telephone, password_hash: passwordHash, mode, nom_cabinet: nomCabinet || null }])
+    });
+    const tenants = await tResp.json();
+    if (!tenants || !tenants[0] || !tenants[0].id) {
+      return jsonResponse({ ok: false, error: 'Erreur création compte' }, 500, request);
+    }
+    const tenantId = tenants[0].id;
+
+    // Migrer les données existantes sans tenant_id (données de l'ancien système)
+    const tables = ['immeubles','locataires','paiements','archives','corbeille','users_app','parametres','messages_internes'];
+    const mhdrs  = { 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
+    await Promise.all(tables.map(t =>
+      fetch(`${sbUrl}/rest/v1/${t}?tenant_id=is.null`, {
+        method: 'PATCH', headers: mhdrs,
+        body: JSON.stringify({ tenant_id: tenantId })
+      })
+    ));
+
+    return jsonResponse({ ok: true, tenantId, nom, mode }, 200, request);
+  } catch(e) {
+    return jsonResponse({ ok: false, error: e.message }, 500, request);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// LOGIN-TENANT — Retrouver son espace sur un nouvel appareil
+// POST /login-tenant { telephone, passwordHash }
+// ══════════════════════════════════════════════════════════════
+async function handleLoginTenant(request, env) {
+  try {
+    const { telephone, passwordHash } = await request.json();
+    const svcKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY;
+    const sbUrl  = env.SUPABASE_URL || 'https://uggxfmwpttfsfcirmeqx.supabase.co';
+    const hdrs   = { 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}` };
+
+    const resp = await fetch(`${sbUrl}/rest/v1/tenants?telephone=eq.${encodeURIComponent(telephone)}&select=*`, { headers: hdrs });
+    const list = await resp.json();
+    if (!list || list.length === 0) {
+      return jsonResponse({ ok: false, error: 'Numéro introuvable' }, 404, request);
+    }
+    const tenant = list[0];
+    if (tenant.password_hash !== passwordHash) {
+      return jsonResponse({ ok: false, error: 'Mot de passe incorrect' }, 401, request);
+    }
+    return jsonResponse({ ok: true, tenantId: tenant.id, nom: tenant.nom, mode: tenant.mode, nomCabinet: tenant.nom_cabinet }, 200, request);
+  } catch(e) {
+    return jsonResponse({ ok: false, error: e.message }, 500, request);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// GENERATE-INVITE — Générer un code d'invitation pour un locataire
+// POST /generate-invite { tenantId, userId, pwdHash, locataireId, locataireNom }
+// ══════════════════════════════════════════════════════════════
+async function handleGenerateInvite(request, env) {
+  try {
+    const { tenantId, userId, pwdHash, locataireId, locataireNom } = await request.json();
+    if (!tenantId || !pwdHash || !locataireId) {
+      return jsonResponse({ ok: false, error: 'Paramètres manquants' }, 400, request);
+    }
+    const svcKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY;
+    const sbUrl  = env.SUPABASE_URL || 'https://uggxfmwpttfsfcirmeqx.supabase.co';
+    const hdrs   = { 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}`, 'Content-Type': 'application/json' };
+
+    // Valider session admin
+    const tResp = await fetch(`${sbUrl}/rest/v1/tenants?id=eq.${encodeURIComponent(tenantId)}&select=id,password_hash`, { headers: hdrs });
+    const tData = await tResp.json();
+    if (!tData || !tData[0] || tData[0].password_hash !== pwdHash) {
+      return jsonResponse({ ok: false, error: 'Non autorisé' }, 401, request);
+    }
+
+    // Générer code IM-XXXX
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = 'IM-';
+    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+
+    await fetch(`${sbUrl}/rest/v1/invite_codes`, {
+      method: 'POST',
+      headers: { ...hdrs, 'Prefer': 'return=minimal' },
+      body: JSON.stringify([{ code, tenant_id: tenantId, locataire_id: locataireId, locataire_nom: locataireNom || '' }])
+    });
+
+    return jsonResponse({ ok: true, code }, 200, request);
+  } catch(e) {
+    return jsonResponse({ ok: false, error: e.message }, 500, request);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// JOIN — Rejoindre un espace avec un code d'invitation
+// POST /join { code }
+// ══════════════════════════════════════════════════════════════
+async function handleJoin(request, env) {
+  try {
+    const { code } = await request.json();
+    if (!code) return jsonResponse({ ok: false, error: 'Code manquant' }, 400, request);
+
+    const svcKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY;
+    const sbUrl  = env.SUPABASE_URL || 'https://uggxfmwpttfsfcirmeqx.supabase.co';
+    const hdrs   = { 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}`, 'Content-Type': 'application/json' };
+
+    const resp = await fetch(`${sbUrl}/rest/v1/invite_codes?code=eq.${encodeURIComponent(code.toUpperCase())}&select=*`, { headers: hdrs });
+    const codes = await resp.json();
+    if (!codes || codes.length === 0) {
+      return jsonResponse({ ok: false, error: 'Code invalide ou expiré' }, 404, request);
+    }
+    const inv = codes[0];
+    if (inv.used) {
+      return jsonResponse({ ok: false, error: 'Ce code a déjà été utilisé' }, 409, request);
+    }
+
+    // Marquer comme utilisé
+    await fetch(`${sbUrl}/rest/v1/invite_codes?code=eq.${encodeURIComponent(code.toUpperCase())}`, {
+      method: 'PATCH',
+      headers: { ...hdrs, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ used: true })
+    });
+
+    return jsonResponse({ ok: true, tenantId: inv.tenant_id, locataireId: inv.locataire_id, locataireNom: inv.locataire_nom }, 200, request);
   } catch(e) {
     return jsonResponse({ ok: false, error: e.message }, 500, request);
   }

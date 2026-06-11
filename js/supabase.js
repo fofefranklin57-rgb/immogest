@@ -12,8 +12,9 @@ async function _dbProxy(op, table, data, filter) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       op, table, data, filter,
-      userId:  SESSION && SESSION.userId,
-      pwdHash: SESSION && SESSION._pwdHash
+      userId:   SESSION && SESSION.userId,
+      pwdHash:  SESSION && SESSION._pwdHash,
+      tenantId: SESSION && SESSION.tenantId
     })
   });
   if (!res.ok) {
