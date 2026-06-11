@@ -2244,15 +2244,61 @@ async function saveLocataire() {
     }
   }
 
+  // ── Envoi WhatsApp automatique pour nouveau locataire ──────────────────
+  if (!(existId && existId > 0) && obj.tel) {
+    const _pin4 = obj.pin || '0000';
+    const _telLoc = obj.tel.replace(/[^0-9]/g,'');
+    _sendWhatsAppCredentials(obj.tel, obj.nom, 'locataire', _telLoc, _pin4);
+  }
+
   saveData();
   closeModals();
   renderCurrent();
-  
+
   const finalId = (existId && existId > 0) ? existId : obj.id;
   const saved = DATA.locataires.find(l => l.id === finalId);
   if (saved && moisDus >= 2) {
     setTimeout(() => showToast('⚠️ ' + saved.nom + ' : ' + moisDus + ' mois de retard', 'red'), 300);
   }
+}
+
+// ── Envoi WhatsApp des identifiants de connexion ─────────────────────────────
+function _sendWhatsAppCredentials(tel, nom, role, login, pin) {
+  var telClean = tel.replace(/[^0-9]/g,'');
+  if (!telClean) return;
+  // Ajouter 237 si numéro camerounais sans indicatif
+  if (telClean.length === 9) telClean = '237' + telClean;
+
+  var roleLabel = role === 'locataire' ? 'Locataire'
+    : role === 'proprietaire' ? 'Propriétaire'
+    : role === 'gestionnaire' ? 'Gestionnaire'
+    : role === 'comptable' ? 'Comptable' : 'Utilisateur';
+
+  var acces = role === 'locataire'
+    ? '• Vos paiements de loyer\n• Vos documents\n• Messagerie avec le gestionnaire\n• Votre fiche de suivi'
+    : role === 'proprietaire'
+    ? '• Vos immeubles et revenus\n• Vos locataires\n• Rapports financiers'
+    : '• Tableau de bord\n• Gestion des locataires et paiements';
+
+  var msg = [
+    'Bonjour ' + nom + ',',
+    '',
+    'Vous avez été enregistré(e) sur *ImmoGest* en tant que ' + roleLabel + '.',
+    '',
+    '📱 Application : https://immogest-34w.pages.dev',
+    '🔑 Login : ' + login,
+    '🔒 Mot de passe : ' + pin,
+    '',
+    '⚠️ Changez votre mot de passe à la première connexion.',
+    '',
+    'Vous aurez accès à :',
+    acces,
+    '',
+    '_ImmoGest — Gestion immobilière simplifiée_'
+  ].join('\n');
+
+  var waUrl = 'https://wa.me/' + telClean + '?text=' + encodeURIComponent(msg);
+  window.open(waUrl, '_blank');
 }
 
 // ============================================================
@@ -5063,6 +5109,12 @@ function _saveUserModal(userId) {
       ? `PIN : ${defaultPin}`
       : `Identifiant : ${newUser.username} — Mdp : ${defaultPwd}`;
     showToast(`Utilisateur créé ✓ — ${infoAcces}`, 'green');
+    // Envoi WhatsApp automatique
+    if (tel) {
+      var _loginWa = role === 'locataire' ? tel.replace(/[^0-9]/g,'') : (newUser.username || tel);
+      var _pinWa   = role === 'locataire' ? defaultPin : defaultPwd;
+      _sendWhatsAppCredentials(tel, nom, role, _loginWa, _pinWa);
+    }
   }
 
   saveUsers();
