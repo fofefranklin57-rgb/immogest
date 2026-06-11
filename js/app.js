@@ -2276,6 +2276,15 @@ function ouvrirFicheSuivi(locId) {
     effY0 = d.getFullYear();
     let effM0 = d.getMonth() - Math.max(0, nbArr0 - 1);
     while (effM0 < 0) { effM0 += 12; effY0--; }
+  } else {
+    // Pas de date d'entrée : utiliser premier paiement ou reculer des arriérés depuis aujourd'hui
+    const paysLoc0 = DATA.paiements
+      .filter(p => p.locId === locId && p.montant > 0)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    const refDate0 = paysLoc0.length > 0 ? new Date(paysLoc0[0].date) : new Date();
+    effY0 = refDate0.getFullYear();
+    let effM0 = refDate0.getMonth() - Math.max(0, nbArr0 - 1);
+    while (effM0 < 0) { effM0 += 12; effY0--; }
   }
   const defaultYear = Math.min(effY0, currentYear);
   const firstYear   = Math.min(effY0, currentYear);
@@ -2317,8 +2326,26 @@ function ouvrirFicheSuiviReadOnly(locId) {
   if (!l) return;
 
   const currentYear = new Date().getFullYear();
-  const entreeYear  = l.entree ? new Date(l.entree).getFullYear() : null;
-  const firstYear   = entreeYear ? Math.min(entreeYear, currentYear) : currentYear;
+  const totalVerseRO = DATA.paiements
+    .filter(p => p.locId === locId && p.type !== 'caution' && p.montant > 0)
+    .reduce((s, p) => s + p.montant, 0);
+  const nbArrRO = l.loyer > 0 ? Math.ceil(((l.reste||0) + totalVerseRO) / l.loyer) : 0;
+  let effY0RO = currentYear;
+  if (l.entree) {
+    const d = new Date(l.entree);
+    effY0RO = d.getFullYear();
+    let effM0 = d.getMonth() - Math.max(0, nbArrRO - 1);
+    while (effM0 < 0) { effM0 += 12; effY0RO--; }
+  } else {
+    const paysRO = DATA.paiements
+      .filter(p => p.locId === locId && p.montant > 0)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    const refDateRO = paysRO.length > 0 ? new Date(paysRO[0].date) : new Date();
+    effY0RO = refDateRO.getFullYear();
+    let effM0 = refDateRO.getMonth() - Math.max(0, nbArrRO - 1);
+    while (effM0 < 0) { effM0 += 12; effY0RO--; }
+  }
+  const firstYear = Math.min(effY0RO, currentYear);
   const years = [];
   for (let y = firstYear; y <= currentYear + 1; y++) years.push(y);
 
