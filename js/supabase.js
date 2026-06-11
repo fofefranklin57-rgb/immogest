@@ -682,3 +682,46 @@ async function saveParametresToSupabase(settings) {
     return false;
   }
 }
+
+// ── Sync complet localStorage → Supabase ──────────────────────
+// Appelé automatiquement après chaque saveData() et au retour en ligne.
+// Pousse tous les immeubles, locataires actifs et paiements vers Supabase.
+var _syncBusy = false;
+async function syncAllToSupabase() {
+  if (!SESSION || _syncBusy) return false;
+  if (!navigator.onLine) return false;
+  _syncBusy = true;
+  try {
+    const immeubles  = DATA.immeubles || [];
+    const locataires = (DATA.locataires || []).filter(function(l) {
+      return l.s !== 'libre' && l.nom !== '(Libre)';
+    });
+    const paiements  = DATA.paiements || [];
+
+    if (immeubles.length === 0 && locataires.length === 0) {
+      _syncBusy = false;
+      return true;
+    }
+
+    var tasks = [];
+    immeubles.forEach(function(im)  { tasks.push(saveImmeubleToSupabase(im)); });
+    locataires.forEach(function(l)  { tasks.push(saveLocataireToSupabase(l)); });
+    paiements.forEach(function(p)   { tasks.push(savePaiementToSupabase(p)); });
+
+    var results = await Promise.all(tasks);
+    var failed = results.filter(function(r) { return r === false; }).length;
+
+    _syncBusy = false;
+    if (failed > 0) {
+      console.warn('syncAllToSupabase: ' + failed + ' erreur(s)');
+      return false;
+    }
+    var el = document.getElementById('last-save');
+    if (el) el.textContent = t('Synchronisé') + ' ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    return true;
+  } catch(e) {
+    _syncBusy = false;
+    console.warn('syncAllToSupabase error:', e);
+    return false;
+  }
+}

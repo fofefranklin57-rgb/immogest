@@ -6681,6 +6681,7 @@ function loadData() {
 }
 
 var _saveDataTimer = null;
+var _syncSupabaseTimer = null;
 function saveData(immediate) {
   if (immediate) {
     _saveDataNow();
@@ -6699,8 +6700,27 @@ function _saveDataNow() {
     localStorage.setItem(storeKey, JSON.stringify(DATA));
     const el = document.getElementById('last-save');
     if (el) el.textContent = t('Sauvegarde') + ' ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    // Sync vers Supabase 3s après la dernière modif
+    if (SESSION && navigator.onLine) {
+      clearTimeout(_syncSupabaseTimer);
+      _syncSupabaseTimer = setTimeout(function() {
+        syncAllToSupabase().then(function(ok) {
+          if (!ok) showToast('⚠️ Sauvegarde cloud échouée — données locales conservées', 'orange');
+        });
+      }, 3000);
+    }
   } catch(e) { console.error('saveData:', e); }
 }
+
+// Sync automatique au retour en ligne
+window.addEventListener('online', function() {
+  if (!SESSION) return;
+  showToast('Connexion rétablie — synchronisation...', 'blue');
+  syncAllToSupabase().then(function(ok) {
+    if (ok) showToast('Données synchronisées ✓', 'green');
+    else    showToast('⚠️ Synchronisation partielle — réessayez', 'orange');
+  });
+});
 
 // ── Wrapper saveData + Supabase pour locataires ──
 async function saveLocataireAndSupabase(l) {
