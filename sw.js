@@ -1,8 +1,20 @@
-// ImmoGest Service Worker — DEPLOY20
-const CACHE_NAME = 'immogest-v20';
+// ImmoGest Service Worker — DEPLOY21
+const CACHE_NAME = 'immogest-v21';
 const ASSETS = [
   '/',
-  '/index.html'
+  '/index.html',
+  '/app.css',
+  '/js/app.js',
+  '/js/supabase.js',
+  '/js/i18n.js',
+  '/js/monetisation.js',
+  '/js/onesignal.js',
+  '/js/portail-locataire.js',
+  '/js/push-module.js',
+  '/js/ads.js',
+  '/js/ai-service.js',
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
 // Installation — mise en cache des assets
