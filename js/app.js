@@ -4034,13 +4034,8 @@ async function genDocxPlainte(locId) {
 // ============================================================
 const AUTH_KEY = 'immogest_auth';
 
-// Default users
-const DEFAULT_USERS = [
-  // Individuel — admin uniquement (proprios et locataires créés dynamiquement)
-  { id:'ind1', version:'individuel', role:'admin', nom:'Administrateur', password:'8237a8d86b7038877840cd600b135f4edc8966be05cf3ba12727535f2670c058', immeubles:[], customPerms:{} },
-  // Entreprise — compte admin uniquement (propriétaires et locataires créés par l'admin)
-  { id:'adm1', version:'entreprise', role:'admin', nom:'Administrateur', username:'admin', password:'b8b8eb83374c0bf3b1c3224159f6119dbfff1b7ed6dfecdd80d4e8a895790a34', immeubles:[], pin:null, customPerms:{} },
-];
+// Système multi-tenant actif — plus d'utilisateurs par défaut hardcodés
+const DEFAULT_USERS = [];
 
 let USERS = [];
 let SESSION = null; // { userId, role, version, nom, immeubles, locId }
@@ -4934,11 +4929,11 @@ function reinitPINLocataire(locId) {
 function reinitMdpUser(userId) {
   const u = USERS.find(x => x.id === userId);
   if (!u) return;
-  if (!confirm('Réinitialiser le mot de passe de ' + u.nom + ' à "immo1234" ?')) return;
-  u.password = '47029b1d74defbf012c3357fb79ec40ba6c3ec78ebfe874a47f1aab7cd1d5ae7'; // SHA-256('immo1234')
+  if (!confirm('Réinitialiser le mot de passe de ' + u.nom + ' ? Il devra en définir un nouveau à la prochaine connexion.')) return;
+  u.password = null;
   u.mustChangePassword = true;
   saveUsers();
-  showToast('Mot de passe réinitialisé → immo1234 ✓ (changement requis au prochain login)', 'green');
+  showToast('Mot de passe réinitialisé — l\'utilisateur doit en créer un nouveau ✓', 'green');
   renderUtilisateurs();
 }
 
@@ -9360,16 +9355,11 @@ async function loginProprietaire() {
   if (!telVal) { errEl.textContent = 'Veuillez entrer votre numéro de téléphone'; errEl.style.display = 'block'; return; }
   if (!pwdVal) { errEl.textContent = 'Veuillez entrer votre mot de passe'; errEl.style.display = 'block'; return; }
   var hash = await _hashPwd(pwdVal);
-  // Aussi accepter les 4 derniers chiffres du tel comme mot de passe par défaut
-  var tel4Hash = await _hashPwd(telVal.replace(/[^0-9]/g,'').slice(-4));
   var user = USERS.find(function(u) {
     if (u.role !== 'proprietaire') return false;
     if (!(u.version === 'entreprise' || u.version === 'individuel')) return false;
     if (!u.tel || u.tel.replace(/[^0-9]/g,'') !== telVal.replace(/[^0-9]/g,'')) return false;
-    if (_isHashed(u.password)) return u.password === hash;
-    // Clair : accepter mot de passe exact OU 4 derniers chiffres tel
-    var tel4 = u.tel.replace(/[^0-9]/g,'').slice(-4);
-    return u.password === pwdVal || (tel4.length === 4 && u.password === tel4 && pwdVal === tel4);
+    return u.password === hash;
   });
   if (!user) { _bfFail(errEl, 'Numéro ou mot de passe incorrect'); return; }
   if (user.actif === false) { errEl.textContent = 'Compte suspendu.'; errEl.style.display = 'block'; return; }
