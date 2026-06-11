@@ -1,19 +1,32 @@
 // ── ImmoGest Ads — Monetag ────────────────────────────────────────
 // Locataires    : bannière discrète fixe en bas — TOUJOURS (revenu garanti)
-// Plan gratuit  : Monetag complet (In-Page Push + bannière)
+// Plan gratuit  : In-Page Push + Vignette Banner
 // Plan payant   : zéro pub
 // ─────────────────────────────────────────────────────────────────
 
 (function() {
 
-  var _monetagLoaded = false;
+  var _inPageLoaded  = false;
+  var _vignetteLoaded = false;
 
-  function loadMonetag() {
-    if (_monetagLoaded) return;
-    _monetagLoaded = true;
+  // In-Page Push (zone 11087888)
+  function loadInPagePush() {
+    if (_inPageLoaded) return;
+    _inPageLoaded = true;
     var s = document.createElement('script');
     s.dataset.zone = '11087888';
     s.src = 'https://nap5k.com/tag.min.js';
+    s.async = true;
+    document.body.appendChild(s);
+  }
+
+  // Vignette Banner (zone 11135220) — 65% CPM plus élevé, non intrusif
+  function loadVignette() {
+    if (_vignetteLoaded) return;
+    _vignetteLoaded = true;
+    var s = document.createElement('script');
+    s.dataset.zone = '11135220';
+    s.src = 'https://n6wxm.com/vignette.min.js';
     s.async = true;
     document.body.appendChild(s);
   }
@@ -35,7 +48,6 @@
     slot.style.cssText = 'width:320px;height:50px;overflow:hidden;';
     bar.appendChild(slot);
 
-    // Bouton fermer discret
     var closeBtn = document.createElement('button');
     closeBtn.innerHTML = '✕';
     closeBtn.title = 'Fermer';
@@ -48,7 +60,7 @@
     ].join(';');
     closeBtn.onclick = function() {
       bar.style.display = 'none';
-      // Réafficher après 5 min pour les locataires — revenu garanti
+      // Réafficher après 5 min pour les locataires
       if (window._adsRole === 'locataire' || window._adsRole === 'proprietaire') {
         setTimeout(function() { bar.style.display = 'flex'; }, 5 * 60 * 1000);
       }
@@ -56,7 +68,6 @@
     bar.appendChild(closeBtn);
     document.body.appendChild(bar);
 
-    // Marge bas de page pour ne pas masquer le contenu
     var shell = document.getElementById('app-shell');
     if (shell) shell.style.paddingBottom = '56px';
   }
@@ -77,16 +88,17 @@
     window._adsRole = role;
 
     if (role === 'locataire' || role === 'proprietaire') {
-      // Locataires / propriétaires : bannière discrète toujours présente
+      // Locataires/propriétaires : bannière discrète + In-Page Push toujours
       injectDiscreteBanner();
-      loadMonetag();
+      loadInPagePush();
       return;
     }
 
     // Gestionnaires / admins
     if (plan === 'gratuit') {
-      // Plan gratuit : Monetag complet + bannière
-      loadMonetag();
+      // Plan gratuit : In-Page Push + Vignette Banner + bannière discrète
+      loadInPagePush();
+      loadVignette();
       injectDiscreteBanner();
     } else {
       // Plan payant : zéro pub
@@ -94,7 +106,7 @@
     }
   };
 
-  // ── Appelé quand le plan change (upgrade) ──
+  // ── Appelé après upgrade de plan ──
   window.refreshAds = function() {
     removeDiscreteBanner();
     window.initAds();
