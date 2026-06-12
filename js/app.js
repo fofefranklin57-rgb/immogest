@@ -523,7 +523,7 @@ function renderImmeuble(iid) {
           </td>
           <td style="white-space:nowrap;">
             <div class="action-menu">
-              <button class="action-menu-btn" onclick="toggleActionMenu(this)" data-tooltip="Actions">⋯</button>
+              <button class="action-menu-btn" onclick="toggleActionMenu(this,event)" data-tooltip="Actions">⋯</button>
               <div class="action-dropdown">
                 ${can('canRecordPayment')?`<div class="action-dropdown-item" onclick="openModalPaiement(${iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 Paiement</div>`:''}
                 ${can('canEditLocataires')?`<div class="action-dropdown-item" onclick="editLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📝 Modifier</div>`:''}
@@ -865,7 +865,7 @@ function renderRelances() {
           <td style="font-size:11px;color:var(--text3);max-width:130px;">${l.obs||'–'}</td>
           <td style="white-space:nowrap;position:relative;">
             <div class="action-menu">
-              <button class="action-menu-btn" onclick="toggleActionMenu(this)" style="font-size:18px;padding:4px 10px;" data-tooltip="Actions">⋯</button>
+              <button class="action-menu-btn" onclick="toggleActionMenu(this,event)" style="font-size:18px;padding:4px 10px;" data-tooltip="Actions">⋯</button>
               <div class="action-dropdown">
                 <div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 Paiement</div>
                 <div class="action-dropdown-item" onclick="previewMiseEnDemeure(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📄 ${t('Lettre')}</div>
@@ -917,7 +917,7 @@ function renderRelances() {
           </td>
           <td style="white-space:nowrap;position:relative;">
             <div class="action-menu">
-              <button class="action-menu-btn" onclick="toggleActionMenu(this)" style="font-size:18px;padding:4px 10px;" data-tooltip="Actions">⋯</button>
+              <button class="action-menu-btn" onclick="toggleActionMenu(this,event)" style="font-size:18px;padding:4px 10px;" data-tooltip="Actions">⋯</button>
               <div class="action-dropdown">
                 <div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 Paiement</div>
                 <div class="action-dropdown-item" onclick="previewMiseEnDemeure(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📄 ${t('Lettre')}</div>
@@ -1307,7 +1307,7 @@ function ouvrirRapportImmeuble(iid) {
           <td class="td-amount ${l.reste>0?'red':'green'}" style="font-size:11px;">${fmtReste(l)}</td>
           <td style="white-space:nowrap;">
             <div class="action-menu">
-              <button class="action-menu-btn" onclick="toggleActionMenu(this)" data-tooltip="Actions">⋯</button>
+              <button class="action-menu-btn" onclick="toggleActionMenu(this,event)" data-tooltip="Actions">⋯</button>
               <div class="action-dropdown">
                 ${can('canRecordPayment')?`<div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 ${t('Paiement')}</div>`:''}
                 ${can('canEditLocataires')?`<div class="action-dropdown-item" onclick="editLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📝 ${t('Modifier')}</div>`:''}
@@ -6811,7 +6811,7 @@ function renderLocTable(iid) {
       <td class="td-amount ${l.reste>0?'red':l.reste<0?'':'green'}" style="font-size:11px;">${l.reste>0?fmtReste(l):l.reste<0?fmtReste(l):'–'}</td>
       <td style="white-space:nowrap;">
         <div class="action-menu">
-          <button class="action-menu-btn" onclick="toggleActionMenu(this)" data-tooltip="Actions">⋯</button>
+          <button class="action-menu-btn" onclick="toggleActionMenu(this,event)" data-tooltip="Actions">⋯</button>
           <div class="action-dropdown">
             ${can('canRecordPayment')?`<div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 ${t('Paiement')}</div>`:''}
             ${can('canEditLocataires')?`<div class="action-dropdown-item" onclick="editLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📝 ${t('Modifier')}</div>`:''}
@@ -7390,6 +7390,9 @@ function renderImmeublesConfig() {
     const actionsImm = canEdit
       ? '<div style="position:relative;display:inline-block;"><button class="btn btn-ghost btn-sm" onclick="toggleImmDropdown('+im.id+',event)" style="padding:4px 10px;font-size:16px;line-height:1;">⋮</button>'
         + '<div id="ddm-imm-'+im.id+'" style="display:none;position:absolute;right:0;top:100%;z-index:9999;background:var(--bg2);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:150px;overflow:hidden;">'
+        + '<div class="action-dropdown-item" onclick="navigate(\'locataires\','+im.id+');closeImmDropdown()">👥 Voir locataires</div>'
+        + '<div class="action-dropdown-item" onclick="navigate(\'rapport\');closeImmDropdown()">📊 Rapport</div>'
+        + '<div class="action-dropdown-sep"></div>'
         + '<div class="action-dropdown-item" onclick="editImmeuble('+im.id+');closeImmDropdown()">✏️ Modifier</div>'
         + '<div class="action-dropdown-item danger" style="color:var(--red);" onclick="supprimerImmeuble('+im.id+');closeImmDropdown()">🗑️ Supprimer</div>'
         + '</div></div>'
@@ -9995,12 +9998,12 @@ function _localFallback(query) {
   return `📊 <strong>Résumé ImmoGest</strong><br>• ${actifs.length} locataires | Recouvrement : <strong>${taux}%</strong><br>• Impayés : <strong>${fmtShort(totalImp)} FCFA</strong> sur ${nbImp} loc.`;
 }
 
-function toggleActionMenu(btn) {
-  document.querySelectorAll('.action-dropdown.open').forEach(d => {
-    if (d !== btn.nextElementSibling) d.classList.remove('open');
-  });
-  btn.nextElementSibling.classList.toggle('open');
-  event.stopPropagation();
+function toggleActionMenu(btn, e) {
+  if (e) e.stopPropagation();
+  const dd = btn.nextElementSibling;
+  const wasOpen = dd && dd.classList.contains('open');
+  document.querySelectorAll('.action-dropdown.open').forEach(d => d.classList.remove('open'));
+  if (!wasOpen && dd) dd.classList.add('open');
 }
 
 function _closeDropdowns() {
