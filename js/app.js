@@ -11449,36 +11449,102 @@ function showWelcomeScreen() {
   var spaces = _getStoredSpaces();
   var as = document.getElementById('auth-screen');
   if (!as) return;
-  as.style.display = 'flex';
-  var inner = as.querySelector('.auth-inner') || as;
+  as.style.cssText = 'display:block;position:fixed;inset:0;width:100%;min-height:100vh;overflow:hidden;z-index:1000;font-family:\'Segoe UI\',system-ui,sans-serif;';
+
   var backBtn = spaces.length > 0
-    ? '<button onclick="showSpaceSelector()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;margin-bottom:16px;">← Mes espaces</button>'
+    ? '<button onclick="showSpaceSelector()" style="position:absolute;top:18px;left:20px;z-index:10;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.85);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;backdrop-filter:blur(4px);">← Mes espaces</button>'
     : '';
-  inner.innerHTML = '<div style="max-width:480px;width:100%;padding:24px 16px;margin:auto;">'
-    + backBtn
-    + '<div style="text-align:center;margin-bottom:32px;">'
-    + '<div style="font-size:36px;margin-bottom:8px;">🏢</div>'
-    + '<div style="font-size:22px;font-weight:800;color:var(--text);">ImmoGest</div>'
-    + '<div style="font-size:13px;color:var(--text3);margin-top:4px;">Gestion immobilière simplifiée</div>'
-    + '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:14px;">'
-    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:var(--surface2,#f1f5f9);border-radius:20px;font-size:10px;font-weight:600;color:var(--text2,#475569);">✅ Conforme droit OHADA</span>'
-    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:var(--surface2,#f1f5f9);border-radius:20px;font-size:10px;font-weight:600;color:var(--text2,#475569);">📶 Fonctionne hors-ligne</span>'
-    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:var(--surface2,#f1f5f9);border-radius:20px;font-size:10px;font-weight:600;color:var(--text2,#475569);">📱 MTN MoMo &amp; Orange Money</span>'
-    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:var(--surface2,#f1f5f9);border-radius:20px;font-size:10px;font-weight:600;color:var(--text2,#475569);">🤖 Assistant IA intégré</span>'
+
+  as.innerHTML = ''
+    // Slideshow immeubles
+    + '<div id="wlc-slides" style="position:absolute;inset:0;z-index:0;">'
+    + '<div class="aslide" style="position:absolute;inset:0;opacity:1;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1400&q=80\') center/cover no-repeat;"></div>'
+    + '<div class="aslide" style="position:absolute;inset:0;opacity:0;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1400&q=80\') center/cover no-repeat;"></div>'
+    + '<div class="aslide" style="position:absolute;inset:0;opacity:0;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1460317442991-0ec209397118?w=1400&q=80\') center/cover no-repeat;"></div>'
+    + '<div class="aslide" style="position:absolute;inset:0;opacity:0;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1400&q=80\') center/cover no-repeat;"></div>'
     + '</div>'
+    // Overlay gradient bleu sombre
+    + '<div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg,rgba(5,15,30,0.90) 0%,rgba(10,30,60,0.80) 50%,rgba(5,15,30,0.90) 100%);"></div>'
+    // Bouton retour
+    + backBtn
+    // Layout principal
+    + '<div style="position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 6%;gap:60px;flex-wrap:wrap;">'
+
+    // ── Panneau gauche : Branding ──
+    + '<div style="flex:1;min-width:260px;max-width:480px;color:#fff;">'
+    + '<div style="font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:16px;">Gestion Immobilière Professionnelle</div>'
+    + '<h1 style="font-size:clamp(38px,6vw,60px);font-weight:900;line-height:1.0;margin:0 0 16px;letter-spacing:-2px;">ImmoGest</h1>'
+    + '<p style="font-size:15px;line-height:1.8;color:rgba(255,255,255,0.65);margin:0 0 28px;max-width:360px;">La plateforme complète de gestion locative pour les propriétaires, cabinets et locataires d\'Afrique centrale.</p>'
+    // Badges
+    + '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px;">'
+    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">✅ Conforme OHADA</span>'
+    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">📶 Hors-ligne</span>'
+    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">📱 MTN MoMo & OM</span>'
+    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">✍️ Signature électronique</span>'
+    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">🤖 IA intégrée</span>'
+    + '</div>'
+    // Stats
+    + '<div style="display:flex;gap:32px;">'
+    + '<div><div style="font-size:24px;font-weight:900;color:#4f8ef7;">100%</div><div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;text-transform:uppercase;letter-spacing:1px;">Intégré</div></div>'
+    + '<div><div style="font-size:24px;font-weight:900;color:#4f8ef7;">100%</div><div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;text-transform:uppercase;letter-spacing:1px;">Collaboratif</div></div>'
+    + '<div><div style="font-size:24px;font-weight:900;color:#4f8ef7;">100%</div><div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;text-transform:uppercase;letter-spacing:1px;">Offline</div></div>'
+    + '</div>'
+    + '</div>'
+
+    // ── Panneau droit : Boutons d'action ──
+    + '<div style="flex:0 0 auto;width:100%;max-width:380px;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:32px 28px;box-shadow:0 20px 60px rgba(0,0,0,0.4);">'
+    + '<div style="text-align:center;margin-bottom:28px;">'
+    + '<div style="width:52px;height:52px;background:rgba(79,142,247,0.2);border:1.5px solid rgba(79,142,247,0.5);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:26px;">🏢</div>'
+    + '<div style="font-size:17px;font-weight:800;color:#e8f0fe;letter-spacing:-.3px;">Bienvenue sur ImmoGest</div>'
+    + '<div style="font-size:12px;color:rgba(232,240,254,0.5);margin-top:6px;">Comment souhaitez-vous continuer ?</div>'
     + '</div>'
     + '<div style="display:flex;flex-direction:column;gap:12px;">'
-    + '<button class="btn btn-primary" style="padding:16px;font-size:15px;border-radius:12px;" onclick="showModeSelection()">'
-    + '🏠 Créer mon espace'
-    + '<div style="font-size:11px;font-weight:400;margin-top:2px;opacity:0.85;">Gestionnaire ou propriétaire — nouvel espace</div>'
+    // Bouton 1 — Créer espace
+    + '<button onclick="showModeSelection()" style="display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px;border-radius:12px;background:linear-gradient(135deg,#1a6ec7,#0e4fa0);border:1px solid rgba(255,255,255,0.15);color:#fff;cursor:pointer;width:100%;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform=\'translateY(-1px)\';this.style.boxShadow=\'0 6px 20px rgba(79,142,247,0.4)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
+    + '<span style="font-size:24px;flex-shrink:0;">🏠</span>'
+    + '<span><span style="display:block;font-weight:700;font-size:13px;">Créer mon espace</span><span style="display:block;font-size:11px;opacity:0.65;margin-top:2px;">Gestionnaire ou propriétaire — nouvel espace</span></span>'
     + '</button>'
-    + '<button class="btn btn-ghost" style="padding:16px;font-size:15px;border-radius:12px;border:1px solid var(--border);" onclick="showJoinScreen()">'
-    + '🔗 Rejoindre un espace'
-    + '<div style="font-size:11px;font-weight:400;margin-top:2px;opacity:0.7;">Locataire ou employé — entrer un code d\'invitation</div>'
+    // Bouton 2 — Rejoindre
+    + '<button onclick="showJoinScreen()" style="display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);color:#e8f0fe;cursor:pointer;width:100%;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.background=\'rgba(255,255,255,0.1)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.06)\'">'
+    + '<span style="font-size:24px;flex-shrink:0;">🔗</span>'
+    + '<span><span style="display:block;font-weight:700;font-size:13px;">Rejoindre un espace</span><span style="display:block;font-size:11px;opacity:0.55;margin-top:2px;">Locataire ou employé — code d\'invitation</span></span>'
     + '</button>'
-    + (spaces.length === 0 ? '<button class="btn btn-ghost" style="padding:12px;font-size:13px;border-radius:12px;" onclick="showLoginTenantScreen()">🔑 Se connecter à un espace existant</button>' : '')
+    // Bouton 3 — Se connecter
+    + (spaces.length === 0
+      ? '<button onclick="showLoginTenantScreen()" style="padding:13px;border-radius:10px;background:none;border:1px solid rgba(255,255,255,0.12);color:rgba(232,240,254,0.6);cursor:pointer;width:100%;font-size:13px;font-weight:600;transition:color 0.15s;" onmouseover="this.style.color=\'#e8f0fe\';this.style.borderColor=\'rgba(255,255,255,0.25)\'" onmouseout="this.style.color=\'rgba(232,240,254,0.6)\';this.style.borderColor=\'rgba(255,255,255,0.12)\'">🔑 Se connecter à un espace existant</button>'
+      : '')
     + '</div>'
-    + '</div>';
+    // Marketplace link
+    + '<div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1);">'
+    + '<a onclick="showWelcomeMarketplace()" style="font-size:12px;color:rgba(79,142,247,0.9);cursor:pointer;text-decoration:none;font-weight:600;">🏘️ Parcourir la marketplace de location →</a>'
+    + '</div>'
+    + '</div>'
+
+    + '</div>'; // fin layout
+
+  // Lancer le slideshow
+  _startWelcomeSlideshow();
+}
+
+function _startWelcomeSlideshow() {
+  var slides = document.querySelectorAll('#wlc-slides .aslide');
+  if (!slides.length) return;
+  var current = 0;
+  clearInterval(window._wlcSlideTimer);
+  window._wlcSlideTimer = setInterval(function() {
+    slides[current].style.opacity = '0';
+    current = (current + 1) % slides.length;
+    slides[current].style.opacity = '1';
+  }, 4000);
+}
+
+function showWelcomeMarketplace() {
+  // Affiche la marketplace sans connexion (lecture seule)
+  var as = document.getElementById('auth-screen');
+  if (as) as.style.display = 'none';
+  var shell = document.getElementById('app-shell');
+  if (shell) shell.style.display = 'flex';
+  navigate('marketplace');
 }
 
 // ── Choix du mode (Perso / Cabinet) ─────────────────────────────
