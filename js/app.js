@@ -1491,6 +1491,52 @@ function ouvrirRapportAnnuelImmeuble(iid) {
     </div>
   </div>`;
 
+  // ── Section Charges & Résultat net ──────────────────────────
+  const charges = (DATA.charges || []).filter(c => c.iid === iid && c.annee === annee);
+  const totalCharges = charges.reduce((s, c) => s + c.montant, 0);
+  const totalEncaisseGlobal = DATA.paiements.filter(p =>
+    locs.some(l => l.id === p.locId) &&
+    (p.anneeC === annee || p.annee === annee || (p.date && new Date(p.date).getFullYear() === annee))
+  ).reduce((s, p) => s + p.montant, 0);
+  const resultatNet = totalEncaisseGlobal - totalCharges;
+
+  // Grouper charges par catégorie
+  const _CATS = { entretien:'🔧 Entretien', reparation:'🛠️ Réparations', taxes:'🏛️ Taxes/Impôts',
+    honoraires:'👔 Honoraires', assurance:'🛡️ Assurances', charges_communes:'💡 Charges communes', divers:'📦 Divers' };
+  const bycat = {};
+  charges.forEach(c => { if (!bycat[c.categorie]) bycat[c.categorie] = 0; bycat[c.categorie] += c.montant; });
+
+  html += `
+  <div class="card" style="margin-top:16px;">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <div class="card-title">💸 ${t('Charges')} ${annee}</div>
+      <button class="btn btn-sm" onclick="ouvrirModalCharges(${iid},${annee})" style="font-size:12px;">➕ Gérer les charges</button>
+    </div>
+    ${charges.length === 0 ? `<div style="color:var(--text3);font-size:13px;padding:8px 0;">Aucune charge enregistrée — <a href="#" onclick="ouvrirModalCharges(${iid},${annee});return false;" style="color:var(--accent);">Ajouter</a></div>` : `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:12px;">
+      ${Object.entries(bycat).map(([cat, total]) => `
+        <div style="background:var(--bg2);border-radius:8px;padding:8px;">
+          <div style="font-size:11px;color:var(--text3);">${_CATS[cat]||cat}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--red);">${fmtShort(total)}</div>
+        </div>`).join('')}
+    </div>`}
+    <!-- Résultat net -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding-top:10px;border-top:1px solid var(--border);">
+      <div style="background:#f0fdf4;border-radius:8px;padding:10px;">
+        <div style="font-size:10px;color:var(--text3);">Recettes encaissées</div>
+        <div style="font-size:14px;font-weight:700;color:var(--green);">${fmtShort(totalEncaisseGlobal)}</div>
+      </div>
+      <div style="background:#fdf0f0;border-radius:8px;padding:10px;">
+        <div style="font-size:10px;color:var(--text3);">Total charges</div>
+        <div style="font-size:14px;font-weight:700;color:var(--red);">${fmtShort(totalCharges)}</div>
+      </div>
+      <div style="background:${resultatNet>=0?'#f0fdf4':'#fdf0f0'};border-radius:8px;padding:10px;border:2px solid ${resultatNet>=0?'var(--green)':'var(--red)'};">
+        <div style="font-size:10px;color:var(--text3);font-weight:700;">Résultat net</div>
+        <div style="font-size:16px;font-weight:700;color:${resultatNet>=0?'var(--green)':'var(--red)'};">${resultatNet>=0?'+':''}${fmtShort(resultatNet)}</div>
+      </div>
+    </div>
+  </div>`;
+
   html = `<div style="margin-bottom:12px;">
     <button class="btn btn-ghost" data-tooltip="Retour à la liste" onclick="renderRapportAnnuelPage()" style="display:flex;align-items:center;gap:6px;">
       ← ${t('Tous les immeubles')}
@@ -1501,6 +1547,102 @@ function ouvrirRapportAnnuelImmeuble(iid) {
   document.getElementById('topbar-main-btn').style.display = 'flex';
   document.getElementById('topbar-main-btn').textContent = t('📊 Télécharger DOCX');
   window._rapAnnIid = iid;
+}
+
+// ── Charges ───────────────────────────────────────────────────
+const _CHARGES_CATS = {
+  entretien: '🔧 Entretien courant',
+  reparation: '🛠️ Réparations',
+  taxes: '🏛️ Taxes / Impôts',
+  honoraires: '👔 Honoraires de gestion',
+  assurance: '🛡️ Assurances',
+  charges_communes: '💡 Charges communes',
+  divers: '📦 Frais divers'
+};
+
+function ouvrirModalCharges(iid, annee) {
+  if (!DATA.charges) DATA.charges = [];
+  const im = DATA.immeubles.find(i => i.id === iid);
+  document.getElementById('ch-iid').value = iid;
+  document.getElementById('ch-annee').value = annee;
+  document.getElementById('modal-charges-title').textContent = (im ? im.nom : '') + ' · ' + annee;
+  // Remplir select mois
+  const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  document.getElementById('ch-mois').innerHTML = MOIS.map((m, i) =>
+    `<option value="${i}">${m}</option>`
+  ).join('');
+  document.getElementById('ch-mois').value = new Date().getMonth();
+  document.getElementById('ch-montant').value = '';
+  document.getElementById('ch-libelle').value = '';
+  _renderChargeListe(iid, annee);
+  document.getElementById('modal-charges').classList.add('open');
+}
+
+function saveCharge() {
+  const iid = parseInt(document.getElementById('ch-iid').value);
+  const annee = parseInt(document.getElementById('ch-annee').value);
+  const montant = parseInt(document.getElementById('ch-montant').value) || 0;
+  const categorie = document.getElementById('ch-cat').value;
+  const mois = parseInt(document.getElementById('ch-mois').value);
+  const libelle = document.getElementById('ch-libelle').value.trim();
+  if (!montant) { showToast('Montant obligatoire', 'red'); return; }
+  if (!DATA.charges) DATA.charges = [];
+  DATA.charges.push({
+    id: Date.now(), iid, annee, mois, categorie,
+    libelle: libelle || _CHARGES_CATS[categorie],
+    montant
+  });
+  saveData();
+  document.getElementById('ch-montant').value = '';
+  document.getElementById('ch-libelle').value = '';
+  _renderChargeListe(iid, annee);
+  showToast('Charge enregistrée ✓', 'green');
+}
+
+function supprimerCharge(id) {
+  if (!DATA.charges) return;
+  DATA.charges = DATA.charges.filter(c => c.id !== id);
+  saveData();
+  const iid = parseInt(document.getElementById('ch-iid').value);
+  const annee = parseInt(document.getElementById('ch-annee').value);
+  _renderChargeListe(iid, annee);
+}
+
+function _renderChargeListe(iid, annee) {
+  const charges = (DATA.charges || []).filter(c => c.iid === iid && c.annee === annee)
+    .sort((a, b) => a.mois - b.mois);
+  const MOIS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  const el = document.getElementById('ch-liste');
+  if (!el) return;
+  if (charges.length === 0) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px;">Aucune charge enregistrée</div>';
+    return;
+  }
+  const total = charges.reduce((s, c) => s + c.montant, 0);
+  el.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="background:var(--bg2);">
+        <th style="padding:6px 8px;text-align:left;">Mois</th>
+        <th style="padding:6px 8px;text-align:left;">Catégorie</th>
+        <th style="padding:6px 8px;text-align:left;">Libellé</th>
+        <th style="padding:6px 8px;text-align:right;">Montant</th>
+        <th style="padding:6px 8px;"></th>
+      </tr></thead>
+      <tbody>
+        ${charges.map(c => `<tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:6px 8px;color:var(--text3);">${MOIS[c.mois]}</td>
+          <td style="padding:6px 8px;">${_CHARGES_CATS[c.categorie]||c.categorie}</td>
+          <td style="padding:6px 8px;color:var(--text2);">${c.libelle||''}</td>
+          <td style="padding:6px 8px;text-align:right;font-weight:700;color:var(--red);">${Number(c.montant).toLocaleString('fr-FR')}</td>
+          <td style="padding:6px 8px;"><button class="btn btn-danger btn-sm" style="padding:2px 8px;" onclick="supprimerCharge(${c.id})">✕</button></td>
+        </tr>`).join('')}
+      </tbody>
+      <tfoot><tr style="background:var(--bg2);font-weight:700;">
+        <td colspan="3" style="padding:6px 8px;">Total charges ${annee}</td>
+        <td style="padding:6px 8px;text-align:right;color:var(--red);">${Number(total).toLocaleString('fr-FR')} FCFA</td>
+        <td></td>
+      </tfoot>
+    </table>`;
 }
 
 
@@ -3416,9 +3558,63 @@ async function genDocxRapportAnnuel() {
       new Paragraph({spacing:{after:300}}),
       new Paragraph({
         children:[new TextRun({text:`✓ = Payé complet   % = Partiel   – = Non payé`, size:16, color:GRAY, italics:true, font:'Calibri'})],
-        spacing:{after:600}
+        spacing:{after:400}
       }),
     ];
+
+    // ── Section Charges & Résultat net dans le DOCX ──────────
+    const chargesImm = (DATA.charges || []).filter(c => c.iid === imm.id && c.annee === annee)
+      .sort((a, b) => a.mois - b.mois);
+    const totalChargesDocx = chargesImm.reduce((s, c) => s + c.montant, 0);
+    const resultatNetDocx  = totalEncaisse - totalChargesDocx;
+    const _CATS_DOCX = { entretien:'Entretien courant', reparation:'Réparations', taxes:'Taxes/Impôts',
+      honoraires:'Honoraires', assurance:'Assurances', charges_communes:'Charges communes', divers:'Frais divers' };
+
+    children.push(
+      secTitle('CHARGES & RÉSULTAT NET'),
+      new Paragraph({spacing:{after:80}}),
+    );
+
+    if (chargesImm.length > 0) {
+      children.push(new Table({
+        width:{size:9506,type:WidthType.DXA}, columnWidths:[1500,3000,3006,2000],
+        rows:[
+          new TableRow({children:[
+            mkCell('Mois',{bg:BLUE_L,bold:true,color:BLUE,size:16}),
+            mkCell('Catégorie',{bg:BLUE_L,bold:true,color:BLUE,size:16}),
+            mkCell('Libellé',{bg:BLUE_L,bold:true,color:BLUE,size:16}),
+            mkCell('Montant (FCFA)',{bg:BLUE_L,bold:true,color:BLUE,size:16,align:'right'}),
+          ]}),
+          ...chargesImm.map((c, i) => new TableRow({children:[
+            mkCell(MNOMS_L[c.mois],{bg:i%2===0?'FFFFFF':'F9FAFB',size:16}),
+            mkCell(_CATS_DOCX[c.categorie]||c.categorie,{bg:i%2===0?'FFFFFF':'F9FAFB',size:16}),
+            mkCell(c.libelle||'',{bg:i%2===0?'FFFFFF':'F9FAFB',size:16}),
+            mkCell(fmtN(c.montant),{bg:i%2===0?'FFFFFF':'F9FAFB',size:16,align:'right',color:RED}),
+          ]})),
+          new TableRow({children:[
+            mkCell('TOTAL CHARGES',{bg:'FDF0F0',bold:true,size:16}),
+            mkCell('',{bg:'FDF0F0'}), mkCell('',{bg:'FDF0F0'}),
+            mkCell(fmtN(totalChargesDocx)+' FCFA',{bg:'FDF0F0',bold:true,size:16,align:'right',color:RED}),
+          ]}),
+        ]
+      }), new Paragraph({spacing:{after:200}}));
+    } else {
+      children.push(new Paragraph({
+        children:[new TextRun({text:'Aucune charge enregistrée pour cette année.',size:16,color:GRAY,italics:true,font:'Calibri'})],
+        spacing:{after:200}
+      }));
+    }
+
+    // KPI résultat net
+    children.push(new Table({
+      width:{size:9506,type:WidthType.DXA}, columnWidths:[3168,3169,3169],
+      rows:[new TableRow({children:[
+        mkCell(`Recettes encaissées\n${fmtN(totalEncaisse)} FCFA`,{bg:'F0FFF4',bold:true,color:GREEN,size:18}),
+        mkCell(`Total charges\n${fmtN(totalChargesDocx)} FCFA`,{bg:'FDF0F0',bold:true,color:RED,size:18}),
+        mkCell(`Résultat net\n${resultatNetDocx>=0?'+':''}${fmtN(resultatNetDocx)} FCFA`,
+          {bg:resultatNetDocx>=0?'F0FFF4':'FDF0F0',bold:true,color:resultatNetDocx>=0?GREEN:RED,size:20}),
+      ]})]
+    }), new Paragraph({spacing:{after:600}}));
 
     sections.push({
       properties:{page:{size:{width:21006,height:16838},margin:{top:1000,right:800,bottom:1000,left:800}},orientation:'landscape'},
@@ -6671,6 +6867,7 @@ function _saveDataNow() {
     if (!DATA.declarations)       DATA.declarations = [];
     if (!DATA.archives)           DATA.archives = [];
     if (!DATA.archivesPermanentes) DATA.archivesPermanentes = [];
+    if (!DATA.charges)            DATA.charges = [];
     DATA._version = DATA_VERSION;
     const storeKey = SESSION && SESSION.version === 'individuel' ? STORE_KEY_IND : 'immogest_data';
     localStorage.setItem(storeKey, JSON.stringify(DATA));
