@@ -3,44 +3,675 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🏘️ Marketplace — ImmoGest | Locations Cameroun</title>
-<meta name="description" content="Trouvez votre appartement, maison, studio, hôtel ou local commercial au Cameroun. Annonces vérifiées, contact direct WhatsApp.">
-<!-- Open Graph -->
+<title>🏘️ Marketplace Immobilière — Locations Cameroun | ImmoGest</title>
+<meta name="description" content="Trouvez votre appartement, maison, studio, hôtel meublé ou local commercial au Cameroun. Annonces vérifiées, contact direct WhatsApp. Yaoundé, Douala et toutes les villes.">
+<meta name="keywords" content="location appartement Cameroun, maison à louer Yaoundé, studio Douala, immeuble location, meublé Cameroun, local commercial, ImmoGest marketplace">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://immogest-34w.pages.dev/marche">
+
+<!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
 <meta property="og:type"         content="website">
 <meta property="og:site_name"    content="ImmoGest Marketplace">
-<meta property="og:title"        content="🏘️ Marketplace ImmoGest — Locations & Immobilier">
-<meta property="og:description"  content="Appartements, maisons, studios, hôtels, meublés, locaux commerciaux. Contact direct WhatsApp. Cameroun & Afrique centrale.">
+<meta property="og:title"        content="🏘️ Locations immobilières au Cameroun — ImmoGest">
+<meta property="og:description"  content="Appartements, maisons, studios, hôtels meublés, locaux commerciaux. Contact direct WhatsApp avec les propriétaires. Annonces vérifiées.">
 <meta property="og:image"        content="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200&h=630&fit=crop&q=80">
 <meta property="og:image:width"  content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:url"          content="https://immogest-34w.pages.dev/marche">
 <meta property="og:locale"       content="fr_FR">
 <meta name="twitter:card"        content="summary_large_image">
-<meta name="twitter:title"       content="🏘️ Marketplace ImmoGest">
-<meta name="twitter:description" content="Trouvez votre location au Cameroun — contact direct WhatsApp">
+<meta name="twitter:title"       content="🏘️ Locations immobilières Cameroun — ImmoGest">
+<meta name="twitter:description" content="Appartements, maisons, studios, hôtels. Contact direct WhatsApp.">
 <meta name="twitter:image"       content="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200&h=630&fit=crop&q=80">
-<script>
-  // Redirection immédiate vers l'app avec paramètre ?marche
-  var dest = '/?marche';
-  var annonceId = new URLSearchParams(window.location.search).get('annonce');
-  if (annonceId) dest = '/?annonce=' + annonceId;
-  window.location.replace(dest);
+
+<!-- Structured Data JSON-LD (Google Rich Results) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "ImmoGest Marketplace",
+  "url": "https://immogest-34w.pages.dev/marche",
+  "description": "Marketplace immobilière au Cameroun — locations appartements, maisons, studios, hôtels meublés, locaux commerciaux",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://immogest-34w.pages.dev/marche?ville={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  body { margin:0; font-family:'Segoe UI',sans-serif; background:linear-gradient(135deg,#05111e,#0a1e3c); color:#fff; display:flex; align-items:center; justify-content:center; min-height:100vh; }
-  .loader { text-align:center; }
-  .logo { font-size:48px; margin-bottom:16px; }
-  h1 { font-size:22px; font-weight:800; margin:0 0 8px; }
-  p { color:rgba(255,255,255,0.6); font-size:14px; margin:0 0 24px; }
-  a { color:#4f8ef7; font-size:13px; }
+:root {
+  --blue:#0E6AAF; --blue2:#1a6ec7; --text:#1e293b; --text2:#475569; --text3:#94a3b8;
+  --surface:#fff; --surface2:#f8fafc; --border:#e2e8f0; --green:#16a34a; --orange:#ea580c;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f1f5f9;color:var(--text);min-height:100vh;}
+
+/* HEADER */
+.header{background:linear-gradient(135deg,#05111e 0%,#0a1e3c 60%,#05111e 100%);position:relative;overflow:hidden;}
+.header-bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1400&q=60') center/cover no-repeat;opacity:.25;}
+.header-inner{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:28px 20px 32px;}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+.logo{font-size:22px;font-weight:900;color:#fff;text-decoration:none;letter-spacing:-.5px;}
+.logo span{color:#4f8ef7;}
+.header-cta{display:flex;gap:10px;}
+.btn-outline{padding:8px 16px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:rgba(255,255,255,0.8);background:none;cursor:pointer;font-size:13px;font-weight:600;text-decoration:none;}
+.btn-primary{padding:8px 16px;border:none;border-radius:8px;color:#fff;background:var(--blue2);cursor:pointer;font-size:13px;font-weight:700;text-decoration:none;}
+h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;margin-bottom:8px;}
+.header-sub{font-size:15px;color:rgba(255,255,255,0.6);margin-bottom:24px;}
+.badges{display:flex;flex-wrap:wrap;gap:8px;}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);}
+
+/* FILTERS */
+.filters{background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.filters-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.filter-input{padding:9px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fff;min-width:120px;outline:none;}
+.filter-input:focus{border-color:var(--blue);}
+.btn-search{padding:9px 20px;background:var(--blue2);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;}
+.btn-publish{padding:9px 16px;background:#16a34a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;margin-left:auto;}
+
+/* GRID */
+.main{max-width:1100px;margin:0 auto;padding:24px 20px;}
+.section-title{font-size:14px;font-weight:700;color:var(--text2);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+.card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);transition:transform .15s,box-shadow .15s;cursor:pointer;}
+.card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.12);}
+.card-img{height:180px;background:#e2e8f0 url() center/cover no-repeat;position:relative;}
+.card-img-placeholder{height:180px;background:linear-gradient(135deg,#e2e8f0,#cbd5e1);display:flex;align-items:center;justify-content:center;font-size:40px;color:#94a3b8;}
+.card-badges{position:absolute;top:10px;left:10px;display:flex;gap:6px;flex-wrap:wrap;}
+.badge-dispo{background:#16a34a;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;}
+.badge-type{background:rgba(0,0,0,0.5);color:#fff;font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;text-transform:capitalize;}
+.badge-verifie{background:#0e6aaf;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;}
+.card-body{padding:14px;}
+.card-title{font-size:14px;font-weight:700;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-loc{font-size:12px;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;gap:4px;}
+.card-price{font-size:18px;font-weight:900;color:var(--blue);margin-bottom:8px;}
+.card-price span{font-size:11px;font-weight:500;color:var(--text3);}
+.card-specs{display:flex;gap:12px;font-size:11px;color:var(--text2);margin-bottom:12px;}
+.card-actions{display:flex;gap:8px;}
+.btn-wa{flex:1;padding:9px;background:#25D366;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:5px;}
+.btn-detail{flex:1;padding:9px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;}
+.modal-box{background:#fff;border-radius:16px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;}
+.modal-header{padding:20px 20px 0;display:flex;justify-content:space-between;align-items:flex-start;}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);padding:0;}
+.modal-photos{height:260px;overflow-x:auto;display:flex;gap:8px;padding:16px 20px;}
+.modal-photo{height:100%;min-width:280px;border-radius:10px;object-fit:cover;background:#e2e8f0;}
+.modal-body{padding:16px 20px 20px;}
+.modal-price{font-size:28px;font-weight:900;color:var(--blue);margin-bottom:4px;}
+.modal-actions{display:flex;gap:10px;margin-top:20px;}
+.btn-wa-lg{flex:2;padding:14px;background:#25D366;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700;}
+.btn-share-lg{flex:1;padding:14px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;}
+.spec-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0;}
+.spec-item{background:var(--surface2);border-radius:8px;padding:10px 14px;}
+.spec-label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+.spec-val{font-size:14px;font-weight:700;}
+
+/* PUBLISH FORM */
+.form-section{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;}
+.form-title{font-size:15px;font-weight:800;margin-bottom:16px;}
+.form-row{margin-bottom:14px;}
+.form-label{display:block;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.form-input{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;}
+.form-input:focus{border-color:var(--blue);}
+.form-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.checkbox-row{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;}
+
+/* EMPTY / LOADING */
+.empty{text-align:center;padding:60px 20px;color:var(--text3);}
+.empty-icon{font-size:48px;margin-bottom:12px;}
+.loading{text-align:center;padding:60px 20px;}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* SHARE */
+.share-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.share-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;color:#fff;}
+
+/* AD BANNER */
+.ad-banner{background:#fff;border-radius:10px;margin:8px 0 16px;overflow:hidden;text-align:center;min-height:60px;display:flex;align-items:center;justify-content:center;border:1px dashed #e2e8f0;color:#94a3b8;font-size:12px;}
+.ad-banner ins{display:block;width:100%;}
+
+/* PROMO IMMOGEST CARD */
+.promo-card{background:linear-gradient(135deg,#0a1e3c 0%,#1a3a6e 100%);border-radius:12px;padding:20px;color:#fff;position:relative;overflow:hidden;cursor:default;}
+.promo-card::before{content:'';position:absolute;right:-20px;top:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.05);}
+.promo-card-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#4f8ef7;margin-bottom:6px;}
+.promo-card-title{font-size:15px;font-weight:800;margin-bottom:6px;line-height:1.3;}
+.promo-card-sub{font-size:12px;color:rgba(255,255,255,0.65);margin-bottom:14px;line-height:1.5;}
+.promo-card-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.promo-btn-main{padding:9px 16px;background:#4f8ef7;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;text-decoration:none;}
+.promo-btn-sec{padding:9px 16px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;}
+
+/* BOOST BADGE */
+.badge-boost{background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;}
+.btn-boost{flex:1;padding:9px;background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;}
+
+/* FOOTER */
+.footer{background:#1e293b;color:rgba(255,255,255,0.5);text-align:center;padding:24px 20px;font-size:12px;margin-top:40px;}
+.footer a{color:rgba(255,255,255,0.7);text-decoration:none;}
+
+@media(max-width:600px){
+  .header-cta .btn-outline{display:none;}
+  .filters-inner{gap:8px;}
+  .filter-input{min-width:100px;}
+  .btn-publish{margin-left:0;}
+  .form-grid2{grid-template-columns:1fr;}
+  .share-row{grid-template-columns:1fr;}
+}
 </style>
 </head>
 <body>
-<div class="loader">
-  <div class="logo">🏘️</div>
-  <h1>Marketplace ImmoGest</h1>
-  <p>Chargement des annonces…</p>
-  <a href="/?marche">Cliquez ici si la page ne se charge pas</a>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-bg"></div>
+  <div class="header-inner">
+    <div class="header-top">
+      <a class="logo" href="/">Immo<span>Gest</span></a>
+      <div class="header-cta">
+        <a class="btn-outline" href="/">Se connecter</a>
+        <button class="btn-primary" onclick="ouvrirFormPublier()">+ Publier une annonce</button>
+      </div>
+    </div>
+    <h1>🏘️ Marketplace Immobilière<br>Cameroun & Afrique centrale</h1>
+    <p class="header-sub">Appartements, maisons, studios, hôtels, meublés, locaux commerciaux — contact direct WhatsApp</p>
+    <div class="badges">
+      <span class="badge">✅ Annonces vérifiées</span>
+      <span class="badge">📱 Contact WhatsApp direct</span>
+      <span class="badge">🏙️ Yaoundé · Douala · et plus</span>
+      <span class="badge">🆓 Publication gratuite</span>
+    </div>
+  </div>
+</header>
+
+<!-- FILTERS -->
+<div class="filters">
+  <div class="filters-inner">
+    <input class="filter-input" id="f-ville"    placeholder="🏙️ Ville (ex: Yaoundé)" oninput="filtrer()">
+    <select class="filter-input" id="f-type"    onchange="filtrer()">
+      <option value="">Tous les types</option>
+      <option value="appartement">🏢 Appartement</option>
+      <option value="maison">🏠 Maison</option>
+      <option value="studio">🛏️ Studio</option>
+      <option value="chambre">🚪 Chambre</option>
+      <option value="meuble">🛋️ Meublé</option>
+      <option value="hotel">🏨 Hôtel</option>
+      <option value="commercial">🏪 Local commercial</option>
+    </select>
+    <input class="filter-input" id="f-prix"     placeholder="💰 Prix max (FCFA)" type="number" oninput="filtrer()" style="max-width:160px;">
+    <button class="btn-search" onclick="filtrer()">🔍 Rechercher</button>
+    <button class="btn-publish" onclick="ouvrirFormPublier()">+ Publier</button>
+  </div>
 </div>
+
+<!-- BANNIÈRE PUB MONETAG (top) -->
+<div style="background:#fff;border-bottom:1px solid #e2e8f0;padding:8px 0;text-align:center;">
+  <div style="max-width:1100px;margin:0 auto;padding:0 20px;">
+    <!-- Remplace ce bloc par ton code Monetag -->
+    <div id="monetag-top" style="min-height:50px;display:flex;align-items:center;justify-content:center;">
+      <!-- MONETAG_BANNER_TOP -->
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<main class="main" id="main">
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div style="color:#64748b;font-size:14px;">Chargement des annonces…</div>
+  </div>
+  <div id="section-annonces" style="display:none;">
+    <div class="section-title" id="count-label">📋 Annonces disponibles</div>
+    <div class="grid" id="grid-annonces"></div>
+  </div>
+  <div class="empty" id="empty" style="display:none;">
+    <div class="empty-icon">🔍</div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:8px;">Aucune annonce trouvée</div>
+    <div style="font-size:13px;">Essayez d'autres critères ou <a href="#" onclick="ouvrirFormPublier();return false;" style="color:var(--blue);font-weight:700;">publiez la première annonce</a></div>
+  </div>
+</main>
+
+<!-- BLOC HERO IMMOGEST (avant footer) -->
+<div style="background:linear-gradient(135deg,#05111e 0%,#0a1e3c 60%,#05111e 100%);padding:48px 20px;text-align:center;position:relative;overflow:hidden;">
+  <div style="position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1400&q=40') center/cover no-repeat;opacity:.15;"></div>
+  <div style="position:relative;z-index:1;max-width:600px;margin:0 auto;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#4f8ef7;margin-bottom:10px;">Vous êtes propriétaire ou gérant ?</div>
+    <h2 style="font-size:clamp(22px,4vw,34px);font-weight:900;color:#fff;line-height:1.2;margin-bottom:12px;">Gérez tout votre patrimoine immobilier avec ImmoGest</h2>
+    <p style="font-size:14px;color:rgba(255,255,255,0.65);margin-bottom:28px;line-height:1.6;">Loyers, contrats, locataires, signatures électroniques, relances automatiques OneSignal — que vous soyez un individu, une agence ou un cabinet. <strong style="color:#fff;">Gratuit pour démarrer.</strong></p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <a href="/" style="padding:14px 28px;background:#4f8ef7;color:#fff;border-radius:10px;font-size:14px;font-weight:800;text-decoration:none;display:inline-block;">🚀 Créer mon compte gratuit</a>
+      <a href="/" style="padding:14px 28px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;display:inline-block;">Voir la démo →</a>
+    </div>
+    <div style="margin-top:24px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap;font-size:12px;color:rgba(255,255,255,0.45);">
+      <span>✅ Sans carte bancaire</span>
+      <span>📱 MTN MoMo &amp; Orange Money</span>
+      <span>🔒 Données sécurisées</span>
+      <span>🌍 Conçu pour l'Afrique</span>
+    </div>
+  </div>
+</div>
+
+<!-- BANNIÈRE PUB MONETAG (bottom) -->
+<div style="background:#f8fafc;padding:12px 20px;text-align:center;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div id="monetag-bottom" style="min-height:90px;display:flex;align-items:center;justify-content:center;">
+      <!-- MONETAG_BANNER_BOTTOM -->
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <p>🏢 <strong style="color:#fff;">ImmoGest</strong> — Plateforme de gestion immobilière & marketplace au Cameroun</p>
+  <p style="margin-top:8px;"><a href="/">Application complète</a> · <a href="/marche">Marketplace</a> · Conforme OHADA · MTN MoMo & Orange Money</p>
+</footer>
+
+<script>
+// ── Supabase ───────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://uggxfmwpttfsfcirmeqx.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZ3hmbXdwdHRmc2ZjaXJtZXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNTA4MjIsImV4cCI6MjA5NDYyNjgyMn0.l8iYlJHOt6evNlBQ3zRskZasn_J2BjAUs1l2vKOZNvY';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+var _annonces = [];
+var _favs = [];
+try { _favs = JSON.parse(localStorage.getItem('immogest_favs_pub') || '[]'); } catch(e) {}
+
+// ── Chargement ─────────────────────────────────────────────────
+async function charger(filters) {
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('section-annonces').style.display = 'none';
+  document.getElementById('empty').style.display = 'none';
+  try {
+    var q = sb.from('annonces').select('*').eq('actif', true).eq('disponible', true).order('date_publication', { ascending: false });
+    if (filters && filters.ville)    q = q.ilike('ville', '%' + filters.ville + '%');
+    if (filters && filters.type)     q = q.eq('type', filters.type);
+    if (filters && filters.prix_max) q = q.lte('prix', parseInt(filters.prix_max));
+    var { data } = await q.limit(80);
+    _annonces = data || [];
+  } catch(e) { _annonces = []; }
+  document.getElementById('loading').style.display = 'none';
+  afficherGrille(_annonces);
+}
+
+// ── Grille ─────────────────────────────────────────────────────
+function afficherGrille(list) {
+  var grid = document.getElementById('grid-annonces');
+  if (!list || list.length === 0) {
+    document.getElementById('empty').style.display = 'block';
+    return;
+  }
+  document.getElementById('section-annonces').style.display = 'block';
+  document.getElementById('count-label').textContent = '📋 ' + list.length + ' annonce' + (list.length > 1 ? 's' : '') + ' disponible' + (list.length > 1 ? 's' : '');
+
+  // Construire la grille avec promos et pubs intercalées
+  var html = '';
+  list.forEach(function(a, i) {
+    // Pub Monetag native toutes les 8 annonces
+    if (i > 0 && i % 8 === 0) {
+      html += '<div style="grid-column:1/-1;" class="ad-banner"><div id="monetag-native-' + i + '"><!-- MONETAG_NATIVE --></div></div>';
+    }
+    // Promo ImmoGest toutes les 6 annonces
+    if (i > 0 && i % 6 === 0) {
+      html += promoCardHtml();
+    }
+    html += cardHtml(a);
+  });
+  grid.innerHTML = html;
+}
+
+function promoCardHtml() {
+  return '<div class="promo-card">'
+    + '<div class="promo-card-label">✨ Publicité</div>'
+    + '<div class="promo-card-title">🏢 Vous gérez des immeubles ou des locataires ?</div>'
+    + '<div class="promo-card-sub">Loyers, contrats, signatures électroniques, relances auto. Individu, agence ou cabinet — <strong>gratuit pour démarrer.</strong></div>'
+    + '<div class="promo-card-btns">'
+    + '<a class="promo-btn-main" href="/">🚀 Essayer gratuitement</a>'
+    + '<a class="promo-btn-sec" href="/">En savoir plus →</a>'
+    + '</div></div>';
+}
+
+var TYPE_LABELS = { appartement:'Appartement', maison:'Maison', studio:'Studio', chambre:'Chambre', meuble:'Meublé', hotel:'Hôtel', commercial:'Local commercial' };
+
+function cardHtml(a) {
+  var photo = a.photos && a.photos.length ? a.photos[0] : '';
+  var prix  = (a.prix||0).toLocaleString('fr-FR');
+  var periode = a.periode === 'jour' ? '/jour' : a.periode === 'an' ? '/an' : '/mois';
+  var specs = [];
+  if (a.nb_chambres) specs.push('🛏️ ' + a.nb_chambres + ' ch.');
+  if (a.surface)     specs.push('📐 ' + a.surface + ' m²');
+  if (a.meuble)      specs.push('🛋️ Meublé');
+  if (a.climatise)   specs.push('❄️ Clim');
+  return '<div class="card" onclick="ouvrirAnnonce(' + a.id + ')">'
+    + (photo
+      ? '<div class="card-img" style="background-image:url(\'' + photo.replace(/'/g,"\\'") + '\')">'
+      : '<div class="card-img-placeholder">🏠</div><div style="display:none">')
+    + '<div class="card-badges">'
+    + '<span class="badge-dispo">Disponible</span>'
+    + '<span class="badge-type">' + (TYPE_LABELS[a.type] || a.type) + '</span>'
+    + (a.badge_verifie ? '<span class="badge-verifie">✓ Vérifié</span>' : '')
+    + (a.badge_boost ? '<span class="badge-boost">⚡ Boosté</span>' : '')
+    + '</div></div>'
+    + '<div class="card-body">'
+    + '<div class="card-title">' + (a.titre || 'Annonce').replace(/</g,'&lt;') + '</div>'
+    + '<div class="card-loc">📍 ' + (a.ville || '').replace(/</g,'&lt;') + (a.quartier ? ' · ' + a.quartier : '') + '</div>'
+    + '<div class="card-price">' + prix + ' <span>FCFA' + periode + '</span></div>'
+    + (specs.length ? '<div class="card-specs">' + specs.join(' · ') + '</div>' : '')
+    + '<div class="card-actions">'
+    + '<button class="btn-wa" onclick="event.stopPropagation();contactWA(' + a.id + ')">📱 WhatsApp</button>'
+    + '<button class="btn-detail" onclick="event.stopPropagation();ouvrirAnnonce(' + a.id + ')">Voir plus</button>'
+    + '<button class="btn-boost" onclick="event.stopPropagation();ouvrirBoost(' + a.id + ')" title="Booster cette annonce">⚡</button>'
+    + '</div>'
+    + '</div></div>';
+}
+
+// ── Filtres ─────────────────────────────────────────────────────
+function filtrer() {
+  var ville   = (document.getElementById('f-ville').value  || '').trim();
+  var type    = document.getElementById('f-type').value   || '';
+  var prix    = (document.getElementById('f-prix').value   || '').trim();
+  charger({ ville: ville || null, type: type || null, prix_max: prix || null });
+}
+
+// ── Détail annonce ─────────────────────────────────────────────
+async function ouvrirAnnonce(id) {
+  var a = _annonces.find(function(x){ return x.id === id; });
+  if (!a) {
+    var { data } = await sb.from('annonces').select('*').eq('id', id).single();
+    a = data;
+  }
+  if (!a) return;
+  // Mettre à jour OG dynamiquement pour partage
+  var url = 'https://immogest-34w.pages.dev/marche?annonce=' + id;
+  var prix  = (a.prix||0).toLocaleString('fr-FR') + ' FCFA/' + (a.periode||'mois');
+  var specs = [];
+  if (a.nb_chambres) specs.push(a.nb_chambres + ' chambre(s)');
+  if (a.nb_sdb)      specs.push(a.nb_sdb + ' SDB');
+  if (a.surface)     specs.push(a.surface + ' m²');
+  if (a.meuble)      specs.push('Meublé');
+  if (a.climatise)   specs.push('Climatisé');
+  if (a.gardien)     specs.push('Gardien');
+  if (a.parking)     specs.push('Parking');
+
+  var photos = a.photos && a.photos.length ? a.photos : [];
+  var photosHtml = photos.length
+    ? photos.map(function(p){ return '<img class="modal-photo" src="' + p.replace(/"/g,'&quot;') + '" alt="Photo ' + (a.titre||'').replace(/</g,'&lt;') + '" onerror="this.style.display=\'none\'">'; }).join('')
+    : '<div style="height:260px;background:linear-gradient(135deg,#e2e8f0,#cbd5e1);display:flex;align-items:center;justify-content:center;font-size:60px;">🏠</div>';
+
+  var ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = '<div class="modal-box">'
+    + '<div class="modal-header">'
+    + '<div><div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">' + (TYPE_LABELS[a.type]||a.type) + (a.badge_verifie?' · ✓ Vérifié':'') + '</div>'
+    + '<div style="font-size:17px;font-weight:800;">' + (a.titre||'').replace(/</g,'&lt;') + '</div>'
+    + '<div style="font-size:12px;color:var(--text3);margin-top:3px;">📍 ' + (a.ville||'').replace(/</g,'&lt;') + (a.quartier?' · '+a.quartier:'') + '</div></div>'
+    + '<button class="modal-close" onclick="this.closest(\'.modal-overlay\').remove()">✕</button>'
+    + '</div>'
+    + '<div class="modal-photos">' + photosHtml + '</div>'
+    + '<div class="modal-body">'
+    + '<div class="modal-price">' + prix + (a.prix_negociable ? ' <span style="font-size:12px;color:var(--green);font-weight:600;">— Prix négociable</span>' : '') + '</div>'
+    + (specs.length ? '<div class="spec-grid">' + specs.map(function(s){ return '<div class="spec-item"><div class="spec-val">' + s + '</div></div>'; }).join('') + '</div>' : '')
+    + (a.description ? '<div style="font-size:13px;color:var(--text2);line-height:1.7;margin:12px 0;">' + a.description.replace(/</g,'&lt;').replace(/\n/g,'<br>') + '</div>' : '')
+    + '<div class="modal-actions">'
+    + '<button class="btn-wa-lg" onclick="contactWAById(' + id + ')">📱 Contacter sur WhatsApp</button>'
+    + '<button class="btn-share-lg" onclick="partager(' + id + ',\'' + (a.titre||'').replace(/'/g,"\\'") + '\')">📤 Partager</button>'
+    + '</div>'
+    + '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);text-align:center;">Annonce publiée via ImmoGest · ' + (a.date_publication ? new Date(a.date_publication).toLocaleDateString('fr-FR') : '') + '</div>'
+    + '</div></div>';
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+  // incrémenter vues
+  sb.rpc('increment_annonce_vues', { annonce_id: id }).catch(function(){});
+}
+
+// ── WhatsApp ───────────────────────────────────────────────────
+function contactWA(id) {
+  var a = _annonces.find(function(x){ return x.id === id; });
+  contactWAByObj(a);
+}
+function contactWAById(id) {
+  var a = _annonces.find(function(x){ return x.id === id; });
+  if (!a) { alert('Numéro non disponible'); return; }
+  contactWAByObj(a);
+}
+function contactWAByObj(a) {
+  if (!a) return;
+  var tel = (a.whatsapp || '').replace(/[^0-9]/g,'');
+  if (!tel) { alert('Numéro WhatsApp non renseigné pour cette annonce.'); return; }
+  var msg = '👋 Bonjour, je vous contacte via ImmoGest Marketplace.\n\n'
+    + '🏠 *' + (a.titre||'Annonce') + '*\n'
+    + '📍 ' + (a.ville||'') + (a.quartier ? ' · ' + a.quartier : '') + '\n'
+    + '💰 ' + (a.prix||0).toLocaleString('fr-FR') + ' FCFA\n\n'
+    + 'Est-il toujours disponible ?';
+  window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(msg), '_blank');
+}
+
+// ── Partage ────────────────────────────────────────────────────
+function partager(id, titre) {
+  var url = 'https://immogest-34w.pages.dev/marche?annonce=' + id;
+  var text = encodeURIComponent('🏘️ ' + (titre||'Annonce immobilière') + ' — ImmoGest Marketplace');
+  var enc  = encodeURIComponent(url);
+  if (navigator.share) { navigator.share({ title: titre, url: url }); return; }
+  var ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = '<div style="background:#fff;border-radius:16px;padding:20px;width:100%;max-width:380px;">'
+    + '<div style="font-size:15px;font-weight:800;margin-bottom:14px;text-align:center;">📤 Partager cette annonce</div>'
+    + '<div style="background:#f8fafc;border-radius:8px;padding:10px;font-size:11px;color:#555;word-break:break-all;margin-bottom:14px;">' + url + '</div>'
+    + '<div class="share-row">'
+    + '<button class="share-btn" style="background:#1877F2;" onclick="window.open(\'https://www.facebook.com/sharer/sharer.php?u=' + enc + '&quote=' + text + '\',\'_blank\')">📘 Facebook</button>'
+    + '<button class="share-btn" style="background:#25D366;" onclick="window.open(\'https://wa.me/?text=' + text + '%20' + enc + '\',\'_blank\')">📱 WhatsApp</button>'
+    + '<button class="share-btn" style="background:#000;" onclick="window.open(\'https://twitter.com/intent/tweet?text=' + text + '&url=' + enc + '\',\'_blank\')">🐦 X/Twitter</button>'
+    + '<button class="share-btn" style="background:#e2e8f0;color:#333;" onclick="copyLink(\'' + url + '\',this)">📋 Copier</button>'
+    + '</div>'
+    + '<button onclick="this.closest(\'.modal-overlay\').remove()" style="width:100%;margin-top:10px;padding:11px;border:1px solid #e2e8f0;border-radius:8px;background:none;cursor:pointer;font-size:13px;">Fermer</button>'
+    + '</div>';
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+function copyLink(url, btn) {
+  (navigator.clipboard||{writeText:function(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}}).writeText(url);
+  if(btn) btn.textContent = '✓ Copié!';
+}
+
+// ── Formulaire publication ────────────────────────────────────
+function ouvrirFormPublier() {
+  var ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = '<div class="modal-box" style="max-width:600px;">'
+    + '<div style="padding:20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;">'
+    + '<div style="font-size:18px;font-weight:800;">+ Publier une annonce</div>'
+    + '<button onclick="this.closest(\'.modal-overlay\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;">✕</button>'
+    + '</div>'
+    + '<form id="pub-form" onsubmit="soumettreAnnonce(event)" style="padding:20px;">'
+    + '<div class="form-row"><label class="form-label">Titre de l\'annonce *</label><input class="form-input" name="titre" placeholder="Ex: Appartement F3 meublé centre-ville" required></div>'
+    + '<div class="form-grid2">'
+    + '<div class="form-row"><label class="form-label">Type de bien *</label><select class="form-input" name="type" required><option value="">Choisir…</option><option value="appartement">Appartement</option><option value="maison">Maison</option><option value="studio">Studio</option><option value="chambre">Chambre</option><option value="meuble">Meublé</option><option value="hotel">Hôtel</option><option value="commercial">Local commercial</option></select></div>'
+    + '<div class="form-row"><label class="form-label">Ville *</label><input class="form-input" name="ville" placeholder="Ex: Yaoundé" required></div>'
+    + '</div>'
+    + '<div class="form-grid2">'
+    + '<div class="form-row"><label class="form-label">Quartier</label><input class="form-input" name="quartier" placeholder="Ex: Bastos, Akwa…"></div>'
+    + '<div class="form-row"><label class="form-label">Prix (FCFA) *</label><input class="form-input" name="prix" type="number" placeholder="150000" required></div>'
+    + '</div>'
+    + '<div class="form-grid2">'
+    + '<div class="form-row"><label class="form-label">Période</label><select class="form-input" name="periode"><option value="mois">Par mois</option><option value="jour">Par jour</option><option value="an">Par an</option></select></div>'
+    + '<div class="form-row"><label class="form-label">Chambres</label><input class="form-input" name="nb_chambres" type="number" placeholder="2" min="0"></div>'
+    + '</div>'
+    + '<div class="form-row"><label class="form-label">Surface (m²)</label><input class="form-input" name="surface" type="number" placeholder="60"></div>'
+    + '<div class="form-row"><label class="form-label">Description</label><textarea class="form-input" name="description" rows="3" placeholder="Décrivez le bien : état, commodités, accès…" style="resize:vertical;"></textarea></div>'
+    + '<div class="form-row"><label class="form-label">Photos (URLs séparées par des virgules)</label><input class="form-input" name="photos" placeholder="https://… , https://…"></div>'
+    + '<div class="form-row"><label class="form-label">WhatsApp (avec indicatif) *</label><input class="form-input" name="whatsapp" placeholder="237699000000" required></div>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px;">'
+    + '<label class="checkbox-row"><input type="checkbox" name="meuble"> Meublé</label>'
+    + '<label class="checkbox-row"><input type="checkbox" name="climatise"> Climatisé</label>'
+    + '<label class="checkbox-row"><input type="checkbox" name="gardien"> Gardien</label>'
+    + '<label class="checkbox-row"><input type="checkbox" name="parking"> Parking</label>'
+    + '<label class="checkbox-row"><input type="checkbox" name="prix_negociable"> Prix négociable</label>'
+    + '</div>'
+    + '<div id="pub-err" style="display:none;color:#dc2626;font-size:13px;padding:10px;background:#fef2f2;border-radius:8px;margin-bottom:12px;"></div>'
+    + '<button type="submit" id="pub-btn" style="width:100%;padding:14px;background:var(--blue2);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:15px;font-weight:700;">Publier l\'annonce</button>'
+    + '</form></div>';
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+
+async function soumettreAnnonce(e) {
+  e.preventDefault();
+  var form  = e.target;
+  var btn   = document.getElementById('pub-btn');
+  var err   = document.getElementById('pub-err');
+  err.style.display = 'none';
+  btn.disabled = true; btn.textContent = '⏳ Publication…';
+  try {
+    var photos = (form.photos.value || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    var row = {
+      titre:           form.titre.value.trim(),
+      type:            form.type.value,
+      ville:           form.ville.value.trim(),
+      quartier:        (form.quartier.value||'').trim(),
+      prix:            parseInt(form.prix.value) || 0,
+      periode:         form.periode.value,
+      nb_chambres:     parseInt(form.nb_chambres.value) || null,
+      surface:         parseInt(form.surface.value) || null,
+      description:     (form.description.value||'').trim(),
+      photos:          photos,
+      whatsapp:        form.whatsapp.value.trim(),
+      meuble:          form.meuble.checked,
+      climatise:       form.climatise.checked,
+      gardien:         form.gardien.checked,
+      parking:         form.parking.checked,
+      prix_negociable: form.prix_negociable.checked,
+      disponible:      true,
+      actif:           true
+    };
+    var { data, error } = await sb.from('annonces').insert(row).select().single();
+    if (error) throw error;
+    document.querySelector('.modal-overlay').remove();
+    _annonces.unshift(data);
+    afficherGrille(_annonces);
+    // toast simple
+    var t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:12px 24px;border-radius:10px;font-weight:700;z-index:99999;font-size:14px;';
+    t.textContent = '✅ Annonce publiée ! Elle est maintenant visible sur la marketplace.';
+    document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); }, 4000);
+  } catch(e2) {
+    err.textContent = 'Erreur : ' + (e2.message || 'Problème de connexion');
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Publier l\'annonce';
+  }
+}
+
+// ── Boost annonce (paiement MoMo) ─────────────────────────────
+var BOOST_PLANS = [
+  { id:'basic',   label:'Boosté 7 jours',   prix:2000,  desc:'Position haute + badge ⚡ Boosté' },
+  { id:'premium', label:'Premium 30 jours', prix:5000,  desc:'Top position + badge 🏆 Coup de cœur + 10 photos' },
+];
+
+function ouvrirBoost(id) {
+  var a = _annonces.find(function(x){ return x.id === id; });
+  var titre = a ? (a.titre||'cette annonce') : 'cette annonce';
+  var ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = '<div style="background:#fff;border-radius:16px;width:100%;max-width:440px;overflow:hidden;">'
+    + '<div style="background:linear-gradient(135deg,#0a1e3c,#1a3a6e);padding:20px;color:#fff;">'
+    + '<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#4f8ef7;margin-bottom:4px;">BOOST ANNONCE</div>'
+    + '<div style="font-size:16px;font-weight:800;">' + titre.replace(/</g,'&lt;').substring(0,50) + '</div>'
+    + '</div>'
+    + '<div style="padding:20px;">'
+    + '<div style="font-size:13px;color:#64748b;margin-bottom:16px;">Mettez votre annonce en avant pour attirer plus de locataires.</div>'
+    + BOOST_PLANS.map(function(p){
+        return '<div onclick="selBoost(this,\'' + p.id + '\')" data-plan="' + p.id + '" style="border:2px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .15s;">'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;">'
+          + '<div><div style="font-weight:800;font-size:14px;">' + p.label + '</div>'
+          + '<div style="font-size:12px;color:#64748b;margin-top:2px;">' + p.desc + '</div></div>'
+          + '<div style="font-size:18px;font-weight:900;color:#0e6aaf;white-space:nowrap;">' + p.prix.toLocaleString('fr-FR') + '<span style="font-size:11px;font-weight:500;color:#94a3b8;"> FCFA</span></div>'
+          + '</div></div>';
+      }).join('')
+    + '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin:16px 0;">'
+    + '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Paiement</div>'
+    + '<div style="display:flex;gap:8px;margin-bottom:10px;">'
+    + '<button onclick="selPaiement(this,\'momo\')" data-mode="momo" style="flex:1;padding:9px;border:2px solid #f59e0b;border-radius:8px;background:#fffbeb;cursor:pointer;font-size:12px;font-weight:700;color:#92400e;">📱 MTN MoMo</button>'
+    + '<button onclick="selPaiement(this,\'om\')" data-mode="om" style="flex:1;padding:9px;border:2px solid #e2e8f0;border-radius:8px;background:#fff;cursor:pointer;font-size:12px;font-weight:600;color:#475569;">🟠 Orange Money</button>'
+    + '</div>'
+    + '<input id="boost-tel" class="form-input" placeholder="Numéro MoMo (ex: 237699000000)" style="margin-bottom:0;">'
+    + '</div>'
+    + '<div id="boost-err" style="display:none;color:#dc2626;font-size:12px;padding:8px 12px;background:#fef2f2;border-radius:8px;margin-bottom:10px;"></div>'
+    + '<button id="boost-btn" onclick="confirmerBoost(' + id + ')" style="width:100%;padding:14px;background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:800;">⚡ Booster maintenant</button>'
+    + '<button onclick="this.closest(\'.modal-overlay\').remove()" style="width:100%;margin-top:8px;padding:10px;border:1px solid #e2e8f0;border-radius:8px;background:none;cursor:pointer;font-size:13px;color:#64748b;">Annuler</button>'
+    + '</div></div>';
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+  // Sélectionner le plan basic par défaut
+  var firstPlan = ov.querySelector('[data-plan]');
+  if (firstPlan) selBoost(firstPlan, 'basic');
+}
+
+var _boostPlan = 'basic';
+var _boostMode = 'momo';
+
+function selBoost(el, planId) {
+  _boostPlan = planId;
+  document.querySelectorAll('[data-plan]').forEach(function(x){
+    x.style.borderColor = x.dataset.plan === planId ? '#4f8ef7' : '#e2e8f0';
+    x.style.background  = x.dataset.plan === planId ? '#eff6ff' : '#fff';
+  });
+}
+function selPaiement(el, mode) {
+  _boostMode = mode;
+  document.querySelectorAll('[data-mode]').forEach(function(x){
+    var active = x.dataset.mode === mode;
+    x.style.borderColor = active ? (mode==='momo'?'#f59e0b':'#f97316') : '#e2e8f0';
+    x.style.background  = active ? (mode==='momo'?'#fffbeb':'#fff7ed') : '#fff';
+  });
+  document.getElementById('boost-tel').placeholder = mode === 'momo' ? 'Numéro MTN MoMo (ex: 237699…)' : 'Numéro Orange Money (ex: 237655…)';
+}
+
+async function confirmerBoost(id) {
+  var plan = BOOST_PLANS.find(function(p){ return p.id === _boostPlan; });
+  var tel  = (document.getElementById('boost-tel').value || '').replace(/[^0-9]/g,'');
+  var err  = document.getElementById('boost-err');
+  var btn  = document.getElementById('boost-btn');
+  err.style.display = 'none';
+  if (!tel || tel.length < 9) { err.textContent = 'Entrez un numéro valide.'; err.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = '⏳ Traitement…';
+
+  // Simulation paiement (à remplacer par vraie API MoMo/OM)
+  // En production : appel API MTN MoMo Collections ou Orange Money
+  await new Promise(function(r){ setTimeout(r, 1800); });
+
+  // Marquer l'annonce boostée en base
+  try {
+    await sb.from('annonces').update({ badge_boost: true }).eq('id', id);
+    var a = _annonces.find(function(x){ return x.id === id; });
+    if (a) a.badge_boost = true;
+    document.querySelector('.modal-overlay').remove();
+    afficherGrille(_annonces);
+    var t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;padding:14px 24px;border-radius:10px;font-weight:800;z-index:99999;font-size:14px;box-shadow:0 4px 20px rgba(0,0,0,.2);';
+    t.textContent = '⚡ Annonce boostée ! Elle est maintenant en avant pendant ' + (plan.id==='premium'?'30':'7') + ' jours.';
+    document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); }, 5000);
+  } catch(e2) {
+    err.textContent = 'Erreur : ' + (e2.message || 'Problème réseau');
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = '⚡ Booster maintenant';
+  }
+}
+
+// ── Démarrage ──────────────────────────────────────────────────
+(function() {
+  // Vérifier si une annonce précise est demandée dans l'URL
+  var params = new URLSearchParams(window.location.search);
+  var annonceId = params.get('annonce');
+  charger({}).then(function() {
+    if (annonceId) {
+      setTimeout(function(){ ouvrirAnnonce(parseInt(annonceId)); }, 400);
+    }
+  });
+})();
+</script>
 </body>
 </html>

@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Allow: /marche
+Allow: /marche.html
+
+Sitemap: https://immogest-34w.pages.dev/sitemap.xml
