@@ -11348,6 +11348,11 @@ function _authBg() {
   var as = document.getElementById('auth-screen');
   if (!as) return null;
   as.style.cssText = 'display:block;position:fixed;inset:0;width:100%;min-height:100vh;overflow-y:auto;overflow-x:hidden;z-index:1000;font-family:\'Segoe UI\',system-ui,sans-serif;';
+  // Vider le vieux contenu statique au premier appel (garde seulement auth-bg-slides / auth-content)
+  if (!document.getElementById('auth-bg-slides')) {
+    // Supprimer tout le contenu existant avant d'installer le nouveau fond
+    while (as.firstChild) as.removeChild(as.firstChild);
+  }
   if (!document.getElementById('auth-bg-slides')) {
     var bg = document.createElement('div');
     bg.id = 'auth-bg-slides';
