@@ -486,7 +486,7 @@ function canFeature(feature) {
 // ── Bloquer avec message upgrade ──
 function requirePlan(feature, minPlan) {
   if (canFeature(feature)) return true;
-  const planLabel = PLANS[minPlan] ? PLANS[minPlan].label : 'Starter';
+  const _plans = getCurrentPlans(); const planLabel = (_plans[minPlan] && _plans[minPlan].label) ? _plans[minPlan].label : 'Starter';
   showUpgradePrompt(feature, planLabel);
   return false;
 }
