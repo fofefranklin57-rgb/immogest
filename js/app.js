@@ -245,7 +245,7 @@ function renderCurrent() {
   else if (currentPage === 'parametres') renderParametres();
   else if (currentPage === 'signalements') renderSignalements();
   else if (currentPage === 'maintenance-edl') renderMaintenanceEdl();
-  else if (currentPage === 'marketplace') { if (typeof renderMarketplace === 'function') renderMarketplace(); }
+  else if (currentPage === 'marketplace') { window.open('marche.html', '_blank'); }
   else if (currentPage === 'verif-signature') { if (typeof renderVerificationSignature === 'function') renderVerificationSignature(); }
   updateSidebarBadges();
 }
@@ -10456,18 +10456,12 @@ function closePortailProprietaire() {
 
 window.addEventListener('DOMContentLoaded', () => {
   _initSidebarCollapse();
-  // Accès public marketplace via ?marche ou ?annonce=ID dans l'URL
+  // Accès public marketplace via ?marche ou ?annonce=ID → rediriger vers marche.html
   var _urlParams = new URLSearchParams(window.location.search);
   if (_urlParams.has('marche') || _urlParams.has('annonce')) {
     var _annonceId = _urlParams.get('annonce');
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('app-shell').style.display = 'flex';
-    // Mode lecture seule sans session
-    if (!window.SESSION) window.SESSION = { role: 'public', tenantId: null };
-    setTimeout(function() {
-      navigate('marketplace');
-      if (_annonceId) setTimeout(function(){ mkOuvrirAnnonce(parseInt(_annonceId)); }, 600);
-    }, 300);
+    var _marcheUrl = 'marche.html' + (_annonceId ? '?annonce=' + _annonceId : '');
+    window.location.replace(_marcheUrl);
     return;
   }
   loadUsers();
@@ -11712,12 +11706,8 @@ function showWelcomeScreen() {
 }
 
 function showWelcomeMarketplace() {
-  // Affiche la marketplace sans connexion (lecture seule)
-  var as = document.getElementById('auth-screen');
-  if (as) as.style.display = 'none';
-  var shell = document.getElementById('app-shell');
-  if (shell) shell.style.display = 'flex';
-  navigate('marketplace');
+  // Marketplace complètement séparée — ouvrir marche.html
+  window.location.href = 'marche.html';
 }
 
 // ── Choix du mode (Perso / Cabinet) ─────────────────────────────
