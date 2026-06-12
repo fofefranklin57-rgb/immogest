@@ -291,13 +291,13 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
     <!-- CTA -->
     <div style="background:#f8fafc;border:2px dashed #cbd5e1;border-radius:16px;padding:32px;text-align:center;">
       <div style="font-size:24px;margin-bottom:10px;">🚀</div>
-      <div style="font-size:18px;font-weight:900;color:#0f172a;margin-bottom:8px;">Intéressé ? Discutons-en.</div>
-      <p style="font-size:13px;color:#64748b;max-width:480px;margin:0 auto 20px;line-height:1.6;">Chaque bien est unique. Contactez-nous sur WhatsApp pour un devis personnalisé. <strong>Places limitées — nous traitons les commandes dans l'ordre d'arrivée.</strong></p>
+      <div style="font-size:18px;font-weight:900;color:#0f172a;margin-bottom:8px;">Commandez votre visite 3D</div>
+      <p style="font-size:13px;color:#64748b;max-width:480px;margin:0 auto 20px;line-height:1.6;">Remplissez le formulaire en 30 secondes. Nous vous rappelons sur WhatsApp dans les 2 heures avec votre devis personnalisé. <strong>Places limitées — traitement dans l'ordre d'arrivée.</strong></p>
       <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-        <a href="https://wa.me/237673950019?text=Bonjour%2C%20je%20suis%20int%C3%A9ress%C3%A9%20par%20le%20service%20de%20visite%203D%20pour%20mon%20bien%20immobilier%20sur%20ImmoGest%20Marketplace." target="_blank" style="padding:13px 24px;background:#25D366;color:#fff;border-radius:10px;font-size:14px;font-weight:800;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">📱 Nous contacter sur WhatsApp</a>
-        <a href="/" style="padding:13px 24px;background:#0e6aaf;color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">🏢 Gérer mes biens avec ImmoGest</a>
+        <button onclick="ouvrirCommande3D()" style="padding:14px 28px;background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">🏛️ Je veux ma visite 3D</button>
+        <a href="/" style="padding:14px 28px;background:#0e6aaf;color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">🏢 Gérer mes biens avec ImmoGest</a>
       </div>
-      <div style="margin-top:16px;font-size:11px;color:#94a3b8;">Service proposé par ImmoGest · Yaoundé, Cameroun · Devis sans engagement</div>
+      <div style="margin-top:16px;font-size:11px;color:#94a3b8;">Service proposé par ImmoGest · Yaoundé, Cameroun · Devis sans engagement · Réponse en 2h</div>
     </div>
 
   </div>
@@ -726,6 +726,166 @@ async function confirmerBoost(id) {
     err.textContent = 'Erreur : ' + (e2.message || 'Problème réseau');
     err.style.display = 'block';
     btn.disabled = false; btn.textContent = '⚡ Booster maintenant';
+  }
+}
+
+// ── Commande visite 3D ────────────────────────────────────────
+function ouvrirCommande3D() {
+  var ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `
+  <div style="background:#fff;border-radius:20px;width:100%;max-width:500px;overflow:hidden;max-height:92vh;overflow-y:auto;">
+
+    <!-- Header gradient -->
+    <div style="background:linear-gradient(135deg,#92400e,#ea580c,#f59e0b);padding:24px 24px 20px;color:#fff;position:relative;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:.8;margin-bottom:6px;">🌍 Premier service en Afrique centrale</div>
+      <div style="font-size:20px;font-weight:900;line-height:1.2;">Commandez votre<br>Visite 3D Immobilière</div>
+      <div style="font-size:12px;opacity:.75;margin-top:6px;">Réponse sous 2h · Devis sans engagement</div>
+      <button onclick="this.closest('.modal-overlay').remove()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.2);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+
+    <form id="form-3d" onsubmit="soumettre3D(event)" style="padding:24px;">
+
+      <!-- Choix du service -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Je veux… *</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <label id="svc-ia" onclick="selService('ia')" style="border:2px solid #f59e0b;border-radius:12px;padding:14px 12px;cursor:pointer;background:#fffbeb;text-align:center;">
+            <div style="font-size:26px;margin-bottom:6px;">📸 → 🏛️</div>
+            <div style="font-size:13px;font-weight:800;color:#92400e;">Rendus 3D IA</div>
+            <div style="font-size:11px;color:#78350f;margin-top:3px;">Images photoréalistes<br>depuis vos photos</div>
+            <input type="radio" name="service" value="ia" checked style="display:none;">
+          </label>
+          <label id="svc-360" onclick="selService('360')" style="border:2px solid #e2e8f0;border-radius:12px;padding:14px 12px;cursor:pointer;background:#fff;text-align:center;">
+            <div style="font-size:26px;margin-bottom:6px;">🥽 360°</div>
+            <div style="font-size:13px;font-weight:800;color:#1e3a5f;">Visite virtuelle 360°</div>
+            <div style="font-size:11px;color:#475569;margin-top:3px;">Navigation interactive<br>dans le bien</div>
+            <input type="radio" name="service" value="360" style="display:none;">
+          </label>
+          <label id="svc-les2" onclick="selService('les2')" style="border:2px solid #e2e8f0;border-radius:12px;padding:14px 12px;cursor:pointer;background:#fff;text-align:center;grid-column:1/-1;">
+            <div style="font-size:22px;margin-bottom:4px;">✨ Pack complet</div>
+            <div style="font-size:13px;font-weight:800;color:#4c1d95;">3D + Visite 360° + Vidéo walkthrough</div>
+            <div style="font-size:11px;color:#475569;margin-top:3px;">Tout ce qu'il faut pour louer 3× plus vite</div>
+            <input type="radio" name="service" value="les2" style="display:none;">
+          </label>
+        </div>
+      </div>
+
+      <!-- Infos bien -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div>
+          <label class="form-label">Type de bien *</label>
+          <select class="form-input" name="type_bien" required>
+            <option value="">Choisir…</option>
+            <option>Appartement</option>
+            <option>Maison</option>
+            <option>Studio</option>
+            <option>Chambre</option>
+            <option>Local commercial</option>
+            <option>Hôtel / meublé</option>
+            <option>Bureau</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Ville *</label>
+          <input class="form-input" name="ville" placeholder="Ex: Yaoundé" required>
+        </div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label class="form-label">Nombre de pièces</label>
+        <input class="form-input" name="nb_pieces" type="number" min="1" placeholder="Ex: 4">
+      </div>
+
+      <!-- Infos contact -->
+      <div style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Vos coordonnées</div>
+        <div style="margin-bottom:10px;">
+          <label class="form-label">Nom / Prénom *</label>
+          <input class="form-input" name="nom" placeholder="Ex: Jean Mballa" required>
+        </div>
+        <div>
+          <label class="form-label">WhatsApp *</label>
+          <input class="form-input" name="whatsapp" placeholder="Ex: 237699000000" required>
+        </div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <label class="form-label">Précisions (facultatif)</label>
+        <textarea class="form-input" name="message" rows="2" placeholder="Ex: bien à Bastos, 3 chambres, disponible pour photos samedi…" style="resize:none;"></textarea>
+      </div>
+
+      <div id="err-3d" style="display:none;color:#dc2626;font-size:12px;padding:10px;background:#fef2f2;border-radius:8px;margin-bottom:12px;"></div>
+
+      <button type="submit" id="btn-3d" style="width:100%;padding:15px;background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;border:none;border-radius:12px;cursor:pointer;font-size:15px;font-weight:900;">🏛️ Envoyer ma demande</button>
+      <div style="text-align:center;margin-top:10px;font-size:11px;color:#94a3b8;">Nous vous contactons sur WhatsApp dans les 2h avec votre devis personnalisé</div>
+    </form>
+  </div>`;
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+
+var _service3D = 'ia';
+function selService(s) {
+  _service3D = s;
+  ['ia','360','les2'].forEach(function(k){
+    var el = document.getElementById('svc-'+k);
+    if (!el) return;
+    var active = k === s;
+    el.style.borderColor = active ? '#f59e0b' : '#e2e8f0';
+    el.style.background  = active ? '#fffbeb' : '#fff';
+    var radio = el.querySelector('input[type=radio]');
+    if (radio) radio.checked = active;
+  });
+}
+
+async function soumettre3D(e) {
+  e.preventDefault();
+  var form = e.target;
+  var btn  = document.getElementById('btn-3d');
+  var err  = document.getElementById('err-3d');
+  err.style.display = 'none';
+  btn.disabled = true; btn.textContent = '⏳ Envoi en cours…';
+
+  var row = {
+    nom:       form.nom.value.trim(),
+    whatsapp:  form.whatsapp.value.trim(),
+    ville:     form.ville.value.trim(),
+    type_bien: form.type_bien.value,
+    nb_pieces: parseInt(form.nb_pieces.value) || null,
+    service:   _service3D,
+    message:   (form.message.value||'').trim(),
+    statut:    'nouveau'
+  };
+
+  try {
+    var { error } = await sb.from('commandes_3d').insert(row);
+    if (error) throw error;
+
+    // Fermer modal
+    document.querySelector('.modal-overlay').remove();
+
+    // Ouvrir WhatsApp avec résumé de la commande
+    var svcLabel = _service3D==='ia' ? 'Rendus 3D IA' : _service3D==='360' ? 'Visite virtuelle 360°' : 'Pack complet 3D + 360° + Vidéo';
+    var msg = '👋 Bonjour ImmoGest !\n\n'
+      + 'Je souhaite commander une *' + svcLabel + '* pour mon bien.\n\n'
+      + '🏠 *Type :* ' + row.type_bien + '\n'
+      + '📍 *Ville :* ' + row.ville + '\n'
+      + (row.nb_pieces ? '🚪 *Pièces :* ' + row.nb_pieces + '\n' : '')
+      + '👤 *Nom :* ' + row.nom + '\n'
+      + (row.message ? '\n💬 ' + row.message : '');
+    window.open('https://wa.me/237673950019?text=' + encodeURIComponent(msg), '_blank');
+
+    // Toast confirmation
+    var t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;padding:14px 24px;border-radius:12px;font-weight:800;z-index:99999;font-size:14px;box-shadow:0 4px 24px rgba(0,0,0,.25);max-width:340px;text-align:center;';
+    t.textContent = '✅ Demande envoyée ! Nous vous contactons sur WhatsApp dans les 2h.';
+    document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); }, 6000);
+
+  } catch(e2) {
+    err.textContent = 'Erreur : ' + (e2.message || 'Problème de connexion. Réessayez.');
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = '🏛️ Envoyer ma demande';
   }
 }
 
