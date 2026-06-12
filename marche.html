@@ -465,18 +465,14 @@ document.addEventListener('click', function(e) {
   if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) menu.style.display = 'none';
 });
 
-// renderCurrent appelé par setLang() de i18n.js après changement de langue
-function renderCurrent() {
-  if (_tab === 'agents') {
-    if (typeof chargerAgents === 'function') chargerAgents({});
-  } else {
-    if (typeof charger === 'function') charger({});
-  }
-}
-
 function setMarcheLang(lang) {
   document.getElementById('marche-lang-menu').style.display = 'none';
   document.getElementById('marche-lang-code').textContent = lang.toUpperCase();
+  // Mettre à jour LANG directement (var globale de i18n.js) sans appeler setLang()
+  // car setLang() appelle applyStaticI18n() conçu pour index.html et mélange les traductions
+  if (typeof LANG !== 'undefined') window.LANG = lang;
+  localStorage.setItem('immogest_lang', lang);
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
   var L = _MARCHE_LANGS[lang] || _MARCHE_LANGS['fr'];
   var tEl = document.querySelector('[data-i18n="marketplace-title"]');
   var sEl = document.querySelector('[data-i18n="marketplace-sub"]');
@@ -492,8 +488,9 @@ function setMarcheLang(lang) {
   if (b3) b3.textContent = L.b3;
   if (tab1) tab1.textContent = L.tab1;
   if (tab2) tab2.textContent = L.tab2;
-  // setLang() met à jour LANG, localStorage, applyStaticI18n et appelle renderCurrent()
-  if (typeof setLang === 'function') setLang(lang);
+  // Re-rendre le contenu dynamique avec le nouveau LANG
+  if (_tab === 'agents') { if (typeof chargerAgents === 'function') chargerAgents({}); }
+  else { if (typeof charger === 'function') charger({}); }
 }
 
 // Applique la langue sauvegardée au chargement
