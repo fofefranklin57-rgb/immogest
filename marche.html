@@ -465,19 +465,24 @@ document.addEventListener('click', function(e) {
   if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) menu.style.display = 'none';
 });
 
+// renderCurrent appelé par setLang() de i18n.js après changement de langue
+function renderCurrent() {
+  if (_tab === 'agents') {
+    if (typeof chargerAgents === 'function') chargerAgents({});
+  } else {
+    if (typeof charger === 'function') charger({});
+  }
+}
+
 function setMarcheLang(lang) {
-  localStorage.setItem('immogest_lang', lang);
   document.getElementById('marche-lang-menu').style.display = 'none';
-  var code = lang.toUpperCase();
-  document.getElementById('marche-lang-code').textContent = code;
+  document.getElementById('marche-lang-code').textContent = lang.toUpperCase();
   var L = _MARCHE_LANGS[lang] || _MARCHE_LANGS['fr'];
   var tEl = document.querySelector('[data-i18n="marketplace-title"]');
   var sEl = document.querySelector('[data-i18n="marketplace-sub"]');
   var b1 = document.querySelector('[data-i18n="marketplace-badge1"]');
   var b2 = document.querySelector('[data-i18n="marketplace-badge2"]');
   var b3 = document.querySelector('[data-i18n="marketplace-badge3"]');
-  var loginEl = document.querySelector('[data-i18n="Se connecter"]');
-  var pubEl = document.querySelector('[data-i18n="+ Publier une annonce"]');
   var tab1 = document.getElementById('tab-annonces');
   var tab2 = document.getElementById('tab-agents');
   if (tEl) tEl.innerHTML = L.title;
@@ -485,11 +490,10 @@ function setMarcheLang(lang) {
   if (b1) b1.textContent = L.b1;
   if (b2) b2.textContent = L.b2;
   if (b3) b3.textContent = L.b3;
-  if (loginEl) loginEl.textContent = L.login;
-  if (pubEl) pubEl.textContent = L.publish;
   if (tab1) tab1.textContent = L.tab1;
   if (tab2) tab2.textContent = L.tab2;
-  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  // setLang() met à jour LANG, localStorage, applyStaticI18n et appelle renderCurrent()
+  if (typeof setLang === 'function') setLang(lang);
 }
 
 // Applique la langue sauvegardée au chargement
