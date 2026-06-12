@@ -1126,7 +1126,7 @@ function _cancelCampay() {
 }
 
 function _showAbonnementSuccess(plan, duree) {
-  var planInfo = PLANS[plan] || PLANS.starter;
+  var planInfo = getCurrentPlans()[plan] || getCurrentPlans().pro || getCurrentPlans().starter || { label: plan };
   var overlay = document.createElement('div');
   overlay.className = 'overlay open';
   overlay.style.zIndex = '10006';
