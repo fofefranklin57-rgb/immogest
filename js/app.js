@@ -524,20 +524,7 @@ function renderImmeuble(iid) {
           <td style="white-space:nowrap;">
             <div class="action-menu">
               <button class="action-menu-btn" onclick="toggleActionMenu(this,event)" data-tooltip="Actions">⋯</button>
-              <div class="action-dropdown">
-                ${can('canRecordPayment')?`<div class="action-dropdown-item" onclick="openModalPaiement(${iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 Paiement</div>`:''}
-                ${can('canEditLocataires')?`<div class="action-dropdown-item" onclick="editLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📝 Modifier</div>`:''}
-                <div class="action-dropdown-item" onclick="ouvrirFicheSuivi(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📊 Fiche de suivi</div>
-                <div class="action-dropdown-item" onclick="_closeDropdowns();_openNewMessageModal('loc_${l.id}')">💬 Envoyer un message</div>
-                <div class="action-dropdown-item" onclick="_closeDropdowns();notifCiblee(${l.id})">🔔 Notification push</div>
-                ${l.tel?`<div class="action-dropdown-item" onclick="envoyerAccesWhatsApp(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📲 Envoyer accès WhatsApp</div>`:''}
-                ${l.pinResetRequested?`<div class="action-dropdown-item" style="color:var(--yellow);" onclick="reinitialiserPIN(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">🔑 Réinitialiser PIN (demandé)</div>`:''}
-                ${can('canJuridique')?`<div class="action-dropdown-item" onclick="ouvrirGenDocx(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📄 Documents</div>`:''}
-                ${can('canJuridique')?`<div class="action-dropdown-item" onclick="ouvrirContratLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📜 Contrat de bail</div>`:''}
-                <div class="action-dropdown-sep"></div>
-                ${can('canEditLocataires')?`<div class="action-dropdown-item danger" onclick="ouvrirLiberation(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">🔓 Libérer</div>`:''}
-                ${can('canEditLocataires')?`<div class="action-dropdown-item danger" onclick="supprimerLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">🗑️ Supprimer</div>`:''}
-              </div>
+              <div class="action-dropdown">${_locDropdownItems(l)}</div>
             </div>
           </td>
         </tr>`).join('')}
@@ -866,11 +853,7 @@ function renderRelances() {
           <td style="white-space:nowrap;position:relative;">
             <div class="action-menu">
               <button class="action-menu-btn" onclick="toggleActionMenu(this,event)" style="font-size:18px;padding:4px 10px;" data-tooltip="Actions">⋯</button>
-              <div class="action-dropdown">
-                <div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 Paiement</div>
-                <div class="action-dropdown-item" onclick="previewMiseEnDemeure(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📄 ${t('Lettre')}</div>
-                <div class="action-dropdown-item" style="color:var(--red);" onclick="previewPlainte(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">⚖️ ${t('Plainte')}</div>
-              </div>
+              <div class="action-dropdown">${_locDropdownItems(l)}</div>
             </div>
           </td>
         </tr>`;
@@ -918,10 +901,7 @@ function renderRelances() {
           <td style="white-space:nowrap;position:relative;">
             <div class="action-menu">
               <button class="action-menu-btn" onclick="toggleActionMenu(this,event)" style="font-size:18px;padding:4px 10px;" data-tooltip="Actions">⋯</button>
-              <div class="action-dropdown">
-                <div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 Paiement</div>
-                <div class="action-dropdown-item" onclick="previewMiseEnDemeure(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📄 ${t('Lettre')}</div>
-              </div>
+              <div class="action-dropdown">${_locDropdownItems(l)}</div>
             </div>
           </td>
         </tr>`;
@@ -1308,16 +1288,7 @@ function ouvrirRapportImmeuble(iid) {
           <td style="white-space:nowrap;">
             <div class="action-menu">
               <button class="action-menu-btn" onclick="toggleActionMenu(this,event)" data-tooltip="Actions">⋯</button>
-              <div class="action-dropdown">
-                ${can('canRecordPayment')?`<div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 ${t('Paiement')}</div>`:''}
-                ${can('canEditLocataires')?`<div class="action-dropdown-item" onclick="editLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📝 ${t('Modifier')}</div>`:''}
-                <div class="action-dropdown-item" onclick="ouvrirFicheSuivi(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📊 ${t('Fiche de suivi')}</div>
-                <div class="action-dropdown-item" onclick="_closeDropdowns();_openNewMessageModal('loc_${l.id}')">💬 ${t('Envoyer un message')}</div>
-                <div class="action-dropdown-item" onclick="_closeDropdowns();notifCiblee(${l.id})">🔔 ${t('Notification push')}</div>
-                ${can('canJuridique')?`<div class="action-dropdown-item" onclick="previewMiseEnDemeure(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📄 ${t('Mise en demeure')}</div>`:''}
-                <div class="action-dropdown-sep"></div>
-                ${can('canEditLocataires')?`<div class="action-dropdown-item danger" onclick="supprimerLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">🗑️ ${t('Supprimer')}</div>`:''}
-              </div>
+              <div class="action-dropdown">${_locDropdownItems(l)}</div>
             </div>
           </td>
         </tr>`;
@@ -6812,14 +6783,7 @@ function renderLocTable(iid) {
       <td style="white-space:nowrap;">
         <div class="action-menu">
           <button class="action-menu-btn" onclick="toggleActionMenu(this,event)" data-tooltip="Actions">⋯</button>
-          <div class="action-dropdown">
-            ${can('canRecordPayment')?`<div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">💳 ${t('Paiement')}</div>`:''}
-            ${can('canEditLocataires')?`<div class="action-dropdown-item" onclick="editLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📝 ${t('Modifier')}</div>`:''}
-            <div class="action-dropdown-item" onclick="ouvrirFicheSuivi(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📊 ${t('Fiche suivi')}</div>
-            ${l.tel?`<div class="action-dropdown-item" onclick="envoyerAccesWhatsApp(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">📲 ${t('Envoyer accès WhatsApp')}</div>`:''}
-            <div class="action-dropdown-sep"></div>
-            ${can('canEditLocataires')?`<div class="action-dropdown-item danger" onclick="supprimerLocataire(${l.id});document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))">🗑️ ${t('Supprimer')}</div>`:''}
-          </div>
+          <div class="action-dropdown">${_locDropdownItems(l)}</div>
         </div>
       </td>
     </tr>`;
@@ -7391,6 +7355,7 @@ function renderImmeublesConfig() {
       ? '<div style="position:relative;display:inline-block;"><button class="btn btn-ghost btn-sm" onclick="toggleImmDropdown('+im.id+',event)" style="padding:4px 10px;font-size:16px;line-height:1;">⋮</button>'
         + '<div id="ddm-imm-'+im.id+'" style="display:none;position:absolute;right:0;top:100%;z-index:9999;background:var(--bg2);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:150px;overflow:hidden;">'
         + '<div class="action-dropdown-item" onclick="navigate(\'locataires\','+im.id+');closeImmDropdown()">👥 Voir locataires</div>'
+        + '<div class="action-dropdown-item" onclick="ajouterLocal('+im.id+');closeImmDropdown()">➕ Ajouter un local</div>'
         + '<div class="action-dropdown-item" onclick="navigate(\'rapport\');closeImmDropdown()">📊 Rapport</div>'
         + '<div class="action-dropdown-sep"></div>'
         + '<div class="action-dropdown-item" onclick="editImmeuble('+im.id+');closeImmDropdown()">✏️ Modifier</div>'
@@ -9996,6 +9961,25 @@ function _localFallback(query) {
     return `📈 <strong>Performance globale</strong><br>• ${actifs.length} locataires actifs<br>• Recouvrement : <strong>${taux}%</strong><br>• Impayés : <strong>${fmtShort(totalImp)}</strong> (${nbImp} loc.)<br>• Encaissements ce mois : <strong>${fmtShort(paiementsMois.reduce((s,p)=>s+p.montant,0))}</strong>`;
   }
   return `📊 <strong>Résumé ImmoGest</strong><br>• ${actifs.length} locataires | Recouvrement : <strong>${taux}%</strong><br>• Impayés : <strong>${fmtShort(totalImp)} FCFA</strong> sur ${nbImp} loc.`;
+}
+
+function _locDropdownItems(l) {
+  const cl = `document.querySelectorAll('.action-dropdown.open').forEach(d=>d.classList.remove('open'))`;
+  let s = '';
+  if (can('canRecordPayment'))  s += `<div class="action-dropdown-item" onclick="openModalPaiement(${l.iid},${l.id});${cl}">💳 ${t('Paiement')}</div>`;
+  if (can('canEditLocataires')) s += `<div class="action-dropdown-item" onclick="editLocataire(${l.id});${cl}">📝 ${t('Modifier')}</div>`;
+  s += `<div class="action-dropdown-item" onclick="ouvrirFicheSuivi(${l.id});${cl}">📊 ${t('Fiche de suivi')}</div>`;
+  s += `<div class="action-dropdown-item" onclick="_closeDropdowns();_openNewMessageModal('loc_${l.id}')">💬 ${t('Envoyer un message')}</div>`;
+  s += `<div class="action-dropdown-item" onclick="_closeDropdowns();notifCiblee(${l.id})">🔔 ${t('Notification push')}</div>`;
+  if (l.tel) s += `<div class="action-dropdown-item" onclick="envoyerAccesWhatsApp(${l.id});${cl}">📲 ${t('Envoyer accès WhatsApp')}</div>`;
+  if (l.pinResetRequested) s += `<div class="action-dropdown-item" style="color:var(--yellow);" onclick="reinitialiserPIN(${l.id});${cl}">🔑 ${t('Réinitialiser PIN (demandé)')}</div>`;
+  if (can('canJuridique')) s += `<div class="action-dropdown-item" onclick="ouvrirGenDocx(${l.id});${cl}">📄 ${t('Documents')}</div>`;
+  if (can('canJuridique')) s += `<div class="action-dropdown-item" onclick="ouvrirContratLocataire(${l.id});${cl}">📜 ${t('Contrat de bail')}</div>`;
+  if (can('canJuridique')) s += `<div class="action-dropdown-item" onclick="previewMiseEnDemeure(${l.id});${cl}">📨 ${t('Mise en demeure')}</div>`;
+  s += `<div class="action-dropdown-sep"></div>`;
+  if (can('canEditLocataires')) s += `<div class="action-dropdown-item danger" onclick="ouvrirLiberation(${l.id});${cl}">🔓 ${t('Libérer')}</div>`;
+  if (can('canEditLocataires')) s += `<div class="action-dropdown-item danger" onclick="supprimerLocataire(${l.id});${cl}">🗑️ ${t('Supprimer')}</div>`;
+  return s;
 }
 
 function toggleActionMenu(btn, e) {
