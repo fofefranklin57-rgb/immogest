@@ -64,9 +64,44 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
 .badges{display:flex;flex-wrap:wrap;gap:8px;}
 .badge{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);}
 
+/* TABS */
+.tabs-bar{background:#fff;border-bottom:2px solid var(--border);position:sticky;top:0;z-index:101;}
+.tabs-inner{max-width:1100px;margin:0 auto;padding:0 20px;display:flex;gap:0;}
+.tab-btn{padding:14px 22px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:700;color:var(--text3);border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:7px;}
+.tab-btn.active{color:var(--blue);border-bottom-color:var(--blue);}
+.tab-btn:hover{color:var(--text);}
+
 /* FILTERS */
-.filters{background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.filters{background:#fff;border-bottom:1px solid var(--border);z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.06);}
 .filters-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+
+/* AGENT FILTERS */
+.agent-filters{background:#fff;border-bottom:1px solid var(--border);z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.06);display:none;}
+.agent-filters .filters-inner{flex-wrap:wrap;}
+
+/* AGENT CARDS */
+.agent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;}
+.agent-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);transition:transform .15s,box-shadow .15s;cursor:pointer;}
+.agent-card:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,0,0,.13);}
+.agent-cover{height:80px;background:linear-gradient(135deg,#0a1e3c,#1a6ec7);position:relative;}
+.agent-avatar-wrap{position:absolute;bottom:-28px;left:20px;}
+.agent-avatar{width:56px;height:56px;border-radius:50%;border:3px solid #fff;background:#e2e8f0 center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:22px;color:#94a3b8;overflow:hidden;}
+.agent-body{padding:36px 16px 16px;}
+.agent-name{font-size:15px;font-weight:800;margin-bottom:2px;}
+.agent-agence{font-size:12px;color:var(--blue);font-weight:600;margin-bottom:6px;}
+.agent-bio{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.agent-zones{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;}
+.agent-zone-tag{background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;}
+.agent-stats{display:flex;gap:16px;font-size:11px;color:var(--text3);margin-bottom:12px;}
+.agent-stat-val{font-weight:800;color:var(--text);font-size:13px;}
+.agent-actions{display:flex;gap:8px;}
+.agent-badge-verifie{background:#0e6aaf;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;}
+.agent-badge-pro{background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;}
+
+/* AGENT MODAL */
+.agent-modal-cover{height:140px;background:linear-gradient(135deg,#0a1e3c,#1a6ec7);position:relative;}
+.agent-modal-avatar{width:80px;height:80px;border-radius:50%;border:4px solid #fff;background:#e2e8f0 center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:32px;color:#94a3b8;overflow:hidden;position:absolute;bottom:-36px;left:24px;}
+.agent-modal-body{padding:44px 24px 24px;}
 .filter-input{padding:9px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fff;min-width:120px;outline:none;}
 .filter-input:focus{border-color:var(--blue);}
 .btn-search{padding:9px 20px;background:var(--blue2);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;}
@@ -189,11 +224,19 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
   </div>
 </header>
 
-<!-- FILTERS -->
-<div class="filters">
+<!-- TABS -->
+<div class="tabs-bar">
+  <div class="tabs-inner">
+    <button class="tab-btn active" id="tab-annonces" onclick="switchTab('annonces')">🏘️ Annonces</button>
+    <button class="tab-btn" id="tab-agents" onclick="switchTab('agents')">🤝 Agents & Agences</button>
+  </div>
+</div>
+
+<!-- FILTERS ANNONCES -->
+<div class="filters" id="filters-annonces">
   <div class="filters-inner">
-    <input class="filter-input" id="f-ville"    placeholder="🏙️ Ville (ex: Yaoundé)" oninput="filtrer()">
-    <select class="filter-input" id="f-type"    onchange="filtrer()">
+    <input class="filter-input" id="f-ville"  placeholder="🏙️ Ville (ex: Yaoundé)" oninput="filtrer()">
+    <select class="filter-input" id="f-type"  onchange="filtrer()">
       <option value="">Tous les types</option>
       <option value="appartement">🏢 Appartement</option>
       <option value="maison">🏠 Maison</option>
@@ -203,9 +246,26 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
       <option value="hotel">🏨 Hôtel</option>
       <option value="commercial">🏪 Local commercial</option>
     </select>
-    <input class="filter-input" id="f-prix"     placeholder="💰 Prix max (FCFA)" type="number" oninput="filtrer()" style="max-width:160px;">
+    <input class="filter-input" id="f-prix"   placeholder="💰 Prix max (FCFA)" type="number" oninput="filtrer()" style="max-width:160px;">
     <button class="btn-search" onclick="filtrer()">🔍 Rechercher</button>
     <button class="btn-publish" onclick="ouvrirFormPublier()">+ Publier</button>
+  </div>
+</div>
+
+<!-- FILTERS AGENTS -->
+<div class="agent-filters" id="filters-agents">
+  <div class="filters-inner">
+    <input class="filter-input" id="fa-ville" placeholder="🏙️ Ville (ex: Yaoundé)" oninput="filtrerAgents()">
+    <select class="filter-input" id="fa-spec" onchange="filtrerAgents()">
+      <option value="">Toutes spécialités</option>
+      <option value="appartement">🏢 Appartements</option>
+      <option value="maison">🏠 Maisons</option>
+      <option value="commercial">🏪 Commercial</option>
+      <option value="hotel">🏨 Hôtels / meublés</option>
+      <option value="luxe">✨ Luxe</option>
+    </select>
+    <button class="btn-search" onclick="filtrerAgents()">🔍 Rechercher</button>
+    <button class="btn-publish" style="background:#7c3aed;" onclick="ouvrirInscriptionAgent()">🤝 Devenir agent</button>
   </div>
 </div>
 
@@ -233,6 +293,30 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
     <div class="empty-icon">🔍</div>
     <div style="font-size:16px;font-weight:700;margin-bottom:8px;">Aucune annonce trouvée</div>
     <div style="font-size:13px;">Essayez d'autres critères ou <a href="#" onclick="ouvrirFormPublier();return false;" style="color:var(--blue);font-weight:700;">publiez la première annonce</a></div>
+  </div>
+
+  <!-- SECTION AGENTS -->
+  <div id="section-agents" style="display:none;">
+
+    <!-- Hero agents -->
+    <div style="background:linear-gradient(135deg,#0a1e3c,#1a3a6e);border-radius:16px;padding:28px;margin-bottom:28px;display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#4f8ef7;margin-bottom:6px;">🤝 Réseau ImmoGest</div>
+        <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:6px;">Agents & Agences immobilières</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.6);max-width:480px;">Des professionnels vérifiés à votre service — trouvez le bon agent selon votre ville, votre budget et votre type de bien.</div>
+      </div>
+      <button onclick="ouvrirInscriptionAgent()" style="padding:13px 22px;background:#4f8ef7;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:800;white-space:nowrap;">🤝 Rejoindre le réseau</button>
+    </div>
+
+    <div class="section-title" id="agents-count-label">👥 Agents disponibles</div>
+    <div class="agent-grid" id="grid-agents"></div>
+
+    <div class="empty" id="empty-agents" style="display:none;">
+      <div class="empty-icon">🤝</div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:8px;">Aucun agent trouvé</div>
+      <div style="font-size:13px;">Soyez le premier à rejoindre le réseau — <a href="#" onclick="ouvrirInscriptionAgent();return false;" style="color:var(--blue);font-weight:700;">créer mon profil agent</a></div>
+    </div>
+
   </div>
 </main>
 
@@ -681,6 +765,353 @@ async function soumettreAnnonce(e) {
   }
 }
 
+// ── TABS ──────────────────────────────────────────────────────
+var _tab = 'annonces';
+function switchTab(t) {
+  _tab = t;
+  document.getElementById('tab-annonces').classList.toggle('active', t==='annonces');
+  document.getElementById('tab-agents').classList.toggle('active', t==='agents');
+  document.getElementById('filters-annonces').style.display = t==='annonces' ? '' : 'none';
+  document.getElementById('filters-agents').style.display   = t==='agents'   ? '' : 'none';
+  document.getElementById('section-annonces').style.display = t==='annonces' ? '' : 'none';
+  document.getElementById('loading').style.display          = 'none';
+  document.getElementById('empty').style.display            = 'none';
+  document.getElementById('section-agents').style.display   = t==='agents'   ? '' : 'none';
+  document.getElementById('empty-agents').style.display     = 'none';
+  if (t==='agents' && _agents.length === 0) chargerAgents({});
+}
+
+// ── AGENTS — Chargement ────────────────────────────────────────
+var _agents = [];
+
+async function chargerAgents(filters) {
+  document.getElementById('empty-agents').style.display = 'none';
+  document.getElementById('grid-agents').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto 12px;"></div><div style="color:#64748b;font-size:14px;">Chargement des agents…</div></div>';
+  try {
+    var q = sb.from('agents').select('*').eq('actif', true).order('badge_pro', { ascending: false }).order('badge_verifie', { ascending: false }).order('created_at', { ascending: false });
+    if (filters && filters.ville) q = q.contains('zones', [filters.ville]);
+    if (filters && filters.spec)  q = q.contains('specialites', [filters.spec]);
+    var { data } = await q.limit(60);
+    _agents = data || [];
+  } catch(e) { _agents = []; }
+  afficherAgents(_agents);
+}
+
+function afficherAgents(list) {
+  var grid = document.getElementById('grid-agents');
+  if (!list || list.length === 0) {
+    grid.innerHTML = '';
+    document.getElementById('empty-agents').style.display = 'block';
+    return;
+  }
+  document.getElementById('agents-count-label').textContent = '👥 ' + list.length + ' agent' + (list.length > 1 ? 's' : '') + ' disponible' + (list.length > 1 ? 's' : '');
+  grid.innerHTML = list.map(agentCardHtml).join('');
+}
+
+function filtrerAgents() {
+  var ville = (document.getElementById('fa-ville').value || '').trim();
+  var spec  = document.getElementById('fa-spec').value || '';
+  chargerAgents({ ville: ville || null, spec: spec || null });
+}
+
+var SPEC_LABELS = { appartement:'Appartements', maison:'Maisons', commercial:'Commercial', hotel:'Hôtels/Meublés', luxe:'Luxe' };
+
+function agentCardHtml(a) {
+  var initiales = ((a.prenom||'').charAt(0) + (a.nom||'').charAt(0)).toUpperCase() || '👤';
+  var coverStyle = a.cover_url
+    ? 'background:url(\'' + a.cover_url.replace(/'/g,"\\'") + '\') center/cover no-repeat;'
+    : 'background:linear-gradient(135deg,#0a1e3c,#1a6ec7);';
+  var avatarStyle = a.photo_url
+    ? 'background-image:url(\'' + a.photo_url.replace(/'/g,"\\'") + '\');'
+    : '';
+  var zones = (a.zones||[]).slice(0,3).map(function(z){ return '<span class="agent-zone-tag">📍'+z+'</span>'; }).join('');
+  var specs = (a.specialites||[]).slice(0,2).map(function(s){ return '<span style="background:#f0fdf4;color:#15803d;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;">'+(SPEC_LABELS[s]||s)+'</span>'; }).join('');
+  return '<div class="agent-card" onclick="ouvrirProfilAgent('+a.id+')">'
+    + '<div class="agent-cover" style="'+coverStyle+'">'
+    + '<div style="position:absolute;top:10px;right:10px;display:flex;gap:5px;">'
+    + (a.badge_pro ? '<span class="agent-badge-pro">⭐ Pro</span>' : '')
+    + (a.badge_verifie ? '<span class="agent-badge-verifie">✓ Vérifié</span>' : '')
+    + '</div>'
+    + '<div class="agent-avatar-wrap"><div class="agent-avatar" style="'+avatarStyle+'">'+(avatarStyle?'':initiales)+'</div></div>'
+    + '</div>'
+    + '<div class="agent-body">'
+    + '<div class="agent-name">'+(a.prenom?a.prenom+' ':'')+(a.nom||'').replace(/</g,'&lt;')+'</div>'
+    + (a.agence ? '<div class="agent-agence">🏢 '+a.agence.replace(/</g,'&lt;')+'</div>' : '')
+    + (a.bio ? '<div class="agent-bio">'+a.bio.replace(/</g,'&lt;')+'</div>' : '')
+    + (zones ? '<div class="agent-zones">'+zones+'</div>' : '')
+    + (specs ? '<div class="agent-zones">'+specs+'</div>' : '')
+    + '<div class="agent-stats">'
+    + '<div><div class="agent-stat-val">'+(a.experience_ans||0)+'</div><div>ans exp.</div></div>'
+    + '<div><div class="agent-stat-val">'+(a.vues||0)+'</div><div>vues</div></div>'
+    + '</div>'
+    + '<div class="agent-actions">'
+    + '<button class="btn-wa" onclick="event.stopPropagation();contactAgentWA('+a.id+')">📱 WhatsApp</button>'
+    + '<button class="btn-detail" onclick="event.stopPropagation();ouvrirProfilAgent('+a.id+')">Voir profil</button>'
+    + '</div></div></div>';
+}
+
+// ── AGENT — Profil modal ───────────────────────────────────────
+async function ouvrirProfilAgent(id) {
+  var a = _agents.find(function(x){ return x.id===id; });
+  if (!a) {
+    var { data } = await sb.from('agents').select('*').eq('id', id).single();
+    a = data;
+  }
+  if (!a) return;
+  sb.from('agents').update({ vues: (a.vues||0)+1 }).eq('id', id).then(function(){});
+
+  // Charger les annonces de cet agent
+  var { data: annoncesAgent } = await sb.from('annonces').select('id,titre,type,ville,prix,periode,photos,disponible').eq('agent_id', id).eq('actif', true).limit(6);
+  var annonces = annoncesAgent || [];
+
+  var initiales = ((a.prenom||'').charAt(0) + (a.nom||'').charAt(0)).toUpperCase() || '👤';
+  var coverStyle = a.cover_url ? 'background:url(\''+a.cover_url.replace(/'/g,"\\'")+'\') center/cover no-repeat;' : 'background:linear-gradient(135deg,#0a1e3c,#1a6ec7);';
+  var avatarStyle = a.photo_url ? 'background-image:url(\''+a.photo_url.replace(/'/g,"\\'")+'\');' : '';
+
+  var annoncesHtml = annonces.length
+    ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:12px;">'
+      + annonces.map(function(ann){
+          var p = (ann.prix||0).toLocaleString('fr-FR');
+          var photo = ann.photos&&ann.photos.length ? ann.photos[0] : '';
+          return '<div onclick="switchTab(\'annonces\');setTimeout(function(){ouvrirAnnonce('+ann.id+')},200)" style="background:#f8fafc;border-radius:10px;overflow:hidden;cursor:pointer;border:1px solid #e2e8f0;">'
+            + (photo ? '<div style="height:90px;background:url(\''+photo.replace(/'/g,"\\'")+'\') center/cover no-repeat;"></div>' : '<div style="height:90px;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:24px;">🏠</div>')
+            + '<div style="padding:8px;">'
+            + '<div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(ann.titre||'').replace(/</g,'&lt;')+'</div>'
+            + '<div style="font-size:12px;color:#0e6aaf;font-weight:800;">'+p+' FCFA</div>'
+            + '</div></div>';
+        }).join('')
+      + '</div>'
+    : '<div style="text-align:center;padding:20px;color:#94a3b8;font-size:13px;">Aucune annonce publiée pour l\'instant</div>';
+
+  var zones = (a.zones||[]).map(function(z){ return '<span class="agent-zone-tag" style="font-size:12px;padding:4px 10px;">📍'+z+'</span>'; }).join('');
+  var specs = (a.specialites||[]).map(function(s){ return '<span style="background:#f0fdf4;color:#15803d;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;">'+(SPEC_LABELS[s]||s)+'</span>'; }).join('');
+  var langues = (a.langues||[]).join(', ');
+
+  var ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = '<div class="modal-box" style="max-width:580px;">'
+    + '<div class="agent-modal-cover" style="'+coverStyle+'">'
+    + '<button onclick="this.closest(\'.modal-overlay\').remove()" style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.5);color:#fff;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;">✕</button>'
+    + '<div style="position:absolute;top:12px;left:16px;display:flex;gap:6px;">'
+    + (a.badge_pro ? '<span class="agent-badge-pro">⭐ Pro</span>' : '')
+    + (a.badge_verifie ? '<span class="agent-badge-verifie">✓ Vérifié</span>' : '')
+    + '</div>'
+    + '<div class="agent-modal-avatar" style="'+avatarStyle+'">'+(avatarStyle?'':initiales)+'</div>'
+    + '</div>'
+    + '<div class="agent-modal-body">'
+    + '<div style="font-size:20px;font-weight:900;">'+(a.prenom?a.prenom+' ':'')+(a.nom||'').replace(/</g,'&lt;')+'</div>'
+    + (a.agence ? '<div style="font-size:13px;color:var(--blue);font-weight:700;margin-bottom:4px;">🏢 '+a.agence.replace(/</g,'&lt;')+'</div>' : '')
+    + '<div style="display:flex;flex-wrap:wrap;gap:16px;margin:12px 0;font-size:12px;color:var(--text2);">'
+    + '<span>📅 '+a.experience_ans+' ans d\'expérience</span>'
+    + (langues ? '<span>🗣️ '+langues+'</span>' : '')
+    + (a.email ? '<span>✉️ '+a.email.replace(/</g,'&lt;')+'</span>' : '')
+    + '</div>'
+    + (a.bio ? '<p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px;">'+a.bio.replace(/</g,'&lt;').replace(/\n/g,'<br>')+'</p>' : '')
+    + (zones ? '<div style="margin-bottom:10px;"><div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Zones couvertes</div><div style="display:flex;flex-wrap:wrap;gap:6px;">'+zones+'</div></div>' : '')
+    + (specs ? '<div style="margin-bottom:14px;"><div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Spécialités</div><div style="display:flex;flex-wrap:wrap;gap:6px;">'+specs+'</div></div>' : '')
+    + '<div style="display:flex;gap:10px;margin-bottom:20px;">'
+    + '<button class="btn-wa-lg" onclick="contactAgentWA('+id+')">📱 Contacter sur WhatsApp</button>'
+    + '<button class="btn-share-lg" onclick="partagerAgent('+id+',\''+(a.nom||'').replace(/'/g,"\\'")+'\')">📤 Partager</button>'
+    + '</div>'
+    + '<div style="border-top:1px solid var(--border);padding-top:16px;">'
+    + '<div style="font-size:13px;font-weight:800;margin-bottom:6px;">🏘️ Annonces de cet agent ('+annonces.length+')</div>'
+    + annoncesHtml
+    + '</div>'
+    + (a.plan==='basic' ? '<div style="margin-top:16px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">'
+      + '<div style="font-size:12px;font-weight:600;color:#92400e;">⭐ Passez Pro pour apparaître en premier et obtenir le badge Pro</div>'
+      + '<button onclick="ouvrirUpgradeAgent('+id+')" style="padding:8px 16px;background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;">Passer Pro</button>'
+      + '</div>' : '')
+    + '</div></div>';
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+
+function contactAgentWA(id) {
+  var a = _agents.find(function(x){ return x.id===id; });
+  if (!a) return;
+  var tel = (a.whatsapp||'').replace(/[^0-9]/g,'');
+  if (!tel) { alert('Numéro non disponible'); return; }
+  var msg = '👋 Bonjour '+(a.prenom||a.nom||'')+',\n\nJe vous contacte via ImmoGest Marketplace.\nJe cherche un bien immobilier et j\'aimerais votre aide.';
+  window.open('https://wa.me/'+tel+'?text='+encodeURIComponent(msg), '_blank');
+}
+
+function partagerAgent(id, nom) {
+  var url = 'https://immogest-34w.pages.dev/marche?agent='+id;
+  if (navigator.share) { navigator.share({ title: nom+' — ImmoGest', url: url }); return; }
+  var enc = encodeURIComponent(url);
+  var ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = '<div style="background:#fff;border-radius:16px;padding:20px;width:100%;max-width:360px;">'
+    + '<div style="font-size:15px;font-weight:800;margin-bottom:14px;text-align:center;">📤 Partager ce profil</div>'
+    + '<div class="share-row">'
+    + '<button class="share-btn" style="background:#1877F2;" onclick="window.open(\'https://www.facebook.com/sharer/sharer.php?u='+enc+'\',\'_blank\')">📘 Facebook</button>'
+    + '<button class="share-btn" style="background:#25D366;" onclick="window.open(\'https://wa.me/?text='+encodeURIComponent('🤝 '+nom+' — Agent ImmoGest : '+url)+'\',\'_blank\')">📱 WhatsApp</button>'
+    + '<button class="share-btn" style="background:#e2e8f0;color:#333;" onclick="copyLink(\''+url+'\',this)">📋 Copier</button>'
+    + '</div>'
+    + '<button onclick="this.closest(\'.modal-overlay\').remove()" style="width:100%;margin-top:10px;padding:11px;border:1px solid #e2e8f0;border-radius:8px;background:none;cursor:pointer;font-size:13px;">Fermer</button>'
+    + '</div>';
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+
+// ── AGENT — Inscription ────────────────────────────────────────
+function ouvrirInscriptionAgent() {
+  var ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `<div class="modal-box" style="max-width:560px;">
+    <div style="background:linear-gradient(135deg,#0a1e3c,#1a6ec7);padding:22px 24px;color:#fff;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#4f8ef7;margin-bottom:4px;">🤝 Réseau ImmoGest</div>
+      <div style="font-size:19px;font-weight:900;">Créer mon profil agent</div>
+      <div style="font-size:12px;opacity:.7;margin-top:4px;">Gratuit — visible par tous les visiteurs de la marketplace</div>
+      <button onclick="this.closest('.modal-overlay').remove()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;">✕</button>
+    </div>
+    <form id="form-agent" onsubmit="soumettreAgent(event)" style="padding:22px;max-height:70vh;overflow-y:auto;">
+
+      <div class="form-grid2">
+        <div class="form-row"><label class="form-label">Prénom *</label><input class="form-input" name="prenom" placeholder="Jean" required></div>
+        <div class="form-row"><label class="form-label">Nom *</label><input class="form-input" name="nom" placeholder="Mballa" required></div>
+      </div>
+      <div class="form-row"><label class="form-label">Agence / Cabinet (facultatif)</label><input class="form-input" name="agence" placeholder="Ex: Agence Immobilière du Centre"></div>
+      <div class="form-row"><label class="form-label">WhatsApp *</label><input class="form-input" name="whatsapp" placeholder="237699000000" required></div>
+      <div class="form-row"><label class="form-label">Email</label><input class="form-input" name="email" type="email" placeholder="jean@example.com"></div>
+
+      <div class="form-grid2">
+        <div class="form-row"><label class="form-label">Années d'expérience</label><input class="form-input" name="experience_ans" type="number" min="0" placeholder="5"></div>
+        <div class="form-row"><label class="form-label">Langues parlées</label><input class="form-input" name="langues" placeholder="Français, Anglais, Beti…"></div>
+      </div>
+
+      <div class="form-row"><label class="form-label">Zones couvertes (séparées par virgules) *</label><input class="form-input" name="zones" placeholder="Yaoundé, Douala, Bafoussam…" required></div>
+
+      <div class="form-row"><label class="form-label">Spécialités</label>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;" id="spec-checks">
+          <label class="checkbox-row"><input type="checkbox" name="spec" value="appartement"> Appartements</label>
+          <label class="checkbox-row"><input type="checkbox" name="spec" value="maison"> Maisons</label>
+          <label class="checkbox-row"><input type="checkbox" name="spec" value="commercial"> Commercial</label>
+          <label class="checkbox-row"><input type="checkbox" name="spec" value="hotel"> Hôtels/Meublés</label>
+          <label class="checkbox-row"><input type="checkbox" name="spec" value="luxe"> Luxe</label>
+        </div>
+      </div>
+
+      <div class="form-row"><label class="form-label">Présentation (bio)</label>
+        <textarea class="form-input" name="bio" rows="3" placeholder="Décrivez votre expérience, vos services, votre approche…" style="resize:none;"></textarea>
+      </div>
+      <div class="form-row"><label class="form-label">Photo de profil (URL)</label><input class="form-input" name="photo_url" placeholder="https://…"></div>
+
+      <div id="err-agent" style="display:none;color:#dc2626;font-size:12px;padding:10px;background:#fef2f2;border-radius:8px;margin-bottom:12px;"></div>
+
+      <button type="submit" id="btn-agent" style="width:100%;padding:14px;background:linear-gradient(135deg,#0a1e3c,#1a6ec7);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:15px;font-weight:800;">🤝 Créer mon profil</button>
+      <div style="text-align:center;margin-top:10px;font-size:11px;color:#94a3b8;">Votre profil sera visible immédiatement sur la marketplace</div>
+    </form>
+  </div>`;
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+
+async function soumettreAgent(e) {
+  e.preventDefault();
+  var form = e.target;
+  var btn  = document.getElementById('btn-agent');
+  var err  = document.getElementById('err-agent');
+  err.style.display = 'none';
+  btn.disabled = true; btn.textContent = '⏳ Création…';
+
+  var zones = (form.zones.value||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  var specs = Array.from(form.querySelectorAll('[name=spec]:checked')).map(function(x){ return x.value; });
+  var langues = (form.langues.value||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  if (!langues.length) langues = ['Français'];
+
+  var row = {
+    prenom:         form.prenom.value.trim(),
+    nom:            form.nom.value.trim(),
+    agence:         (form.agence.value||'').trim() || null,
+    whatsapp:       form.whatsapp.value.trim(),
+    email:          (form.email.value||'').trim() || null,
+    experience_ans: parseInt(form.experience_ans.value) || 0,
+    langues:        langues,
+    zones:          zones,
+    specialites:    specs,
+    bio:            (form.bio.value||'').trim() || null,
+    photo_url:      (form.photo_url.value||'').trim() || null,
+    plan:           'basic',
+    actif:          true
+  };
+
+  try {
+    var { data, error } = await sb.from('agents').insert(row).select().single();
+    if (error) throw error;
+    document.querySelector('.modal-overlay').remove();
+    _agents.unshift(data);
+    switchTab('agents');
+    afficherAgents(_agents);
+    setTimeout(function(){ ouvrirProfilAgent(data.id); }, 300);
+    var t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#0a1e3c,#1a6ec7);color:#fff;padding:14px 24px;border-radius:10px;font-weight:800;z-index:99999;font-size:14px;box-shadow:0 4px 20px rgba(0,0,0,.25);';
+    t.textContent = '✅ Profil créé ! Vous êtes maintenant visible sur la marketplace.';
+    document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); }, 5000);
+  } catch(e2) {
+    err.textContent = 'Erreur : ' + (e2.message || 'Problème de connexion');
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = '🤝 Créer mon profil';
+  }
+}
+
+// ── AGENT — Upgrade Pro ────────────────────────────────────────
+function ouvrirUpgradeAgent(id) {
+  var a = _agents.find(function(x){ return x.id===id; }) || {};
+  var ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = '<div style="background:#fff;border-radius:16px;width:100%;max-width:400px;overflow:hidden;">'
+    + '<div style="background:linear-gradient(90deg,#f59e0b,#ea580c);padding:20px;color:#fff;">'
+    + '<div style="font-size:11px;font-weight:700;letter-spacing:1px;opacity:.8;margin-bottom:4px;">PASSER PRO</div>'
+    + '<div style="font-size:18px;font-weight:900;">Agent Pro ImmoGest</div>'
+    + '</div>'
+    + '<div style="padding:20px;">'
+    + '<div style="background:#fffbeb;border-radius:10px;padding:16px;margin-bottom:16px;">'
+    + '<div style="font-size:13px;font-weight:800;margin-bottom:10px;">✅ Ce que vous gagnez :</div>'
+    + '<div style="font-size:12px;color:#444;line-height:1.8;">'
+    + '⭐ Badge Pro visible sur toutes vos annonces<br>'
+    + '🔝 Position prioritaire dans la liste agents<br>'
+    + '📊 Statistiques de vues détaillées<br>'
+    + '📸 Jusqu\'à 20 photos par annonce<br>'
+    + '🔔 Notification push aux abonnés ImmoGest'
+    + '</div></div>'
+    + '<div style="font-size:28px;font-weight:900;color:#ea580c;text-align:center;margin-bottom:6px;">5 000 <span style="font-size:14px;font-weight:500;color:#64748b;">FCFA / mois</span></div>'
+    + '<div style="text-align:center;font-size:11px;color:#94a3b8;margin-bottom:16px;">Paiement via MTN MoMo ou Orange Money</div>'
+    + '<input id="upgrade-tel" class="form-input" placeholder="Numéro MoMo (ex: 237699000000)" style="margin-bottom:12px;">'
+    + '<div id="err-upgrade" style="display:none;color:#dc2626;font-size:12px;padding:8px;background:#fef2f2;border-radius:8px;margin-bottom:10px;"></div>'
+    + '<button id="btn-upgrade" onclick="confirmerUpgradeAgent('+id+')" style="width:100%;padding:14px;background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:800;">⭐ Passer Pro maintenant</button>'
+    + '<button onclick="this.closest(\'.modal-overlay\').remove()" style="width:100%;margin-top:8px;padding:10px;border:1px solid #e2e8f0;border-radius:8px;background:none;cursor:pointer;font-size:13px;color:#64748b;">Plus tard</button>'
+    + '</div></div>';
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+
+async function confirmerUpgradeAgent(id) {
+  var tel = (document.getElementById('upgrade-tel').value||'').replace(/[^0-9]/g,'');
+  var err = document.getElementById('err-upgrade');
+  var btn = document.getElementById('btn-upgrade');
+  if (!tel || tel.length < 9) { err.textContent='Numéro invalide.'; err.style.display='block'; return; }
+  btn.disabled=true; btn.textContent='⏳ Traitement…';
+  await new Promise(function(r){ setTimeout(r,1500); }); // simulation NotchPay
+  try {
+    await sb.from('agents').update({ plan:'pro', badge_pro:true }).eq('id', id);
+    var a = _agents.find(function(x){ return x.id===id; });
+    if (a) { a.plan='pro'; a.badge_pro=true; }
+    document.querySelector('.modal-overlay').remove();
+    afficherAgents(_agents);
+    var t = document.createElement('div');
+    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;padding:14px 24px;border-radius:10px;font-weight:800;z-index:99999;font-size:14px;';
+    t.textContent='⭐ Vous êtes maintenant Agent Pro !';
+    document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); },5000);
+  } catch(e2) {
+    err.textContent='Erreur : '+(e2.message||'Réessayez');
+    err.style.display='block';
+    btn.disabled=false; btn.textContent='⭐ Passer Pro maintenant';
+  }
+}
+
 // ── Visite 3D ─────────────────────────────────────────────────
 function ouvrir3D(url) {
   var ov = document.createElement('div');
@@ -954,14 +1385,23 @@ async function soumettre3D(e) {
 
 // ── Démarrage ──────────────────────────────────────────────────
 (function() {
-  // Vérifier si une annonce précise est demandée dans l'URL
-  var params = new URLSearchParams(window.location.search);
+  var params    = new URLSearchParams(window.location.search);
   var annonceId = params.get('annonce');
-  charger({}).then(function() {
-    if (annonceId) {
-      setTimeout(function(){ ouvrirAnnonce(parseInt(annonceId)); }, 400);
-    }
-  });
+  var agentId   = params.get('agent');
+
+  if (agentId) {
+    // Ouvrir directement l'onglet agents + profil
+    switchTab('agents');
+    chargerAgents({}).then(function(){
+      setTimeout(function(){ ouvrirProfilAgent(parseInt(agentId)); }, 400);
+    });
+  } else {
+    charger({}).then(function() {
+      if (annonceId) {
+        setTimeout(function(){ ouvrirAnnonce(parseInt(annonceId)); }, 400);
+      }
+    });
+  }
 })();
 </script>
 </body>
