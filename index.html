@@ -327,6 +327,8 @@
       <div id="sidebar-gestion">
         <div class="nav-item" onclick="navigate('locataires')"><span class="nav-icon">👤</span> <span data-i18n="Locataires">Locataires</span></div>
         <div class="nav-item" onclick="navigate('maintenance-edl')"><span class="nav-icon">🔧</span> <span data-i18n="Maintenance & EDL">Maintenance &amp; EDL</span> <span class="nav-badge" id="badge-maintenance" style="display:none;">0</span></div>
+        <div class="nav-item" onclick="navigate('marketplace')"><span class="nav-icon">🏘️</span> <span>Marketplace</span></div>
+        <div class="nav-item" onclick="navigate('verif-signature')"><span class="nav-icon">✍️</span> <span>Signatures</span></div>
         <div class="nav-item" onclick="navigate('immeubles-config')"><span class="nav-icon">⚙</span> <span data-i18n="Gérer les immeubles">Gérer les immeubles</span></div>
         <div class="nav-item" id="nav-parametres" onclick="navigate('parametres')"><span class="nav-icon">⚙️</span> <span data-i18n="Paramètres">Paramètres</span></div>
       </div>
@@ -1126,11 +1128,19 @@
   </div>
 </div>
 
+<!-- Page: Marketplace -->
+<div id="page-marketplace" class="page" style="display:none;"></div>
+
+<!-- Page: Vérification signature -->
+<div id="page-verif-sig" class="page" style="display:none;"></div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="docx.bundle.js"></script>
-<script src="js/app.js?v=20260603d"></script>
+<script src="js/app.js?v=20260612a"></script>
+<script src="js/signature.js?v=20260612a"></script>
+<script src="js/marketplace.js?v=20260612a"></script>
 
 <!-- Context menu for locaux -->
 

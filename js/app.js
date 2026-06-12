@@ -224,6 +224,8 @@ function renderCurrent() {
   else if (currentPage === 'parametres') renderParametres();
   else if (currentPage === 'signalements') renderSignalements();
   else if (currentPage === 'maintenance-edl') renderMaintenanceEdl();
+  else if (currentPage === 'marketplace') { if (typeof renderMarketplace === 'function') renderMarketplace(); }
+  else if (currentPage === 'verif-signature') { if (typeof renderVerificationSignature === 'function') renderVerificationSignature(); }
   updateSidebarBadges();
 }
 
@@ -11130,6 +11132,7 @@ async function ouvrirContratLocataire(locId) {
     <h3 style="margin:0 0 16px;">📄 Contrat de bail — ${l.nom}</h3>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
       <button class="btn btn-primary" onclick="genererContratPourLocataire(${locId})">👁 Générer / Prévisualiser</button>
+      <button class="btn" style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;" onclick="closeModal();afficherBoutonSignature(${locId},'${l.nom.replace(/'/g,"\\'")}')">✍️ Faire signer</button>
       <button class="btn" onclick="closeModal()">Fermer</button>
     </div>
 
