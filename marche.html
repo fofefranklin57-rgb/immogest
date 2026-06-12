@@ -392,14 +392,57 @@ function afficherGrille(list) {
   grid.innerHTML = html;
 }
 
+var _promoIndex = 0;
+var _PROMOS = [
+  // ImmoGest
+  {
+    gradient: 'linear-gradient(135deg,#0a1e3c 0%,#1a3a6e 100%)',
+    label: '🏢 Gestion immobilière',
+    title: 'Vous avez des locataires à gérer ?',
+    sub: 'Loyers, contrats, relances automatiques, signatures électroniques. Individu, agence ou cabinet — <strong>gratuit pour démarrer.</strong>',
+    btn1: { label: '🚀 Créer mon compte gratuit', href: '/', color: '#4f8ef7' },
+    btn2: { label: 'Découvrir ImmoGest →', href: '/', color: 'rgba(255,255,255,0.12)' }
+  },
+  // Visite 3D
+  {
+    gradient: 'linear-gradient(135deg,#4c1d95 0%,#7c3aed 100%)',
+    label: '🥽 Innovation Afrique centrale',
+    title: 'Louez 3× plus vite avec une visite 3D',
+    sub: 'Vos photos transformées en visuels 3D photoréalistes. La diaspora visite votre bien depuis Paris ou New York. <strong>Premier service du genre au Cameroun.</strong>',
+    btn1: { label: '🏛️ Commander ma visite 3D', href: '#', color: '#a855f7', onclick: 'ouvrirCommande3D()' },
+    btn2: { label: 'En savoir plus →', href: '#', color: 'rgba(255,255,255,0.12)' }
+  },
+  // TrafiCam
+  {
+    gradient: 'linear-gradient(135deg,#0f2027 0%,#203a43 50%,#2c5364 100%)',
+    label: '🚦 Mobilité urbaine Cameroun',
+    title: 'Évitez les bouchons et les accidents avec TrafiCam',
+    sub: 'Signalements en temps réel — nids-de-poule, accidents, embouteillages, course de taxi. La communauté vous informe, vous informez la communauté. <strong>Gratuit sur Android.</strong>',
+    btn1: { label: '📱 Télécharger TrafiCam', href: 'https://traficam-admin.fofefranklin57.workers.dev', color: '#0ea5e9' },
+    btn2: { label: 'Voir la carte →', href: 'https://traficam-admin.fofefranklin57.workers.dev', color: 'rgba(255,255,255,0.12)' }
+  },
+  // Kalamundi
+  {
+    gradient: 'linear-gradient(135deg,#1a0533 0%,#3b0764 50%,#6d28d9 100%)',
+    label: '📚 Culture & Littérature numérique',
+    title: 'Lisez et publiez des histoires africaines avec Kalamundi',
+    sub: 'Romans, webtoons, nouvelles en français, anglais et langues locales. Auteurs africains, lecteurs du monde entier. <strong>La Plume du Monde.</strong>',
+    btn1: { label: '📖 Découvrir Kalamundi', href: 'https://kalamundi.pages.dev/', color: '#a855f7' },
+    btn2: { label: 'Publier mon œuvre →', href: 'https://kalamundi.pages.dev/', color: 'rgba(255,255,255,0.12)' }
+  }
+];
+
 function promoCardHtml() {
-  return '<div class="promo-card">'
-    + '<div class="promo-card-label">✨ Publicité</div>'
-    + '<div class="promo-card-title">🏢 Vous gérez des immeubles ou des locataires ?</div>'
-    + '<div class="promo-card-sub">Loyers, contrats, signatures électroniques, relances auto. Individu, agence ou cabinet — <strong>gratuit pour démarrer.</strong></div>'
+  var p = _PROMOS[_promoIndex % _PROMOS.length];
+  _promoIndex++;
+  var btn1Click = p.btn1.onclick ? ' onclick="' + p.btn1.onclick + ';return false;"' : '';
+  return '<div class="promo-card" style="background:' + p.gradient + ';">'
+    + '<div class="promo-card-label">' + p.label + '</div>'
+    + '<div class="promo-card-title">' + p.title + '</div>'
+    + '<div class="promo-card-sub">' + p.sub + '</div>'
     + '<div class="promo-card-btns">'
-    + '<a class="promo-btn-main" href="/">🚀 Essayer gratuitement</a>'
-    + '<a class="promo-btn-sec" href="/">En savoir plus →</a>'
+    + '<a class="promo-btn-main" href="' + p.btn1.href + '" target="_blank" style="background:' + p.btn1.color + ';"' + btn1Click + '>' + p.btn1.label + '</a>'
+    + '<a class="promo-btn-sec" href="' + p.btn2.href + '" target="_blank" style="background:' + p.btn2.color + ';">' + p.btn2.label + '</a>'
     + '</div></div>';
 }
 
