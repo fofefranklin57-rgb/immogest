@@ -11452,7 +11452,7 @@ function appliquerPays(code) {
   settings.symbole = cfg.symbole;
   localStorage.setItem('immogest_settings', JSON.stringify(settings));
   if (typeof setLang === 'function' && cfg.lang) setLang(cfg.lang);
-  if (typeof renderCurrent === 'function') renderCurrent();
+  if (typeof renderCurrent === 'function' && SESSION) renderCurrent();
 }
 
 function formatMontant(n) {
