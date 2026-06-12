@@ -11321,14 +11321,83 @@ function _getStoredTenant() {
 function _setStoredTenant(t) { _addStoredSpace(t); }
 
 // ── Sélecteur d'espace (plusieurs espaces connus) ────────────────
+// ── Helper : fond animé commun à tous les écrans d'auth ──────────
+function _authBg() {
+  var as = document.getElementById('auth-screen');
+  if (!as) return null;
+  as.style.cssText = 'display:block;position:fixed;inset:0;width:100%;min-height:100vh;overflow-y:auto;overflow-x:hidden;z-index:1000;font-family:\'Segoe UI\',system-ui,sans-serif;';
+  if (!document.getElementById('auth-bg-slides')) {
+    var bg = document.createElement('div');
+    bg.id = 'auth-bg-slides';
+    bg.style.cssText = 'position:fixed;inset:0;z-index:0;';
+    bg.innerHTML = ''
+      + '<div class="aslide" style="position:absolute;inset:0;opacity:1;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1400&q=80\') center/cover no-repeat;"></div>'
+      + '<div class="aslide" style="position:absolute;inset:0;opacity:0;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1400&q=80\') center/cover no-repeat;"></div>'
+      + '<div class="aslide" style="position:absolute;inset:0;opacity:0;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1460317442991-0ec209397118?w=1400&q=80\') center/cover no-repeat;"></div>'
+      + '<div class="aslide" style="position:absolute;inset:0;opacity:0;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1400&q=80\') center/cover no-repeat;"></div>'
+      + '<div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(5,15,30,0.92) 0%,rgba(10,30,60,0.82) 50%,rgba(5,15,30,0.92) 100%);"></div>';
+    as.insertBefore(bg, as.firstChild);
+    // Slideshow
+    var slides = bg.querySelectorAll('.aslide'); var cur = 0;
+    clearInterval(window._authSlideTimer);
+    window._authSlideTimer = setInterval(function(){
+      slides[cur].style.opacity='0'; cur=(cur+1)%slides.length; slides[cur].style.opacity='1';
+    }, 4000);
+  }
+  var ct = document.getElementById('auth-content');
+  if (!ct) {
+    ct = document.createElement('div');
+    ct.id = 'auth-content';
+    ct.style.cssText = 'position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 16px;';
+    as.appendChild(ct);
+  }
+  ct.innerHTML = '';
+  return ct;
+}
+
+// Wrap le contenu dans la card glassmorphism dark
+function _authCard(icon, title, subtitle, bodyHtml, maxWidth) {
+  maxWidth = maxWidth || '420px';
+  return '<div style="width:100%;max-width:' + maxWidth + ';background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:32px 28px;box-shadow:0 20px 60px rgba(0,0,0,0.4);">'
+    + '<div style="text-align:center;margin-bottom:24px;">'
+    + '<div style="font-size:36px;margin-bottom:10px;">' + icon + '</div>'
+    + '<div style="font-size:17px;font-weight:800;color:#e8f0fe;">' + title + '</div>'
+    + (subtitle ? '<div style="font-size:12px;color:rgba(232,240,254,0.5);margin-top:6px;line-height:1.5;">' + subtitle + '</div>' : '')
+    + '</div>'
+    + bodyHtml
+    + '</div>';
+}
+
+// Bouton retour stylé
+function _authBackBtn(fn) {
+  return '<button onclick="' + fn + '()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.8);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;margin-bottom:20px;display:inline-flex;align-items:center;gap:6px;">← Retour</button>';
+}
+
+// Champ de saisie stylé dark
+function _authField(label, inputHtml) {
+  return '<div style="margin-bottom:14px;">'
+    + '<label style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:1px;display:block;margin-bottom:6px;">' + label + '</label>'
+    + inputHtml.replace('class="auth-input"', 'style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:10px;color:#e8f0fe;font-size:14px;box-sizing:border-box;outline:none;" onfocus="this.style.borderColor=\'rgba(79,142,247,0.6)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.18)\'"')
+    + '</div>';
+}
+
+// Bouton primaire stylé
+function _authBtnPrimary(label, onclick) {
+  return '<button onclick="' + onclick + '" style="width:100%;padding:14px;background:linear-gradient(135deg,#1a6ec7,#0e4fa0);color:#fff;border:1px solid rgba(255,255,255,0.15);border-radius:10px;cursor:pointer;font-size:15px;font-weight:700;margin-top:4px;">' + label + '</button>';
+}
+
+// Div erreur
+function _authErrDiv(id) {
+  return '<div id="' + id + '" style="display:none;color:#fca5a5;font-size:12px;margin-bottom:12px;padding:10px;background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);border-radius:8px;"></div>';
+}
+
+// ─────────────────────────────────────────────────────────────────
 function showSpaceSelector() {
   var spaces = _getStoredSpaces();
-  var as = document.getElementById('auth-screen');
-  if (!as) return;
-  as.style.display = 'flex';
-  var inner = as.querySelector('.auth-inner') || as;
+  var ct = _authBg();
+  if (!ct) return;
 
-  var cards = spaces.map(function(sp) {
+  var spaceCards = spaces.map(function(sp) {
     var icon = sp.role === 'locataire' ? '🔑' : (sp.mode === 'entreprise' ? '🏢' : '🏠');
     var label = sp.role === 'locataire' ? 'Locataire'
               : sp.role === 'admin' ? 'Administrateur'
@@ -11336,30 +11405,20 @@ function showSpaceSelector() {
               : sp.role === 'comptable' ? 'Comptable'
               : sp.role || 'Membre';
     var name = sp.nomCabinet || sp.nom || 'Mon espace';
-    return '<div style="border:1.5px solid var(--border);border-radius:12px;padding:16px 18px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:border-color .15s;" '
-         + 'onclick="enterSpace(\'' + sp.tenantId + '\')">'
-         + '<div style="font-size:30px;">' + icon + '</div>'
+    return '<div onclick="enterSpace(\'' + sp.tenantId + '\')" style="cursor:pointer;display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid rgba(255,255,255,0.14);border-radius:12px;background:rgba(255,255,255,0.06);transition:background .15s;" onmouseover="this.style.background=\'rgba(255,255,255,0.12)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.06)\'">'
+         + '<div style="font-size:28px;">' + icon + '</div>'
          + '<div style="flex:1;">'
-         + '<div style="font-weight:700;font-size:15px;">' + name + '</div>'
-         + '<div style="font-size:12px;color:var(--text3);margin-top:2px;">' + label + '</div>'
+         + '<div style="font-weight:700;font-size:14px;color:#e8f0fe;">' + name + '</div>'
+         + '<div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:2px;">' + label + '</div>'
          + '</div>'
-         + '<div style="font-size:20px;color:var(--text3);">›</div>'
+         + '<div style="font-size:18px;color:rgba(255,255,255,0.3);">›</div>'
          + '</div>';
   }).join('');
 
-  inner.innerHTML = '<div style="max-width:420px;width:100%;padding:28px 16px;margin:auto;">'
-    + '<div style="text-align:center;margin-bottom:28px;">'
-    + '<div style="font-size:34px;">🏢</div>'
-    + '<div style="font-size:20px;font-weight:800;margin-top:8px;">Mes espaces</div>'
-    + '<div style="font-size:12px;color:var(--text3);margin-top:4px;">Choisissez l\'espace dans lequel vous souhaitez entrer</div>'
-    + '</div>'
-    + '<div style="display:flex;flex-direction:column;gap:10px;">'
-    + cards
-    + '</div>'
-    + '<button class="btn btn-ghost" style="width:100%;margin-top:18px;padding:13px;border:1px dashed var(--border);border-radius:12px;font-size:13px;" onclick="showWelcomeScreen()">'
-    + '+ Ajouter un espace'
-    + '</button>'
-    + '</div>';
+  ct.innerHTML = _authCard('🏢', 'Mes espaces', 'Choisissez l\'espace dans lequel vous souhaitez entrer',
+    '<div style="display:flex;flex-direction:column;gap:8px;">' + spaceCards + '</div>'
+    + '<button onclick="showWelcomeScreen()" style="width:100%;margin-top:16px;padding:12px;border:1px dashed rgba(255,255,255,0.2);border-radius:10px;background:none;color:rgba(232,240,254,0.6);cursor:pointer;font-size:13px;font-weight:600;">+ Ajouter un espace</button>'
+  );
 }
 
 // Entrer dans un espace (re-authentification par tel+pwd si nécessaire)
@@ -11387,24 +11446,16 @@ function enterSpace(tenantId) {
 }
 
 function showReauthScreen(sp) {
-  var as = document.getElementById('auth-screen');
-  var inner = as.querySelector('.auth-inner') || as;
+  var ct = _authBg();
+  if (!ct) return;
   var icon = sp.mode === 'entreprise' ? '🏢' : '🏠';
   var name = sp.nomCabinet || sp.nom || 'Mon espace';
-  inner.innerHTML = '<div style="max-width:360px;width:100%;padding:28px 16px;margin:auto;">'
-    + '<button onclick="showSpaceSelector()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;margin-bottom:16px;">← Retour</button>'
-    + '<div style="text-align:center;margin-bottom:24px;">'
-    + '<div style="font-size:32px;">' + icon + '</div>'
-    + '<div style="font-size:17px;font-weight:800;margin-top:8px;">' + name + '</div>'
-    + '<div style="font-size:12px;color:var(--text3);margin-top:4px;">Entrez votre mot de passe pour continuer</div>'
-    + '</div>'
-    + '<div style="margin-bottom:16px;">'
-    + '<label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">MOT DE PASSE</label>'
-    + '<input id="ra-pwd" class="auth-input" type="password" placeholder="Votre mot de passe" style="width:100%;">'
-    + '</div>'
-    + '<div id="ra-err" style="display:none;color:var(--red);font-size:12px;margin-bottom:12px;padding:8px;background:rgba(255,0,0,0.08);border-radius:8px;"></div>'
-    + '<button id="ra-btn" class="btn btn-primary" style="width:100%;padding:14px;" onclick="submitReauth(\'' + sp.tenantId + '\',\'' + (sp.telephone||'') + '\')">Entrer →</button>'
-    + '</div>';
+  ct.innerHTML = _authBackBtn('showSpaceSelector')
+    + _authCard(icon, name, 'Entrez votre mot de passe pour continuer',
+      _authField('MOT DE PASSE', '<input id="ra-pwd" class="auth-input" type="password" placeholder="Votre mot de passe">')
+      + _authErrDiv('ra-err')
+      + _authBtnPrimary('Entrer →', 'submitReauth(\'' + sp.tenantId + '\',\'' + (sp.telephone||'') + '\')')
+    );
 }
 
 async function submitReauth(tenantId, telephone) {
@@ -11447,35 +11498,20 @@ async function submitReauth(tenantId, telephone) {
 // ── Écran de bienvenue (ajout d'un espace) ───────────────────────
 function showWelcomeScreen() {
   var spaces = _getStoredSpaces();
-  var as = document.getElementById('auth-screen');
-  if (!as) return;
-  as.style.cssText = 'display:block;position:fixed;inset:0;width:100%;min-height:100vh;overflow:hidden;z-index:1000;font-family:\'Segoe UI\',system-ui,sans-serif;';
+  var ct = _authBg(); // installe le fond + slideshow une seule fois
+  if (!ct) return;
+  ct.style.cssText = 'position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 6%;gap:60px;flex-wrap:wrap;';
 
   var backBtn = spaces.length > 0
-    ? '<button onclick="showSpaceSelector()" style="position:absolute;top:18px;left:20px;z-index:10;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.85);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;backdrop-filter:blur(4px);">← Mes espaces</button>'
+    ? '<button onclick="showSpaceSelector()" style="position:fixed;top:18px;left:20px;z-index:10;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.85);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;backdrop-filter:blur(4px);">← Mes espaces</button>'
     : '';
 
-  as.innerHTML = ''
-    // Slideshow immeubles
-    + '<div id="wlc-slides" style="position:absolute;inset:0;z-index:0;">'
-    + '<div class="aslide" style="position:absolute;inset:0;opacity:1;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1400&q=80\') center/cover no-repeat;"></div>'
-    + '<div class="aslide" style="position:absolute;inset:0;opacity:0;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1400&q=80\') center/cover no-repeat;"></div>'
-    + '<div class="aslide" style="position:absolute;inset:0;opacity:0;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1460317442991-0ec209397118?w=1400&q=80\') center/cover no-repeat;"></div>'
-    + '<div class="aslide" style="position:absolute;inset:0;opacity:0;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1400&q=80\') center/cover no-repeat;"></div>'
-    + '</div>'
-    // Overlay gradient bleu sombre
-    + '<div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg,rgba(5,15,30,0.90) 0%,rgba(10,30,60,0.80) 50%,rgba(5,15,30,0.90) 100%);"></div>'
-    // Bouton retour
-    + backBtn
-    // Layout principal
-    + '<div style="position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 6%;gap:60px;flex-wrap:wrap;">'
-
+  ct.innerHTML = backBtn
     // ── Panneau gauche : Branding ──
     + '<div style="flex:1;min-width:260px;max-width:480px;color:#fff;">'
     + '<div style="font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:16px;">Gestion Immobilière Professionnelle</div>'
     + '<h1 style="font-size:clamp(38px,6vw,60px);font-weight:900;line-height:1.0;margin:0 0 16px;letter-spacing:-2px;">ImmoGest</h1>'
     + '<p style="font-size:15px;line-height:1.8;color:rgba(255,255,255,0.65);margin:0 0 28px;max-width:360px;">La plateforme complète de gestion locative pour les propriétaires, cabinets et locataires d\'Afrique centrale.</p>'
-    // Badges
     + '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px;">'
     + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">✅ Conforme OHADA</span>'
     + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">📶 Hors-ligne</span>'
@@ -11483,15 +11519,13 @@ function showWelcomeScreen() {
     + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">✍️ Signature électronique</span>'
     + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">🤖 IA intégrée</span>'
     + '</div>'
-    // Stats
     + '<div style="display:flex;gap:32px;">'
     + '<div><div style="font-size:24px;font-weight:900;color:#4f8ef7;">100%</div><div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;text-transform:uppercase;letter-spacing:1px;">Intégré</div></div>'
     + '<div><div style="font-size:24px;font-weight:900;color:#4f8ef7;">100%</div><div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;text-transform:uppercase;letter-spacing:1px;">Collaboratif</div></div>'
     + '<div><div style="font-size:24px;font-weight:900;color:#4f8ef7;">100%</div><div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;text-transform:uppercase;letter-spacing:1px;">Offline</div></div>'
     + '</div>'
     + '</div>'
-
-    // ── Panneau droit : Boutons d'action ──
+    // ── Panneau droit ──
     + '<div style="flex:0 0 auto;width:100%;max-width:380px;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:32px 28px;box-shadow:0 20px 60px rgba(0,0,0,0.4);">'
     + '<div style="text-align:center;margin-bottom:28px;">'
     + '<div style="width:52px;height:52px;background:rgba(79,142,247,0.2);border:1.5px solid rgba(79,142,247,0.5);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:26px;">🏢</div>'
@@ -11499,43 +11533,22 @@ function showWelcomeScreen() {
     + '<div style="font-size:12px;color:rgba(232,240,254,0.5);margin-top:6px;">Comment souhaitez-vous continuer ?</div>'
     + '</div>'
     + '<div style="display:flex;flex-direction:column;gap:12px;">'
-    // Bouton 1 — Créer espace
-    + '<button onclick="showModeSelection()" style="display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px;border-radius:12px;background:linear-gradient(135deg,#1a6ec7,#0e4fa0);border:1px solid rgba(255,255,255,0.15);color:#fff;cursor:pointer;width:100%;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform=\'translateY(-1px)\';this.style.boxShadow=\'0 6px 20px rgba(79,142,247,0.4)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
+    + '<button onclick="showModeSelection()" style="display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px;border-radius:12px;background:linear-gradient(135deg,#1a6ec7,#0e4fa0);border:1px solid rgba(255,255,255,0.15);color:#fff;cursor:pointer;width:100%;">'
     + '<span style="font-size:24px;flex-shrink:0;">🏠</span>'
     + '<span><span style="display:block;font-weight:700;font-size:13px;">Créer mon espace</span><span style="display:block;font-size:11px;opacity:0.65;margin-top:2px;">Gestionnaire ou propriétaire — nouvel espace</span></span>'
     + '</button>'
-    // Bouton 2 — Rejoindre
-    + '<button onclick="showJoinScreen()" style="display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);color:#e8f0fe;cursor:pointer;width:100%;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.background=\'rgba(255,255,255,0.1)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.06)\'">'
+    + '<button onclick="showJoinScreen()" style="display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);color:#e8f0fe;cursor:pointer;width:100%;">'
     + '<span style="font-size:24px;flex-shrink:0;">🔗</span>'
     + '<span><span style="display:block;font-weight:700;font-size:13px;">Rejoindre un espace</span><span style="display:block;font-size:11px;opacity:0.55;margin-top:2px;">Locataire ou employé — code d\'invitation</span></span>'
     + '</button>'
-    // Bouton 3 — Se connecter
     + (spaces.length === 0
-      ? '<button onclick="showLoginTenantScreen()" style="padding:13px;border-radius:10px;background:none;border:1px solid rgba(255,255,255,0.12);color:rgba(232,240,254,0.6);cursor:pointer;width:100%;font-size:13px;font-weight:600;transition:color 0.15s;" onmouseover="this.style.color=\'#e8f0fe\';this.style.borderColor=\'rgba(255,255,255,0.25)\'" onmouseout="this.style.color=\'rgba(232,240,254,0.6)\';this.style.borderColor=\'rgba(255,255,255,0.12)\'">🔑 Se connecter à un espace existant</button>'
+      ? '<button onclick="showLoginTenantScreen()" style="padding:13px;border-radius:10px;background:none;border:1px solid rgba(255,255,255,0.12);color:rgba(232,240,254,0.6);cursor:pointer;width:100%;font-size:13px;font-weight:600;">🔑 Se connecter à un espace existant</button>'
       : '')
     + '</div>'
-    // Marketplace link
     + '<div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1);">'
     + '<a onclick="showWelcomeMarketplace()" style="font-size:12px;color:rgba(79,142,247,0.9);cursor:pointer;text-decoration:none;font-weight:600;">🏘️ Parcourir la marketplace de location →</a>'
     + '</div>'
-    + '</div>'
-
-    + '</div>'; // fin layout
-
-  // Lancer le slideshow
-  _startWelcomeSlideshow();
-}
-
-function _startWelcomeSlideshow() {
-  var slides = document.querySelectorAll('#wlc-slides .aslide');
-  if (!slides.length) return;
-  var current = 0;
-  clearInterval(window._wlcSlideTimer);
-  window._wlcSlideTimer = setInterval(function() {
-    slides[current].style.opacity = '0';
-    current = (current + 1) % slides.length;
-    slides[current].style.opacity = '1';
-  }, 4000);
+    + '</div>';
 }
 
 function showWelcomeMarketplace() {
@@ -11549,61 +11562,53 @@ function showWelcomeMarketplace() {
 
 // ── Choix du mode (Perso / Cabinet) ─────────────────────────────
 function showModeSelection() {
-  var as = document.getElementById('auth-screen');
-  var inner = as.querySelector('.auth-inner') || as;
-  inner.innerHTML = '<div style="max-width:700px;width:100%;padding:24px 16px;margin:auto;overflow-y:auto;max-height:100vh;">'
-    + '<button onclick="showWelcomeScreen()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;margin-bottom:16px;">← Retour</button>'
+  var ct = _authBg();
+  if (!ct) return;
+  ct.style.alignItems = 'flex-start';
+  ct.style.paddingTop = '60px';
+  var modeCard = function(icon, titre, desc, items, btnLabel, mode) {
+    return '<div style="flex:1;min-width:240px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:14px;padding:22px;">'
+      + '<div style="font-size:24px;text-align:center;margin-bottom:8px;">' + icon + '</div>'
+      + '<div style="font-size:15px;font-weight:800;text-align:center;margin-bottom:6px;color:#e8f0fe;">' + titre + '</div>'
+      + '<div style="font-size:11px;color:rgba(232,240,254,0.45);text-align:center;margin-bottom:12px;font-style:italic;">' + desc + '</div>'
+      + '<div style="font-size:12px;line-height:2;color:rgba(232,240,254,0.75);">' + items + '</div>'
+      + '<button onclick="showRegistrationForm(\'' + mode + '\')" style="width:100%;margin-top:16px;padding:12px;background:linear-gradient(135deg,#1a6ec7,#0e4fa0);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;">' + btnLabel + '</button>'
+      + '</div>';
+  };
+  ct.innerHTML = '<div style="width:100%;max-width:700px;">'
+    + _authBackBtn('showWelcomeScreen')
     + '<div style="text-align:center;margin-bottom:8px;">'
-    + '<div style="font-size:18px;font-weight:800;color:var(--text);">Choisissez votre mode de gestion</div>'
-    + '<div style="font-size:12px;color:var(--red);margin-top:4px;font-weight:600;">⚠️ Ce choix est définitif pour cet espace</div>'
+    + '<div style="font-size:17px;font-weight:800;color:#e8f0fe;">Choisissez votre mode de gestion</div>'
+    + '<div style="font-size:12px;color:#fca5a5;margin-top:4px;font-weight:600;">⚠️ Ce choix est définitif pour cet espace</div>'
     + '</div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;">'
-
-    + '<div style="border:2px solid var(--border);border-radius:14px;padding:20px;">'
-    + '<div style="font-size:24px;text-align:center;margin-bottom:8px;">👤</div>'
-    + '<div style="font-size:15px;font-weight:800;text-align:center;margin-bottom:12px;">MODE PERSO</div>'
-    + '<div style="font-size:11px;color:var(--text3);margin-bottom:10px;font-style:italic;">Particulier ou propriétaire qui gère ses biens en autonomie</div>'
-    + '<div style="font-size:12px;line-height:1.9;">✅ Vous (admin)<br>✅ Vos propriétaires partenaires<br>✅ Vos locataires (portail)<br>❌ Pas de gestionnaires salariés</div>'
-    + '<div style="font-size:12px;margin:10px 0 6px;font-weight:600;color:var(--text2);">Fonctionnalités :</div>'
-    + '<div style="font-size:12px;line-height:1.9;">✅ Immeubles & locataires<br>✅ Paiements & suivi loyers<br>✅ Fiches de suivi PDF<br>✅ Portails proprio & locataire<br>✅ Notifications push</div>'
-    + '<button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="showRegistrationForm(\'individuel\')">✅ Choisir Mode Perso</button>'
-    + '</div>'
-
-    + '<div style="border:2px solid var(--border);border-radius:14px;padding:20px;">'
-    + '<div style="font-size:24px;text-align:center;margin-bottom:8px;">🏢</div>'
-    + '<div style="font-size:15px;font-weight:800;text-align:center;margin-bottom:12px;">MODE CABINET</div>'
-    + '<div style="font-size:11px;color:var(--text3);margin-bottom:10px;font-style:italic;">Agence immobilière ou cabinet avec une équipe</div>'
-    + '<div style="font-size:12px;line-height:1.9;">✅ Vous (admin)<br>✅ Gestionnaires<br>✅ Comptables<br>✅ Propriétaires assignés<br>✅ Locataires (portail)</div>'
-    + '<div style="font-size:12px;margin:10px 0 6px;font-weight:600;color:var(--text2);">Fonctionnalités :</div>'
-    + '<div style="font-size:12px;line-height:1.9;">✅ Tout du Mode Perso<br>✅ Gestion d\'équipe & rôles<br>✅ Rapports multi-gestionnaires<br>✅ Messagerie interne</div>'
-    + '<button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="showRegistrationForm(\'entreprise\')">✅ Choisir Mode Cabinet</button>'
-    + '</div>'
-
+    + '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:20px;">'
+    + modeCard('👤','MODE PERSO','Particulier ou propriétaire autonome',
+        '✅ Vous (admin)<br>✅ Vos propriétaires partenaires<br>✅ Vos locataires (portail)<br>❌ Pas de gestionnaires salariés<br>✅ Immeubles & locataires<br>✅ Paiements & suivi loyers<br>✅ Fiches de suivi PDF<br>✅ Notifications push',
+        '✅ Choisir Mode Perso','individuel')
+    + modeCard('🏢','MODE CABINET','Agence immobilière ou cabinet avec équipe',
+        '✅ Vous (admin)<br>✅ Gestionnaires<br>✅ Comptables<br>✅ Propriétaires assignés<br>✅ Locataires (portail)<br>✅ Gestion d\'équipe & rôles<br>✅ Rapports multi-gestionnaires<br>✅ Messagerie interne',
+        '✅ Choisir Mode Cabinet','entreprise')
     + '</div>'
     + '</div>';
 }
 
 // ── Formulaire d'inscription ─────────────────────────────────────
 function showRegistrationForm(mode) {
-  var as = document.getElementById('auth-screen');
-  var inner = as.querySelector('.auth-inner') || as;
+  var ct = _authBg();
+  if (!ct) return;
   var isEnt = mode === 'entreprise';
-  inner.innerHTML = '<div style="max-width:400px;width:100%;padding:24px 16px;margin:auto;">'
-    + '<button onclick="showModeSelection()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;margin-bottom:16px;">← Retour</button>'
-    + '<div style="text-align:center;margin-bottom:24px;">'
-    + '<div style="font-size:20px;">' + (isEnt ? '🏢' : '👤') + '</div>'
-    + '<div style="font-size:17px;font-weight:800;color:var(--text);margin-top:6px;">'
-    + (isEnt ? 'Créer votre espace Cabinet' : 'Créer votre espace Perso')
-    + '</div>'
-    + '</div>'
-    + (isEnt ? '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">NOM DU CABINET</label><input id="reg-cabinet" class="auth-input" placeholder="Ex: Cabinet Kamdem, Agence XYZ…" style="width:100%;"></div>' : '')
-    + '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">VOTRE NOM COMPLET</label><input id="reg-nom" class="auth-input" placeholder="Jean Kamdem" style="width:100%;"></div>'
-    + '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">NUMÉRO DE TÉLÉPHONE</label><input id="reg-tel" class="auth-input" placeholder="699 00 00 00" type="tel" style="width:100%;"></div>'
-    + '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">MOT DE PASSE</label><input id="reg-pwd" class="auth-input" type="password" placeholder="Minimum 6 caractères" style="width:100%;"></div>'
-    + '<div style="margin-bottom:20px;"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">CONFIRMER LE MOT DE PASSE</label><input id="reg-pwd2" class="auth-input" type="password" placeholder="Répéter le mot de passe" style="width:100%;"></div>'
-    + '<div id="reg-err" style="display:none;color:var(--red);font-size:12px;margin-bottom:12px;padding:8px;background:rgba(255,0,0,0.08);border-radius:8px;"></div>'
-    + '<button id="reg-btn" class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;" onclick="submitRegistration(\'' + mode + '\')">Créer mon espace →</button>'
-    + '</div>';
+  var body = ''
+    + (isEnt ? _authField('NOM DU CABINET', '<input id="reg-cabinet" class="auth-input" placeholder="Ex: Cabinet Kamdem, Agence XYZ…">') : '')
+    + _authField('VOTRE NOM COMPLET', '<input id="reg-nom" class="auth-input" placeholder="Jean Kamdem">')
+    + _authField('NUMÉRO DE TÉLÉPHONE', '<input id="reg-tel" class="auth-input" type="tel" placeholder="699 00 00 00">')
+    + _authField('MOT DE PASSE', '<input id="reg-pwd" class="auth-input" type="password" placeholder="Minimum 6 caractères">')
+    + _authField('CONFIRMER LE MOT DE PASSE', '<input id="reg-pwd2" class="auth-input" type="password" placeholder="Répéter le mot de passe">')
+    + _authErrDiv('reg-err')
+    + _authBtnPrimary('Créer mon espace →', 'submitRegistration(\'' + mode + '\')');
+  ct.innerHTML = _authBackBtn('showModeSelection')
+    + _authCard(isEnt ? '🏢' : '👤', isEnt ? 'Créer votre espace Cabinet' : 'Créer votre espace Perso', '', body);
+  var regBtn = ct.querySelector('button[onclick*="submitRegistration"]');
+  if (regBtn) regBtn.id = 'reg-btn';
 }
 
 async function submitRegistration(mode) {
@@ -11654,24 +11659,21 @@ async function submitRegistration(mode) {
 
 // ── Rejoindre avec code d'invitation ────────────────────────────
 function showJoinScreen() {
-  var as = document.getElementById('auth-screen');
-  var inner = as.querySelector('.auth-inner') || as;
-  inner.innerHTML = '<div style="max-width:380px;width:100%;padding:24px 16px;margin:auto;">'
-    + '<button onclick="showWelcomeScreen()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;margin-bottom:16px;">← Retour</button>'
-    + '<div style="text-align:center;margin-bottom:24px;">'
-    + '<div style="font-size:28px;">🔗</div>'
-    + '<div style="font-size:17px;font-weight:800;margin-top:8px;">Rejoindre un espace</div>'
-    + '<div style="font-size:12px;color:var(--text3);margin-top:4px;">Entrez le code que votre gestionnaire vous a communiqué</div>'
-    + '</div>'
-    + '<div style="margin-bottom:16px;">'
-    + '<label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">CODE D\'INVITATION</label>'
-    + '<input id="join-code" class="auth-input" placeholder="Ex: IM-K4R9" style="width:100%;text-transform:uppercase;letter-spacing:2px;font-size:18px;text-align:center;" maxlength="7">'
-    + '</div>'
-    + '<div id="join-err" style="display:none;color:var(--red);font-size:12px;margin-bottom:12px;padding:8px;background:rgba(255,0,0,0.08);border-radius:8px;"></div>'
-    + '<button id="join-btn" class="btn btn-primary" style="width:100%;padding:14px;" onclick="submitJoin()">Valider le code →</button>'
-    + '</div>';
+  var ct = _authBg();
+  if (!ct) return;
+  ct.innerHTML = _authBackBtn('showWelcomeScreen')
+    + _authCard('🔗', 'Rejoindre un espace', 'Entrez le code que votre gestionnaire vous a communiqué',
+      '<div style="margin-bottom:14px;">'
+      + '<label style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:1px;display:block;margin-bottom:6px;">CODE D\'INVITATION</label>'
+      + '<input id="join-code" placeholder="Ex: IM-K4R9" maxlength="7" style="width:100%;padding:14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:10px;color:#e8f0fe;font-size:20px;box-sizing:border-box;text-align:center;letter-spacing:3px;text-transform:uppercase;outline:none;" onfocus="this.style.borderColor=\'rgba(79,142,247,0.6)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.18)\'">'
+      + '</div>'
+      + _authErrDiv('join-err')
+      + _authBtnPrimary('Valider le code →', 'submitJoin()')
+    );
   var inp = document.getElementById('join-code');
-  if (inp) inp.addEventListener('input', function(){ this.value = this.value.toUpperCase(); });
+  if (inp) { inp.id = 'join-btn-submit'; inp.id = 'join-code'; inp.addEventListener('input', function(){ this.value = this.value.toUpperCase(); }); }
+  var btn = ct.querySelector('button[onclick*="submitJoin"]');
+  if (btn) btn.id = 'join-btn';
 }
 
 async function submitJoin() {
@@ -11720,20 +11722,17 @@ async function submitJoin() {
 
 // ── Se connecter sur un nouvel appareil ─────────────────────────
 function showLoginTenantScreen() {
-  var as = document.getElementById('auth-screen');
-  var inner = as.querySelector('.auth-inner') || as;
-  inner.innerHTML = '<div style="max-width:380px;width:100%;padding:24px 16px;margin:auto;">'
-    + '<button onclick="showWelcomeScreen()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;margin-bottom:16px;">← Retour</button>'
-    + '<div style="text-align:center;margin-bottom:24px;">'
-    + '<div style="font-size:28px;">🔑</div>'
-    + '<div style="font-size:17px;font-weight:800;margin-top:8px;">Connexion à mon espace</div>'
-    + '<div style="font-size:12px;color:var(--text3);margin-top:4px;">Entrez vos identifiants de création de compte</div>'
-    + '</div>'
-    + '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">NUMÉRO DE TÉLÉPHONE</label><input id="lt-tel" class="auth-input" placeholder="699 00 00 00" type="tel" style="width:100%;"></div>'
-    + '<div style="margin-bottom:20px;"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">MOT DE PASSE</label><input id="lt-pwd" class="auth-input" type="password" placeholder="Votre mot de passe" style="width:100%;"></div>'
-    + '<div id="lt-err" style="display:none;color:var(--red);font-size:12px;margin-bottom:12px;padding:8px;background:rgba(255,0,0,0.08);border-radius:8px;"></div>'
-    + '<button id="lt-btn" class="btn btn-primary" style="width:100%;padding:14px;" onclick="submitLoginTenant()">Se connecter →</button>'
-    + '</div>';
+  var ct = _authBg();
+  if (!ct) return;
+  ct.innerHTML = _authBackBtn('showWelcomeScreen')
+    + _authCard('🔑', 'Connexion à mon espace', 'Entrez vos identifiants de création de compte',
+      _authField('NUMÉRO DE TÉLÉPHONE', '<input id="lt-tel" class="auth-input" type="tel" placeholder="699 00 00 00">')
+      + _authField('MOT DE PASSE', '<input id="lt-pwd" class="auth-input" type="password" placeholder="Votre mot de passe">')
+      + _authErrDiv('lt-err')
+      + _authBtnPrimary('Se connecter →', 'submitLoginTenant()')
+    );
+  var btn = ct.querySelector('button[onclick*="submitLoginTenant"]');
+  if (btn) btn.id = 'lt-btn';
 }
 
 async function submitLoginTenant() {
