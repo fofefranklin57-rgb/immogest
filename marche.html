@@ -224,6 +224,7 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
             <div onclick="setMarcheLang('fr')" style="padding:8px 12px;border-radius:7px;cursor:pointer;font-size:12px;color:#e8f0fe;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background=''"><span>🇫🇷</span> Français</div>
             <div onclick="setMarcheLang('en')" style="padding:8px 12px;border-radius:7px;cursor:pointer;font-size:12px;color:#e8f0fe;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background=''"><span>🇬🇧</span> English</div>
             <div onclick="setMarcheLang('pt')" style="padding:8px 12px;border-radius:7px;cursor:pointer;font-size:12px;color:#e8f0fe;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background=''"><span>🇵🇹</span> Português</div>
+            <div onclick="setMarcheLang('es')" style="padding:8px 12px;border-radius:7px;cursor:pointer;font-size:12px;color:#e8f0fe;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background=''"><span>🇪🇸</span> Español</div>
             <div onclick="setMarcheLang('ha')" style="padding:8px 12px;border-radius:7px;cursor:pointer;font-size:12px;color:#e8f0fe;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background=''"><span>🌍</span> Hausa</div>
             <div onclick="setMarcheLang('ar')" style="padding:8px 12px;border-radius:7px;cursor:pointer;font-size:12px;color:#e8f0fe;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background=''"><span>🇸🇦</span> العربية</div>
           </div>
@@ -232,12 +233,12 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
         <button class="btn-primary" onclick="ouvrirFormPublier()" data-i18n="+ Publier une annonce">+ Publier une annonce</button>
       </div>
     </div>
-    <h1 data-i18n="marketplace-title">🏘️ Marketplace Immobilière<br>Cameroun & Afrique centrale</h1>
+    <h1 data-i18n="marketplace-title">🏘️ Marketplace Immobilière<br>Afrique & Monde</h1>
     <p class="header-sub" data-i18n="marketplace-sub">Appartements, maisons, studios, hôtels, meublés, locaux commerciaux — contact direct WhatsApp</p>
     <div class="badges">
       <span class="badge" data-i18n="marketplace-badge1">✅ Annonces vérifiées</span>
       <span class="badge" data-i18n="marketplace-badge2">📱 Contact WhatsApp direct</span>
-      <span class="badge">🏙️ Yaoundé · Douala · et plus</span>
+      <span class="badge">🌍 Afrique · Europe · et plus</span>
       <span class="badge" data-i18n="marketplace-badge3">🆓 Publication gratuite</span>
     </div>
   </div>
@@ -446,11 +447,12 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
 <script>
 // ── Langue marche.html ─────────────────────────────────────────
 var _MARCHE_LANGS = {
-  fr: { title:'🏘️ Marketplace Immobilière<br>Cameroun & Afrique centrale', sub:'Appartements, maisons, studios, hôtels, meublés, locaux commerciaux — contact direct WhatsApp', b1:'✅ Annonces vérifiées', b2:'📱 Contact WhatsApp direct', b3:'🆓 Publication gratuite', login:'Se connecter', publish:'+ Publier une annonce', tab1:'🏘️ Annonces', tab2:'🤝 Agents & Agences' },
-  en: { title:'🏘️ Real Estate Marketplace<br>Cameroon & Central Africa', sub:'Apartments, houses, studios, hotels, furnished, commercial — direct WhatsApp contact', b1:'✅ Verified listings', b2:'📱 Direct WhatsApp contact', b3:'🆓 Free listing', login:'Log in', publish:'+ Post a listing', tab1:'🏘️ Listings', tab2:'🤝 Agents & Agencies' },
-  pt: { title:'🏘️ Mercado Imobiliário<br>Camarões & África Central', sub:'Apartamentos, casas, estúdios, hotéis, mobilados, locais comerciais — contacto directo WhatsApp', b1:'✅ Anúncios verificados', b2:'📱 Contacto WhatsApp directo', b3:'🆓 Publicação gratuita', login:'Entrar', publish:'+ Publicar anúncio', tab1:'🏘️ Anúncios', tab2:'🤝 Agentes & Agências' },
-  ha: { title:'🏘️ Kasuwar Gidaje<br>Kamaru & Tsakiyar Afirka', sub:'Gidaje, ɗakuna, otal, kasuwanci — tuntuɓa kai tsaye ta WhatsApp', b1:'✅ Tabbatattun sanarwa', b2:'📱 Tuntuɓa ta WhatsApp', b3:'🆓 Kyauta buga', login:'Shiga', publish:'+ Wallafa sanarwa', tab1:'🏘️ Sanarwa', tab2:'🤝 Wakilan gidaje' },
-  ar: { title:'🏘️ سوق العقارات<br>الكاميرون وأفريقيا الوسطى', sub:'شقق، منازل، استوديوهات، فنادق، محلات تجارية — تواصل مباشر عبر واتساب', b1:'✅ إعلانات موثّقة', b2:'📱 تواصل مباشر عبر واتساب', b3:'🆓 نشر مجاني', login:'تسجيل الدخول', publish:'+ نشر إعلان', tab1:'🏘️ الإعلانات', tab2:'🤝 الوكلاء والوكالات' }
+  fr: { title:'🏘️ Marketplace Immobilière<br>Afrique & Monde', sub:'Appartements, maisons, studios, hôtels, meublés, locaux commerciaux — contact direct WhatsApp', b1:'✅ Annonces vérifiées', b2:'📱 Contact WhatsApp direct', b3:'🆓 Publication gratuite', login:'Se connecter', publish:'+ Publier une annonce', tab1:'🏘️ Annonces', tab2:'🤝 Agents & Agences' },
+  en: { title:'🏘️ Real Estate Marketplace<br>Africa & World', sub:'Apartments, houses, studios, hotels, furnished, commercial — direct WhatsApp contact', b1:'✅ Verified listings', b2:'📱 Direct WhatsApp contact', b3:'🆓 Free listing', login:'Log in', publish:'+ Post a listing', tab1:'🏘️ Listings', tab2:'🤝 Agents & Agencies' },
+  pt: { title:'🏘️ Mercado Imobiliário<br>África & Mundo', sub:'Apartamentos, casas, estúdios, hotéis, mobilados, locais comerciais — contacto directo WhatsApp', b1:'✅ Anúncios verificados', b2:'📱 Contacto WhatsApp directo', b3:'🆓 Publicação gratuita', login:'Entrar', publish:'+ Publicar anúncio', tab1:'🏘️ Anúncios', tab2:'🤝 Agentes & Agências' },
+  es: { title:'🏘️ Mercado Inmobiliario<br>África & Mundo', sub:'Apartamentos, casas, estudios, hoteles, amueblados, locales comerciales — contacto directo WhatsApp', b1:'✅ Anuncios verificados', b2:'📱 Contacto directo WhatsApp', b3:'🆓 Publicación gratuita', login:'Iniciar sesión', publish:'+ Publicar anuncio', tab1:'🏘️ Anuncios', tab2:'🤝 Agentes & Agencias' },
+  ha: { title:'🏘️ Kasuwar Gidaje<br>Afirka & Duniya', sub:'Gidaje, ɗakuna, otal, kasuwanci — tuntuɓa kai tsaye ta WhatsApp', b1:'✅ Tabbatattun sanarwa', b2:'📱 Tuntuɓa ta WhatsApp', b3:'🆓 Kyauta buga', login:'Shiga', publish:'+ Wallafa sanarwa', tab1:'🏘️ Sanarwa', tab2:'🤝 Wakilan gidaje' },
+  ar: { title:'🏘️ سوق العقارات<br>أفريقيا والعالم', sub:'شقق، منازل، استوديوهات، فنادق، محلات تجارية — تواصل مباشر عبر واتساب', b1:'✅ إعلانات موثّقة', b2:'📱 تواصل مباشر عبر واتساب', b3:'🆓 نشر مجاني', login:'تسجيل الدخول', publish:'+ نشر إعلان', tab1:'🏘️ الإعلانات', tab2:'🤝 الوكلاء والوكالات' }
 };
 
 function toggleMarcheLang() {

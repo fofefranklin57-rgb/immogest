@@ -7037,7 +7037,25 @@ function renderParametres() {
       <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="sauvegarderNomAdmin()">${t('💾 Enregistrer mon nom')}</button>
     </div>` : '';
 
-  document.getElementById('content').innerHTML = sectionMonCompte + `
+  // Sélecteur pays
+  const paysOptions = Object.keys(_PAYS_CONFIG).map(c =>
+    `<option value="${c}" ${_PAYS_COURANT===c?'selected':''}>${_PAYS_CONFIG[c].nom} — ${_PAYS_CONFIG[c].symbole}</option>`
+  ).join('');
+  const sectionPays = `
+    <div class="card" style="max-width:520px;margin-bottom:16px;">
+      <div class="card-title" style="margin-bottom:12px;">🌍 ${t('Pays & Devise')}</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">${t('Configure automatiquement la devise, la langue et le cadre juridique.')}</p>
+      <div class="form-group">
+        <label>${t('PAYS')}</label>
+        <select id="param-pays" onchange="appliquerPays(this.value)" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
+          <option value="">— ${t('Sélectionnez votre pays')} —</option>
+          ${paysOptions}
+        </select>
+      </div>
+      ${_PAYS_COURANT ? `<div style="margin-top:8px;font-size:12px;color:var(--text2);">💰 ${t('Devise')} : <strong>${_SYMBOLE_COURANT}</strong> &nbsp;|&nbsp; ⚖️ ${_PAYS_CONFIG[_PAYS_COURANT]?.legal||''}</div>` : ''}
+    </div>`;
+
+  document.getElementById('content').innerHTML = sectionMonCompte + sectionPays + `
 
     <div class="card" style="max-width:520px;margin-bottom:16px;">
       <div class="card-title" style="margin-bottom:16px;">${t('🏢 Identité du Cabinet')}</div>
@@ -8689,7 +8707,7 @@ function reaffecterLocataireArchive(archiveId) {
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║         BIBLIOTHÈQUE JURIDIQUE — ImmoGest                   ║
-// ║  Textes de référence : droit immobilier camerounais         ║
+// ║  Textes de référence : droit immobilier local               ║
 // ╚══════════════════════════════════════════════════════════════╝
 
 const BIBLIOTHEQUE = [
@@ -8799,7 +8817,9 @@ if (!window._biblio) window._biblio = { searchQ: '', openId: null, openArt: null
 
 function renderBibliotheque() {
   document.getElementById('page-title').textContent = t('Bibliothèque juridique');
-  document.getElementById('page-sub').textContent = t('Textes de loi — droit immobilier camerounais');
+  var paysCfg = _PAYS_CONFIG[_PAYS_COURANT];
+  var legalLabel = paysCfg ? (t('Textes de loi — droit immobilier camerounais') + ' (' + paysCfg.nom + ')') : t('Textes de loi — droit immobilier camerounais');
+  document.getElementById('page-sub').textContent = legalLabel;
   var btn = document.getElementById('topbar-main-btn');
   if (btn) { btn.style.display = 'flex'; btn.textContent = '← Tableau de bord'; btn.onclick = function(){ navigate('dashboard'); }; }
 
@@ -11357,6 +11377,91 @@ function _getStoredTenant() {
 function _setStoredTenant(t) { _addStoredSpace(t); }
 
 // ── Sélecteur d'espace (plusieurs espaces connus) ────────────────
+
+// ────────────────────────────────────────────────────────────────
+//  SYSTÈME PAYS / DEVISE / LANGUE
+// ────────────────────────────────────────────────────────────────
+var _PAYS_CONFIG = {
+  CM: { nom:'Cameroun',            devise:'XAF', symbole:'FCFA', lang:'fr', legal:'OHADA' },
+  GA: { nom:'Gabon',               devise:'XAF', symbole:'FCFA', lang:'fr', legal:'OHADA' },
+  CG: { nom:'Congo',               devise:'XAF', symbole:'FCFA', lang:'fr', legal:'OHADA' },
+  CF: { nom:'Centrafrique',        devise:'XAF', symbole:'FCFA', lang:'fr', legal:'OHADA' },
+  TD: { nom:'Tchad',               devise:'XAF', symbole:'FCFA', lang:'fr', legal:'OHADA' },
+  GQ: { nom:'Guinée Équatoriale',  devise:'XAF', symbole:'FCFA', lang:'es', legal:'OHADA' },
+  SN: { nom:'Sénégal',             devise:'XOF', symbole:'FCFA', lang:'fr', legal:'OHADA' },
+  CI: { nom:'Côte d\'Ivoire',      devise:'XOF', symbole:'FCFA', lang:'fr', legal:'OHADA' },
+  ML: { nom:'Mali',                devise:'XOF', symbole:'FCFA', lang:'fr', legal:'OHADA' },
+  BF: { nom:'Burkina Faso',        devise:'XOF', symbole:'FCFA', lang:'fr', legal:'OHADA' },
+  TG: { nom:'Togo',                devise:'XOF', symbole:'FCFA', lang:'fr', legal:'OHADA' },
+  BJ: { nom:'Bénin',               devise:'XOF', symbole:'FCFA', lang:'fr', legal:'OHADA' },
+  NE: { nom:'Niger',               devise:'XOF', symbole:'FCFA', lang:'fr', legal:'OHADA' },
+  GW: { nom:'Guinée-Bissau',       devise:'XOF', symbole:'FCFA', lang:'pt', legal:'OHADA' },
+  GN: { nom:'Guinée',              devise:'GNF', symbole:'GNF',  lang:'fr', legal:'OHADA' },
+  CD: { nom:'RD Congo',            devise:'CDF', symbole:'FC',   lang:'fr', legal:'OHADA' },
+  NG: { nom:'Nigeria',             devise:'NGN', symbole:'₦',    lang:'en', legal:'Common Law' },
+  GH: { nom:'Ghana',               devise:'GHS', symbole:'GH₵',  lang:'en', legal:'Common Law' },
+  AO: { nom:'Angola',              devise:'AOA', symbole:'Kz',   lang:'pt', legal:'Civil Law' },
+  MZ: { nom:'Mozambique',          devise:'MZN', symbole:'MT',   lang:'pt', legal:'Civil Law' },
+  CV: { nom:'Cap-Vert',            devise:'CVE', symbole:'$',    lang:'pt', legal:'Civil Law' },
+  ST: { nom:'São Tomé',            devise:'STN', symbole:'Db',   lang:'pt', legal:'Civil Law' },
+  PT: { nom:'Portugal',            devise:'EUR', symbole:'€',    lang:'pt', legal:'Civil Law' },
+  FR: { nom:'France',              devise:'EUR', symbole:'€',    lang:'fr', legal:'Civil Law' },
+  BE: { nom:'Belgique',            devise:'EUR', symbole:'€',    lang:'fr', legal:'Civil Law' },
+  MA: { nom:'Maroc',               devise:'MAD', symbole:'DH',   lang:'fr', legal:'Civil Law' },
+  DZ: { nom:'Algérie',             devise:'DZD', symbole:'DA',   lang:'ar', legal:'Civil Law' },
+  TN: { nom:'Tunisie',             devise:'TND', symbole:'DT',   lang:'ar', legal:'Civil Law' },
+};
+
+var _DEVISE_COURANTE = (function() {
+  try {
+    var settings = JSON.parse(localStorage.getItem('immogest_settings') || '{}');
+    return settings.devise || 'XAF';
+  } catch(e) { return 'XAF'; }
+})();
+
+var _SYMBOLE_COURANT = (function() {
+  try {
+    var settings = JSON.parse(localStorage.getItem('immogest_settings') || '{}');
+    return settings.symbole || 'FCFA';
+  } catch(e) { return 'FCFA'; }
+})();
+
+var _PAYS_COURANT = (function() {
+  try {
+    var settings = JSON.parse(localStorage.getItem('immogest_settings') || '{}');
+    return settings.pays || '';
+  } catch(e) { return ''; }
+})();
+
+function appliquerPays(code) {
+  var cfg = _PAYS_CONFIG[code];
+  if (!cfg) return;
+  _PAYS_COURANT = code;
+  _DEVISE_COURANTE = cfg.devise;
+  _SYMBOLE_COURANT = cfg.symbole;
+  var settings = {};
+  try { settings = JSON.parse(localStorage.getItem('immogest_settings') || '{}'); } catch(e){}
+  settings.pays = code;
+  settings.devise = cfg.devise;
+  settings.symbole = cfg.symbole;
+  localStorage.setItem('immogest_settings', JSON.stringify(settings));
+  if (typeof setLang === 'function' && cfg.lang) setLang(cfg.lang);
+  if (typeof renderCurrent === 'function') renderCurrent();
+}
+
+function formatMontant(n) {
+  if (!n && n !== 0) return '';
+  return Number(n).toLocaleString('fr-FR') + ' ' + _SYMBOLE_COURANT;
+}
+
+// ── Suivi de l'écran d'auth courant ─────────────────────────────
+var _currentAuthFn = null;
+function _reRenderAuthScreen() {
+  var as = document.getElementById('auth-screen');
+  if (!as || as.style.display === 'none') return;
+  if (typeof _currentAuthFn === 'function') _currentAuthFn();
+}
+
 // ── Helper : fond animé commun à tous les écrans d'auth ──────────
 function _authBg() {
   var as = document.getElementById('auth-screen');
@@ -11539,31 +11644,32 @@ async function submitReauth(tenantId, telephone) {
 
 // ── Écran de bienvenue (ajout d'un espace) ───────────────────────
 function showWelcomeScreen() {
+  _currentAuthFn = showWelcomeScreen;
   var spaces = _getStoredSpaces();
   var ct = _authBg(); // installe le fond + slideshow une seule fois
   if (!ct) return;
   ct.style.cssText = 'position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 6%;gap:60px;flex-wrap:wrap;';
 
   var backBtn = spaces.length > 0
-    ? '<button onclick="showSpaceSelector()" style="position:fixed;top:18px;left:20px;z-index:10;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.85);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;backdrop-filter:blur(4px);">← Mes espaces</button>'
+    ? '<button onclick="showSpaceSelector()" style="position:fixed;top:18px;left:20px;z-index:10;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.85);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;backdrop-filter:blur(4px);">← ' + t('Mes espaces') + '</button>'
     : '';
 
   ct.innerHTML = backBtn
     // ── Panneau gauche : Branding ──
     + '<div style="flex:1;min-width:260px;max-width:480px;color:#fff;">'
-    + '<div style="font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:16px;">Gestion Immobilière Professionnelle</div>'
+    + '<div style="font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:16px;">' + t('Gestion Immobilière Professionnelle') + '</div>'
     + '<h1 style="font-size:clamp(38px,6vw,60px);font-weight:900;line-height:1.0;margin:0 0 16px;letter-spacing:-2px;">ImmoGest</h1>'
-    + '<p style="font-size:15px;line-height:1.8;color:rgba(255,255,255,0.65);margin:0 0 28px;max-width:360px;">La plateforme complète de gestion locative pour les propriétaires, cabinets et locataires d\'Afrique centrale.</p>'
+    + '<p style="font-size:15px;line-height:1.8;color:rgba(255,255,255,0.65);margin:0 0 28px;max-width:360px;">' + t('La plateforme complète de gestion immobilière. Locataires, encaissements, rapports et bien plus.') + '</p>'
     + '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px;">'
-    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">✅ Conforme OHADA</span>'
-    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">📶 Hors-ligne</span>'
-    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">📱 MTN MoMo & OM</span>'
-    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">✍️ Signature électronique</span>'
-    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">🤖 IA intégrée</span>'
+    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">✅ ' + t('Droit local') + '</span>'
+    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">📶 ' + t('Hors-ligne') + '</span>'
+    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">📱 Mobile Money</span>'
+    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">✍️ ' + t('Signature électronique') + '</span>'
+    + '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);">🤖 ' + t('Assistant IA') + '</span>'
     + '</div>'
     + '<div style="display:flex;gap:32px;">'
-    + '<div><div style="font-size:24px;font-weight:900;color:#4f8ef7;">100%</div><div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;text-transform:uppercase;letter-spacing:1px;">Intégré</div></div>'
-    + '<div><div style="font-size:24px;font-weight:900;color:#4f8ef7;">100%</div><div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;text-transform:uppercase;letter-spacing:1px;">Collaboratif</div></div>'
+    + '<div><div style="font-size:24px;font-weight:900;color:#4f8ef7;">100%</div><div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;text-transform:uppercase;letter-spacing:1px;">' + t('Intégré') + '</div></div>'
+    + '<div><div style="font-size:24px;font-weight:900;color:#4f8ef7;">100%</div><div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;text-transform:uppercase;letter-spacing:1px;">' + t('Collaboratif') + '</div></div>'
     + '<div><div style="font-size:24px;font-weight:900;color:#4f8ef7;">100%</div><div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;text-transform:uppercase;letter-spacing:1px;">Offline</div></div>'
     + '</div>'
     + '</div>'
@@ -11571,24 +11677,24 @@ function showWelcomeScreen() {
     + '<div style="flex:0 0 auto;width:100%;max-width:380px;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:32px 28px;box-shadow:0 20px 60px rgba(0,0,0,0.4);">'
     + '<div style="text-align:center;margin-bottom:28px;">'
     + '<div style="width:52px;height:52px;background:rgba(79,142,247,0.2);border:1.5px solid rgba(79,142,247,0.5);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:26px;">🏢</div>'
-    + '<div style="font-size:17px;font-weight:800;color:#e8f0fe;letter-spacing:-.3px;">Bienvenue sur ImmoGest</div>'
-    + '<div style="font-size:12px;color:rgba(232,240,254,0.5);margin-top:6px;">Comment souhaitez-vous continuer ?</div>'
+    + '<div style="font-size:17px;font-weight:800;color:#e8f0fe;letter-spacing:-.3px;">' + t('Bienvenue sur ImmoGest') + '</div>'
+    + '<div style="font-size:12px;color:rgba(232,240,254,0.5);margin-top:6px;">' + t('Comment allez-vous utiliser l\'application ?') + '</div>'
     + '</div>'
     + '<div style="display:flex;flex-direction:column;gap:12px;">'
     + '<button onclick="showModeSelection()" style="display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px;border-radius:12px;background:linear-gradient(135deg,#1a6ec7,#0e4fa0);border:1px solid rgba(255,255,255,0.15);color:#fff;cursor:pointer;width:100%;">'
     + '<span style="font-size:24px;flex-shrink:0;">🏠</span>'
-    + '<span><span style="display:block;font-weight:700;font-size:13px;">Créer mon espace</span><span style="display:block;font-size:11px;opacity:0.65;margin-top:2px;">Gestionnaire ou propriétaire — nouvel espace</span></span>'
+    + '<span><span style="display:block;font-weight:700;font-size:13px;">' + t('Créer mon espace') + '</span><span style="display:block;font-size:11px;opacity:0.65;margin-top:2px;">' + t('Seul ou en famille') + '</span></span>'
     + '</button>'
     + '<button onclick="showJoinScreen()" style="display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);color:#e8f0fe;cursor:pointer;width:100%;">'
     + '<span style="font-size:24px;flex-shrink:0;">🔗</span>'
-    + '<span><span style="display:block;font-weight:700;font-size:13px;">Rejoindre un espace</span><span style="display:block;font-size:11px;opacity:0.55;margin-top:2px;">Locataire ou employé — code d\'invitation</span></span>'
+    + '<span><span style="display:block;font-weight:700;font-size:13px;">' + t('Rejoindre un espace') + '</span><span style="display:block;font-size:11px;opacity:0.55;margin-top:2px;">' + t('Locataire ou employé — code d\'invitation') + '</span></span>'
     + '</button>'
     + (spaces.length === 0
-      ? '<button onclick="showLoginTenantScreen()" style="padding:13px;border-radius:10px;background:none;border:1px solid rgba(255,255,255,0.12);color:rgba(232,240,254,0.6);cursor:pointer;width:100%;font-size:13px;font-weight:600;">🔑 Se connecter à un espace existant</button>'
+      ? '<button onclick="showLoginTenantScreen()" style="padding:13px;border-radius:10px;background:none;border:1px solid rgba(255,255,255,0.12);color:rgba(232,240,254,0.6);cursor:pointer;width:100%;font-size:13px;font-weight:600;">🔑 ' + t('Se connecter à un espace existant') + '</button>'
       : '')
     + '</div>'
     + '<div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1);">'
-    + '<a onclick="showWelcomeMarketplace()" style="font-size:12px;color:rgba(79,142,247,0.9);cursor:pointer;text-decoration:none;font-weight:600;">🏘️ Parcourir la marketplace de location →</a>'
+    + '<a onclick="showWelcomeMarketplace()" style="font-size:12px;color:rgba(79,142,247,0.9);cursor:pointer;text-decoration:none;font-weight:600;">🏘️ ' + t('Parcourir la marketplace') + ' →</a>'
     + '</div>'
     + '</div>';
 }
@@ -11604,6 +11710,7 @@ function showWelcomeMarketplace() {
 
 // ── Choix du mode (Perso / Cabinet) ─────────────────────────────
 function showModeSelection() {
+  _currentAuthFn = showModeSelection;
   var ct = _authBg();
   if (!ct) return;
   ct.style.alignItems = 'flex-start';
@@ -11620,35 +11727,44 @@ function showModeSelection() {
   ct.innerHTML = '<div style="width:100%;max-width:700px;">'
     + _authBackBtn('showWelcomeScreen')
     + '<div style="text-align:center;margin-bottom:8px;">'
-    + '<div style="font-size:17px;font-weight:800;color:#e8f0fe;">Choisissez votre mode de gestion</div>'
-    + '<div style="font-size:12px;color:#fca5a5;margin-top:4px;font-weight:600;">⚠️ Ce choix est définitif pour cet espace</div>'
+    + '<div style="font-size:17px;font-weight:800;color:#e8f0fe;">' + t('Choisissez votre mode de gestion') + '</div>'
+    + '<div style="font-size:12px;color:#fca5a5;margin-top:4px;font-weight:600;">⚠️ ' + t('Ce choix est définitif pour cet espace') + '</div>'
     + '</div>'
     + '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:20px;">'
-    + modeCard('👤','MODE PERSO','Particulier ou propriétaire autonome',
-        '✅ Vous (admin)<br>✅ Vos propriétaires partenaires<br>✅ Vos locataires (portail)<br>❌ Pas de gestionnaires salariés<br>✅ Immeubles & locataires<br>✅ Paiements & suivi loyers<br>✅ Fiches de suivi PDF<br>✅ Notifications push',
-        '✅ Choisir Mode Perso','individuel')
-    + modeCard('🏢','MODE CABINET','Agence immobilière ou cabinet avec équipe',
-        '✅ Vous (admin)<br>✅ Gestionnaires<br>✅ Comptables<br>✅ Propriétaires assignés<br>✅ Locataires (portail)<br>✅ Gestion d\'équipe & rôles<br>✅ Rapports multi-gestionnaires<br>✅ Messagerie interne',
-        '✅ Choisir Mode Cabinet','entreprise')
+    + modeCard('👤', t('MODE PERSO'), t('Particulier ou propriétaire autonome'),
+        '✅ ' + t('Vous (admin)') + '<br>✅ ' + t('Vos propriétaires partenaires') + '<br>✅ ' + t('Portail locataire') + '<br>✅ ' + t('Immeubles') + ' & ' + t('Locataires') + '<br>✅ ' + t('Paiements & suivi loyers') + '<br>✅ ' + t('Rapports PDF'),
+        '✅ ' + t('Choisir Mode Perso'), 'individuel')
+    + modeCard('🏢', t('MODE CABINET'), t('Agence immobilière ou cabinet avec équipe'),
+        '✅ ' + t('Vous (admin)') + '<br>✅ ' + t('Gestionnaires') + '<br>✅ ' + t('Comptables') + '<br>✅ ' + t('Propriétaires assignés') + '<br>✅ ' + t('Portail locataire') + '<br>✅ ' + t('Gestion d\'équipe & rôles') + '<br>✅ ' + t('Messagerie interne'),
+        '✅ ' + t('Choisir Mode Cabinet'), 'entreprise')
     + '</div>'
     + '</div>';
 }
 
 // ── Formulaire d'inscription ─────────────────────────────────────
 function showRegistrationForm(mode) {
+  _currentAuthFn = function() { showRegistrationForm(mode); };
   var ct = _authBg();
   if (!ct) return;
   var isEnt = mode === 'entreprise';
+  // Sélecteur de pays pour configurer devise et langue automatiquement
+  var paysOptions = Object.keys(_PAYS_CONFIG).map(function(code) {
+    return '<option value="' + code + '"' + (_PAYS_COURANT === code ? ' selected' : '') + '>' + _PAYS_CONFIG[code].nom + '</option>';
+  }).join('');
+  var paysSelect = '<select id="reg-pays" onchange="appliquerPays(this.value)" style="width:100%;padding:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:10px;color:#e8f0fe;font-size:13px;box-sizing:border-box;outline:none;">'
+    + '<option value="">— ' + t('Sélectionnez votre pays') + ' —</option>'
+    + paysOptions + '</select>';
   var body = ''
-    + (isEnt ? _authField('NOM DU CABINET', '<input id="reg-cabinet" class="auth-input" placeholder="Ex: Cabinet Kamdem, Agence XYZ…">') : '')
-    + _authField('VOTRE NOM COMPLET', '<input id="reg-nom" class="auth-input" placeholder="Jean Kamdem">')
-    + _authField('NUMÉRO DE TÉLÉPHONE', '<input id="reg-tel" class="auth-input" type="tel" placeholder="699 00 00 00">')
-    + _authField('MOT DE PASSE', '<input id="reg-pwd" class="auth-input" type="password" placeholder="Minimum 6 caractères">')
-    + _authField('CONFIRMER LE MOT DE PASSE', '<input id="reg-pwd2" class="auth-input" type="password" placeholder="Répéter le mot de passe">')
+    + (isEnt ? _authField(t('NOM DU CABINET'), '<input id="reg-cabinet" class="auth-input" placeholder="Ex: Cabinet Kamdem, Agence XYZ…">') : '')
+    + _authField(t('VOTRE NOM COMPLET'), '<input id="reg-nom" class="auth-input" placeholder="Jean Kamdem">')
+    + _authField(t('NUMÉRO DE TÉLÉPHONE'), '<input id="reg-tel" class="auth-input" type="tel" placeholder="699 00 00 00">')
+    + _authField(t('PAYS'), paysSelect)
+    + _authField(t('MOT DE PASSE'), '<input id="reg-pwd" class="auth-input" type="password" placeholder="' + t('Minimum 6 caractères') + '">')
+    + _authField(t('CONFIRMER LE MOT DE PASSE'), '<input id="reg-pwd2" class="auth-input" type="password" placeholder="' + t('Répéter le mot de passe') + '">')
     + _authErrDiv('reg-err')
-    + _authBtnPrimary('Créer mon espace →', 'submitRegistration(\'' + mode + '\')', 'reg-btn');
+    + _authBtnPrimary(t('Créer mon espace') + ' →', 'submitRegistration(\'' + mode + '\')', 'reg-btn');
   ct.innerHTML = _authBackBtn('showModeSelection')
-    + _authCard(isEnt ? '🏢' : '👤', isEnt ? 'Créer votre espace Cabinet' : 'Créer votre espace Perso', '', body);
+    + _authCard(isEnt ? '🏢' : '👤', isEnt ? t('Créer votre espace Cabinet') : t('Créer votre espace Perso'), '', body);
 }
 
 async function submitRegistration(mode) {
@@ -11699,10 +11815,11 @@ async function submitRegistration(mode) {
 
 // ── Rejoindre avec code d'invitation ────────────────────────────
 function showJoinScreen() {
+  _currentAuthFn = showJoinScreen;
   var ct = _authBg();
   if (!ct) return;
   ct.innerHTML = _authBackBtn('showWelcomeScreen')
-    + _authCard('🔗', 'Rejoindre un espace', 'Entrez le code que votre gestionnaire vous a communiqué',
+    + _authCard('🔗', t('Rejoindre un espace'), t('Entrez le code que votre gestionnaire vous a communiqué'),
       '<div style="margin-bottom:14px;">'
       + '<label style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:1px;display:block;margin-bottom:6px;">CODE D\'INVITATION</label>'
       + '<input id="join-code" placeholder="Ex: IM-K4R9" maxlength="7" style="width:100%;padding:14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:10px;color:#e8f0fe;font-size:20px;box-sizing:border-box;text-align:center;letter-spacing:3px;text-transform:uppercase;outline:none;" onfocus="this.style.borderColor=\'rgba(79,142,247,0.6)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.18)\'">'
@@ -11762,14 +11879,15 @@ async function submitJoin() {
 
 // ── Se connecter sur un nouvel appareil ─────────────────────────
 function showLoginTenantScreen() {
+  _currentAuthFn = showLoginTenantScreen;
   var ct = _authBg();
   if (!ct) return;
   ct.innerHTML = _authBackBtn('showWelcomeScreen')
-    + _authCard('🔑', 'Connexion à mon espace', 'Entrez vos identifiants de création de compte',
-      _authField('NUMÉRO DE TÉLÉPHONE', '<input id="lt-tel" class="auth-input" type="tel" placeholder="699 00 00 00">')
-      + _authField('MOT DE PASSE', '<input id="lt-pwd" class="auth-input" type="password" placeholder="Votre mot de passe">')
+    + _authCard('🔑', t('Connexion à mon espace'), t('Entrez vos identifiants de création de compte'),
+      _authField(t('NUMÉRO DE TÉLÉPHONE'), '<input id="lt-tel" class="auth-input" type="tel" placeholder="699 00 00 00">')
+      + _authField(t('MOT DE PASSE'), '<input id="lt-pwd" class="auth-input" type="password" placeholder="' + t('Votre mot de passe') + '">')
       + _authErrDiv('lt-err')
-      + _authBtnPrimary('Se connecter →', 'submitLoginTenant()', 'lt-btn')
+      + _authBtnPrimary(t('Se connecter') + ' →', 'submitLoginTenant()', 'lt-btn')
     );
 }
 

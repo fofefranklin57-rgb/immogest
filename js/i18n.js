@@ -5,9 +5,9 @@
 //  Fallback EN si clé absente dans HA/FF/AR
 // ════════════════════════════════════════════════════════════════
 
-var LANGS_ORDER = ['fr', 'en', 'pt', 'ha', 'ar'];
-var LANGS_LABEL = { fr:'🌐 FR', en:'🌐 EN', pt:'🌐 PT', ha:'🌐 HA', ff:'🌐 FF', ar:'🌐 AR' };
-var LANGS_NAME  = { fr:'Français', en:'English', pt:'Português', ha:'Hausa', ff:'Fulfulde', ar:'العربية' };
+var LANGS_ORDER = ['fr', 'en', 'pt', 'es', 'ha', 'ar'];
+var LANGS_LABEL = { fr:'🌐 FR', en:'🌐 EN', pt:'🌐 PT', es:'🌐 ES', ha:'🌐 HA', ff:'🌐 FF', ar:'🌐 AR' };
+var LANGS_NAME  = { fr:'Français', en:'English', pt:'Português', es:'Español', ha:'Hausa', ff:'Fulfulde', ar:'العربية' };
 
 var LANG = (function() {
   var saved = localStorage.getItem('immogest_lang');
@@ -19,6 +19,7 @@ var LANG = (function() {
 var MONTHS_FR = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 var MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MONTHS_PT = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+var MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 var MONTHS_HA = ['Janairu','Fabrairu','Maris','Afrilu','Mayu','Yuni','Yuli','Agusta','Satumba','Oktoba','Nuwamba','Disamba'];
 var MONTHS_FF = ['Sanwiye','Feewiriye','Mars','Avriyel','Me','Juwe','Juwiyet','Ut','Septamburu','Oktoburu','Nowamburu','Desamburu'];
 var MONTHS_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
@@ -26,6 +27,7 @@ var MONTHS_AR = ['يناير','فبراير','مارس','أبريل','مايو',
 function tMois(idx) {
   if (LANG === 'fr') return MONTHS_FR[idx];
   if (LANG === 'pt') return MONTHS_PT[idx];
+  if (LANG === 'es') return MONTHS_ES[idx];
   if (LANG === 'ha') return MONTHS_HA[idx];
   if (LANG === 'ff') return MONTHS_FF[idx];
   if (LANG === 'ar') return MONTHS_AR[idx];
@@ -77,7 +79,7 @@ var TR = { en: {
   'Sélectionnez un immeuble': 'Select a building',
   'Échanges internes': 'Internal Messages',
   'Dossiers permanents — locataires libérés, immeubles retirés, historiques': 'Permanent files — released tenants, removed buildings, history',
-  'Textes de loi — droit immobilier camerounais': 'Legal texts — Cameroonian real estate law',
+  'Textes de loi — droit immobilier camerounais': 'Legal texts — local real estate law',
   'Locataires supprimés — restauration possible sous 30 jours': 'Deleted tenants — can be restored within 30 days',
   'Configuration Mobile Money': 'Mobile Money Configuration',
   'Analyses par immeuble': 'Analysis by building',
@@ -749,7 +751,443 @@ var TR = { en: {
   '% = Paiement partiel': '% = Partial payment',
   '– = Non payé': '– = Not paid',
 
+  // ── Pays & Devise ────────────────────────────────────────────
+  'Pays & Devise': 'Country & Currency',
+  'Configure automatiquement la devise, la langue et le cadre juridique.': 'Automatically configures currency, language and legal framework.',
+  'Devise': 'Currency',
+
+  // ── Auth screen ──────────────────────────────────────────────
+  'Mes espaces': 'My spaces',
+  'Créer mon espace': 'Create my space',
+  'Rejoindre un espace': 'Join a space',
+  'Locataire ou employé — code d\'invitation': 'Tenant or employee — invitation code',
+  'Se connecter à un espace existant': 'Connect to existing space',
+  'Parcourir la marketplace': 'Browse marketplace',
+  'Choisissez votre mode de gestion': 'Choose your management mode',
+  'Ce choix est définitif pour cet espace': 'This choice is final for this space',
+  'MODE PERSO': 'PERSONAL MODE',
+  'MODE CABINET': 'BUSINESS MODE',
+  'Particulier ou propriétaire autonome': 'Individual or autonomous owner',
+  'Agence immobilière ou cabinet avec équipe': 'Real estate agency or office with team',
+  'Vous (admin)': 'You (admin)',
+  'Vos propriétaires partenaires': 'Your partner owners',
+  'Paiements & suivi loyers': 'Payments & rent tracking',
+  'Gestionnaires': 'Managers',
+  'Comptables': 'Accountants',
+  'Propriétaires assignés': 'Assigned owners',
+  'Gestion d\'équipe & rôles': 'Team & role management',
+  'Messagerie interne': 'Internal messaging',
+  'Choisir Mode Perso': 'Choose Personal Mode',
+  'Choisir Mode Cabinet': 'Choose Business Mode',
+  'NOM DU CABINET': 'AGENCY NAME',
+  'VOTRE NOM COMPLET': 'YOUR FULL NAME',
+  'NUMÉRO DE TÉLÉPHONE': 'PHONE NUMBER',
+  'PAYS': 'COUNTRY',
+  'MOT DE PASSE': 'PASSWORD',
+  'CONFIRMER LE MOT DE PASSE': 'CONFIRM PASSWORD',
+  'Sélectionnez votre pays': 'Select your country',
+  'Minimum 6 caractères': 'Minimum 6 characters',
+  'Répéter le mot de passe': 'Repeat password',
+  'Créer votre espace Cabinet': 'Create your Agency space',
+  'Créer votre espace Perso': 'Create your Personal space',
+  'CODE D\'INVITATION': 'INVITATION CODE',
+  'Entrez le code que votre gestionnaire vous a communiqué': 'Enter the code your manager gave you',
+  'Connexion à mon espace': 'Connect to my space',
+  'Entrez vos identifiants de création de compte': 'Enter your account credentials',
+  'Votre mot de passe': 'Your password',
+  'Hors-ligne': 'Offline',
+  'Droit local': 'Local law',
+  'Signature électronique': 'Electronic signature',
+
 } ,
+
+// ────────────────────────────────────────────────────────────────
+//  DICTIONNAIRE ESPAÑOL (es) — Español africano (GQ, Maroc, diaspora)
+// ────────────────────────────────────────────────────────────────
+es: {
+
+  // ── Sections navigation ──────────────────────────────────────
+  'Principal': 'Principal',
+  'Immeubles': 'Edificios',
+  'Gestion': 'Gestión',
+  'Administration': 'Administración',
+  'Comptabilité': 'Contabilidad',
+
+  // ── Items navigation ─────────────────────────────────────────
+  'Tableau de bord': 'Panel',
+  'Encaissements': 'Cobros',
+  'Relances': 'Reclamaciones',
+  'Rapports': 'Informes',
+  'Statistiques': 'Estadísticas',
+  'Messagerie': 'Mensajes',
+  'Rapport annuel': 'Informe anual',
+  'Bibliothèque juridique': 'Biblioteca jurídica',
+  'Locataires': 'Inquilinos',
+  'Maintenance & EDL': 'Mantenimiento & Inspecciones',
+  'Gérer les immeubles': 'Gestionar edificios',
+  'Paramètres': 'Configuración',
+  'Utilisateurs': 'Usuarios',
+  'Mon espace': 'Mi espacio',
+  'Signalements': 'Incidencias',
+  'Valider paiements': 'Validar pagos',
+  'Archives': 'Archivo',
+  'Corbeille': 'Papelera',
+
+  // ── Titres de pages ──────────────────────────────────────────
+  'Relances & Alertes': 'Reclamaciones & Alertas',
+  'Rapport Annuel': 'Informe Anual',
+  'Gestion des utilisateurs': 'Gestión de usuarios',
+  'Validation des paiements': 'Validación de pagos',
+  'Maintenance & État des lieux': 'Mantenimiento & Inspecciones',
+  'Mes Statistiques': 'Mis Estadísticas',
+  'Configuration des immeubles': 'Configuración de edificios',
+
+  // ── Sous-titres ──────────────────────────────────────────────
+  'Sélectionnez un immeuble': 'Seleccione un edificio',
+  'Échanges internes': 'Mensajes internos',
+  'Chargement...': 'Cargando...',
+  'locataires actifs': 'inquilinos activos',
+  'immeubles': 'edificios',
+  'renseignés': 'registrados',
+  'versement(s)': 'pago(s)',
+  'à jour': 'al día',
+  'libre(s)': 'libre(s)',
+  'signalement(s)': 'incidencia(s)',
+  'nouveau(x)': 'nuevo(s)',
+
+  // ── Boutons principaux ───────────────────────────────────────
+  '＋ Paiement': '+ Pago',
+  '＋ Locataire': '+ Inquilino',
+  '＋ Immeuble': '+ Edificio',
+  '+ Locataire': '+ Inquilino',
+  '+ Paiement manuel': '+ Pago manual',
+  '📄 PDF Synthèse globale': '📄 PDF Resumen global',
+  '📊 Télécharger DOCX': '📊 Descargar DOCX',
+  '📅 Générer': '📅 Generar',
+  '📄 Exporter': '📄 Exportar',
+  '🌙 Mode sombre': '🌙 Modo oscuro',
+  '☀️ Mode clair': '☀️ Modo claro',
+
+  // ── Métriques dashboard ──────────────────────────────────────
+  'Locataires actifs': 'Inquilinos activos',
+  'Loyers / mois': 'Alquiler / mes',
+  'Impayés cumulés': 'Total impagado',
+  'attendu total': 'total esperado',
+
+  // ── Statuts ──────────────────────────────────────────────────
+  'payé': 'pagado',
+  'impayé': 'impagado',
+  'libre': 'libre',
+  'Payé': 'Pagado',
+  'Impayé': 'Impagado',
+  'Libre': 'Libre',
+
+  // ── Actions communes ─────────────────────────────────────────
+  'Ajouter': 'Añadir',
+  'Modifier': 'Editar',
+  'Supprimer': 'Eliminar',
+  'Enregistrer': 'Guardar',
+  'Annuler': 'Cancelar',
+  'Fermer': 'Cerrar',
+  'Confirmer': 'Confirmar',
+  'Rechercher': 'Buscar',
+  'Exporter': 'Exportar',
+  'Importer': 'Importar',
+  'Répondre': 'Responder',
+
+  // ── Champs de formulaire ─────────────────────────────────────
+  'Nom': 'Nombre',
+  'Prénom': 'Nombre de pila',
+  'Téléphone': 'Teléfono',
+  'WhatsApp': 'WhatsApp',
+  'Loyer': 'Alquiler',
+  'Caution': 'Fianza',
+  'Observations': 'Observaciones',
+  'Montant': 'Importe',
+  'Date': 'Fecha',
+  'Mode de paiement': 'Forma de pago',
+  'Espèces': 'Efectivo',
+  'Virement': 'Transferencia',
+  'Mois': 'Mes',
+  'Année': 'Año',
+  'Total': 'Total',
+  'Actions': 'Acciones',
+  'Statut': 'Estado',
+  'Local': 'Local',
+  'Appartement': 'Apartamento',
+  'Studio': 'Estudio',
+  'Chambre': 'Habitación',
+  'Entrée': 'Entrada',
+  'Sortie': 'Salida',
+  'Solde': 'Saldo',
+  'Arriérés': 'Atrasos',
+  'Note': 'Nota',
+  'Référence': 'Referencia',
+  'Type': 'Tipo',
+  'Ville': 'Ciudad',
+  'Quartier': 'Barrio',
+
+  // ── Entêtes tableaux ─────────────────────────────────────────
+  'Locataire': 'Inquilino',
+  'Propriétaire': 'Propietario',
+  'Immeuble': 'Edificio',
+  'Local / Appt': 'Local / Apt',
+  'Loyer mensuel': 'Alquiler mensual',
+  'Reste dû': 'Saldo pendiente',
+  'Date d\'entrée': 'Fecha de entrada',
+  'Aucun locataire': 'Sin inquilinos',
+  'pour cet immeuble': 'para este edificio',
+  'Date versement': 'Fecha de pago',
+  'Mois concerné': 'Período',
+  'Mode': 'Forma',
+  'Encaissé (loyers)': 'Cobrado (alquileres)',
+  'Cautions reçues': 'Fianzas recibidas',
+  'Versements': 'Pagos',
+  'Aucun paiement enregistré pour': 'Sin pagos registrados para',
+  'Détail': 'Detalle',
+  'Tél': 'Tel',
+
+  // ── Types de paiement ────────────────────────────────────────
+  'loyer': 'alquiler',
+  'caution': 'fianza',
+  'avance': 'anticipo',
+  'espèces': 'efectivo',
+  'virement': 'transferencia',
+  'chèque': 'cheque',
+  'mobile money': 'mobile money',
+
+  // ── Actions menus ────────────────────────────────────────────
+  'Paiement': 'Pago',
+  'Fiche suivi': 'Ficha de seguimiento',
+  'Envoyer accès WhatsApp': 'Enviar acceso WhatsApp',
+  'Quittance': 'Recibo',
+  'Voir fiche': 'Ver ficha',
+  'Déclarer': 'Declarar',
+
+  // ── Titres modales ───────────────────────────────────────────
+  '＋ Nouveau locataire': '+ Nuevo inquilino',
+  'Modifier le locataire': 'Editar inquilino',
+  '＋ Nouveau paiement': '+ Nuevo pago',
+  '＋ Nouvel immeuble': '+ Nuevo edificio',
+  'Modifier l\'immeuble': 'Editar edificio',
+  'Libérer le local': 'Liberar el local',
+
+  // ── Labels formulaires ────────────────────────────────────────
+  'Immeuble concerné': 'Edificio',
+  'N° Local / Appt': 'Nº local',
+  'Type de local': 'Tipo de local',
+  'Boutique': 'Tienda',
+  'Bureau': 'Oficina',
+  'Commerce': 'Comercio',
+  'Loyer mensuel (FCFA)': 'Alquiler mensual',
+  'Arriérés initiaux (FCFA)': 'Atrasos iniciales',
+  'Caution versée (FCFA)': 'Fianza pagada',
+  'WhatsApp (si différent)': 'WhatsApp (si diferente)',
+  'Jour habituel de paiement': 'Día habitual de pago',
+  'Période couverte': 'Período cubierto',
+  'Montant versé (FCFA)': 'Importe pagado',
+  'Date du versement': 'Fecha del pago',
+  'Note / référence': 'Nota / referencia',
+  'Remis au bailleur': 'Entregado al propietario',
+
+  // ── Toasts / messages système ─────────────────────────────────
+  'Chargement des données...': 'Cargando datos...',
+  'Données locales (Supabase indisponible)': 'Datos locales (sin conexión)',
+  'Données synchronisées avec Supabase ✓': 'Datos sincronizados ✓',
+  'Synchronisation en cours...': 'Sincronizando...',
+  'Sauvegarde': 'Guardado',
+  'Accès refusé': 'Acceso denegado',
+  'Accès refusé – modification non autorisée': 'Acceso denegado – no autorizado',
+  'Accès refusé – enregistrement non autorisé': 'Acceso denegado – no autorizado',
+  'Locataire, date et montant obligatoires': 'Inquilino, fecha e importe son obligatorios',
+  'Nom et loyer obligatoires': 'Nombre y alquiler son obligatorios',
+  'Le nom du locataire est obligatoire': 'El nombre del inquilino es obligatorio',
+  'Le loyer mensuel est obligatoire': 'El alquiler mensual es obligatorio',
+  'Paiement enregistré ✓': 'Pago registrado ✓',
+  'Locataire modifié ✓': 'Inquilino actualizado ✓',
+  'Locataire enregistré ✓': 'Inquilino guardado ✓',
+  'Local libéré et archivé ✓': 'Local liberado y archivado ✓',
+  'Fiche téléchargée ✓': 'Ficha descargada ✓',
+  'PDF généré ✓': 'PDF generado ✓',
+  'Rapport téléchargé ✓': 'Informe descargado ✓',
+  'Rapport annuel téléchargé ✓': 'Informe anual descargado ✓',
+  'Lettre téléchargée ✓': 'Carta descargada ✓',
+  'Sauvegarde exportee !': '¡Copia exportada!',
+  'Importee ! Rechargement...': '¡Importado! Recargando...',
+  'Fichier invalide': 'Archivo no válido',
+  'Erreur importation': 'Error de importación',
+  'PIN réinitialisé → 0000 ✓': 'PIN restablecido → 0000 ✓',
+  'Infos cabinet enregistrées ✓': 'Datos de agencia guardados ✓',
+  'Nom mis à jour': 'Nombre actualizado',
+
+  // ── Confirmer / alertes ──────────────────────────────────────
+  'Supprimer cet immeuble ?': '¿Eliminar este edificio?',
+  'Supprimer ce locataire ?': '¿Eliminar este inquilino?',
+  'Supprimer cet utilisateur ?': '¿Eliminar este usuario?',
+  'Supprimer ce paiement ?': '¿Eliminar este pago?',
+  'Restaurer ce locataire ? Il sera remis dans son local.': '¿Restaurar este inquilino? Volverá a su local.',
+  'Importer ? Les donnees actuelles seront remplacees.': '¿Importar? Los datos actuales serán reemplazados.',
+
+  // ── Statuts / badges ─────────────────────────────────────────
+  'pending': 'pendiente',
+  'validé': 'validado',
+  'rejeté': 'rechazado',
+  'actif': 'activo',
+  'suspendu': 'suspendido',
+  'résolu': 'resuelto',
+  'en cours': 'en curso',
+  'nouveau': 'nuevo',
+
+  // ── Portails ─────────────────────────────────────────────────
+  'Mon tableau de bord': 'Mi panel',
+  'Mes paiements': 'Mis pagos',
+  'Ma fiche': 'Mi perfil',
+  'Mes demandes': 'Mis solicitudes',
+  'Messages': 'Mensajes',
+  'Déclarer un paiement': 'Declarar un pago',
+  'Mes déclarations': 'Mis declaraciones',
+  'Historique complet': 'Historial completo',
+  'Situation locative': 'Situación de arrendamiento',
+  'Solde dû': 'Saldo pendiente',
+  'À jour': 'Al día',
+  'En attente': 'Pendiente',
+  'Validé': 'Validado',
+  'Rejeté': 'Rechazado',
+  'Aucun paiement enregistré': 'Sin pagos registrados',
+  'Envoyer': 'Enviar',
+  'Votre message...': 'Su mensaje...',
+  'Mes immeubles': 'Mis edificios',
+  'Mes locataires': 'Mis inquilinos',
+  'Revenus attendus': 'Ingresos esperados',
+  'Encaissé ce mois': 'Cobrado este mes',
+  'Impayés total': 'Total impagado',
+  'Taux d\'occupation': 'Tasa de ocupación',
+  'Locaux occupés': 'Locales ocupados',
+  'Locaux libres': 'Locales libres',
+
+  // ── Abonnements ──────────────────────────────────────────────
+  'Gratuit': 'Gratis',
+  'Plan actuel': 'Plan actual',
+  'Choisir': 'Elegir',
+  'par mois': 'por mes',
+  'Souscrire': 'Suscribirse',
+  'POPULAIRE': 'POPULAR',
+  'RECOMMANDÉ': 'RECOMENDADO',
+  'ENTREPRISE': 'EMPRESA',
+  'Tout inclus': 'Todo incluido',
+  'Support prioritaire': 'Soporte prioritario',
+  'Portail locataire': 'Portal del inquilino',
+  'Économisez': 'Ahorre',
+  'Fonctionnalité Pro': 'Funcionalidad Pro',
+  'Limite atteinte': 'Límite alcanzado',
+
+  // ── Maintenance ───────────────────────────────────────────────
+  'Type de problème': 'Tipo de problema',
+  'Plomberie': 'Fontanería',
+  'Électricité': 'Electricidad',
+  'Électroménager': 'Electrodomésticos',
+  'Serrurerie': 'Cerrajería',
+  'Peinture': 'Pintura',
+  'Description détaillée': 'Descripción detallada',
+  '📤 Soumettre la demande': '📤 Enviar solicitud',
+  'Historique des demandes': 'Historial de solicitudes',
+  'Aucune demande pour l\'instant': 'Sin solicitudes por ahora',
+  '🔒 Payer maintenant': '🔒 Pagar ahora',
+
+  // ── Page Paramètres ──────────────────────────────────────────
+  '👤 Mon compte': '👤 Mi cuenta',
+  'Mon nom affiché': 'Mi nombre mostrado',
+  '🏢 Identité du Cabinet': '🏢 Identidad de la Agencia',
+  'Nom du cabinet / société *': 'Nombre de la agencia / empresa *',
+  'Quartier / Adresse': 'Barrio / Dirección',
+  'RCCM / N° contribuable': 'Registro / NIF',
+  '💾 Enregistrer les infos cabinet': '💾 Guardar datos de agencia',
+  '📱 Numéros Mobile Money du Cabinet': '📱 Números Mobile Money de la Agencia',
+
+  // ── Page de connexion ─────────────────────────────────────────
+  'Gestion Immobilière Professionnelle': 'Gestión Inmobiliaria Profesional',
+  'La plateforme complète de gestion immobilière. Locataires, encaissements, rapports et bien plus.': 'La plataforma completa de gestión inmobiliaria. Inquilinos, cobros, informes y mucho más.',
+  'Intégré': 'Integrado',
+  'Collaboratif': 'Colaborativo',
+  'Intuitif': 'Intuitivo',
+  'Bienvenue sur ImmoGest': 'Bienvenido a ImmoGest',
+  'Comment allez-vous utiliser l\'application ?': '¿Cómo utilizará la aplicación?',
+  'Seul ou en famille': 'Solo o en familia',
+  'Je gère mes propres biens immobiliers': 'Gestiono mis propias propiedades',
+  'Cabinet ou Agence': 'Agencia u Oficina',
+  'Nous sommes une équipe avec plusieurs rôles': 'Somos un equipo con varios roles',
+  'Se connecter': 'Iniciar sesión',
+  'Se déconnecter': 'Cerrar sesión',
+  'Déconnexion': 'Cerrar sesión',
+  '← Retour': '← Volver',
+  'Administrateur': 'Administrador',
+  'Accès complet — gestion de tout': 'Acceso completo — gestionar todo',
+  'Accéder': 'Acceder',
+
+  // ── Auth screen ──────────────────────────────────────────────
+  'Mes espaces': 'Mis espacios',
+  'Créer mon espace': 'Crear mi espacio',
+  'Rejoindre un espace': 'Unirse a un espacio',
+  'Locataire ou employé — code d\'invitation': 'Inquilino o empleado — código de invitación',
+  'Se connecter à un espace existant': 'Conectarse a espacio existente',
+  'Parcourir la marketplace': 'Ver el mercado',
+  'Choisissez votre mode de gestion': 'Elija su modo de gestión',
+  'Ce choix est définitif pour cet espace': 'Esta elección es definitiva para este espacio',
+  'MODE PERSO': 'MODO PERSONAL',
+  'MODE CABINET': 'MODO EMPRESA',
+  'Particulier ou propriétaire autonome': 'Particular o propietario autónomo',
+  'Agence immobilière ou cabinet avec équipe': 'Agencia inmobiliaria o gestoría con equipo',
+  'Vous (admin)': 'Usted (admin)',
+  'Vos propriétaires partenaires': 'Sus propietarios asociados',
+  'Paiements & suivi loyers': 'Pagos & seguimiento alquileres',
+  'Gestionnaires': 'Gestores',
+  'Comptables': 'Contables',
+  'Propriétaires assignés': 'Propietarios asignados',
+  'Gestion d\'équipe & rôles': 'Gestión de equipo & roles',
+  'Messagerie interne': 'Mensajería interna',
+  'Choisir Mode Perso': 'Elegir Modo Personal',
+  'Choisir Mode Cabinet': 'Elegir Modo Empresa',
+  'NOM DU CABINET': 'NOMBRE DE LA AGENCIA',
+  'VOTRE NOM COMPLET': 'SU NOMBRE COMPLETO',
+  'NUMÉRO DE TÉLÉPHONE': 'NÚMERO DE TELÉFONO',
+  'PAYS': 'PAÍS',
+  'MOT DE PASSE': 'CONTRASEÑA',
+  'CONFIRMER LE MOT DE PASSE': 'CONFIRMAR CONTRASEÑA',
+  'Sélectionnez votre pays': 'Seleccione su país',
+  'Minimum 6 caractères': 'Mínimo 6 caracteres',
+  'Répéter le mot de passe': 'Repetir contraseña',
+  'Créer votre espace Cabinet': 'Crear su espacio Empresa',
+  'Créer votre espace Perso': 'Crear su espacio Personal',
+  'Entrez le code que votre gestionnaire vous a communiqué': 'Introduzca el código que su gestor le ha dado',
+  'Connexion à mon espace': 'Conectarse a mi espacio',
+  'Entrez vos identifiants de création de compte': 'Introduzca sus credenciales de cuenta',
+  'Votre mot de passe': 'Su contraseña',
+  'Hors-ligne': 'Sin conexión',
+  'Droit local': 'Derecho local',
+  'Signature électronique': 'Firma electrónica',
+  'Assistant IA': 'Asistente IA',
+
+  // ── Documents ─────────────────────────────────────────────────
+  'MISE EN DEMEURE DE PAYER': 'REQUERIMIENTO DE PAGO',
+  'Monsieur/Madame': 'Estimado/a Sr./Sra.',
+  'Le Propriétaire / La Gérance': 'El Propietario / La Gestión',
+  'Document généré le': 'Documento generado el',
+  'Document confidentiel – Généré le': 'Documento confidencial – Generado el',
+
+  // ── Page Rapports ─────────────────────────────────────────────
+  'Du': 'Desde',
+  'Au': 'Hasta',
+  'Générer des rapports': 'Generar informes',
+  '✓ Payé': '✓ Pagado',
+  '½ Partiel': '½ Parcial',
+  '✗ Impayé': '✗ Impagado',
+  'Fiche de suivi': 'Ficha de seguimiento',
+  'Mise en demeure': 'Requerimiento de pago',
+  '✓ = Payé complet': '✓ = Pagado completo',
+  '% = Paiement partiel': '% = Pago parcial',
+  '– = Non payé': '– = No pagado',
+
+},
 
 // ────────────────────────────────────────────────────────────────
 //  DICTIONNAIRE HAUSA (ha)
@@ -3167,4 +3605,6 @@ function setLang(lang) {
   }
   // Re-render la page courante
   if (typeof renderCurrent === 'function') renderCurrent();
+  // Re-render l'écran d'auth si visible
+  if (typeof _reRenderAuthScreen === 'function') _reRenderAuthScreen();
 }
