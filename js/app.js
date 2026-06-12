@@ -137,6 +137,27 @@ let currentImmId = null;
 // RESPONSIVE MOBILE — DEPLOY17
 // ══════════════════════════════════════════
 
+// ── Sidebar pliable (desktop) ──────────────────────────────────
+function toggleSidebarCollapse() {
+  var sb = document.getElementById('sidebar-main');
+  if (!sb) return;
+  var isCollapsed = sb.classList.toggle('collapsed');
+  try { localStorage.setItem('immogest_sidebar_collapsed', isCollapsed ? '1' : '0'); } catch(e) {}
+  // Mettre à jour tooltip
+  var btn = document.getElementById('sidebar-collapse-btn');
+  if (btn) btn.title = isCollapsed ? 'Agrandir la sidebar' : 'Réduire la sidebar';
+}
+
+function _initSidebarCollapse() {
+  try {
+    var saved = localStorage.getItem('immogest_sidebar_collapsed');
+    if (saved === '1') {
+      var sb = document.getElementById('sidebar-main');
+      if (sb) { sb.classList.add('collapsed'); sb.style.removeProperty('width'); }
+    }
+  } catch(e) {}
+}
+
 function toggleSidebarMobile() {
   var sb = document.getElementById('sidebar-main');
   var ov = document.getElementById('sidebar-overlay');
@@ -10402,6 +10423,7 @@ function closePortailProprietaire() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  _initSidebarCollapse();
   loadUsers();
   loadSession(); // DEPLOY17: SESSION restauré avant loadData pour que can() soit opérationnel
   _purgeUsersIndiv(); // Retirer gestionnaire/comptable si mode individuel
@@ -11348,9 +11370,10 @@ function _authBg() {
   if (!ct) {
     ct = document.createElement('div');
     ct.id = 'auth-content';
-    ct.style.cssText = 'position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 16px;';
     as.appendChild(ct);
   }
+  // Reset style à chaque écran (évite héritage entre showModeSelection et autres)
+  ct.style.cssText = 'position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 16px;';
   ct.innerHTML = '';
   return ct;
 }
@@ -11381,9 +11404,9 @@ function _authField(label, inputHtml) {
     + '</div>';
 }
 
-// Bouton primaire stylé
-function _authBtnPrimary(label, onclick) {
-  return '<button onclick="' + onclick + '" style="width:100%;padding:14px;background:linear-gradient(135deg,#1a6ec7,#0e4fa0);color:#fff;border:1px solid rgba(255,255,255,0.15);border-radius:10px;cursor:pointer;font-size:15px;font-weight:700;margin-top:4px;">' + label + '</button>';
+// Bouton primaire stylé (id optionnel)
+function _authBtnPrimary(label, onclick, id) {
+  return '<button ' + (id ? 'id="' + id + '" ' : '') + 'onclick="' + onclick + '" style="width:100%;padding:14px;background:linear-gradient(135deg,#1a6ec7,#0e4fa0);color:#fff;border:1px solid rgba(255,255,255,0.15);border-radius:10px;cursor:pointer;font-size:15px;font-weight:700;margin-top:4px;">' + label + '</button>';
 }
 
 // Div erreur
@@ -11454,7 +11477,7 @@ function showReauthScreen(sp) {
     + _authCard(icon, name, 'Entrez votre mot de passe pour continuer',
       _authField('MOT DE PASSE', '<input id="ra-pwd" class="auth-input" type="password" placeholder="Votre mot de passe">')
       + _authErrDiv('ra-err')
-      + _authBtnPrimary('Entrer →', 'submitReauth(\'' + sp.tenantId + '\',\'' + (sp.telephone||'') + '\')')
+      + _authBtnPrimary('Entrer →', 'submitReauth(\'' + sp.tenantId + '\',\'' + (sp.telephone||'') + '\')', 'ra-btn')
     );
 }
 
@@ -11604,11 +11627,9 @@ function showRegistrationForm(mode) {
     + _authField('MOT DE PASSE', '<input id="reg-pwd" class="auth-input" type="password" placeholder="Minimum 6 caractères">')
     + _authField('CONFIRMER LE MOT DE PASSE', '<input id="reg-pwd2" class="auth-input" type="password" placeholder="Répéter le mot de passe">')
     + _authErrDiv('reg-err')
-    + _authBtnPrimary('Créer mon espace →', 'submitRegistration(\'' + mode + '\')');
+    + _authBtnPrimary('Créer mon espace →', 'submitRegistration(\'' + mode + '\')', 'reg-btn');
   ct.innerHTML = _authBackBtn('showModeSelection')
     + _authCard(isEnt ? '🏢' : '👤', isEnt ? 'Créer votre espace Cabinet' : 'Créer votre espace Perso', '', body);
-  var regBtn = ct.querySelector('button[onclick*="submitRegistration"]');
-  if (regBtn) regBtn.id = 'reg-btn';
 }
 
 async function submitRegistration(mode) {
@@ -11729,10 +11750,8 @@ function showLoginTenantScreen() {
       _authField('NUMÉRO DE TÉLÉPHONE', '<input id="lt-tel" class="auth-input" type="tel" placeholder="699 00 00 00">')
       + _authField('MOT DE PASSE', '<input id="lt-pwd" class="auth-input" type="password" placeholder="Votre mot de passe">')
       + _authErrDiv('lt-err')
-      + _authBtnPrimary('Se connecter →', 'submitLoginTenant()')
+      + _authBtnPrimary('Se connecter →', 'submitLoginTenant()', 'lt-btn')
     );
-  var btn = ct.querySelector('button[onclick*="submitLoginTenant"]');
-  if (btn) btn.id = 'lt-btn';
 }
 
 async function submitLoginTenant() {
