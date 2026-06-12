@@ -318,32 +318,41 @@ async function loadDataFromSupabase() {
       return false;
     }
 
-    // Si Supabase vide ET données locales présentes → migration automatique
-    if (immeubles.length === 0 && locataires.length === 0) {
+    // Si Supabase n'a pas d'immeubles mais localStorage en a → migration des immeubles
+    if (immeubles.length === 0) {
       const _cacheKey = (SESSION && SESSION.version === 'individuel') ? STORE_KEY_IND : 'immogest_data';
-      const _cacheCheck = localStorage.getItem(_cacheKey);
-      if (_cacheCheck) {
-        const _localData = JSON.parse(_cacheCheck);
-        if ((_localData.immeubles && _localData.immeubles.length > 0) ||
-            (_localData.locataires && _localData.locataires.length > 0)) {
-          console.log('Migration locale → Supabase...');
-          showToast('Synchronisation en cours...', 'blue');
-          const _mig  = _localData.immeubles || [];
-          const _mloc = (_localData.locataires || []).filter(function(l) {
-            return l.s !== 'libre' && l.nom !== '(Libre)';
-          });
+      const _cacheRaw = localStorage.getItem(_cacheKey);
+      const _localData = _cacheRaw ? JSON.parse(_cacheRaw) : null;
+      const _localImm = (_localData && _localData.immeubles) ? _localData.immeubles : [];
+      if (_localImm.length > 0) {
+        console.log('Immeubles manquants dans Supabase — migration depuis localStorage:', _localImm.length, 'imm');
+        showToast('Synchronisation des immeubles...', 'blue');
+        await Promise.all(_localImm.map(function(im) { return saveImmeubleToSupabase(im); }));
+        // Reload immeubles from Supabase after migration
+        const _reimm = await sbLoad('immeubles');
+        if (_reimm && _reimm.length > 0) {
+          immeubles = _reimm;
+          console.log('Migration immeubles réussie:', immeubles.length, 'imm');
+        } else {
+          // Fallback: use local data directly
+          DATA.immeubles = _localImm;
+        }
+      }
+      // Si vraiment tout vide (premier lancement)
+      if (immeubles.length === 0 && locataires.length === 0) {
+        console.log('Supabase vide — premier lancement');
+        // Migration complète si données locales
+        if (_localData && ((_localData.locataires && _localData.locataires.length > 0) || _localImm.length > 0)) {
+          const _mloc = (_localData.locataires || []).filter(function(l) { return l.s !== 'libre' && l.nom !== '(Libre)'; });
           const _mpay = _localData.paiements || [];
           await Promise.all([
-            ..._mig.map(function(im) { return saveImmeubleToSupabase(im); }),
             ..._mloc.map(function(lc) { return saveLocataireToSupabase(lc); }),
             ..._mpay.map(function(p)  { return savePaiementToSupabase(p); })
           ]);
           showToast('Données synchronisées avec Supabase ✓', 'green');
-          return true;
         }
+        return true;
       }
-      console.log('Supabase vide — premier lancement');
-      return true;
     }
 
     DATA.immeubles  = immeubles.map(_mapImmeuble);
