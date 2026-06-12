@@ -255,20 +255,20 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
 <!-- FILTERS ANNONCES -->
 <div class="filters" id="filters-annonces">
   <div class="filters-inner">
-    <input class="filter-input" id="f-ville"  placeholder="🏙️ Ville, quartier…" oninput="filtrer()">
-    <select class="filter-input" id="f-type"  onchange="filtrer()">
-      <option value="">Tous les types</option>
-      <option value="appartement">🏢 Appartement</option>
-      <option value="maison">🏠 Maison</option>
+    <input class="filter-input" id="f-ville" placeholder="🏙️ Ville, quartier…" oninput="filtrer()">
+    <select class="filter-input" id="f-type" onchange="filtrer()">
+      <option id="fopt-all" value="">Tous les types</option>
+      <option id="fopt-appt" value="appartement">🏢 Appartement</option>
+      <option id="fopt-mais" value="maison">🏠 Maison</option>
       <option value="studio">🛏️ Studio</option>
-      <option value="chambre">🚪 Chambre</option>
-      <option value="meuble">🛋️ Meublé</option>
+      <option id="fopt-cham" value="chambre">🚪 Chambre</option>
+      <option id="fopt-meub" value="meuble">🛋️ Meublé</option>
       <option value="hotel">🏨 Hôtel</option>
-      <option value="commercial">🏪 Local commercial</option>
+      <option id="fopt-com" value="commercial">🏪 Local commercial</option>
     </select>
-    <input class="filter-input" id="f-prix"   placeholder="💰 Prix max (FCFA)" type="number" oninput="filtrer()" style="max-width:160px;">
-    <button class="btn-search" onclick="filtrer()">🔍 Rechercher</button>
-    <button class="btn-publish" onclick="ouvrirFormPublier()">+ Publier</button>
+    <input class="filter-input" id="f-prix" placeholder="💰 Prix max" type="number" oninput="filtrer()" style="max-width:140px;">
+    <button data-i18n-mk="f-search" class="btn-search" onclick="filtrer()">🔍 Rechercher</button>
+    <button data-i18n-mk="f-publish" class="btn-publish" onclick="ouvrirFormPublier()">+ Publier</button>
   </div>
 </div>
 
@@ -277,15 +277,15 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
   <div class="filters-inner">
     <input class="filter-input" id="fa-ville" placeholder="🏙️ Ville, quartier…" oninput="filtrerAgents()">
     <select class="filter-input" id="fa-spec" onchange="filtrerAgents()">
-      <option value="">Toutes spécialités</option>
-      <option value="appartement">🏢 Appartements</option>
-      <option value="maison">🏠 Maisons</option>
+      <option id="faopt-all" value="">Toutes spécialités</option>
+      <option id="faopt-appt" value="appartement">🏢 Appartements</option>
+      <option id="faopt-mais" value="maison">🏠 Maisons</option>
       <option value="commercial">🏪 Commercial</option>
-      <option value="hotel">🏨 Hôtels / meublés</option>
+      <option id="faopt-hot" value="hotel">🏨 Hôtels / meublés</option>
       <option value="luxe">✨ Luxe</option>
     </select>
-    <button class="btn-search" onclick="filtrerAgents()">🔍 Rechercher</button>
-    <button class="btn-publish" style="background:#7c3aed;" onclick="ouvrirInscriptionAgent()">🤝 Devenir agent</button>
+    <button data-i18n-mk="f-search" class="btn-search" onclick="filtrerAgents()">🔍 Rechercher</button>
+    <button data-i18n-mk="fa-become-agent" class="btn-publish" style="background:#7c3aed;" onclick="ouvrirInscriptionAgent()">🤝 Devenir agent</button>
   </div>
 </div>
 
@@ -458,7 +458,10 @@ var _MARCHE_LANGS = {
     'hero-title':'Gérez tout votre patrimoine immobilier avec ImmoGest',
     'hero-sub':'Loyers, contrats, locataires, signatures électroniques, relances automatiques — que vous soyez un individu, une agence ou un cabinet. <strong style="color:#fff;">Gratuit pour démarrer.</strong>',
     'hero-cta1':'🚀 Créer mon compte gratuit', 'hero-cta2':'Voir la démo →',
-    'hero-f1':'✅ Sans carte bancaire', 'hero-f2':'📱 Mobile Money', 'hero-f3':'🔒 Données sécurisées', 'hero-f4':'🌍 Conçu pour l\'Afrique'
+    'hero-f1':'✅ Sans carte bancaire', 'hero-f2':'📱 Mobile Money', 'hero-f3':'🔒 Données sécurisées', 'hero-f4':'🌍 Conçu pour l\'Afrique',
+    'f-all-types':'Tous les types', 'f-appartement':'Appartement', 'f-maison':'Maison', 'f-chambre':'Chambre', 'f-meuble':'Meublé', 'f-commercial':'Local commercial',
+    'f-search':'🔍 Rechercher', 'f-publish':'+ Publier',
+    'fa-all-spec':'Toutes spécialités', 'fa-appartements':'Appartements', 'fa-maisons':'Maisons', 'fa-hotels':'Hôtels / meublés', 'fa-become-agent':'🤝 Devenir agent'
   },
   en: {
     title:'🏘️ Real Estate Marketplace<br>Africa & World', sub:'Apartments, houses, studios, hotels, furnished, commercial — direct WhatsApp contact',
@@ -483,7 +486,10 @@ var _MARCHE_LANGS = {
     'hero-title':'Manage all your real estate with ImmoGest',
     'hero-sub':'Rents, contracts, tenants, e-signatures, automatic reminders — whether you\'re an individual, agency or firm. <strong style="color:#fff;">Free to get started.</strong>',
     'hero-cta1':'🚀 Create my free account', 'hero-cta2':'See the demo →',
-    'hero-f1':'✅ No credit card needed', 'hero-f2':'📱 Mobile Money', 'hero-f3':'🔒 Secure data', 'hero-f4':'🌍 Built for Africa'
+    'hero-f1':'✅ No credit card needed', 'hero-f2':'📱 Mobile Money', 'hero-f3':'🔒 Secure data', 'hero-f4':'🌍 Built for Africa',
+    'f-all-types':'All types', 'f-appartement':'Apartment', 'f-maison':'House', 'f-chambre':'Room', 'f-meuble':'Furnished', 'f-commercial':'Commercial space',
+    'f-search':'🔍 Search', 'f-publish':'+ Post',
+    'fa-all-spec':'All specialties', 'fa-appartements':'Apartments', 'fa-maisons':'Houses', 'fa-hotels':'Hotels / furnished', 'fa-become-agent':'🤝 Become an agent'
   },
   pt: {
     title:'🏘️ Mercado Imobiliário<br>África & Mundo', sub:'Apartamentos, casas, estúdios, hotéis, mobilados, locais comerciais — contacto directo WhatsApp',
@@ -508,7 +514,10 @@ var _MARCHE_LANGS = {
     'hero-title':'Gira todo o seu patrimônio imobiliário com ImmoGest',
     'hero-sub':'Rendas, contratos, inquilinos, assinaturas electrónicas, lembretes automáticos — seja um particular, agência ou gabinete. <strong style="color:#fff;">Grátis para começar.</strong>',
     'hero-cta1':'🚀 Criar conta gratuita', 'hero-cta2':'Ver a demo →',
-    'hero-f1':'✅ Sem cartão bancário', 'hero-f2':'📱 Mobile Money', 'hero-f3':'🔒 Dados seguros', 'hero-f4':'🌍 Criado para África'
+    'hero-f1':'✅ Sem cartão bancário', 'hero-f2':'📱 Mobile Money', 'hero-f3':'🔒 Dados seguros', 'hero-f4':'🌍 Criado para África',
+    'f-all-types':'Todos os tipos', 'f-appartement':'Apartamento', 'f-maison':'Casa', 'f-chambre':'Quarto', 'f-meuble':'Mobilado', 'f-commercial':'Espaço comercial',
+    'f-search':'🔍 Pesquisar', 'f-publish':'+ Publicar',
+    'fa-all-spec':'Todas especialidades', 'fa-appartements':'Apartamentos', 'fa-maisons':'Casas', 'fa-hotels':'Hotéis / mobilados', 'fa-become-agent':'🤝 Tornar-me agente'
   },
   es: {
     title:'🏘️ Mercado Inmobiliario<br>África & Mundo', sub:'Apartamentos, casas, estudios, hoteles, amueblados, locales comerciales — contacto directo WhatsApp',
@@ -533,7 +542,10 @@ var _MARCHE_LANGS = {
     'hero-title':'Gestione todo su patrimonio inmobiliario con ImmoGest',
     'hero-sub':'Rentas, contratos, inquilinos, firmas electrónicas, recordatorios automáticos — sea particular, agencia o gabinete. <strong style="color:#fff;">Gratis para empezar.</strong>',
     'hero-cta1':'🚀 Crear mi cuenta gratuita', 'hero-cta2':'Ver la demo →',
-    'hero-f1':'✅ Sin tarjeta bancaria', 'hero-f2':'📱 Mobile Money', 'hero-f3':'🔒 Datos seguros', 'hero-f4':'🌍 Diseñado para África'
+    'hero-f1':'✅ Sin tarjeta bancaria', 'hero-f2':'📱 Mobile Money', 'hero-f3':'🔒 Datos seguros', 'hero-f4':'🌍 Diseñado para África',
+    'f-all-types':'Todos los tipos', 'f-appartement':'Apartamento', 'f-maison':'Casa', 'f-chambre':'Habitación', 'f-meuble':'Amueblado', 'f-commercial':'Local comercial',
+    'f-search':'🔍 Buscar', 'f-publish':'+ Publicar',
+    'fa-all-spec':'Todas especialidades', 'fa-appartements':'Apartamentos', 'fa-maisons':'Casas', 'fa-hotels':'Hoteles / amueblados', 'fa-become-agent':'🤝 Ser agente'
   },
   ha: {
     title:'🏘️ Kasuwar Gidaje<br>Afirka & Duniya', sub:'Gidaje, ɗakuna, otal, kasuwanci — tuntuɓa kai tsaye ta WhatsApp',
@@ -551,7 +563,10 @@ var _MARCHE_LANGS = {
     'hero-eyebrow':'Kai mai gida ne ko manaja?', 'hero-title':'Sarrafa dukkan kadarorin da ImmoGest',
     'hero-sub':'Haya, kwangiloli, masu haya, sa hannu ta wutar lantarki — ko kai mutum ne, hukuma ko kamfani. <strong style="color:#fff;">Kyauta don farawa.</strong>',
     'hero-cta1':'🚀 Ƙirƙiri asusuna kyauta', 'hero-cta2':'Duba demo →',
-    'hero-f1':'✅ Ba katin banki', 'hero-f2':'📱 Mobile Money', 'hero-f3':'🔒 Bayanan lafiya', 'hero-f4':'🌍 An ƙera don Afirka'
+    'hero-f1':'✅ Ba katin banki', 'hero-f2':'📱 Mobile Money', 'hero-f3':'🔒 Bayanan lafiya', 'hero-f4':'🌍 An ƙera don Afirka',
+    'f-all-types':'Duk nau\'i', 'f-appartement':'Ɗaki mai yawa', 'f-maison':'Gida', 'f-chambre':'Ɗaki', 'f-meuble':'Da kayan gida', 'f-commercial':'Kasuwanci',
+    'f-search':'🔍 Bincika', 'f-publish':'+ Wallafa',
+    'fa-all-spec':'Duk ƙwarewa', 'fa-appartements':'Ɗakuna masu yawa', 'fa-maisons':'Gidaje', 'fa-hotels':'Otal / da kayan gida', 'fa-become-agent':'🤝 Zama wakili'
   },
   ar: {
     title:'🏘️ سوق العقارات<br>أفريقيا والعالم', sub:'شقق، منازل، استوديوهات، فنادق، محلات تجارية — تواصل مباشر عبر واتساب',
@@ -576,7 +591,10 @@ var _MARCHE_LANGS = {
     'hero-title':'أدر كامل ممتلكاتك العقارية مع ImmoGest',
     'hero-sub':'إيجارات، عقود، مستأجرون، توقيعات إلكترونية، تذكيرات تلقائية — سواء كنت فرداً أو وكالة أو مكتباً. <strong style="color:#fff;">مجاني للبدء.</strong>',
     'hero-cta1':'🚀 إنشاء حسابي المجاني', 'hero-cta2':'مشاهدة العرض التوضيحي ←',
-    'hero-f1':'✅ بدون بطاقة بنكية', 'hero-f2':'📱 Mobile Money', 'hero-f3':'🔒 بيانات آمنة', 'hero-f4':'🌍 مصمَّم لأفريقيا'
+    'hero-f1':'✅ بدون بطاقة بنكية', 'hero-f2':'📱 Mobile Money', 'hero-f3':'🔒 بيانات آمنة', 'hero-f4':'🌍 مصمَّم لأفريقيا',
+    'f-all-types':'جميع الأنواع', 'f-appartement':'شقة', 'f-maison':'منزل', 'f-chambre':'غرفة', 'f-meuble':'مفروش', 'f-commercial':'محل تجاري',
+    'f-search':'🔍 بحث', 'f-publish':'+ نشر',
+    'fa-all-spec':'جميع التخصصات', 'fa-appartements':'شقق', 'fa-maisons':'منازل', 'fa-hotels':'فنادق / مفروشة', 'fa-become-agent':'🤝 أصبح وكيلاً'
   }
 };
 
@@ -611,11 +629,28 @@ function setMarcheLang(lang) {
     var el = document.querySelector('[data-i18n="' + k + '"]');
     if (el) el.textContent = L[_simple[k]];
   });
-  // Tous les éléments data-i18n-mk (innerHTML pour les balises <strong>, <span>)
+  // Tous les éléments data-i18n-mk
   document.querySelectorAll('[data-i18n-mk]').forEach(function(el) {
     var key = el.getAttribute('data-i18n-mk');
     if (L[key] !== undefined) el.innerHTML = L[key];
   });
+  // Options des selects (les <option> n'acceptent pas de children, on les met à jour par ID)
+  var _opts = {
+    'fopt-all': 'f-all-types', 'fopt-appt': 'f-appartement', 'fopt-mais': 'f-maison',
+    'fopt-cham': 'f-chambre',  'fopt-meub': 'f-meuble',      'fopt-com': 'f-commercial',
+    'faopt-all': 'fa-all-spec','faopt-appt':'fa-appartements','faopt-mais':'fa-maisons','faopt-hot':'fa-hotels'
+  };
+  Object.keys(_opts).forEach(function(id) {
+    var el = document.getElementById(id);
+    var icon = el ? el.textContent.slice(0,3) : '';
+    if (el && L[_opts[id]]) el.textContent = (id === 'fopt-all' || id === 'faopt-all') ? L[_opts[id]] : icon + L[_opts[id]];
+  });
+  // Boutons filtres (textContent direct car pas de HTML)
+  var _btns = { 'f-search':'btn-search', 'f-publish':'btn-publish', 'fa-become-agent':'btn-publish' };
+  document.querySelectorAll('.btn-search').forEach(function(el) { if (L['f-search']) el.textContent = L['f-search']; });
+  var _pubs = document.querySelectorAll('.btn-publish');
+  if (_pubs[0] && L['f-publish']) _pubs[0].textContent = L['f-publish'];
+  if (_pubs[1] && L['fa-become-agent']) _pubs[1].textContent = L['fa-become-agent'];
   // Re-rendre le contenu dynamique (cartes, filtres) avec le nouveau LANG
   if (_tab === 'agents') { if (typeof chargerAgents === 'function') chargerAgents({}); }
   else { if (typeof charger === 'function') charger({}); }
@@ -684,17 +719,28 @@ function afficherGrille(list) {
 
   // Construire la grille avec promos et pubs intercalées
   var html = '';
+  var _promoShown = false;
   list.forEach(function(a, i) {
     // Pub Monetag native toutes les 8 annonces
     if (i > 0 && i % 8 === 0) {
       html += '<div style="grid-column:1/-1;" class="ad-banner"><div id="monetag-native-' + i + '"><!-- MONETAG_NATIVE --></div></div>';
     }
-    // Promo ImmoGest toutes les 6 annonces
+    // Promo toutes les 6 annonces
     if (i > 0 && i % 6 === 0) {
       html += promoCardHtml();
+      _promoShown = true;
     }
     html += cardHtml(a);
   });
+  // Toujours afficher les 4 promos si elles n'ont pas encore été intercalées (< 6 annonces)
+  if (!_promoShown) {
+    html += '<div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:8px;">';
+    for (var _pi = 0; _pi < _PROMOS.length; _pi++) {
+      _promoIndex = _pi;
+      html += promoCardHtml();
+    }
+    html += '</div>';
+  }
   grid.innerHTML = html;
 }
 
