@@ -2405,10 +2405,11 @@ function ouvrirFicheSuivi(locId) {
     <div id="fiche-preview">${ficheContent}</div>
     <div class="modal-footer" style="margin-top:12px;">
       <button class="btn btn-ghost" onclick="closeModals()">Fermer</button>
+      <button class="btn btn-ghost" onclick="_analyserDossierLocataire(${locId})" style="gap:6px;">✨ Analyse IA</button>
       <button class="btn btn-primary" onclick="downloadFicheSuivi(${locId})" data-tooltip="Télécharger la fiche en PDF">⬇ Télécharger PDF</button>
     </div>
   `;
-  
+
   const modal = document.getElementById('modal-apercu-recu');
   if (modal) {
     modal.querySelector('.modal').innerHTML = html;
@@ -9899,17 +9900,62 @@ function supprimerPaiement(payId) {
   showToast('Paiement supprimé ✓');
 }
 
-// ── ASSISTANT IA v2 — connecté à l'API Anthropic ──
+// ── ASSISTANT IA v3 — adaptatif par rôle ──────────────────────
 let _aiHistory = [];
+let _aiFirstOpen = true;
 
 function openAIAssistant() { toggleAIChat(); }
 
 function toggleAIChat() {
   const panel = document.getElementById('ai-chat-panel');
   if (!panel) return;
-  const isOpen = panel.style.display === 'flex';
-  panel.style.display = isOpen ? 'none' : 'flex';
-  if (!isOpen) setTimeout(() => document.getElementById('ai-input')?.focus(), 120);
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    panel.classList.remove('open');
+    setTimeout(() => { if (!panel.classList.contains('open')) panel.style.display = 'none'; }, 220);
+  } else {
+    panel.style.display = 'flex';
+    panel.offsetHeight; // force reflow pour l'animation
+    panel.classList.add('open');
+    if (_aiFirstOpen) { _aiFirstOpen = false; _renderAIWelcome(); _renderAIChips(); }
+    setTimeout(() => document.getElementById('ai-input')?.focus(), 150);
+  }
+}
+
+function _renderAIWelcome() {
+  const container = document.getElementById('ai-chat-messages');
+  if (!container || container.children.length > 0) return;
+  const role = SESSION ? SESSION.role : 'admin';
+  const nom  = SESSION ? (SESSION.nom || '').split(' ')[0] : '';
+  const badge = document.getElementById('ai-role-tag');
+  if (badge) {
+    badge.textContent = { admin:'Admin', gestionnaire:'Gestionnaire', comptable:'Comptable', proprietaire:'Propriétaire', locataire:'Locataire' }[role] || role;
+  }
+  const greetings = {
+    admin:        `Bonjour ${nom} ! Je connais votre portefeuille en temps réel — immeubles, locataires, paiements. Posez n'importe quelle question ou choisissez une action ⬇️`,
+    gestionnaire: `Bonjour ${nom} ! Je suis votre copilote de gestion. Impayés, relances, performance — posez votre question ⬇️`,
+    comptable:    `Bonjour ${nom} ! Assistant financier à votre service. Encaissements, commissions, anomalies — analysons ensemble ⬇️`,
+    proprietaire: `Bonjour ${nom} ! Je résume la performance de vos biens et l'état de vos locataires ⬇️`,
+    locataire:    `Bonjour ${nom} ! Je suis là pour vous aider à comprendre votre situation locative ⬇️`,
+  };
+  _addAIBubble('assistant', greetings[role] || greetings.admin);
+}
+
+function _renderAIChips() {
+  const el = document.getElementById('ai-quick-chips');
+  if (!el) return;
+  const role = SESSION ? SESSION.role : 'admin';
+  const sets = {
+    admin:        [['⚠️ Impayés','impayés','var(--red)','var(--red-bg)'],['📊 Anomalies','anomalies','#6b46c1','rgba(107,70,193,.1)'],['📩 Relances','relances','var(--yellow)','var(--yellow-bg)'],['📈 Perf.','performance','var(--green)','var(--green-bg)']],
+    gestionnaire: [['⚠️ Impayés','impayés','var(--red)','var(--red-bg)'],['📩 Relances','relances','var(--yellow)','var(--yellow-bg)'],['📈 Perf.','performance','var(--green)','var(--green-bg)']],
+    comptable:    [['💰 Encaissements','encaissements','var(--green)','var(--green-bg)'],['🧾 Commissions','commissions','#6b46c1','rgba(107,70,193,.1)'],['🔍 Anomalies','anomalies','var(--red)','var(--red-bg)']],
+    proprietaire: [['📊 Mes revenus','revenus-prop','var(--green)','var(--green-bg)'],['⚠️ Impayés','impayés','var(--red)','var(--red-bg)'],['📈 Performance','performance','#6b46c1','rgba(107,70,193,.1)']],
+    locataire:    [['📋 Ma situation','situation-loc','var(--accent)','rgba(14,106,175,.08)'],['💳 Mes paiements','paiements-loc','var(--green)','var(--green-bg)'],['📄 Mon bail','bail-loc','#6b46c1','rgba(107,70,193,.1)']],
+  };
+  const chips = sets[role] || sets.admin;
+  el.innerHTML = chips.map(([label, type, color, bg]) =>
+    `<button class="ai-chip" onclick="aiQuickAction('${type}')" style="color:${color};background:${bg};border-color:${color};">${label}</button>`
+  ).join('');
 }
 
 function sendAIMessage() {
@@ -9923,14 +9969,40 @@ function sendAIMessage() {
 
 function aiQuickAction(type) {
   const queries = {
-    'impayés':     'Donne-moi un résumé détaillé des impayés par immeuble avec les montants',
-    'anomalies':   'Identifie les anomalies de paiement : locataires avec plus de 4 mois de retard',
-    'performance': 'Analyse la performance globale de mon portefeuille immobilier',
-    'relances':    'Quels locataires dois-je relancer en priorité cette semaine ?'
+    'impayés':        'Donne-moi un résumé complet des impayés par immeuble avec les montants et les noms.',
+    'anomalies':      'Identifie les anomalies : locataires avec plus de 3 mois de retard, irrégularités.',
+    'performance':    'Analyse la performance globale : taux de recouvrement, encaissements ce mois, tendances.',
+    'relances':       'Quels locataires relancer en priorité cette semaine ? Classe par urgence avec montant dû.',
+    'encaissements':  'Résume les encaissements du mois en cours par immeuble avec les totaux.',
+    'commissions':    'Calcule les commissions dues par immeuble ce mois selon les règles de chaque immeuble.',
+    'revenus-prop':   'Résume mes revenus locatifs ce mois : total encaissé, impayés, taux de recouvrement.',
+    'situation-loc':  'Dis-moi précisément ma situation : suis-je à jour, combien dois-je, depuis quand ?',
+    'paiements-loc':  "Montre-moi l'historique de mes paiements et dis-moi si tout est en ordre.",
+    'bail-loc':       'Explique-moi les informations importantes de ma situation : loyer, date d\'entrée, obligations.',
   };
   const q = queries[type] || type;
-  _addAIBubble('user', q);
-  _callAnthropicAI(q);
+  if (!document.getElementById('ai-chat-panel')?.classList.contains('open')) toggleAIChat();
+  setTimeout(() => { _addAIBubble('user', q); _callAnthropicAI(q); }, 80);
+}
+
+function _analyserDossierLocataire(locId) {
+  const l = DATA.locataires.find(x => x.id === locId);
+  if (!l) return;
+  const pays = DATA.paiements.filter(p => p.locId === locId && p.montant > 0).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const im = DATA.immeubles.find(i => i.id === l.iid);
+  const q = `Analyse complète du dossier locataire — ${l.nom} :
+Immeuble : ${im ? im.nom : '–'} | Local : ${l.appt || '–'}
+Loyer : ${l.loyer.toLocaleString('fr-FR')} FCFA/mois
+Solde impayé : ${(l.reste||0).toLocaleString('fr-FR')} FCFA (${l.loyer>0?Math.round((l.reste||0)/l.loyer):0} mois)
+Paiements enregistrés : ${pays.length}
+Date d'entrée : ${l.entree ? new Date(l.entree).toLocaleDateString('fr-FR') : 'inconnue'}
+
+Donne : (1) profil du locataire basé sur son historique de paiement, (2) niveau de risque, (3) recommandation claire : renouveler le bail / mettre en demeure / surveiller.`;
+  closeModals();
+  setTimeout(() => {
+    if (!document.getElementById('ai-chat-panel')?.classList.contains('open')) toggleAIChat();
+    setTimeout(() => { _addAIBubble('user', `Analyse le dossier de ${l.nom}`); _callAnthropicAI(q); }, 200);
+  }, 100);
 }
 
 function _addAIBubble(role, html) {
@@ -10187,29 +10259,69 @@ function _locDropdownItems(l) {
 function toggleActionMenu(btn, e) {
   if (e) e.stopPropagation();
   const dd = btn.nextElementSibling;
-  const wasOpen = dd && dd.classList.contains('open');
-  document.querySelectorAll('.action-dropdown.open').forEach(d => {
-    d.classList.remove('open');
-    d.style.top = '';
-    d.style.bottom = '';
-  });
-  if (!wasOpen && dd) {
-    dd.classList.add('open');
-    // Ouvrir vers le haut si pas assez de place en bas
-    const rect = btn.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    if (spaceBelow < 320) {
-      dd.style.top = 'auto';
-      dd.style.bottom = 'calc(100% + 6px)';
-    } else {
-      dd.style.top = 'calc(100% + 6px)';
-      dd.style.bottom = 'auto';
-    }
+  if (!dd) return;
+
+  // Portal = enfant direct de <body>, jamais piégé par backdrop-filter
+  let portal = document.getElementById('_dd_portal');
+  if (!portal) {
+    portal = document.createElement('div');
+    portal.id = '_dd_portal';
+    portal.className = 'action-dropdown';
+    document.body.appendChild(portal);
   }
+
+  // Même bouton → fermer
+  if (portal._srcBtn === btn && portal.classList.contains('open')) {
+    portal.classList.remove('open');
+    portal.style.display = 'none';
+    portal._srcBtn = null;
+    return;
+  }
+
+  // Copier le contenu du dd dans le portal
+  portal.innerHTML = dd.innerHTML;
+  portal._srcBtn = btn;
+
+  // Mesurer la vraie taille (invisible, position absolue hors écran)
+  portal.style.cssText = 'position:fixed;top:-9999px;left:-9999px;display:flex;flex-direction:column;visibility:hidden;z-index:99999;';
+  const pH = portal.offsetHeight || 260;
+  const pW = Math.max(portal.offsetWidth, 210);
+
+  // Calcul de position à partir du bouton (viewport-relative)
+  const rect = btn.getBoundingClientRect();
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const spaceRight = window.innerWidth - rect.right;
+
+  // Horizontal : aligné à droite du bouton, recadré si déborde à gauche
+  const leftPos = Math.max(8, Math.min(rect.right - pW, window.innerWidth - pW - 8));
+
+  // Vertical : vers le bas ou vers le haut
+  let topVal, bottomVal;
+  if (spaceBelow >= pH + 8) {
+    topVal    = (rect.bottom + 4) + 'px';
+    bottomVal = 'auto';
+  } else {
+    topVal    = 'auto';
+    bottomVal = (window.innerHeight - rect.top + 4) + 'px';
+  }
+
+  portal.style.cssText = `position:fixed;left:${leftPos}px;top:${topVal};bottom:${bottomVal};z-index:99999;display:flex;flex-direction:column;`;
+  portal.classList.add('open');
 }
 
+// Fermer le portal au clic en dehors
+document.addEventListener('click', () => {
+  const p = document.getElementById('_dd_portal');
+  if (p && p.classList.contains('open')) {
+    p.classList.remove('open');
+    p.style.display = 'none';
+    p._srcBtn = null;
+  }
+});
+
 function _closeDropdowns() {
-  document.querySelectorAll('.action-dropdown.open').forEach(d => d.classList.remove('open'));
+  const p = document.getElementById('_dd_portal');
+  if (p) { p.classList.remove('open'); p.style.display = 'none'; p._srcBtn = null; }
 }
 
 // Close all action menus on click outside
@@ -11325,11 +11437,9 @@ async function supprimerCharge(id, iid) {
 async function checkContratTemplateStatus(iid) {
   const el = document.getElementById('contrat-template-status-' + iid);
   if (!el) return;
-  const url = await getContratTemplateUrl(iid);
-  // Vérifier si le fichier existe réellement
   try {
-    const res = await fetch(url, { method: 'HEAD' });
-    if (res.ok) {
+    const exists = await contratTemplateExists(iid);
+    if (exists) {
       el.innerHTML = `✅ Modèle présent — <button class="btn btn-sm" onclick="genererContrat(${iid})" style="margin-left:8px;">👁 Prévisualiser</button>`;
     } else {
       el.textContent = '⚠️ Aucun modèle uploadé pour cet immeuble. Modèle cabinet par défaut utilisé.';

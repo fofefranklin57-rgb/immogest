@@ -302,6 +302,14 @@ async function getContratTemplateUrl(immeubleId) {
   } catch(e) { return null; }
 }
 
+async function contratTemplateExists(immeubleId) {
+  try {
+    const { data, error } = await _sb.storage.from('contrats').list('templates', { search: `immeuble_${immeubleId}.docx` });
+    if (error) return false;
+    return Array.isArray(data) && data.some(f => f.name === `immeuble_${immeubleId}.docx`);
+  } catch(e) { return false; }
+}
+
 // ── loadDataFromSupabase ──────────────────────────────────────
 async function loadDataFromSupabase() {
   try {

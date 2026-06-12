@@ -15,27 +15,27 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ImmoGest">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<title>ImmoGest — Marketplace Immobilière Afrique Centrale</title>
+<title>ImmoGest — Gestion & Marketplace Immobilière</title>
 <link rel="stylesheet" href="app.css?v=20260610t">
 
 <!-- ── Open Graph (Facebook, WhatsApp, LinkedIn) ── -->
 <meta property="og:type"        content="website">
 <meta property="og:site_name"   content="ImmoGest">
-<meta property="og:title"       content="🏘️ Marketplace ImmoGest — Locations & immobilier">
-<meta property="og:description" content="Trouvez votre appartement, maison, studio, hôtel ou local commercial au Cameroun. Annonces vérifiées, contact direct WhatsApp.">
+<meta property="og:title"       content="🏢 ImmoGest — Gestion & Marketplace Immobilière">
+<meta property="og:description" content="Gérez vos immeubles, locataires et paiements. Publiez et trouvez des annonces immobilières partout dans le monde. Contact direct WhatsApp.">
 <meta property="og:image"       content="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200&h=630&fit=crop&q=80">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:url"         content="https://immogest-34w.pages.dev/marche">
+<meta property="og:url"         content="https://immogest-34w.pages.dev">
 <meta property="og:locale"      content="fr_FR">
 <!-- Twitter/X Card -->
 <meta name="twitter:card"        content="summary_large_image">
-<meta name="twitter:title"       content="🏘️ Marketplace ImmoGest — Locations Cameroun">
-<meta name="twitter:description" content="Appartements, maisons, studios, hôtels. Contact direct WhatsApp.">
+<meta name="twitter:title"       content="🏢 ImmoGest — Gestion & Marketplace Immobilière">
+<meta name="twitter:description" content="Appartements, maisons, studios, hôtels, locaux commerciaux. Contact direct WhatsApp.">
 <meta name="twitter:image"       content="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200&h=630&fit=crop&q=80">
 <!-- SEO -->
-<meta name="description" content="Marketplace immobilière au Cameroun — Trouvez votre location : appartements, maisons, studios, hôtels, meublés, locaux commerciaux. Contact direct WhatsApp.">
-<meta name="keywords"    content="location appartement Cameroun, immobilier Yaoundé, Douala, maison à louer, studio meublé, ImmoGest">
+<meta name="description" content="ImmoGest — Plateforme de gestion immobilière et marketplace mondiale. Gérez locataires, paiements, rapports. Trouvez ou publiez des annonces immobilières.">
+<meta name="keywords"    content="gestion immobilière, location appartement, marketplace immobilière, locataires, loyers, ImmoGest">
 
 
 <!-- ── SUPABASE CLIENT ── -->
@@ -1634,48 +1634,39 @@ self.addEventListener('fetch', (event) => {
 <!-- ═══ ASSISTANT IA FLOTTANT v2 ═══ -->
 
 <button id="ai-float-btn" onclick="toggleAIChat()" title="Assistant IA ImmoGest" style="display:none;">
-  <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6L17 21H7l1.3-6A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/><circle cx="9" cy="9" r="1" fill="#fff" stroke="none"/><circle cx="15" cy="9" r="1" fill="#fff" stroke="none"/><path d="M9 13s1 2 3 2 3-2 3-2"/></svg>
+  <span id="ai-fab-badge"></span>
+  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2l2.09 6.26L20 12l-5.91 3.74L12 22l-2.09-5.74L4 12l5.91-3.74L12 2z"/>
+    <path d="M5 3l.9 2.7L8.5 7l-2.6.9L5 10.5l-.9-2.6L1.5 7l2.6-.9L5 3z" opacity=".5"/>
+  </svg>
 </button>
 
 <div id="ai-chat-panel">
-  <!-- Header -->
-  <div style="padding:13px 16px;background:linear-gradient(135deg,#0e6aaf,#6b46c1);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+  <div class="ai-panel-header">
     <div style="display:flex;align-items:center;gap:10px;">
-      <div style="width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6L17 21H7l1.3-6A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/><circle cx="9" cy="9" r="1" fill="#fff" stroke="none"/><circle cx="15" cy="9" r="1" fill="#fff" stroke="none"/><path d="M9 13s1 2 3 2 3-2 3-2"/></svg>
+      <div class="ai-header-avatar">
+        <svg viewBox="0 0 24 24"><path d="M12 2l2.09 6.26L20 12l-5.91 3.74L12 22l-2.09-5.74L4 12l5.91-3.74L12 2z"/></svg>
       </div>
       <div>
-        <div style="font-size:13px;font-weight:700;">Assistant ImmoGest</div>
-        <div id="ai-status-dot" style="font-size:10px;opacity:0.85;display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#4ade80;display:inline-block;"></span>En ligne · IA connectée</div>
+        <div class="ai-header-title">ImmoGest IA</div>
+        <div class="ai-header-sub">
+          <span id="ai-role-tag" class="ai-role-tag">–</span>
+          <span class="ai-online-dot"></span>
+          <span>En ligne</span>
+        </div>
       </div>
     </div>
-    <button onclick="toggleAIChat()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+    <button onclick="toggleAIChat()" class="ai-close-btn">✕</button>
   </div>
 
-  <!-- Messages -->
-  <div id="ai-chat-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--bg3);">
-    <div class="ai-msg-bot">
-      <div class="ai-avatar"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6L17 21H7l1.3-6A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/><circle cx="9" cy="9" r="1" fill="#fff" stroke="none"/><circle cx="15" cy="9" r="1" fill="#fff" stroke="none"/></svg></div>
-      <div class="ai-bubble-bot">Bonjour ! Je suis votre assistant ImmoGest.<br>Je connais vos immeubles, locataires et paiements en temps réel. Posez-moi n'importe quelle question ou choisissez une action rapide ⬇️</div>
-    </div>
-  </div>
+  <div id="ai-chat-messages"></div>
 
-  <!-- Quick chips -->
-  <div style="padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;background:var(--bg2);flex-shrink:0;">
-    <button class="ai-chip" onclick="aiQuickAction('impayés')" style="background:var(--red-bg);color:var(--red);border-color:var(--red);">⚠️ Impayés</button>
-    <button class="ai-chip" onclick="aiQuickAction('anomalies')" style="background:rgba(107,70,193,.1);color:#6b46c1;border-color:#6b46c1;">📊 Anomalies</button>
-    <button class="ai-chip" onclick="aiQuickAction('performance')" style="background:var(--green-bg);color:var(--green);border-color:var(--green);">📈 Performance</button>
-    <button class="ai-chip" onclick="aiQuickAction('relances')" style="background:var(--yellow-bg);color:var(--yellow);border-color:var(--yellow);">📩 Relances</button>
-  </div>
+  <div id="ai-quick-chips" class="ai-chips-bar"></div>
 
-  <!-- Input -->
-  <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--bg2);flex-shrink:0;">
+  <div class="ai-input-bar">
     <input type="text" id="ai-input" placeholder="Posez votre question…"
-      style="flex:1;padding:9px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;font-family:var(--font);background:var(--bg);color:var(--text);outline:none;transition:border .15s;"
-      onfocus="this.style.borderColor='#0e6aaf'" onblur="this.style.borderColor=''"
       onkeydown="if(event.key==='Enter')sendAIMessage()">
-    <button onclick="sendAIMessage()" id="ai-send-btn"
-      style="width:38px;height:38px;background:linear-gradient(135deg,#0e6aaf,#6b46c1);color:#fff;border:none;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+    <button onclick="sendAIMessage()" id="ai-send-btn" class="ai-send-btn">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
     </button>
   </div>
@@ -1747,5 +1738,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   });
 }
 </script>
+<!-- Portal dropdown — enfant direct de body, jamais coupé par backdrop-filter parent -->
+<div id="_dd_portal" class="action-dropdown" style="display:none;position:fixed;z-index:99999;"></div>
 </body>
 </html>
