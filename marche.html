@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🏘️ Marketplace Immobilière — Locations Cameroun | ImmoGest</title>
-<meta name="description" content="Trouvez votre appartement, maison, studio, hôtel meublé ou local commercial au Cameroun. Annonces vérifiées, contact direct WhatsApp. Yaoundé, Douala et toutes les villes.">
-<meta name="keywords" content="location appartement Cameroun, maison à louer Yaoundé, studio Douala, immeuble location, meublé Cameroun, local commercial, ImmoGest marketplace">
+<title>🏘️ Marketplace Immobilière — Locations & Annonces Immobilières | ImmoGest</title>
+<meta name="description" content="Trouvez votre appartement, maison, studio, hôtel meublé ou local commercial. Annonces vérifiées, contact direct WhatsApp. Des milliers d'annonces dans votre ville.">
+<meta name="keywords" content="location appartement, maison à louer, studio meublé, immeuble location, local commercial, annonces immobilières, ImmoGest marketplace">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://immogest-34w.pages.dev/marche">
 
 <!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
 <meta property="og:type"         content="website">
 <meta property="og:site_name"    content="ImmoGest Marketplace">
-<meta property="og:title"        content="🏘️ Locations immobilières au Cameroun — ImmoGest">
+<meta property="og:title"        content="🏘️ Locations immobilières — ImmoGest Marketplace">
 <meta property="og:description"  content="Appartements, maisons, studios, hôtels meublés, locaux commerciaux. Contact direct WhatsApp avec les propriétaires. Annonces vérifiées.">
 <meta property="og:image"        content="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200&h=630&fit=crop&q=80">
 <meta property="og:image:width"  content="1200">
@@ -20,7 +20,7 @@
 <meta property="og:url"          content="https://immogest-34w.pages.dev/marche">
 <meta property="og:locale"       content="fr_FR">
 <meta name="twitter:card"        content="summary_large_image">
-<meta name="twitter:title"       content="🏘️ Locations immobilières Cameroun — ImmoGest">
+<meta name="twitter:title"       content="🏘️ Locations immobilières — ImmoGest Marketplace">
 <meta name="twitter:description" content="Appartements, maisons, studios, hôtels. Contact direct WhatsApp.">
 <meta name="twitter:image"       content="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200&h=630&fit=crop&q=80">
 
@@ -31,7 +31,7 @@
   "@type": "WebSite",
   "name": "ImmoGest Marketplace",
   "url": "https://immogest-34w.pages.dev/marche",
-  "description": "Marketplace immobilière au Cameroun — locations appartements, maisons, studios, hôtels meublés, locaux commerciaux",
+  "description": "Marketplace immobilière — locations appartements, maisons, studios, hôtels meublés, locaux commerciaux",
   "potentialAction": {
     "@type": "SearchAction",
     "target": "https://immogest-34w.pages.dev/marche?ville={search_term_string}",
@@ -229,7 +229,7 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
             <div onclick="setMarcheLang('ar')" style="padding:8px 12px;border-radius:7px;cursor:pointer;font-size:12px;color:#e8f0fe;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background=''"><span>🇸🇦</span> العربية</div>
           </div>
         </div>
-        <a class="btn-outline" href="/" data-i18n="Se connecter">Se connecter</a>
+        <div id="header-session-btns" style="display:flex;gap:8px;align-items:center;"></div>
         <button class="btn-primary" onclick="ouvrirFormPublier()" data-i18n="+ Publier une annonce">+ Publier une annonce</button>
       </div>
     </div>
@@ -255,7 +255,7 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
 <!-- FILTERS ANNONCES -->
 <div class="filters" id="filters-annonces">
   <div class="filters-inner">
-    <input class="filter-input" id="f-ville"  placeholder="🏙️ Ville (ex: Yaoundé)" oninput="filtrer()">
+    <input class="filter-input" id="f-ville"  placeholder="🏙️ Ville, quartier…" oninput="filtrer()">
     <select class="filter-input" id="f-type"  onchange="filtrer()">
       <option value="">Tous les types</option>
       <option value="appartement">🏢 Appartement</option>
@@ -275,7 +275,7 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
 <!-- FILTERS AGENTS -->
 <div class="agent-filters" id="filters-agents">
   <div class="filters-inner">
-    <input class="filter-input" id="fa-ville" placeholder="🏙️ Ville (ex: Yaoundé)" oninput="filtrerAgents()">
+    <input class="filter-input" id="fa-ville" placeholder="🏙️ Ville, quartier…" oninput="filtrerAgents()">
     <select class="filter-input" id="fa-spec" onchange="filtrerAgents()">
       <option value="">Toutes spécialités</option>
       <option value="appartement">🏢 Appartements</option>
@@ -348,7 +348,7 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
     <div style="text-align:center;margin-bottom:40px;">
       <div style="display:inline-block;background:#fef3c7;color:#92400e;font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;padding:6px 14px;border-radius:20px;margin-bottom:14px;">🌍 Première en Afrique centrale</div>
       <h2 style="font-size:clamp(24px,4vw,36px);font-weight:900;color:#0f172a;line-height:1.2;margin-bottom:12px;">Votre bien immobilier en <span style="color:#0e6aaf;">visite 3D interactive</span></h2>
-      <p style="font-size:15px;color:#64748b;max-width:560px;margin:0 auto;line-height:1.7;">Les meilleures agences immobilières de Paris, Dubaï et New York l'utilisent déjà. Maintenant c'est disponible ici, au Cameroun — et vos concurrents ne le savent pas encore.</p>
+      <p style="font-size:15px;color:#64748b;max-width:560px;margin:0 auto;line-height:1.7;">Les meilleures agences immobilières de Paris, Dubaï et New York l'utilisent déjà. Maintenant c'est disponible ici — et vos concurrents ne le savent pas encore.</p>
     </div>
 
     <!-- 3 colonnes avantages -->
@@ -369,7 +369,7 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
       <div style="background:linear-gradient(135deg,#fdf4ff,#f3e8ff);border-radius:16px;padding:24px;">
         <div style="font-size:36px;margin-bottom:12px;">🌍 🛫</div>
         <div style="font-size:15px;font-weight:800;color:#4c1d95;margin-bottom:8px;">Louez à la diaspora</div>
-        <p style="font-size:13px;color:#334155;line-height:1.6;">Un Camerounais en France ou en Amérique veut louer avant de rentrer ? Avec la visite 3D, il signe le contrat à distance, sans jamais mettre les pieds sur place. <strong>Un marché de millions de personnes que vos annonces photos ne touchent pas.</strong></p>
+        <p style="font-size:13px;color:#334155;line-height:1.6;">Un locataire en Europe ou en Amérique veut louer avant de rentrer ? Avec la visite 3D, il signe le contrat à distance, sans jamais mettre les pieds sur place. <strong>Un marché de millions de personnes que vos annonces photos ne touchent pas.</strong></p>
       </div>
     </div>
 
@@ -402,7 +402,7 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
         <button onclick="ouvrirCommande3D()" style="padding:14px 28px;background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">🏛️ Je veux ma visite 3D</button>
         <a href="/" style="padding:14px 28px;background:#0e6aaf;color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">🏢 Gérer mes biens avec ImmoGest</a>
       </div>
-      <div style="margin-top:16px;font-size:11px;color:#94a3b8;">Service proposé par ImmoGest · Yaoundé, Cameroun · Devis sans engagement · Réponse en 2h</div>
+      <div style="margin-top:16px;font-size:11px;color:#94a3b8;">Service proposé par ImmoGest · Devis sans engagement · Réponse en 2h</div>
     </div>
 
   </div>
@@ -439,9 +439,9 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
 
 <!-- FOOTER -->
 <footer class="footer">
-  <p>🏢 <strong style="color:#fff;">ImmoGest</strong> — Plateforme de gestion immobilière & marketplace au Cameroun</p>
-  <p style="margin-top:8px;"><a href="/">Application complète</a> · <a href="/marche">Marketplace</a> · <a href="#" onclick="ouvrirCGU();return false;">CGU & Mentions légales</a> · Conforme OHADA · MTN MoMo & Orange Money</p>
-  <p style="margin-top:8px;font-size:11px;opacity:.5;">🇨🇲 Cameroun · 🇨🇮 Côte d'Ivoire · 🇸🇳 Sénégal · 🇬🇦 Gabon · 🇨🇩 RDC · 🇨🇬 Congo · 🇫🇷 France</p>
+  <p>🏢 <strong style="color:#fff;">ImmoGest</strong> — Plateforme de gestion immobilière & marketplace</p>
+  <p style="margin-top:8px;"><a href="/">Application complète</a> · <a href="/marche">Marketplace</a> · <a href="#" onclick="ouvrirCGU();return false;">CGU & Mentions légales</a> · Mobile Money & paiements locaux</p>
+  <p style="margin-top:8px;font-size:11px;opacity:.5;">🌍 Afrique · 🇫🇷 France · 🌐 International</p>
 </footer>
 
 <script>
@@ -515,6 +515,17 @@ var _annonces = [];
 var _favs = [];
 try { _favs = JSON.parse(localStorage.getItem('immogest_favs_pub') || '[]'); } catch(e) {}
 
+// ── Session ImmoGest (utilisateur connecté) ─────────────────────
+var _MARCHE_USER = null;
+(function() {
+  try {
+    var _auth = JSON.parse(localStorage.getItem('immogest_auth') || 'null');
+    if (_auth && _auth.tenantId) {
+      _MARCHE_USER = { tenantId: _auth.tenantId, nom: _auth.nom || '', role: _auth.role || 'admin' };
+    }
+  } catch(e) {}
+})();
+
 // ── Chargement ─────────────────────────────────────────────────
 async function charger(filters) {
   document.getElementById('loading').style.display = 'block';
@@ -574,15 +585,15 @@ var _PROMOS = [
     gradient: 'linear-gradient(135deg,#4c1d95 0%,#7c3aed 100%)',
     label: '🥽 Innovation Afrique centrale',
     title: 'Louez 3× plus vite avec une visite 3D',
-    sub: 'Vos photos transformées en visuels 3D photoréalistes. La diaspora visite votre bien depuis Paris ou New York. <strong>Premier service du genre au Cameroun.</strong>',
+    sub: 'Vos photos transformées en visuels 3D photoréalistes. La diaspora visite votre bien depuis Paris ou New York. <strong>Premier service du genre dans votre ville.</strong>',
     btn1: { label: '🏛️ Commander ma visite 3D', href: '#', color: '#a855f7', onclick: 'ouvrirCommande3D()' },
     btn2: { label: 'En savoir plus →', href: '#', color: 'rgba(255,255,255,0.12)' }
   },
   // TrafiCam
   {
     gradient: 'linear-gradient(135deg,#0f2027 0%,#1a3a4a 50%,#0ea5e9 100%)',
-    label: '🚦 Mobilité urbaine · Cameroun',
-    title: 'Yaoundé, Douala — bougez plus intelligemment avec TrafiCam',
+    label: '🚦 Mobilité urbaine',
+    title: 'Bougez plus intelligemment avec TrafiCam',
     sub: 'Accidents, nids-de-poule, embouteillages signalés en temps réel par la communauté. Commandez un <strong>taxi ou une moto</strong> en quelques secondes. Plus jamais surpris sur la route.',
     btn1: { label: '🚖 Commander un taxi / moto', href: 'https://kalamundi.pages.dev/', color: '#0ea5e9' },
     btn2: { label: 'Voir les alertes →', href: 'https://kalamundi.pages.dev/', color: 'rgba(255,255,255,0.12)' }
@@ -702,7 +713,7 @@ async function ouvrirAnnonce(id) {
     + '</div>'
     + '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);">'
     + '<div style="text-align:center;margin-bottom:8px;">Annonce publiée via ImmoGest · ' + (a.date_publication ? new Date(a.date_publication).toLocaleDateString('fr-FR') : '') + (a.pays ? ' · ' + a.pays : '') + '</div>'
-    + '<div style="background:#f8fafc;border-radius:8px;padding:10px;font-size:11px;color:#64748b;line-height:1.6;">⚖️ ImmoGest est une plateforme d\'intermédiation. Nous ne sommes pas partie aux transactions. Vérifiez toujours l\'identité du propriétaire et l\'authenticité des titres fonciers avant tout versement. Contrats de bail conformes au droit local (' + (a.pays||'Cameroun') + ').</div>'
+    + '<div style="background:#f8fafc;border-radius:8px;padding:10px;font-size:11px;color:#64748b;line-height:1.6;">⚖️ ImmoGest est une plateforme d\'intermédiation. Nous ne sommes pas partie aux transactions. Vérifiez toujours l\'identité du propriétaire et l\'authenticité des titres fonciers avant tout versement. Contrats de bail conformes au droit local' + (a.pays ? ' (' + a.pays + ')' : '') + '.</div>'
     + '</div>'
     + '</div></div>';
   ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
@@ -773,7 +784,7 @@ function ouvrirFormPublier() {
     + '<div class="form-row"><label class="form-label">Titre de l\'annonce *</label><input class="form-input" name="titre" placeholder="Ex: Appartement F3 meublé centre-ville" required></div>'
     + '<div class="form-grid2">'
     + '<div class="form-row"><label class="form-label">Type de bien *</label><select class="form-input" name="type" required><option value="">Choisir…</option><option value="appartement">Appartement</option><option value="maison">Maison</option><option value="studio">Studio</option><option value="chambre">Chambre</option><option value="meuble">Meublé</option><option value="hotel">Hôtel</option><option value="commercial">Local commercial</option></select></div>'
-    + '<div class="form-row"><label class="form-label">Ville *</label><input class="form-input" name="ville" placeholder="Ex: Yaoundé" required></div>'
+    + '<div class="form-row"><label class="form-label">Ville *</label><input class="form-input" name="ville" placeholder="Votre ville" required></div>'
     + '</div>'
     + '<div class="form-grid2">'
     + '<div class="form-row"><label class="form-label">Quartier</label><input class="form-input" name="quartier" placeholder="Ex: Bastos, Akwa…"></div>'
@@ -786,11 +797,11 @@ function ouvrirFormPublier() {
     + '<div class="form-row"><label class="form-label">Surface (m²)</label><input class="form-input" name="surface" type="number" placeholder="60"></div>'
     + '<div class="form-row"><label class="form-label">Description</label><textarea class="form-input" name="description" rows="3" placeholder="Décrivez le bien : état, commodités, accès…" style="resize:vertical;"></textarea></div>'
     + '<div class="form-row"><label class="form-label">Photos (URLs séparées par des virgules)</label><input class="form-input" name="photos" placeholder="https://… , https://…"></div>'
-    + '<div class="form-row"><label class="form-label">WhatsApp (avec indicatif) *</label><input class="form-input" name="whatsapp" placeholder="237699000000" required></div>'
+    + '<div class="form-row"><label class="form-label">WhatsApp (avec indicatif) *</label><input class="form-input" name="whatsapp" placeholder="+XXX XXXXXXXXX" required></div>'
     + '<div class="form-row"><label class="form-label">🥽 URL Visite 3D (facultatif)</label><input class="form-input" name="visite_3d_url" placeholder="https://my.matterport.com/… ou lien Pannellum"></div>'
     + '<div class="form-row"><label class="form-label">Pays *</label><select class="form-input" name="pays" required><option value="Cameroun">🇨🇲 Cameroun</option><option value="Côte d\'Ivoire">🇨🇮 Côte d\'Ivoire</option><option value="Sénégal">🇸🇳 Sénégal</option><option value="Gabon">🇬🇦 Gabon</option><option value="RDC">🇨🇩 RDC</option><option value="Congo">🇨🇬 Congo</option><option value="France">🇫🇷 France</option><option value="Autre">🌍 Autre</option></select></div>'
     + '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:#475569;line-height:1.6;">'
-    + '📋 <strong>Rappel légal :</strong> En publiant cette annonce, vous certifiez être propriétaire ou mandaté par le propriétaire. Toute annonce frauduleuse engage votre responsabilité pénale conformément aux lois en vigueur dans votre pays. Les contrats de bail doivent être établis par écrit (Code OHADA art. 101 et lois nationales applicables).'
+    + '📋 <strong>Rappel légal :</strong> En publiant cette annonce, vous certifiez être propriétaire ou mandaté par le propriétaire. Toute annonce frauduleuse engage votre responsabilité pénale conformément aux lois en vigueur dans votre pays. Les contrats de bail doivent être établis par écrit, conformément aux lois nationales applicables.'
     + '</div>'
     + '<div style="margin-bottom:16px;"><label class="checkbox-row"><input type="checkbox" name="cgu" required> J\'accepte les <a href="#" onclick="ouvrirCGU();return false;" style="color:var(--blue);">Conditions Générales d\'Utilisation</a> et certifie que les informations sont exactes *</label></div>'
     + '<div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px;">'
@@ -817,6 +828,7 @@ async function soumettreAnnonce(e) {
   try {
     var photos = (form.photos.value || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
     var row = {
+      tenant_id:       _MARCHE_USER ? _MARCHE_USER.tenantId : null,
       titre:           form.titre.value.trim(),
       type:            form.type.value,
       ville:           form.ville.value.trim(),
@@ -834,7 +846,7 @@ async function soumettreAnnonce(e) {
       parking:         form.parking.checked,
       prix_negociable: form.prix_negociable.checked,
       visite_3d_url:   (form.visite_3d_url.value||'').trim() || null,
-      pays:            form.pays.value || 'Cameroun',
+      pays:            form.pays.value || null,
       disponible:      true,
       actif:           true
     };
@@ -854,6 +866,64 @@ async function soumettreAnnonce(e) {
     err.style.display = 'block';
     btn.disabled = false; btn.textContent = 'Publier l\'annonce';
   }
+}
+
+// ── Mes annonces (utilisateur connecté) ───────────────────────
+async function voirMesAnnonces() {
+  if (!_MARCHE_USER) { ouvrirFormPublier(); return; }
+  var ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = '<div class="modal-box" style="max-width:640px;">'
+    + '<div style="padding:20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;">'
+    + '<div style="font-size:16px;font-weight:800;">📋 Mes annonces</div>'
+    + '<button onclick="this.closest(\'.modal-overlay\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;">✕</button>'
+    + '</div>'
+    + '<div id="mes-list" style="padding:20px;"><div style="text-align:center;padding:24px;color:#94a3b8;">⏳ Chargement…</div></div>'
+    + '</div>';
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+  try {
+    var { data, error } = await sb.from('annonces').select('*')
+      .eq('tenant_id', _MARCHE_USER.tenantId).eq('actif', true)
+      .order('date_publication', { ascending: false });
+    var list = document.getElementById('mes-list');
+    if (!list) return;
+    if (error || !data || !data.length) {
+      list.innerHTML = '<div style="text-align:center;padding:32px;color:#94a3b8;">Aucune annonce publiée.<br>'
+        + '<button onclick="this.closest(\'.modal-overlay\').remove();ouvrirFormPublier()" style="margin-top:12px;padding:10px 20px;background:#0E6AAF;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;">+ Publier une annonce</button></div>';
+      return;
+    }
+    list.innerHTML = data.map(function(a) {
+      var photo = (a.photos && a.photos[0]) ? '<img src="'+a.photos[0]+'" style="width:100%;height:100%;object-fit:cover;">' : '<div style="height:100%;display:flex;align-items:center;justify-content:center;font-size:20px;">🏠</div>';
+      return '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:center;">'
+        + '<div style="width:64px;height:52px;border-radius:6px;background:#e2e8f0;overflow:hidden;flex-shrink:0;">'+photo+'</div>'
+        + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+a.titre+'</div>'
+        + '<div style="font-size:12px;color:#64748b;margin-top:2px;">'+(a.ville||'')+' · '+(a.prix||0).toLocaleString('fr-FR')+' '+(a.pays==='France'?'€':'FCFA')+'</div>'
+        + '<div style="font-size:11px;margin-top:2px;">'+(a.disponible?'<span style="color:#16a34a;">● Disponible</span>':'<span style="color:#dc2626;">● Loué</span>')+' · 👁 '+(a.vues||0)+' vues</div>'
+        + '</div>'
+        + '<div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">'
+        + '<button onclick="toggleDispoAnnonce('+a.id+','+(a.disponible?'false':'true')+',this)" style="padding:5px 9px;border:1px solid #e2e8f0;background:none;border-radius:6px;cursor:pointer;font-size:11px;">'+(a.disponible?'Marquer loué':'Marquer libre')+'</button>'
+        + '<button onclick="supprimerMaAnnonce('+a.id+',this)" style="padding:5px 9px;border:1px solid #fca5a5;background:none;color:#dc2626;border-radius:6px;cursor:pointer;font-size:11px;">🗑 Supprimer</button>'
+        + '</div></div>';
+    }).join('');
+  } catch(e2) {
+    var list2 = document.getElementById('mes-list');
+    if (list2) list2.innerHTML = '<div style="color:#dc2626;padding:16px;">Erreur de chargement.</div>';
+  }
+}
+
+async function toggleDispoAnnonce(id, dispo, btn) {
+  btn.disabled = true;
+  await sb.from('annonces').update({ disponible: dispo }).eq('id', id);
+  voirMesAnnonces();
+}
+
+async function supprimerMaAnnonce(id, btn) {
+  if (!confirm('Supprimer cette annonce définitivement ?')) return;
+  btn.disabled = true;
+  await sb.from('annonces').update({ actif: false }).eq('id', id);
+  voirMesAnnonces();
 }
 
 // ── TABS ──────────────────────────────────────────────────────
@@ -1013,10 +1083,10 @@ async function ouvrirProfilAgent(id) {
       + '<button onclick="ouvrirUpgradeAgent('+id+')" style="padding:8px 16px;background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;">Passer Pro</button>'
       + '</div>' : '')
     + '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:#64748b;line-height:1.6;">'
-    + '⚖️ ' + (a.pays==='Cameroun'||!a.pays ? 'Cameroun — Loi n°2023/007 : activité d\'agent immobilier soumise à agrément MINDHU. ' : '')
-    + (a.pays==='Côte d\'Ivoire' ? 'Côte d\'Ivoire — Décret 2013/792 : carte professionnelle MCLU obligatoire. ' : '')
+    + '⚖️ ' + (a.pays==='Côte d\'Ivoire' ? 'Côte d\'Ivoire — Décret 2013/792 : carte professionnelle MCLU obligatoire. ' : '')
     + (a.pays==='Sénégal' ? 'Sénégal — Loi n°2011-23 : contrats de bail écrits obligatoires. ' : '')
     + (a.pays==='France' ? 'France — Loi Hoguet : carte T obligatoire, honoraires encadrés loi ALUR. ' : '')
+    + (a.pays==='Cameroun' ? 'Cameroun — Loi n°2023/007 : activité d\'agent immobilier soumise à agrément MINDHU. ' : '')
     + 'ImmoGest n\'est pas responsable des transactions. Vérifiez les agréments et titres fonciers avant tout engagement. <a href="#" onclick="ouvrirCGU();return false;" style="color:var(--blue);">CGU</a>'
     + '</div>'
     + '</div></div>';
@@ -1070,7 +1140,7 @@ function ouvrirInscriptionAgent() {
         <div class="form-row"><label class="form-label">Nom *</label><input class="form-input" name="nom" placeholder="Mballa" required></div>
       </div>
       <div class="form-row"><label class="form-label">Agence / Cabinet (facultatif)</label><input class="form-input" name="agence" placeholder="Ex: Agence Immobilière du Centre"></div>
-      <div class="form-row"><label class="form-label">WhatsApp *</label><input class="form-input" name="whatsapp" placeholder="237699000000" required></div>
+      <div class="form-row"><label class="form-label">WhatsApp *</label><input class="form-input" name="whatsapp" placeholder="+XXX XXXXXXXXX" required></div>
       <div class="form-row"><label class="form-label">Email</label><input class="form-input" name="email" type="email" placeholder="jean@example.com"></div>
 
       <div class="form-grid2">
@@ -1078,7 +1148,7 @@ function ouvrirInscriptionAgent() {
         <div class="form-row"><label class="form-label">Langues parlées</label><input class="form-input" name="langues" placeholder="Français, Anglais, Beti…"></div>
       </div>
 
-      <div class="form-row"><label class="form-label">Zones couvertes (séparées par virgules) *</label><input class="form-input" name="zones" placeholder="Yaoundé, Douala, Bafoussam…" required></div>
+      <div class="form-row"><label class="form-label">Zones couvertes (séparées par virgules) *</label><input class="form-input" name="zones" placeholder="Ex: Centre-ville, Banlieue nord…" required></div>
 
       <div class="form-row"><label class="form-label">Spécialités</label>
         <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;" id="spec-checks">
@@ -1108,12 +1178,12 @@ function ouvrirInscriptionAgent() {
         </select>
       </div>
       <div class="form-row"><label class="form-label">N° Licence / Agrément professionnel</label>
-        <input class="form-input" name="numero_licence" placeholder="Ex: MINDHU/2024/001 — requis pour badge Vérifié">
-        <div style="font-size:11px;color:#94a3b8;margin-top:4px;">🇨🇲 Cameroun : agrément MINDHU · 🇨🇮 CI : carte pro MCLU · 🇫🇷 France : carte T Loi Hoguet</div>
+        <input class="form-input" name="numero_licence" placeholder="Ex: AGR/2024/001 — requis pour badge Vérifié">
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px;">🇨🇲 Cameroun : agrément MINDHU · 🇨🇮 CI : carte pro MCLU · 🇫🇷 France : carte T Loi Hoguet · 🌍 Selon votre pays</div>
       </div>
 
       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:#475569;line-height:1.6;">
-        📋 <strong>Obligations légales :</strong> En tant qu'agent immobilier, vous êtes tenu de respecter les lois en vigueur dans votre pays d'exercice. Au Cameroun, la loi n°2023/007 exige un agrément MINDHU. Toute activité d'intermédiaire immobilier sans agrément est passible de sanctions pénales.
+        📋 <strong>Obligations légales :</strong> En tant qu'agent immobilier, vous êtes tenu de respecter les lois en vigueur dans votre pays d'exercice. Toute activité d'intermédiaire immobilier sans agrément ou licence est passible de sanctions pénales selon la législation locale.
       </div>
       <div style="margin-bottom:16px;"><label class="checkbox-row"><input type="checkbox" name="cgu" required> J'accepte les <a href="#" onclick="ouvrirCGU();return false;" style="color:var(--blue);">CGU ImmoGest</a> et certifie exercer légalement dans mon pays *</label></div>
 
@@ -1152,7 +1222,7 @@ async function soumettreAgent(e) {
     specialites:    specs,
     bio:            (form.bio.value||'').trim() || null,
     photo_url:      (form.photo_url.value||'').trim() || null,
-    pays:           form.pays.value || 'Cameroun',
+    pays:           form.pays.value || null,
     numero_licence: (form.numero_licence.value||'').trim() || null,
     plan:           'basic',
     actif:          true
@@ -1200,7 +1270,7 @@ function ouvrirUpgradeAgent(id) {
     + '</div></div>'
     + '<div style="font-size:28px;font-weight:900;color:#ea580c;text-align:center;margin-bottom:6px;">5 000 <span style="font-size:14px;font-weight:500;color:#64748b;">FCFA / mois</span></div>'
     + '<div style="text-align:center;font-size:11px;color:#94a3b8;margin-bottom:16px;">Paiement via MTN MoMo ou Orange Money</div>'
-    + '<input id="upgrade-tel" class="form-input" placeholder="Numéro MoMo (ex: 237699000000)" style="margin-bottom:12px;">'
+    + '<input id="upgrade-tel" class="form-input" placeholder="Numéro Mobile Money (+XXX…)" style="margin-bottom:12px;">'
     + '<div id="err-upgrade" style="display:none;color:#dc2626;font-size:12px;padding:8px;background:#fef2f2;border-radius:8px;margin-bottom:10px;"></div>'
     + '<button id="btn-upgrade" onclick="confirmerUpgradeAgent('+id+')" style="width:100%;padding:14px;background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:800;">⭐ Passer Pro maintenant</button>'
     + '<button onclick="this.closest(\'.modal-overlay\').remove()" style="width:100%;margin-top:8px;padding:10px;border:1px solid #e2e8f0;border-radius:8px;background:none;cursor:pointer;font-size:13px;color:#64748b;">Plus tard</button>'
@@ -1329,7 +1399,7 @@ function ouvrirBoost(id) {
     + '<button onclick="selPaiement(this,\'momo\')" data-mode="momo" style="flex:1;padding:9px;border:2px solid #f59e0b;border-radius:8px;background:#fffbeb;cursor:pointer;font-size:12px;font-weight:700;color:#92400e;">📱 MTN MoMo</button>'
     + '<button onclick="selPaiement(this,\'om\')" data-mode="om" style="flex:1;padding:9px;border:2px solid #e2e8f0;border-radius:8px;background:#fff;cursor:pointer;font-size:12px;font-weight:600;color:#475569;">🟠 Orange Money</button>'
     + '</div>'
-    + '<input id="boost-tel" class="form-input" placeholder="Numéro MoMo (ex: 237699000000)" style="margin-bottom:0;">'
+    + '<input id="boost-tel" class="form-input" placeholder="Numéro Mobile Money (+XXX…)" style="margin-bottom:0;">'
     + '</div>'
     + '<div id="boost-err" style="display:none;color:#dc2626;font-size:12px;padding:8px 12px;background:#fef2f2;border-radius:8px;margin-bottom:10px;"></div>'
     + '<button id="boost-btn" onclick="confirmerBoost(' + id + ')" style="width:100%;padding:14px;background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:800;">⚡ Booster maintenant</button>'
@@ -1359,7 +1429,7 @@ function selPaiement(el, mode) {
     x.style.borderColor = active ? (mode==='momo'?'#f59e0b':'#f97316') : '#e2e8f0';
     x.style.background  = active ? (mode==='momo'?'#fffbeb':'#fff7ed') : '#fff';
   });
-  document.getElementById('boost-tel').placeholder = mode === 'momo' ? 'Numéro MTN MoMo (ex: 237699…)' : 'Numéro Orange Money (ex: 237655…)';
+  document.getElementById('boost-tel').placeholder = mode === 'momo' ? 'Numéro MTN MoMo (+XXX…)' : 'Numéro Orange Money (+XXX…)';
 }
 
 async function confirmerBoost(id) {
@@ -1453,7 +1523,7 @@ function ouvrirCommande3D() {
         </div>
         <div>
           <label class="form-label">Ville *</label>
-          <input class="form-input" name="ville" placeholder="Ex: Yaoundé" required>
+          <input class="form-input" name="ville" placeholder="Votre ville" required>
         </div>
       </div>
       <div style="margin-bottom:14px;">
@@ -1470,7 +1540,7 @@ function ouvrirCommande3D() {
         </div>
         <div>
           <label class="form-label">WhatsApp *</label>
-          <input class="form-input" name="whatsapp" placeholder="Ex: 237699000000" required>
+          <input class="form-input" name="whatsapp" placeholder="+XXX XXXXXXXXX" required>
         </div>
       </div>
 
@@ -1556,12 +1626,25 @@ async function soumettre3D(e) {
 
 // ── Démarrage ──────────────────────────────────────────────────
 (function() {
+  // Boutons header selon session
+  var _sessionDiv = document.getElementById('header-session-btns');
+  if (_sessionDiv) {
+    if (_MARCHE_USER) {
+      var _nom = _MARCHE_USER.nom || 'Mon espace';
+      _sessionDiv.innerHTML =
+        '<button onclick="voirMesAnnonces()" style="padding:7px 13px;border-radius:8px;border:1px solid rgba(255,255,255,0.35);background:rgba(255,255,255,0.12);color:#fff;font-size:12px;font-weight:600;cursor:pointer;backdrop-filter:blur(4px);">📋 Mes annonces</button>'
+        + '<a href="/" style="padding:7px 13px;border-radius:8px;border:1px solid rgba(255,255,255,0.35);background:rgba(255,255,255,0.12);color:#fff;font-size:12px;font-weight:600;text-decoration:none;backdrop-filter:blur(4px);">🏠 ' + _nom + '</a>';
+    } else {
+      _sessionDiv.innerHTML =
+        '<a href="/" style="padding:7px 13px;border-radius:8px;border:1px solid rgba(255,255,255,0.35);background:rgba(255,255,255,0.12);color:#fff;font-size:12px;font-weight:600;text-decoration:none;backdrop-filter:blur(4px);">Se connecter</a>';
+    }
+  }
+
   var params    = new URLSearchParams(window.location.search);
   var annonceId = params.get('annonce');
   var agentId   = params.get('agent');
 
   if (agentId) {
-    // Ouvrir directement l'onglet agents + profil
     switchTab('agents');
     chargerAgents({}).then(function(){
       setTimeout(function(){ ouvrirProfilAgent(parseInt(agentId)); }, 400);
