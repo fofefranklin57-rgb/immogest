@@ -46,6 +46,7 @@ function initOneSignal() {
       await OneSignal.init({
         appId: ONESIGNAL_CONFIG.appId,
         serviceWorkerPath: '/OneSignalSDKWorker.js',
+        serviceWorkerParam: { scope: '/' },
         notifyButton:      { enable: false },
         promptOptions: {
           slidedown: {
