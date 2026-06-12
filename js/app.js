@@ -77,8 +77,13 @@ function localBadge(appt) {
 
 function actifs() { return DATA.locataires.filter(l => l.s !== 'libre'); }
 
+function _payActifs() {
+  const ids = new Set(DATA.locataires.filter(l => l.s !== 'libre').map(l => l.id));
+  return DATA.paiements.filter(p => ids.has(p.locId || p.locataire_id));
+}
+
 function paiementsDuMois(m, a, iidFilter) {
-  return DATA.paiements.filter(p => {
+  return _payActifs().filter(p => {
     let match = false;
     if (p.date) {
       const d = new Date(p.date);
@@ -974,7 +979,7 @@ function genPdfSyntheseGlobale() {
   const tousLocs   = imms.flatMap(im => DATA.locataires.filter(l => l.iid===im.id && l.s!=='libre'));
   const totalAtt   = tousLocs.reduce((s,l) => s+l.loyer, 0);
   const totalReste = tousLocs.reduce((s,l) => s+l.reste, 0);
-  const encMois    = DATA.paiements.filter(p => {
+  const encMois    = _payActifs().filter(p => {
     const l = DATA.locataires.find(x => x.id===(p.locId||p.locataire_id));
     return l && imms.some(im=>im.id===l.iid) && (p.moisC===m||p.mois===m) && (p.anneeC===a||(p.annee&&new Date(p.date||'').getFullYear()===a));
   }).reduce((s,p)=>s+p.montant,0);
@@ -6536,39 +6541,31 @@ function annulerPaiement(payId) {
 }
 
 function restaurerLocataire(archiveId) {
-  if (!confirm(t('Restaurer ce locataire ? Il sera remis dans son local.'))) return;
-  const a = DATA.archives.find(x=>x.id===archiveId);
-  if (!a) { showToast('Archive introuvable','red'); return; }
+  if (!confirm(t('Restaurer ce locataire ? Il sera remis dans son local d\'origine.'))) return;
+  const a = DATA.archives.find(x => x.archiveId === archiveId);
+  if (!a) { showToast('Archive introuvable', 'red'); return; }
 
-  // Find the libre locataire slot
-  const l = DATA.locataires.find(x=>x.iid===a.iid&&x.appt===a.appt&&x.s==='libre');
+  // Restaurer dans le même local si encore libre, sinon créer
+  const locData = { nom: a.nom, tel: a.tel||'', loyer: a.loyer||0, reste: a.soldeFinal||0,
+    s: a.soldeFinal > 0 ? 'impayé' : 'payé', entree: a.entree||'', caution: 0,
+    obs: 'Réintégré le ' + new Date().toLocaleDateString('fr-FR') };
+  const l = DATA.locataires.find(x => x.iid === a.iid && x.appt === a.appt && x.s === 'libre');
   if (l) {
-    // Restore data to the libre slot
-    l.nom    = a.nom;
-    l.tel    = a.tel||'';
-    l.loyer  = a.loyer||0;
-    l.reste  = a.soldeFinal||0;
-    l.s      = a.soldeFinal>0?'impayé':'payé';
-    l.entree = a.entree||'';
-    l.obs    = 'Restauré le '+new Date().toLocaleDateString('fr-FR');
-    l.caution= 0;
+    Object.assign(l, locData);
   } else {
-    // Create new locataire entry
-    DATA.locataires.push({
-      id: DATA.nextLocId++,
-      iid: a.iid, nom: a.nom, tel: a.tel||'',
-      appt: a.appt||'', type: 'appartement',
-      loyer: a.loyer||0, reste: a.soldeFinal||0,
-      s: a.soldeFinal>0?'impayé':'payé',
-      obs: 'Restauré le '+new Date().toLocaleDateString('fr-FR'),
-      entree: a.entree||'', caution: 0
-    });
+    DATA.locataires.push({ id: DATA.nextLocId++, iid: a.iid, appt: a.appt||'', type: a.type||'appartement', ...locData });
   }
 
-  // Remove from archives
-  DATA.archives = DATA.archives.filter(x=>x.id!==archiveId);
+  // Restaurer l'historique des paiements
+  if (a.paiements && a.paiements.length > 0) {
+    DATA.paiements = DATA.paiements.filter(p => p.locId !== (l ? l.id : a.id));
+    DATA.paiements.push(...a.paiements);
+  }
+
+  // Retirer des archives mais conserver une trace dans archivesPermanentes
+  DATA.archives = DATA.archives.filter(x => x.archiveId !== archiveId);
   saveData();
-  showToast('Locataire restauré ✓');
+  showToast(a.nom + ' réintégré ✓', 'green');
   renderCurrent();
 }
 
@@ -8480,7 +8477,7 @@ function renderArchives() {
       html += `<div class="card"><div class="table-wrap"><table class="tbl">
         <thead><tr>
           <th>${t('Nom')}</th><th>${t('Immeuble')}</th><th>${t('Local')}</th><th>${t('Loyer')}</th>
-          <th>${t('Entrée')}</th><th>${t('Sortie')}</th><th>${t('Solde départ')}</th><th>${t('Motif')}</th><th>${t('Actions')}</th>
+          <th>${t('Entrée')}</th><th>${t('Sortie')}</th><th>${t('Solde départ')}</th><th>${t('Score')}</th><th>${t('Motif')}</th><th>${t('Actions')}</th>
         </tr></thead><tbody>`;
 
       archives.slice().sort((a,b)=>(b.dateArchivage||'').localeCompare(a.dateArchivage||'')).forEach(a => {
@@ -8490,6 +8487,10 @@ function renderArchives() {
         const solde = a.soldeFinal || 0;
         const soldeColor = solde > 0 ? 'var(--red)' : solde < 0 ? 'var(--green)' : 'var(--text3)';
         const nbPay = (a.paiements || []).length;
+        const scoreHtml = typeof getScoreDisplay === 'function'
+          ? getScoreDisplay(a.score || 100)
+          : `<span style="font-weight:700;color:${(a.score||100)>=80?'var(--green)':(a.score||100)>=50?'var(--yellow)':'var(--red)'}">${a.score||100}/100</span>`;
+        const memeLocal = DATA.locataires.some(l => l.iid === a.iid && l.appt === a.appt && l.s === 'libre');
         html += `<tr class="arch-loc-row" data-search="${searchData}">
           <td style="font-weight:600;">${a.nom}</td>
           <td style="font-size:12px;">${im ? `<span style="color:${im.col};">●</span> ${imNom}` : '–'}</td>
@@ -8498,10 +8499,12 @@ function renderArchives() {
           <td style="font-size:11px;color:var(--text3);">${a.entree ? a.entree.split('-').reverse().join('/') : '–'}</td>
           <td style="font-size:11px;color:var(--text3);">${a.dateSortie ? a.dateSortie.split('-').reverse().join('/') : '–'}</td>
           <td style="font-weight:600;color:${soldeColor};">${solde !== 0 ? fmt(Math.abs(solde)) + (solde>0?' dû':' avoir') : '–'}</td>
+          <td style="text-align:center;">${scoreHtml}</td>
           <td style="font-size:11px;color:var(--text3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${a.motif||''}">${a.motif||'–'}</td>
           <td style="white-space:nowrap;">
-            <button class="btn btn-sm" data-tooltip="Voir l'historique" onclick="voirHistoriqueArchive(${a.archiveId})" title="${nbPay} paiement(s)">📋 Historique</button>
-            <button class="btn btn-primary btn-sm" data-tooltip="Réaffecter à un local" onclick="reaffecterLocataireArchive(${a.archiveId})">↩ Réaffecter</button>
+            <button class="btn btn-sm" data-tooltip="Voir l'historique de paiements (${nbPay} paiements)" onclick="voirHistoriqueArchive(${a.archiveId})">📋 Historique</button>
+            ${memeLocal ? `<button class="btn btn-sm" data-tooltip="Restaurer au même local" onclick="restaurerLocataire(${a.archiveId})" style="background:var(--green-bg,#f0fdf4);color:var(--green,#16a34a);border:1px solid var(--green-border,#bbf7d0);">🔄 Restaurer</button>` : ''}
+            <button class="btn btn-primary btn-sm" data-tooltip="Réaffecter à un autre local" onclick="reaffecterLocataireArchive(${a.archiveId})">↩ Réaffecter</button>
           </td>
         </tr>`;
       });
