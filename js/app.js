@@ -4163,6 +4163,8 @@ function can(perm) {
   if (!SESSION) return false;
   // Individuel has ALL permissions
   if (SESSION.version === 'individuel') return true;
+  // Admin always has full permissions regardless of version
+  if (SESSION.role === 'admin') return true;
   // Check custom permissions first (admin-granted overrides)
   if (SESSION.customPerms && perm in SESSION.customPerms) {
     return SESSION.customPerms[perm];
