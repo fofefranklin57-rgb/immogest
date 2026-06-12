@@ -149,6 +149,7 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
 /* BOOST BADGE */
 .badge-boost{background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;}
 .btn-boost{flex:1;padding:9px;background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;}
+.btn-3d-card{padding:9px 11px;background:linear-gradient(90deg,#7c3aed,#a855f7);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;}
 
 /* FOOTER */
 .footer{background:#1e293b;color:rgba(255,255,255,0.5);text-align:center;padding:24px 20px;font-size:12px;margin-top:40px;}
@@ -422,6 +423,7 @@ function cardHtml(a) {
     + '<span class="badge-type">' + (TYPE_LABELS[a.type] || a.type) + '</span>'
     + (a.badge_verifie ? '<span class="badge-verifie">✓ Vérifié</span>' : '')
     + (a.badge_boost ? '<span class="badge-boost">⚡ Boosté</span>' : '')
+    + (a.visite_3d_url ? '<span style="background:linear-gradient(90deg,#7c3aed,#a855f7);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;">🥽 3D</span>' : '')
     + '</div></div>'
     + '<div class="card-body">'
     + '<div class="card-title">' + (a.titre || 'Annonce').replace(/</g,'&lt;') + '</div>'
@@ -431,6 +433,7 @@ function cardHtml(a) {
     + '<div class="card-actions">'
     + '<button class="btn-wa" onclick="event.stopPropagation();contactWA(' + a.id + ')">📱 WhatsApp</button>'
     + '<button class="btn-detail" onclick="event.stopPropagation();ouvrirAnnonce(' + a.id + ')">Voir plus</button>'
+    + (a.visite_3d_url ? '<button class="btn-3d-card" onclick="event.stopPropagation();ouvrir3D(\'' + a.visite_3d_url.replace(/'/g,"\\'") + '\')" title="Visite 3D">🥽</button>' : '')
     + '<button class="btn-boost" onclick="event.stopPropagation();ouvrirBoost(' + a.id + ')" title="Booster cette annonce">⚡</button>'
     + '</div>'
     + '</div></div>';
@@ -484,6 +487,7 @@ async function ouvrirAnnonce(id) {
     + (specs.length ? '<div class="spec-grid">' + specs.map(function(s){ return '<div class="spec-item"><div class="spec-val">' + s + '</div></div>'; }).join('') + '</div>' : '')
     + (a.description ? '<div style="font-size:13px;color:var(--text2);line-height:1.7;margin:12px 0;">' + a.description.replace(/</g,'&lt;').replace(/\n/g,'<br>') + '</div>' : '')
     + '<div class="modal-actions">'
+    + (a.visite_3d_url ? '<button style="flex:1;padding:14px;background:linear-gradient(90deg,#7c3aed,#a855f7);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700;" onclick="ouvrir3D(\'' + a.visite_3d_url.replace(/'/g,"\\'") + '\')">🥽 Visite 3D</button>' : '')
     + '<button class="btn-wa-lg" onclick="contactWAById(' + id + ')">📱 Contacter sur WhatsApp</button>'
     + '<button class="btn-share-lg" onclick="partager(' + id + ',\'' + (a.titre||'').replace(/'/g,"\\'") + '\')">📤 Partager</button>'
     + '</div>'
@@ -571,6 +575,7 @@ function ouvrirFormPublier() {
     + '<div class="form-row"><label class="form-label">Description</label><textarea class="form-input" name="description" rows="3" placeholder="Décrivez le bien : état, commodités, accès…" style="resize:vertical;"></textarea></div>'
     + '<div class="form-row"><label class="form-label">Photos (URLs séparées par des virgules)</label><input class="form-input" name="photos" placeholder="https://… , https://…"></div>'
     + '<div class="form-row"><label class="form-label">WhatsApp (avec indicatif) *</label><input class="form-input" name="whatsapp" placeholder="237699000000" required></div>'
+    + '<div class="form-row"><label class="form-label">🥽 URL Visite 3D (facultatif)</label><input class="form-input" name="visite_3d_url" placeholder="https://my.matterport.com/… ou lien Pannellum"></div>'
     + '<div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px;">'
     + '<label class="checkbox-row"><input type="checkbox" name="meuble"> Meublé</label>'
     + '<label class="checkbox-row"><input type="checkbox" name="climatise"> Climatisé</label>'
@@ -611,6 +616,7 @@ async function soumettreAnnonce(e) {
       gardien:         form.gardien.checked,
       parking:         form.parking.checked,
       prix_negociable: form.prix_negociable.checked,
+      visite_3d_url:   (form.visite_3d_url.value||'').trim() || null,
       disponible:      true,
       actif:           true
     };
@@ -630,6 +636,20 @@ async function soumettreAnnonce(e) {
     err.style.display = 'block';
     btn.disabled = false; btn.textContent = 'Publier l\'annonce';
   }
+}
+
+// ── Visite 3D ─────────────────────────────────────────────────
+function ouvrir3D(url) {
+  var ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.style.padding = '0';
+  ov.innerHTML = '<div style="width:100%;height:100%;position:relative;background:#000;">'
+    + '<button onclick="this.closest(\'.modal-overlay\').remove()" style="position:fixed;top:16px;right:16px;z-index:10001;background:rgba(0,0,0,0.7);color:#fff;border:none;width:40px;height:40px;border-radius:50%;cursor:pointer;font-size:20px;">✕</button>'
+    + '<div style="position:fixed;top:16px;left:16px;z-index:10001;background:linear-gradient(90deg,#7c3aed,#a855f7);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;">🥽 Visite virtuelle 3D</div>'
+    + '<iframe src="' + url.replace(/"/g,'&quot;') + '" style="width:100%;height:100vh;border:none;" allowfullscreen allow="xr-spatial-tracking vr fullscreen"></iframe>'
+    + '</div>';
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
 }
 
 // ── Boost annonce (paiement MoMo) ─────────────────────────────
