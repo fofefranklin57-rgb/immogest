@@ -1133,6 +1133,16 @@ function renderRapportPage() {
   document.getElementById('topbar-main-btn').onclick = genPdfSyntheseGlobale;
 
   const imms = getVisibleImmeubles();
+  if (!imms.length) {
+    document.getElementById('content').innerHTML = `
+      <div style="text-align:center;padding:80px 20px;color:var(--text3);">
+        <div style="font-size:56px;margin-bottom:16px;">🏢</div>
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">${t('Aucun immeuble configuré')}</div>
+        <div style="font-size:14px;margin-bottom:20px;">${t('Ajoutez votre premier immeuble pour accéder aux rapports.')}</div>
+        <button onclick="navigate('immeubles-config')" style="padding:12px 24px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;">${t('Configurer mes immeubles')}</button>
+      </div>`;
+    return;
+  }
   let html = '<div class="cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:8px;">';
 
   imms.forEach(im => {

@@ -81,7 +81,8 @@ async function renderMarketplace() {
   var pg = document.getElementById('content');
   if (!pg) return;
   document.getElementById('page-title').textContent = '🏘️ Marketplace';
-  document.getElementById('page-sub').textContent = 'Trouvez votre logement idéal';
+  document.getElementById('page-sub').textContent = t('Trouvez votre logement idéal');
+  var _sym = window._SYMBOLE_COURANT || 'FCFA';
 
   pg.innerHTML = `
   <div style="max-width:1100px;margin:0 auto;">
@@ -90,30 +91,30 @@ async function renderMarketplace() {
     <div style="background:var(--surface);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
         <div style="flex:2;min-width:160px;">
-          <label style="font-size:11px;font-weight:600;color:var(--text3);display:block;margin-bottom:4px;">📍 Ville / Quartier</label>
-          <input id="mk-ville" placeholder="Douala, Yaoundé…" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box;background:var(--surface2);">
+          <label style="font-size:11px;font-weight:600;color:var(--text3);display:block;margin-bottom:4px;">📍 ${t('Ville / Quartier')}</label>
+          <input id="mk-ville" placeholder="${t('Ville, quartier…')}" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box;background:var(--surface2);">
         </div>
         <div style="flex:1;min-width:130px;">
-          <label style="font-size:11px;font-weight:600;color:var(--text3);display:block;margin-bottom:4px;">🏠 Type</label>
+          <label style="font-size:11px;font-weight:600;color:var(--text3);display:block;margin-bottom:4px;">🏠 ${t('Type')}</label>
           <select id="mk-type" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface2);">
-            <option value="">Tous types</option>
-            <option value="appartement">Appartement</option>
-            <option value="maison">Maison</option>
-            <option value="studio">Studio</option>
-            <option value="chambre">Chambre</option>
-            <option value="meuble">Meublé</option>
-            <option value="hotel">Hôtel / Résidence</option>
-            <option value="commercial">Local commercial</option>
+            <option value="">${t('Tous types')}</option>
+            <option value="appartement">${t('Appartement')}</option>
+            <option value="maison">${t('Maison')}</option>
+            <option value="studio">${t('Studio')}</option>
+            <option value="chambre">${t('Chambre')}</option>
+            <option value="meuble">${t('Meublé')}</option>
+            <option value="hotel">${t('Hôtel / Résidence')}</option>
+            <option value="commercial">${t('Local commercial')}</option>
           </select>
         </div>
         <div style="flex:1;min-width:120px;">
-          <label style="font-size:11px;font-weight:600;color:var(--text3);display:block;margin-bottom:4px;">💰 Prix max (FCFA)</label>
+          <label style="font-size:11px;font-weight:600;color:var(--text3);display:block;margin-bottom:4px;">💰 ${t('Prix max')} (${_sym})</label>
           <input id="mk-prix-max" type="number" placeholder="200 000" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box;background:var(--surface2);">
         </div>
         <div style="flex:1;min-width:110px;">
-          <label style="font-size:11px;font-weight:600;color:var(--text3);display:block;margin-bottom:4px;">🛏 Chambres min</label>
+          <label style="font-size:11px;font-weight:600;color:var(--text3);display:block;margin-bottom:4px;">🛏 ${t('Chambres min')}</label>
           <select id="mk-chambres" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface2);">
-            <option value="">Peu importe</option>
+            <option value="">${t('Peu importe')}</option>
             <option value="1">1+</option>
             <option value="2">2+</option>
             <option value="3">3+</option>
@@ -121,14 +122,14 @@ async function renderMarketplace() {
           </select>
         </div>
         <div style="flex:1;min-width:110px;">
-          <label style="font-size:11px;font-weight:600;color:var(--text3);display:block;margin-bottom:4px;">🪑 Meublé</label>
+          <label style="font-size:11px;font-weight:600;color:var(--text3);display:block;margin-bottom:4px;">🪑 ${t('Meublé')}</label>
           <select id="mk-meuble" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface2);">
-            <option value="">Peu importe</option>
-            <option value="true">Meublé</option>
-            <option value="false">Non meublé</option>
+            <option value="">${t('Peu importe')}</option>
+            <option value="true">${t('Meublé')}</option>
+            <option value="false">${t('Non meublé')}</option>
           </select>
         </div>
-        <button onclick="mkRechercher()" style="padding:10px 20px;background:#0E6AAF;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px;white-space:nowrap;">🔍 Chercher</button>
+        <button onclick="mkRechercher()" style="padding:10px 20px;background:#0E6AAF;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px;white-space:nowrap;">🔍 ${t('Chercher')}</button>
       </div>
     </div>
 
@@ -136,14 +137,14 @@ async function renderMarketplace() {
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
       <div id="mk-count" style="font-size:13px;color:var(--text3);"></div>
       <div style="display:flex;gap:8px;">
-        <button onclick="mkVoirMesAnnonces()" style="padding:8px 14px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:13px;">📋 Mes annonces</button>
-        <button onclick="mkOuvrirFormPublier()" style="padding:8px 14px;background:#10b981;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;">+ Publier une annonce</button>
+        <button onclick="mkVoirMesAnnonces()" style="padding:8px 14px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:13px;">📋 ${t('Mes annonces')}</button>
+        <button onclick="mkOuvrirFormPublier()" style="padding:8px 14px;background:#10b981;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;">${t('+ Publier une annonce')}</button>
       </div>
     </div>
 
     <!-- Grille des annonces -->
     <div id="mk-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
-      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3);">⏳ Chargement des annonces…</div>
+      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3);">⏳ ${t('Chargement…')}</div>
     </div>
 
   </div>`;
@@ -170,9 +171,9 @@ async function mkRechercher() {
   if (!_mkAnnonces.length) {
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text3);">
       <div style="font-size:48px;margin-bottom:12px;">🏘️</div>
-      <div style="font-size:16px;font-weight:600;">Aucune annonce disponible</div>
-      <div style="font-size:13px;margin-top:8px;">Soyez le premier à publier un bien !</div>
-      <button onclick="mkOuvrirFormPublier()" style="margin-top:16px;padding:12px 24px;background:#0E6AAF;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;">+ Publier une annonce</button>
+      <div style="font-size:16px;font-weight:600;">${t('Aucune annonce disponible')}</div>
+      <div style="font-size:13px;margin-top:8px;">${t('Soyez le premier à publier un bien !')}</div>
+      <button onclick="mkOuvrirFormPublier()" style="margin-top:16px;padding:12px 24px;background:#0E6AAF;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;">${t('+ Publier une annonce')}</button>
     </div>`;
     return;
   }
@@ -199,18 +200,18 @@ function mkCardHtml(a) {
     <div style="padding:14px;" onclick="mkOuvrirAnnonce(${a.id})">
       <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">${typeLabel} · ${a.ville || ''}${a.quartier ? ' · ' + a.quartier : ''}</div>
       <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.titre || 'Sans titre'}</div>
-      <div style="font-size:18px;font-weight:900;color:#0E6AAF;margin-bottom:8px;">${(a.prix||0).toLocaleString('fr-FR')} <span style="font-size:12px;font-weight:600;color:var(--text3);">FCFA${periode}</span></div>
+      <div style="font-size:18px;font-weight:900;color:#0E6AAF;margin-bottom:8px;">${(a.prix||0).toLocaleString('fr-FR')} <span style="font-size:12px;font-weight:600;color:var(--text3);">${window._SYMBOLE_COURANT||'FCFA'}${periode}</span></div>
       <div style="display:flex;gap:12px;font-size:12px;color:var(--text3);">
         ${a.nb_chambres ? '<span>🛏 ' + a.nb_chambres + ' ch.</span>' : ''}
         ${a.surface ? '<span>📐 ' + a.surface + ' m²</span>' : ''}
-        ${a.meuble ? '<span>🪑 Meublé</span>' : ''}
-        ${a.climatise ? '<span>❄️ Clim</span>' : ''}
+        ${a.meuble ? '<span>🪑 ' + t('Meublé') + '</span>' : ''}
+        ${a.climatise ? '<span>❄️ ' + t('Clim') + '</span>' : ''}
       </div>
     </div>
     <!-- Contact rapide -->
     <div style="padding:0 14px 14px;display:flex;gap:8px;">
       <button onclick="mkContactWhatsApp(${JSON.stringify(a).replace(/"/g,'&quot;')})" style="flex:1;padding:8px;background:#25d366;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;">💬 WhatsApp</button>
-      <button onclick="mkOuvrirAnnonce(${a.id})" style="flex:1;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;">Voir détails</button>
+      <button onclick="mkOuvrirAnnonce(${a.id})" style="flex:1;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;">${t('Voir détails')}</button>
     </div>
   </div>`;
 }
@@ -245,7 +246,7 @@ async function mkOuvrirAnnonce(id) {
             <h2 style="margin:0;font-size:20px;font-weight:800;">${a.titre || 'Sans titre'}</h2>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:26px;font-weight:900;color:#0E6AAF;">${(a.prix||0).toLocaleString('fr-FR')} FCFA</div>
+            <div style="font-size:26px;font-weight:900;color:#0E6AAF;">${(a.prix||0).toLocaleString('fr-FR')} ${window._SYMBOLE_COURANT||'FCFA'}</div>
             <div style="font-size:12px;color:var(--text3);">${periode}${a.prix_negociable ? ' · <span style="color:#f59e0b;font-weight:700;">Prix négociable</span>' : ''}</div>
           </div>
         </div>
@@ -293,7 +294,7 @@ function mkContactWhatsApp(a) {
   var msg = 'Bonjour, je suis intéressé(e) par votre annonce sur ImmoGest :\n\n'
     + '📌 *' + (a.titre || 'Bien immobilier') + '*\n'
     + '📍 ' + (a.ville || '') + (a.quartier ? ' · ' + a.quartier : '') + '\n'
-    + '💰 ' + (a.prix||0).toLocaleString('fr-FR') + ' FCFA\n\n'
+    + '💰 ' + (a.prix||0).toLocaleString('fr-FR') + ' ' + (window._SYMBOLE_COURANT||'FCFA') + '\n\n'
     + 'Est-il toujours disponible ?';
   window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(msg), '_blank');
 }
@@ -346,92 +347,92 @@ function mkOuvrirFormPublier(annonce) {
   overlay.innerHTML = `
     <div style="max-width:640px;margin:20px auto;background:var(--surface,#fff);border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-        <h3 style="margin:0;font-size:18px;font-weight:800;">${isEdit ? '✏️ Modifier' : '+ Publier'} une annonce</h3>
+        <h3 style="margin:0;font-size:18px;font-weight:800;">${isEdit ? '✏️ ' + t('Modifier') : '+'} ${t('Publier une annonce')}</h3>
         <button onclick="document.getElementById('mk-form-overlay').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);">✕</button>
       </div>
       <form id="mk-form" onsubmit="mkSoumettre(event,${isEdit ? a.id : 'null'})">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
 
           <div style="grid-column:1/-1;">
-            <label style="font-size:12px;font-weight:600;color:var(--text3);">Titre de l'annonce *</label>
-            <input name="titre" required placeholder="Ex: Appartement 3 pièces à Makepe" value="${a.titre||''}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;box-sizing:border-box;font-size:14px;">
+            <label style="font-size:12px;font-weight:600;color:var(--text3);">${t('Titre de l\'annonce')} *</label>
+            <input name="titre" required placeholder="${t('Ex: Appartement, villa, studio…')}" value="${a.titre||''}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;box-sizing:border-box;font-size:14px;">
           </div>
 
           <div>
-            <label style="font-size:12px;font-weight:600;color:var(--text3);">Type de bien *</label>
+            <label style="font-size:12px;font-weight:600;color:var(--text3);">${t('Type de bien')} *</label>
             <select name="type" required style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;font-size:13px;">
-              <option value="appartement" ${a.type==='appartement'?'selected':''}>Appartement</option>
-              <option value="maison" ${a.type==='maison'?'selected':''}>Maison</option>
-              <option value="studio" ${a.type==='studio'?'selected':''}>Studio</option>
-              <option value="chambre" ${a.type==='chambre'?'selected':''}>Chambre</option>
-              <option value="meuble" ${a.type==='meuble'?'selected':''}>Meublé</option>
-              <option value="hotel" ${a.type==='hotel'?'selected':''}>Hôtel / Résidence</option>
-              <option value="commercial" ${a.type==='commercial'?'selected':''}>Local commercial</option>
+              <option value="appartement" ${a.type==='appartement'?'selected':''}>${t('Appartement')}</option>
+              <option value="maison" ${a.type==='maison'?'selected':''}>${t('Maison')}</option>
+              <option value="studio" ${a.type==='studio'?'selected':''}>${t('Studio')}</option>
+              <option value="chambre" ${a.type==='chambre'?'selected':''}>${t('Chambre')}</option>
+              <option value="meuble" ${a.type==='meuble'?'selected':''}>${t('Meublé')}</option>
+              <option value="hotel" ${a.type==='hotel'?'selected':''}>${t('Hôtel / Résidence')}</option>
+              <option value="commercial" ${a.type==='commercial'?'selected':''}>${t('Local commercial')}</option>
             </select>
           </div>
 
           <div>
-            <label style="font-size:12px;font-weight:600;color:var(--text3);">Ville *</label>
-            <input name="ville" required placeholder="Douala" value="${a.ville||''}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;box-sizing:border-box;font-size:14px;">
+            <label style="font-size:12px;font-weight:600;color:var(--text3);">${t('Ville')} *</label>
+            <input name="ville" required placeholder="${t('Votre ville')}" value="${a.ville||''}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;box-sizing:border-box;font-size:14px;">
           </div>
 
           <div>
-            <label style="font-size:12px;font-weight:600;color:var(--text3);">Quartier</label>
-            <input name="quartier" placeholder="Makepe, Bastos…" value="${a.quartier||''}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;box-sizing:border-box;font-size:14px;">
+            <label style="font-size:12px;font-weight:600;color:var(--text3);">${t('Quartier')}</label>
+            <input name="quartier" placeholder="${t('Quartier, zone…')}" value="${a.quartier||''}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;box-sizing:border-box;font-size:14px;">
           </div>
 
           <div>
-            <label style="font-size:12px;font-weight:600;color:var(--text3);">Prix (FCFA) *</label>
+            <label style="font-size:12px;font-weight:600;color:var(--text3);">${t('Prix')} (${window._SYMBOLE_COURANT||'FCFA'}) *</label>
             <input name="prix" type="number" required placeholder="150000" value="${a.prix||''}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;box-sizing:border-box;font-size:14px;">
           </div>
 
           <div>
-            <label style="font-size:12px;font-weight:600;color:var(--text3);">Période</label>
+            <label style="font-size:12px;font-weight:600;color:var(--text3);">${t('Période')}</label>
             <select name="periode" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;font-size:13px;">
-              <option value="mois" ${a.periode==='mois'||!a.periode?'selected':''}>Par mois</option>
-              <option value="jour" ${a.periode==='jour'?'selected':''}>Par jour</option>
-              <option value="an" ${a.periode==='an'?'selected':''}>Par an</option>
+              <option value="mois" ${a.periode==='mois'||!a.periode?'selected':''}>${t('Par mois')}</option>
+              <option value="jour" ${a.periode==='jour'?'selected':''}>${t('Par jour')}</option>
+              <option value="an" ${a.periode==='an'?'selected':''}>${t('Par an')}</option>
             </select>
           </div>
 
           <div>
-            <label style="font-size:12px;font-weight:600;color:var(--text3);">Nb chambres</label>
+            <label style="font-size:12px;font-weight:600;color:var(--text3);">${t('Nb chambres')}</label>
             <input name="nb_chambres" type="number" min="0" placeholder="2" value="${a.nb_chambres||''}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;box-sizing:border-box;font-size:14px;">
           </div>
 
           <div>
-            <label style="font-size:12px;font-weight:600;color:var(--text3);">Surface (m²)</label>
+            <label style="font-size:12px;font-weight:600;color:var(--text3);">${t('Surface (m²)')}</label>
             <input name="surface" type="number" min="0" placeholder="80" value="${a.surface||''}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;box-sizing:border-box;font-size:14px;">
           </div>
 
           <div>
-            <label style="font-size:12px;font-weight:600;color:var(--text3);">WhatsApp contact *</label>
-            <input name="whatsapp" required placeholder="6XXXXXXXX" value="${a.whatsapp||''}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;box-sizing:border-box;font-size:14px;">
+            <label style="font-size:12px;font-weight:600;color:var(--text3);">${t('WhatsApp contact')} *</label>
+            <input name="whatsapp" required placeholder="+237 6XX XXX XXX" value="${a.whatsapp||''}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;box-sizing:border-box;font-size:14px;">
           </div>
 
           <div>
-            <label style="font-size:12px;font-weight:600;color:var(--text3);">URLs photos (séparées par virgule)</label>
+            <label style="font-size:12px;font-weight:600;color:var(--text3);">${t('URLs photos (séparées par virgule)')}</label>
             <input name="photos_raw" placeholder="https://... , https://..." value="${(a.photos||[]).join(', ')}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;box-sizing:border-box;font-size:13px;">
           </div>
 
           <div style="grid-column:1/-1;">
-            <label style="font-size:12px;font-weight:600;color:var(--text3);">Description</label>
-            <textarea name="description" rows="4" placeholder="Décrivez le bien, les équipements, le quartier…" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;box-sizing:border-box;font-size:13px;resize:vertical;">${a.description||''}</textarea>
+            <label style="font-size:12px;font-weight:600;color:var(--text3);">${t('Description')}</label>
+            <textarea name="description" rows="4" placeholder="${t('Décrivez le bien, les équipements, le quartier…')}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:4px;box-sizing:border-box;font-size:13px;resize:vertical;">${a.description||''}</textarea>
           </div>
 
           <div style="display:flex;flex-wrap:wrap;gap:16px;grid-column:1/-1;">
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" name="meuble" ${a.meuble?'checked':''}>🪑 Meublé</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" name="climatise" ${a.climatise?'checked':''}>❄️ Climatisé</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" name="gardien" ${a.gardien?'checked':''}>👮 Gardien</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" name="parking" ${a.parking?'checked':''}>🚗 Parking</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" name="prix_negociable" ${a.prix_negociable?'checked':''}>💬 Prix négociable</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" name="disponible" ${a.disponible!==false?'checked':''}>✅ Disponible maintenant</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" name="meuble" ${a.meuble?'checked':''}>🪑 ${t('Meublé')}</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" name="climatise" ${a.climatise?'checked':''}>❄️ ${t('Climatisé')}</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" name="gardien" ${a.gardien?'checked':''}>👮 ${t('Gardien')}</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" name="parking" ${a.parking?'checked':''}>🚗 ${t('Parking')}</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" name="prix_negociable" ${a.prix_negociable?'checked':''}>💬 ${t('Prix négociable')}</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" name="disponible" ${a.disponible!==false?'checked':''}>✅ ${t('Disponible maintenant')}</label>
           </div>
         </div>
 
         <div style="display:flex;gap:10px;margin-top:20px;">
-          <button type="button" onclick="document.getElementById('mk-form-overlay').remove()" style="flex:1;padding:13px;border:1px solid var(--border);background:none;border-radius:8px;cursor:pointer;font-size:14px;">Annuler</button>
-          <button type="submit" id="mk-submit-btn" style="flex:2;padding:13px;background:#0E6AAF;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:15px;font-weight:700;">${isEdit ? '✅ Enregistrer' : '🚀 Publier l\'annonce'}</button>
+          <button type="button" onclick="document.getElementById('mk-form-overlay').remove()" style="flex:1;padding:13px;border:1px solid var(--border);background:none;border-radius:8px;cursor:pointer;font-size:14px;">${t('Annuler')}</button>
+          <button type="submit" id="mk-submit-btn" style="flex:2;padding:13px;background:#0E6AAF;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:15px;font-weight:700;">${isEdit ? '✅ ' + t('Enregistrer') : '🚀 ' + t('Publier l\'annonce')}</button>
         </div>
       </form>
     </div>`;
@@ -513,7 +514,7 @@ async function mkVoirMesAnnonces() {
       </div>
       <div style="flex:1;min-width:0;">
         <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.titre}</div>
-        <div style="font-size:12px;color:var(--text3);">${a.ville} · ${(a.prix||0).toLocaleString('fr-FR')} FCFA/mois</div>
+        <div style="font-size:12px;color:var(--text3);">${a.ville} · ${(a.prix||0).toLocaleString('fr-FR')} ${window._SYMBOLE_COURANT||'FCFA'}/${t('mois')}</div>
         <div style="font-size:11px;margin-top:2px;">${a.disponible ? '<span style="color:#22c55e;">● Disponible</span>' : '<span style="color:#ef4444;">● Loué</span>'} · 👁 ${a.vues||0} vues</div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0;">
@@ -524,7 +525,7 @@ async function mkVoirMesAnnonces() {
 }
 
 async function mkSupprimerAnnonce(id, btn) {
-  if (!confirm('Supprimer cette annonce ?')) return;
+  if (!confirm(t('Supprimer cette annonce ?'))) return;
   if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
   await mkDeleteAnnonce(id);
   showToast && showToast('Annonce supprimée.');
