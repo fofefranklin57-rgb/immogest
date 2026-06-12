@@ -204,6 +204,7 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
   .share-row{grid-template-columns:1fr;}
 }
 </style>
+<script src="js/i18n.js"></script>
 </head>
 <body>
 
@@ -214,17 +215,30 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
     <div class="header-top">
       <a class="logo" href="/">Immo<span>Gest</span></a>
       <div class="header-cta">
-        <a class="btn-outline" href="/">Se connecter</a>
-        <button class="btn-primary" onclick="ouvrirFormPublier()">+ Publier une annonce</button>
+        <!-- Sélecteur de langue -->
+        <div style="position:relative;display:inline-block;">
+          <button id="marche-lang-btn" onclick="toggleMarcheLang()" style="display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.12);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;backdrop-filter:blur(4px);">
+            🌐 <span id="marche-lang-code">FR</span> <span style="font-size:9px;opacity:0.6;">▾</span>
+          </button>
+          <div id="marche-lang-menu" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:rgba(10,20,45,0.97);border:1px solid rgba(255,255,255,0.15);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.5);padding:4px;z-index:9999;min-width:140px;backdrop-filter:blur(8px);">
+            <div onclick="setMarcheLang('fr')" style="padding:8px 12px;border-radius:7px;cursor:pointer;font-size:12px;color:#e8f0fe;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background=''"><span>🇫🇷</span> Français</div>
+            <div onclick="setMarcheLang('en')" style="padding:8px 12px;border-radius:7px;cursor:pointer;font-size:12px;color:#e8f0fe;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background=''"><span>🇬🇧</span> English</div>
+            <div onclick="setMarcheLang('pt')" style="padding:8px 12px;border-radius:7px;cursor:pointer;font-size:12px;color:#e8f0fe;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background=''"><span>🇵🇹</span> Português</div>
+            <div onclick="setMarcheLang('ha')" style="padding:8px 12px;border-radius:7px;cursor:pointer;font-size:12px;color:#e8f0fe;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background=''"><span>🌍</span> Hausa</div>
+            <div onclick="setMarcheLang('ar')" style="padding:8px 12px;border-radius:7px;cursor:pointer;font-size:12px;color:#e8f0fe;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background=''"><span>🇸🇦</span> العربية</div>
+          </div>
+        </div>
+        <a class="btn-outline" href="/" data-i18n="Se connecter">Se connecter</a>
+        <button class="btn-primary" onclick="ouvrirFormPublier()" data-i18n="+ Publier une annonce">+ Publier une annonce</button>
       </div>
     </div>
-    <h1>🏘️ Marketplace Immobilière<br>Cameroun & Afrique centrale</h1>
-    <p class="header-sub">Appartements, maisons, studios, hôtels, meublés, locaux commerciaux — contact direct WhatsApp</p>
+    <h1 data-i18n="marketplace-title">🏘️ Marketplace Immobilière<br>Cameroun & Afrique centrale</h1>
+    <p class="header-sub" data-i18n="marketplace-sub">Appartements, maisons, studios, hôtels, meublés, locaux commerciaux — contact direct WhatsApp</p>
     <div class="badges">
-      <span class="badge">✅ Annonces vérifiées</span>
-      <span class="badge">📱 Contact WhatsApp direct</span>
+      <span class="badge" data-i18n="marketplace-badge1">✅ Annonces vérifiées</span>
+      <span class="badge" data-i18n="marketplace-badge2">📱 Contact WhatsApp direct</span>
       <span class="badge">🏙️ Yaoundé · Douala · et plus</span>
-      <span class="badge">🆓 Publication gratuite</span>
+      <span class="badge" data-i18n="marketplace-badge3">🆓 Publication gratuite</span>
     </div>
   </div>
 </header>
@@ -430,6 +444,66 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
 </footer>
 
 <script>
+// ── Langue marche.html ─────────────────────────────────────────
+var _MARCHE_LANGS = {
+  fr: { title:'🏘️ Marketplace Immobilière<br>Cameroun & Afrique centrale', sub:'Appartements, maisons, studios, hôtels, meublés, locaux commerciaux — contact direct WhatsApp', b1:'✅ Annonces vérifiées', b2:'📱 Contact WhatsApp direct', b3:'🆓 Publication gratuite', login:'Se connecter', publish:'+ Publier une annonce', tab1:'🏘️ Annonces', tab2:'🤝 Agents & Agences' },
+  en: { title:'🏘️ Real Estate Marketplace<br>Cameroon & Central Africa', sub:'Apartments, houses, studios, hotels, furnished, commercial — direct WhatsApp contact', b1:'✅ Verified listings', b2:'📱 Direct WhatsApp contact', b3:'🆓 Free listing', login:'Log in', publish:'+ Post a listing', tab1:'🏘️ Listings', tab2:'🤝 Agents & Agencies' },
+  pt: { title:'🏘️ Mercado Imobiliário<br>Camarões & África Central', sub:'Apartamentos, casas, estúdios, hotéis, mobilados, locais comerciais — contacto directo WhatsApp', b1:'✅ Anúncios verificados', b2:'📱 Contacto WhatsApp directo', b3:'🆓 Publicação gratuita', login:'Entrar', publish:'+ Publicar anúncio', tab1:'🏘️ Anúncios', tab2:'🤝 Agentes & Agências' },
+  ha: { title:'🏘️ Kasuwar Gidaje<br>Kamaru & Tsakiyar Afirka', sub:'Gidaje, ɗakuna, otal, kasuwanci — tuntuɓa kai tsaye ta WhatsApp', b1:'✅ Tabbatattun sanarwa', b2:'📱 Tuntuɓa ta WhatsApp', b3:'🆓 Kyauta buga', login:'Shiga', publish:'+ Wallafa sanarwa', tab1:'🏘️ Sanarwa', tab2:'🤝 Wakilan gidaje' },
+  ar: { title:'🏘️ سوق العقارات<br>الكاميرون وأفريقيا الوسطى', sub:'شقق، منازل، استوديوهات، فنادق، محلات تجارية — تواصل مباشر عبر واتساب', b1:'✅ إعلانات موثّقة', b2:'📱 تواصل مباشر عبر واتساب', b3:'🆓 نشر مجاني', login:'تسجيل الدخول', publish:'+ نشر إعلان', tab1:'🏘️ الإعلانات', tab2:'🤝 الوكلاء والوكالات' }
+};
+
+function toggleMarcheLang() {
+  var m = document.getElementById('marche-lang-menu');
+  if (m) m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', function(e) {
+  var btn = document.getElementById('marche-lang-btn');
+  var menu = document.getElementById('marche-lang-menu');
+  if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) menu.style.display = 'none';
+});
+
+function setMarcheLang(lang) {
+  localStorage.setItem('immogest_lang', lang);
+  document.getElementById('marche-lang-menu').style.display = 'none';
+  var code = lang.toUpperCase();
+  document.getElementById('marche-lang-code').textContent = code;
+  var L = _MARCHE_LANGS[lang] || _MARCHE_LANGS['fr'];
+  var tEl = document.querySelector('[data-i18n="marketplace-title"]');
+  var sEl = document.querySelector('[data-i18n="marketplace-sub"]');
+  var b1 = document.querySelector('[data-i18n="marketplace-badge1"]');
+  var b2 = document.querySelector('[data-i18n="marketplace-badge2"]');
+  var b3 = document.querySelector('[data-i18n="marketplace-badge3"]');
+  var loginEl = document.querySelector('[data-i18n="Se connecter"]');
+  var pubEl = document.querySelector('[data-i18n="+ Publier une annonce"]');
+  var tab1 = document.getElementById('tab-annonces');
+  var tab2 = document.getElementById('tab-agents');
+  if (tEl) tEl.innerHTML = L.title;
+  if (sEl) sEl.textContent = L.sub;
+  if (b1) b1.textContent = L.b1;
+  if (b2) b2.textContent = L.b2;
+  if (b3) b3.textContent = L.b3;
+  if (loginEl) loginEl.textContent = L.login;
+  if (pubEl) pubEl.textContent = L.publish;
+  if (tab1) tab1.textContent = L.tab1;
+  if (tab2) tab2.textContent = L.tab2;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+}
+
+// Applique la langue sauvegardée au chargement
+(function() {
+  var saved = localStorage.getItem('immogest_lang');
+  if (saved && _MARCHE_LANGS[saved] && saved !== 'fr') {
+    document.addEventListener('DOMContentLoaded', function() { setMarcheLang(saved); });
+  } else {
+    var code = (saved || 'fr').toUpperCase();
+    document.addEventListener('DOMContentLoaded', function() {
+      var el = document.getElementById('marche-lang-code');
+      if (el) el.textContent = code;
+    });
+  }
+})();
+
 // ── Supabase ───────────────────────────────────────────────────
 const SUPABASE_URL  = 'https://uggxfmwpttfsfcirmeqx.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZ3hmbXdwdHRmc2ZjaXJtZXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNTA4MjIsImV4cCI6MjA5NDYyNjgyMn0.l8iYlJHOt6evNlBQ3zRskZasn_J2BjAUs1l2vKOZNvY';
