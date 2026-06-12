@@ -1354,8 +1354,8 @@ function renderRapportAnnuelPage() {
 
   imms.forEach(im => {
     const locs = DATA.locataires.filter(l => l.iid === im.id && l.s !== 'libre');
-    const paysAnnee = DATA.paiements.filter(p => 
-      locs.some(l => l.id === p.locId) && p.anneeC === annee
+    const paysAnnee = DATA.paiements.filter(p =>
+      locs.some(l => l.id === p.locId) && (p.anneeC === annee || p.annee === annee || (p.date && new Date(p.date).getFullYear() === annee))
     );
     const totalEncaisse = paysAnnee.reduce((s,p) => s+p.montant, 0);
     const totalAttendu = locs.reduce((s,l) => s+l.loyer, 0) * 12;
@@ -1451,8 +1451,10 @@ function ouvrirRapportAnnuelImmeuble(iid) {
           ${locs.map(l => {
             let totalAnnee = 0;
             const moisCells = MOIS.map((moisNom, moisIdx) => {
-              const pays = DATA.paiements.filter(p => 
-                p.locId === l.id && p.moisC === moisIdx && p.anneeC === annee
+              const pays = DATA.paiements.filter(p =>
+                p.locId === l.id &&
+                (p.moisC === moisIdx || p.mois === moisIdx + 1) &&
+                (p.anneeC === annee || p.annee === annee || (p.date && new Date(p.date).getFullYear() === annee))
               );
               const total = pays.reduce((s,p)=>s+p.montant,0);
               totalAnnee += total;
@@ -1473,10 +1475,10 @@ function ouvrirRapportAnnuelImmeuble(iid) {
           <tr style="font-weight:700;background:var(--bg2);">
             <td colspan="2">${t('Total').toUpperCase()}</td>
             ${MOIS.map((_,moisIdx) => {
-              const total = DATA.paiements.filter(p=>locs.some(l=>l.id===p.locId)&&p.moisC===moisIdx&&p.anneeC===annee).reduce((s,p)=>s+p.montant,0);
+              const total = DATA.paiements.filter(p=>locs.some(l=>l.id===p.locId)&&(p.moisC===moisIdx||p.mois===moisIdx+1)&&(p.anneeC===annee||p.annee===annee||(p.date&&new Date(p.date).getFullYear()===annee))).reduce((s,p)=>s+p.montant,0);
               return `<td style="font-size:10px;text-align:center;">${total>0?fmtShort(total):''}</td>`;
             }).join('')}
-            <td class="td-amount">${fmtShort(DATA.paiements.filter(p=>locs.some(l=>l.id===p.locId)&&p.anneeC===annee).reduce((s,p)=>s+p.montant,0))}</td>
+            <td class="td-amount">${fmtShort(DATA.paiements.filter(p=>locs.some(l=>l.id===p.locId)&&(p.anneeC===annee||p.annee===annee||(p.date&&new Date(p.date).getFullYear()===annee))).reduce((s,p)=>s+p.montant,0))}</td>
             <td class="td-amount red">${fmtShort(locs.reduce((s,l)=>s+Math.max(0,l.reste),0))}</td>
           </tr>
         </tfoot>
