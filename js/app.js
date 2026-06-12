@@ -9989,8 +9989,24 @@ function toggleActionMenu(btn, e) {
   if (e) e.stopPropagation();
   const dd = btn.nextElementSibling;
   const wasOpen = dd && dd.classList.contains('open');
-  document.querySelectorAll('.action-dropdown.open').forEach(d => d.classList.remove('open'));
-  if (!wasOpen && dd) dd.classList.add('open');
+  document.querySelectorAll('.action-dropdown.open').forEach(d => {
+    d.classList.remove('open');
+    d.style.top = '';
+    d.style.bottom = '';
+  });
+  if (!wasOpen && dd) {
+    dd.classList.add('open');
+    // Ouvrir vers le haut si pas assez de place en bas
+    const rect = btn.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceBelow < 320) {
+      dd.style.top = 'auto';
+      dd.style.bottom = 'calc(100% + 6px)';
+    } else {
+      dd.style.top = 'calc(100% + 6px)';
+      dd.style.bottom = 'auto';
+    }
+  }
 }
 
 function _closeDropdowns() {
