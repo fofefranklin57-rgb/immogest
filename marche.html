@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏘️ Marketplace — ImmoGest | Locations Cameroun</title>
+<meta name="description" content="Trouvez votre appartement, maison, studio, hôtel ou local commercial au Cameroun. Annonces vérifiées, contact direct WhatsApp.">
+<!-- Open Graph -->
+<meta property="og:type"         content="website">
+<meta property="og:site_name"    content="ImmoGest Marketplace">
+<meta property="og:title"        content="🏘️ Marketplace ImmoGest — Locations & Immobilier">
+<meta property="og:description"  content="Appartements, maisons, studios, hôtels, meublés, locaux commerciaux. Contact direct WhatsApp. Cameroun & Afrique centrale.">
+<meta property="og:image"        content="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200&h=630&fit=crop&q=80">
+<meta property="og:image:width"  content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url"          content="https://immogest-34w.pages.dev/marche">
+<meta property="og:locale"       content="fr_FR">
+<meta name="twitter:card"        content="summary_large_image">
+<meta name="twitter:title"       content="🏘️ Marketplace ImmoGest">
+<meta name="twitter:description" content="Trouvez votre location au Cameroun — contact direct WhatsApp">
+<meta name="twitter:image"       content="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200&h=630&fit=crop&q=80">
+<script>
+  // Redirection immédiate vers l'app avec paramètre ?marche
+  var dest = '/?marche';
+  var annonceId = new URLSearchParams(window.location.search).get('annonce');
+  if (annonceId) dest = '/?annonce=' + annonceId;
+  window.location.replace(dest);
+</script>
+<style>
+  body { margin:0; font-family:'Segoe UI',sans-serif; background:linear-gradient(135deg,#05111e,#0a1e3c); color:#fff; display:flex; align-items:center; justify-content:center; min-height:100vh; }
+  .loader { text-align:center; }
+  .logo { font-size:48px; margin-bottom:16px; }
+  h1 { font-size:22px; font-weight:800; margin:0 0 8px; }
+  p { color:rgba(255,255,255,0.6); font-size:14px; margin:0 0 24px; }
+  a { color:#4f8ef7; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="loader">
+  <div class="logo">🏘️</div>
+  <h1>Marketplace ImmoGest</h1>
+  <p>Chargement des annonces…</p>
+  <a href="/?marche">Cliquez ici si la page ne se charge pas</a>
+</div>
+</body>
+</html>

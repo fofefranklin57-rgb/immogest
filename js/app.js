@@ -10424,6 +10424,20 @@ function closePortailProprietaire() {
 
 window.addEventListener('DOMContentLoaded', () => {
   _initSidebarCollapse();
+  // Accès public marketplace via ?marche ou ?annonce=ID dans l'URL
+  var _urlParams = new URLSearchParams(window.location.search);
+  if (_urlParams.has('marche') || _urlParams.has('annonce')) {
+    var _annonceId = _urlParams.get('annonce');
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-shell').style.display = 'flex';
+    // Mode lecture seule sans session
+    if (!window.SESSION) window.SESSION = { role: 'public', tenantId: null };
+    setTimeout(function() {
+      navigate('marketplace');
+      if (_annonceId) setTimeout(function(){ mkOuvrirAnnonce(parseInt(_annonceId)); }, 600);
+    }, 300);
+    return;
+  }
   loadUsers();
   loadSession(); // DEPLOY17: SESSION restauré avant loadData pour que can() soit opérationnel
   _purgeUsersIndiv(); // Retirer gestionnaire/comptable si mode individuel
