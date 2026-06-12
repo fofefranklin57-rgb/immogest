@@ -420,7 +420,8 @@ h1{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;line-height:1.1;mar
 <!-- FOOTER -->
 <footer class="footer">
   <p>🏢 <strong style="color:#fff;">ImmoGest</strong> — Plateforme de gestion immobilière & marketplace au Cameroun</p>
-  <p style="margin-top:8px;"><a href="/">Application complète</a> · <a href="/marche">Marketplace</a> · Conforme OHADA · MTN MoMo & Orange Money</p>
+  <p style="margin-top:8px;"><a href="/">Application complète</a> · <a href="/marche">Marketplace</a> · <a href="#" onclick="ouvrirCGU();return false;">CGU & Mentions légales</a> · Conforme OHADA · MTN MoMo & Orange Money</p>
+  <p style="margin-top:8px;font-size:11px;opacity:.5;">🇨🇲 Cameroun · 🇨🇮 Côte d'Ivoire · 🇸🇳 Sénégal · 🇬🇦 Gabon · 🇨🇩 RDC · 🇨🇬 Congo · 🇫🇷 France</p>
 </footer>
 
 <script>
@@ -618,7 +619,10 @@ async function ouvrirAnnonce(id) {
     + '<button class="btn-wa-lg" onclick="contactWAById(' + id + ')">📱 Contacter sur WhatsApp</button>'
     + '<button class="btn-share-lg" onclick="partager(' + id + ',\'' + (a.titre||'').replace(/'/g,"\\'") + '\')">📤 Partager</button>'
     + '</div>'
-    + '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);text-align:center;">Annonce publiée via ImmoGest · ' + (a.date_publication ? new Date(a.date_publication).toLocaleDateString('fr-FR') : '') + '</div>'
+    + '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);">'
+    + '<div style="text-align:center;margin-bottom:8px;">Annonce publiée via ImmoGest · ' + (a.date_publication ? new Date(a.date_publication).toLocaleDateString('fr-FR') : '') + (a.pays ? ' · ' + a.pays : '') + '</div>'
+    + '<div style="background:#f8fafc;border-radius:8px;padding:10px;font-size:11px;color:#64748b;line-height:1.6;">⚖️ ImmoGest est une plateforme d\'intermédiation. Nous ne sommes pas partie aux transactions. Vérifiez toujours l\'identité du propriétaire et l\'authenticité des titres fonciers avant tout versement. Contrats de bail conformes au droit local (' + (a.pays||'Cameroun') + ').</div>'
+    + '</div>'
     + '</div></div>';
   ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
   document.body.appendChild(ov);
@@ -703,6 +707,11 @@ function ouvrirFormPublier() {
     + '<div class="form-row"><label class="form-label">Photos (URLs séparées par des virgules)</label><input class="form-input" name="photos" placeholder="https://… , https://…"></div>'
     + '<div class="form-row"><label class="form-label">WhatsApp (avec indicatif) *</label><input class="form-input" name="whatsapp" placeholder="237699000000" required></div>'
     + '<div class="form-row"><label class="form-label">🥽 URL Visite 3D (facultatif)</label><input class="form-input" name="visite_3d_url" placeholder="https://my.matterport.com/… ou lien Pannellum"></div>'
+    + '<div class="form-row"><label class="form-label">Pays *</label><select class="form-input" name="pays" required><option value="Cameroun">🇨🇲 Cameroun</option><option value="Côte d\'Ivoire">🇨🇮 Côte d\'Ivoire</option><option value="Sénégal">🇸🇳 Sénégal</option><option value="Gabon">🇬🇦 Gabon</option><option value="RDC">🇨🇩 RDC</option><option value="Congo">🇨🇬 Congo</option><option value="France">🇫🇷 France</option><option value="Autre">🌍 Autre</option></select></div>'
+    + '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:#475569;line-height:1.6;">'
+    + '📋 <strong>Rappel légal :</strong> En publiant cette annonce, vous certifiez être propriétaire ou mandaté par le propriétaire. Toute annonce frauduleuse engage votre responsabilité pénale conformément aux lois en vigueur dans votre pays. Les contrats de bail doivent être établis par écrit (Code OHADA art. 101 et lois nationales applicables).'
+    + '</div>'
+    + '<div style="margin-bottom:16px;"><label class="checkbox-row"><input type="checkbox" name="cgu" required> J\'accepte les <a href="#" onclick="ouvrirCGU();return false;" style="color:var(--blue);">Conditions Générales d\'Utilisation</a> et certifie que les informations sont exactes *</label></div>'
     + '<div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px;">'
     + '<label class="checkbox-row"><input type="checkbox" name="meuble"> Meublé</label>'
     + '<label class="checkbox-row"><input type="checkbox" name="climatise"> Climatisé</label>'
@@ -744,6 +753,7 @@ async function soumettreAnnonce(e) {
       parking:         form.parking.checked,
       prix_negociable: form.prix_negociable.checked,
       visite_3d_url:   (form.visite_3d_url.value||'').trim() || null,
+      pays:            form.pays.value || 'Cameroun',
       disponible:      true,
       actif:           true
     };
@@ -921,6 +931,13 @@ async function ouvrirProfilAgent(id) {
       + '<div style="font-size:12px;font-weight:600;color:#92400e;">⭐ Passez Pro pour apparaître en premier et obtenir le badge Pro</div>'
       + '<button onclick="ouvrirUpgradeAgent('+id+')" style="padding:8px 16px;background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;">Passer Pro</button>'
       + '</div>' : '')
+    + '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:#64748b;line-height:1.6;">'
+    + '⚖️ ' + (a.pays==='Cameroun'||!a.pays ? 'Cameroun — Loi n°2023/007 : activité d\'agent immobilier soumise à agrément MINDHU. ' : '')
+    + (a.pays==='Côte d\'Ivoire' ? 'Côte d\'Ivoire — Décret 2013/792 : carte professionnelle MCLU obligatoire. ' : '')
+    + (a.pays==='Sénégal' ? 'Sénégal — Loi n°2011-23 : contrats de bail écrits obligatoires. ' : '')
+    + (a.pays==='France' ? 'France — Loi Hoguet : carte T obligatoire, honoraires encadrés loi ALUR. ' : '')
+    + 'ImmoGest n\'est pas responsable des transactions. Vérifiez les agréments et titres fonciers avant tout engagement. <a href="#" onclick="ouvrirCGU();return false;" style="color:var(--blue);">CGU</a>'
+    + '</div>'
     + '</div></div>';
   ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
   document.body.appendChild(ov);
@@ -997,6 +1014,28 @@ function ouvrirInscriptionAgent() {
       </div>
       <div class="form-row"><label class="form-label">Photo de profil (URL)</label><input class="form-input" name="photo_url" placeholder="https://…"></div>
 
+      <div class="form-row"><label class="form-label">Pays d'exercice *</label>
+        <select class="form-input" name="pays" required>
+          <option value="Cameroun">🇨🇲 Cameroun</option>
+          <option value="Côte d'Ivoire">🇨🇮 Côte d'Ivoire</option>
+          <option value="Sénégal">🇸🇳 Sénégal</option>
+          <option value="Gabon">🇬🇦 Gabon</option>
+          <option value="RDC">🇨🇩 RDC</option>
+          <option value="Congo">🇨🇬 Congo</option>
+          <option value="France">🇫🇷 France</option>
+          <option value="Autre">🌍 Autre</option>
+        </select>
+      </div>
+      <div class="form-row"><label class="form-label">N° Licence / Agrément professionnel</label>
+        <input class="form-input" name="numero_licence" placeholder="Ex: MINDHU/2024/001 — requis pour badge Vérifié">
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px;">🇨🇲 Cameroun : agrément MINDHU · 🇨🇮 CI : carte pro MCLU · 🇫🇷 France : carte T Loi Hoguet</div>
+      </div>
+
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:#475569;line-height:1.6;">
+        📋 <strong>Obligations légales :</strong> En tant qu'agent immobilier, vous êtes tenu de respecter les lois en vigueur dans votre pays d'exercice. Au Cameroun, la loi n°2023/007 exige un agrément MINDHU. Toute activité d'intermédiaire immobilier sans agrément est passible de sanctions pénales.
+      </div>
+      <div style="margin-bottom:16px;"><label class="checkbox-row"><input type="checkbox" name="cgu" required> J'accepte les <a href="#" onclick="ouvrirCGU();return false;" style="color:var(--blue);">CGU ImmoGest</a> et certifie exercer légalement dans mon pays *</label></div>
+
       <div id="err-agent" style="display:none;color:#dc2626;font-size:12px;padding:10px;background:#fef2f2;border-radius:8px;margin-bottom:12px;"></div>
 
       <button type="submit" id="btn-agent" style="width:100%;padding:14px;background:linear-gradient(135deg,#0a1e3c,#1a6ec7);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:15px;font-weight:800;">🤝 Créer mon profil</button>
@@ -1032,6 +1071,8 @@ async function soumettreAgent(e) {
     specialites:    specs,
     bio:            (form.bio.value||'').trim() || null,
     photo_url:      (form.photo_url.value||'').trim() || null,
+    pays:           form.pays.value || 'Cameroun',
+    numero_licence: (form.numero_licence.value||'').trim() || null,
     plan:           'basic',
     actif:          true
   };
@@ -1110,6 +1151,55 @@ async function confirmerUpgradeAgent(id) {
     err.style.display='block';
     btn.disabled=false; btn.textContent='⭐ Passer Pro maintenant';
   }
+}
+
+// ── CGU ────────────────────────────────────────────────────────
+function ouvrirCGU() {
+  var ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = '<div class="modal-box" style="max-width:640px;">'
+    + '<div style="padding:20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;position:sticky;top:0;background:#fff;z-index:1;">'
+    + '<div style="font-size:16px;font-weight:800;">⚖️ Conditions Générales d\'Utilisation</div>'
+    + '<button onclick="this.closest(\'.modal-overlay\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8;">✕</button>'
+    + '</div>'
+    + '<div style="padding:24px;font-size:13px;color:#334155;line-height:1.8;max-height:70vh;overflow-y:auto;">'
+
+    + '<h3 style="font-size:14px;font-weight:800;margin:0 0 8px;">1. Objet</h3>'
+    + '<p style="margin-bottom:16px;">ImmoGest Marketplace est une plateforme d\'intermédiation immobilière éditée par ImmoGest. Elle met en relation propriétaires, locataires et agents immobiliers. ImmoGest n\'est pas partie aux transactions et n\'est pas responsable de l\'exactitude des annonces publiées.</p>'
+
+    + '<h3 style="font-size:14px;font-weight:800;margin:0 0 8px;">2. Publication d\'annonces</h3>'
+    + '<p style="margin-bottom:16px;">L\'annonceur certifie être propriétaire du bien ou mandaté par écrit. Toute annonce frauduleuse engage la responsabilité pénale de son auteur. Les annonces doivent respecter les lois locales applicables dans le pays de publication.</p>'
+
+    + '<h3 style="font-size:14px;font-weight:800;margin:0 0 8px;">3. Cadre légal par pays</h3>'
+    + '<div style="background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:16px;">'
+    + '<div style="margin-bottom:8px;">🇨🇲 <strong>Cameroun</strong> — Loi n°2023/007 sur les agents immobiliers · Loi n°2010/022 location-vente · Code OHADA · Agrément MINDHU obligatoire pour exercer comme agent</div>'
+    + '<div style="margin-bottom:8px;">🇨🇮 <strong>Côte d\'Ivoire</strong> — Décret n°2013/792 · Carte professionnelle MCLU obligatoire · Code de la construction</div>'
+    + '<div style="margin-bottom:8px;">🇸🇳 <strong>Sénégal</strong> — Loi n°2011-23 · Contrat de bail écrit obligatoire au-delà de 3 mois · Code des obligations civiles</div>'
+    + '<div style="margin-bottom:8px;">🇬🇦 <strong>Gabon</strong> — Loi n°15/72 sur les baux · Code civil applicable</div>'
+    + '<div style="margin-bottom:8px;">🇨🇩 <strong>RDC</strong> — Loi Bakajika · Titres fonciers à vérifier impérativement auprès des autorités compétentes</div>'
+    + '<div style="margin-bottom:8px;">🇨🇬 <strong>Congo</strong> — Code civil · Enregistrement des baux recommandé</div>'
+    + '<div>🇫🇷 <strong>France</strong> — Loi Hoguet (carte T obligatoire) · Loi ALUR · Encadrement des loyers dans les zones tendues</div>'
+    + '</div>'
+
+    + '<h3 style="font-size:14px;font-weight:800;margin:0 0 8px;">4. Agents immobiliers</h3>'
+    + '<p style="margin-bottom:16px;">Les agents s\'engagent à détenir les agréments requis dans leur pays d\'exercice. ImmoGest peut retirer tout profil agent ne respectant pas cette obligation. Le badge "Vérifié" est attribué après vérification manuelle du numéro d\'agrément par ImmoGest.</p>'
+
+    + '<h3 style="font-size:14px;font-weight:800;margin:0 0 8px;">5. Protection des données</h3>'
+    + '<p style="margin-bottom:16px;">Les données personnelles collectées (nom, WhatsApp, email) sont utilisées uniquement pour le fonctionnement de la plateforme. Elles ne sont pas revendues à des tiers. Conformément aux lois nationales et au RGPD pour les utilisateurs européens, vous disposez d\'un droit d\'accès, de modification et de suppression de vos données.</p>'
+
+    + '<h3 style="font-size:14px;font-weight:800;margin:0 0 8px;">6. Responsabilité</h3>'
+    + '<p style="margin-bottom:16px;">ImmoGest décline toute responsabilité en cas de litige entre utilisateurs, de fraude, d\'annonce erronée ou de transaction non aboutie. Vérifiez toujours l\'identité des parties et l\'authenticité des titres fonciers avant tout versement d\'argent.</p>'
+
+    + '<h3 style="font-size:14px;font-weight:800;margin:0 0 8px;">7. Contact</h3>'
+    + '<p style="margin-bottom:0;">Pour toute réclamation : <strong>WhatsApp +237 673 950 019</strong> · Email : fofefranklin57@gmail.com</p>'
+
+    + '</div>'
+    + '<div style="padding:16px 20px;border-top:1px solid #e2e8f0;text-align:center;">'
+    + '<button onclick="this.closest(\'.modal-overlay\').remove()" style="padding:11px 28px;background:var(--blue2);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;">J\'ai compris</button>'
+    + '</div>'
+    + '</div>';
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
 }
 
 // ── Visite 3D ─────────────────────────────────────────────────
