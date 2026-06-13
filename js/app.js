@@ -4926,6 +4926,11 @@ function loadSession() {
     const s = localStorage.getItem(AUTH_KEY);
     if (s) {
       const parsed = JSON.parse(s);
+      // Migration : ancienne session sans _pwdHash → récupérer depuis USERS
+      if (!parsed._pwdHash && parsed.userId && Array.isArray(USERS)) {
+        const u = USERS.find(function(x) { return x.id === parsed.userId; });
+        if (u) parsed._pwdHash = u.password || u.pin || '';
+      }
       if (parsed._ts && Date.now() - parsed._ts > SESSION_MAX_AGE) {
         localStorage.removeItem(AUTH_KEY);
         return; // session expirée
