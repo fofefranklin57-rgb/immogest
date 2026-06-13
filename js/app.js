@@ -9073,9 +9073,9 @@ async function _refreshBadgeMessagerie() {
 // ============================================================
 // RAPPORT ANNUEL
 // ============================================================
-function toggleSidebarGestion() {
-  const el = document.getElementById('sidebar-gestion');
-  const icon = document.getElementById('gest-toggle-icon');
+function _toggleSidebarSection(elId, iconId) {
+  const el = document.getElementById(elId);
+  const icon = document.getElementById(iconId);
   if (!el) return;
   if (el.style.display === 'none') {
     el.style.display = '';
@@ -9085,19 +9085,12 @@ function toggleSidebarGestion() {
     if (icon) icon.textContent = '▸';
   }
 }
+function toggleSidebarFinances()  { _toggleSidebarSection('sidebar-finances',  'fin-toggle-icon'); }
+function toggleSidebarJuridique() { _toggleSidebarSection('sidebar-juridique', 'jur-toggle-icon'); }
+function toggleSidebarComm()      { _toggleSidebarSection('sidebar-comm',      'comm-toggle-icon'); }
 
-function toggleSidebarImmeubles() {
-  const el = document.getElementById('sidebar-immeubles');
-  const icon = document.getElementById('imm-toggle-icon');
-  if (!el) return;
-  if (el.style.display === 'none') {
-    el.style.display = '';
-    if (icon) icon.textContent = '▾';
-  } else {
-    el.style.display = 'none';
-    if (icon) icon.textContent = '▸';
-  }
-}
+function toggleSidebarGestion()   { _toggleSidebarSection('sidebar-gestion',   'gest-toggle-icon'); }
+function toggleSidebarImmeubles() { _toggleSidebarSection('sidebar-immeubles', 'imm-toggle-icon'); }
 
 function getAlertLabel(l) {
   if (!l || l.reste <= 0) return '';
