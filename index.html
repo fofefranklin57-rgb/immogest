@@ -1758,10 +1758,10 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 
 <script>
 (function() {
-  var isAndroid = /Android/i.test(navigator.userAgent);
+  // Masquer uniquement dans TWA (app déjà installée via Play Store)
   var isTWA = window.matchMedia('(display-mode: standalone)').matches && document.referrer.includes('android-app://');
   var dismissed = localStorage.getItem('apk_banner_dismissed');
-  if (isAndroid && !isTWA && !dismissed) {
+  if (!isTWA && !dismissed) {
     document.getElementById('apk-banner').style.display = 'flex';
   }
 })();
