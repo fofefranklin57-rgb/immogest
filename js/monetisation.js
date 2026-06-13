@@ -557,6 +557,9 @@ function initMonetisation() {
   // Réinitialiser compteurs
   _resetUsageCounters();
 
+  // Vérifier expiration abonnement
+  _checkSubscriptionExpiry();
+
   // Appliquer le plan
   applyPlan();
 
@@ -566,6 +569,139 @@ function initMonetisation() {
 
   console.log('[Monetisation] Initialisé - Plan:', MONETISATION.plan);
 }
+
+// ── GESTION EXPIRATION ABONNEMENT ────────────────────────────────────────────
+
+var _GRACE_DAYS = 7; // jours de grâce après expiration avant downgrade effectif
+
+function _checkSubscriptionExpiry() {
+  var raw = localStorage.getItem('immogest_subscription');
+  if (!raw) return;
+  var sub;
+  try { sub = JSON.parse(raw); } catch(e) { return; }
+  if (!sub || !sub.expiryDate || sub.tier === 'free' || sub.tier === 'gratuit') return;
+
+  var now      = Date.now();
+  var expiry   = new Date(sub.expiryDate).getTime();
+  var graceEnd = expiry + _GRACE_DAYS * 86400000;
+  var daysLeft = Math.ceil((expiry - now) / 86400000);      // négatif si expiré
+  var graceDaysLeft = Math.ceil((graceEnd - now) / 86400000);
+
+  // ── Abonnement encore valide ──
+  if (now < expiry) {
+    // Rappels avant expiration
+    if (daysLeft <= 7) {
+      setTimeout(function() { _showExpiryBanner(daysLeft, false); }, 1500);
+    }
+    if (daysLeft <= 3) {
+      setTimeout(function() { _showExpiryToast(daysLeft); }, 4000);
+    }
+    return;
+  }
+
+  // ── Abonnement expiré — période de grâce ──
+  if (now < graceEnd) {
+    // Maintenir le plan actif pendant la grâce
+    setTimeout(function() { _showExpiryBanner(graceDaysLeft, true); }, 1200);
+    setTimeout(function() { _showRenewalModal(graceDaysLeft); }, 3000);
+    return;
+  }
+
+  // ── Grâce terminée → downgrade effectif ──
+  MONETISATION.plan = 'gratuit';
+  sub.tier = 'gratuit';
+  localStorage.setItem('immogest_subscription', JSON.stringify(sub));
+  saveMonetisation();
+  setTimeout(function() { _showDowngradedModal(); }, 2000);
+}
+
+function _showExpiryBanner(daysLeft, isGrace) {
+  var existing = document.getElementById('_expiry-banner');
+  if (existing) return;
+  var banner = document.createElement('div');
+  banner.id = '_expiry-banner';
+  var color   = isGrace ? '#c0392b' : daysLeft <= 3 ? '#e67e22' : '#f39c12';
+  var icon    = isGrace ? '⛔' : daysLeft <= 3 ? '🔴' : '⚠️';
+  var msg     = isGrace
+    ? 'Votre abonnement a expiré — Période de grâce : <strong>' + daysLeft + ' jour(s) restant(s)</strong>. Renouvelez maintenant pour éviter le blocage.'
+    : daysLeft === 0
+      ? 'Votre abonnement expire <strong>aujourd\'hui</strong>. Renouvelez pour maintenir l\'accès.'
+      : 'Votre abonnement expire dans <strong>' + daysLeft + ' jour(s)</strong>.';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99990;background:' + color + ';color:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;font-weight:500;';
+  banner.innerHTML =
+    '<span>' + icon + ' ' + msg + '</span>' +
+    '<button onclick="showUpgradeModal()" style="background:#fff;color:' + color + ';border:none;padding:6px 16px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">🔄 Renouveler</button>' +
+    '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;padding:0 4px;line-height:1;" title="Fermer">×</button>';
+  // Décaler le contenu principal pour ne pas le masquer
+  document.body.insertBefore(banner, document.body.firstChild);
+  var main = document.getElementById('app-main') || document.querySelector('.app-layout') || document.getElementById('content');
+  if (main && main.style) main.style.paddingTop = '44px';
+}
+
+function _showExpiryToast(daysLeft) {
+  if (typeof showToast !== 'function') return;
+  var msg = daysLeft === 0
+    ? '⏰ Votre abonnement expire aujourd\'hui !'
+    : '⚠️ Abonnement : ' + daysLeft + ' jour(s) restant(s)';
+  showToast(msg, 'error');
+}
+
+function _showRenewalModal(graceDaysLeft) {
+  if (document.getElementById('_renewal-modal')) return;
+  var overlay = document.createElement('div');
+  overlay.id = '_renewal-modal';
+  overlay.className = 'overlay open';
+  overlay.style.zIndex = '99995';
+  overlay.innerHTML =
+    '<div class="modal" style="max-width:420px;text-align:center;padding:32px 28px;">' +
+      '<div style="font-size:56px;margin-bottom:12px;">⏳</div>' +
+      '<h3 style="margin-bottom:8px;color:var(--red);">Abonnement expiré</h3>' +
+      '<p style="font-size:13px;color:var(--text2);line-height:1.7;margin:0 0 8px;">' +
+        'Votre abonnement a pris fin. Vous bénéficiez encore d\'une période de grâce de ' +
+        '<strong>' + graceDaysLeft + ' jour(s)</strong> pendant laquelle toutes vos fonctionnalités restent actives.' +
+      '</p>' +
+      '<p style="font-size:12px;color:var(--red);margin:0 0 24px;font-weight:600;">' +
+        'Sans renouvellement, votre compte passera automatiquement en version gratuite avec des limitations.' +
+      '</p>' +
+      '<div style="display:flex;flex-direction:column;gap:10px;">' +
+        '<button class="btn btn-primary" style="background:var(--green);border-color:var(--green);" onclick="document.getElementById(\'_renewal-modal\').remove();showUpgradeModal();">🔄 Renouveler maintenant</button>' +
+        '<button class="btn btn-ghost" style="font-size:12px;" onclick="document.getElementById(\'_renewal-modal\').remove()">Continuer sans renouveler</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+function _showDowngradedModal() {
+  if (document.getElementById('_downgraded-modal')) return;
+  var overlay = document.createElement('div');
+  overlay.id = '_downgraded-modal';
+  overlay.className = 'overlay open';
+  overlay.style.zIndex = '99995';
+  overlay.innerHTML =
+    '<div class="modal" style="max-width:420px;text-align:center;padding:32px 28px;">' +
+      '<div style="font-size:56px;margin-bottom:12px;">🔒</div>' +
+      '<h3 style="margin-bottom:8px;">Accès limité</h3>' +
+      '<p style="font-size:13px;color:var(--text2);line-height:1.7;margin:0 0 8px;">' +
+        'Votre période de grâce est terminée. Votre compte est maintenant en <strong>version gratuite</strong>.' +
+      '</p>' +
+      '<p style="font-size:12px;color:var(--text3);margin:0 0 20px;">' +
+        'Vos données sont <strong>intactes</strong>. Un renouvellement restaure immédiatement l\'accès complet.' +
+      '</p>' +
+      '<div style="background:var(--bg3);border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:20px;text-align:left;">' +
+        '✅ Données conservées intégralement<br>' +
+        '✅ Accès en lecture maintenu<br>' +
+        '❌ Création limitée (immeubles, locataires)<br>' +
+        '❌ Export, IA, multi-utilisateurs suspendus' +
+      '</div>' +
+      '<button class="btn btn-primary" onclick="document.getElementById(\'_downgraded-modal\').remove();showUpgradeModal();">🔄 Renouveler l\'abonnement</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+// Planifier une vérification quotidienne tant que l'app est ouverte
+setInterval(function() {
+  if (MONETISATION.plan !== 'gratuit') _checkSubscriptionExpiry();
+}, 6 * 60 * 60 * 1000); // toutes les 6h
 
 function saveMonetisation() {
   localStorage.setItem('immogest_monetisation', JSON.stringify({
