@@ -264,25 +264,31 @@ async function handleAI(request, env) {
     }
 
     const body = await request.json();
-    const { system, messages, max_tokens } = body;
+    const { system, messages, max_tokens, user_key } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return jsonResponse({ ok: false, error: 'Paramètres invalides' }, 400, request);
     }
 
-    // Appel Anthropic — modèle Haiku (rapide + économique)
+    // Utiliser la clé utilisateur si fournie, sinon celle du Worker
+    const apiKey = user_key || env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return jsonResponse({ ok: false, error: 'Clé API IA non configurée' }, 500, request);
+    }
+
+    // Appel Anthropic — sonnet pour le juridique, haiku pour les analyses rapides
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type':      'application/json',
-        'x-api-key':         env.ANTHROPIC_API_KEY,
+        'x-api-key':         apiKey,
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model:      'claude-haiku-4-5-20251001',
-        max_tokens: max_tokens || 600,
+        model:      'claude-sonnet-4-6',
+        max_tokens: max_tokens || 1200,
         system:     system || '',
-        messages:   messages.slice(-10)   // limiter l'historique à 10 tours
+        messages:   messages.slice(-10)
       })
     });
 

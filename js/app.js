@@ -1,4 +1,132 @@
 // ============================================================
+// APP CONFIG — WHITE-LABEL (ImmoGest / LexCab / custom)
+// ============================================================
+var APP_CONFIG = (function() {
+  var stored = localStorage.getItem('app_config');
+  var defaults = {
+    appId:        'immogest',
+    appName:      'ImmoGest',
+    appTagline:   'Gestion immobilière intelligente',
+    primaryColor: '#0D2657',
+    logo:         null,
+    modules: { locatif:true, juridique:true, marketplace:true, cabinet:false, facturation:false },
+    client:  { nom:'', adresse:'', telephone:'' }
+  };
+  if (!stored) return defaults;
+  try { return Object.assign(defaults, JSON.parse(stored)); } catch(e) { return defaults; }
+})();
+
+function moduleActif(nom) { return APP_CONFIG.modules[nom] === true; }
+
+function sauvegarderAppConfig() {
+  localStorage.setItem('app_config', JSON.stringify(APP_CONFIG));
+}
+
+// ============================================================
+// PARAMÈTRES IA
+// ============================================================
+function getAnthropicKey()    { return localStorage.getItem('anthropic_api_key') || ''; }
+function isIAActive()         { return localStorage.getItem('ia_active') !== 'false' && !!getAnthropicKey(); }
+
+async function callAnthropicIA(systemPrompt, userPrompt, maxTokens) {
+  var key = getAnthropicKey();
+  if (!key) { showToast('⚙️ Configurez votre clé API dans Paramètres → IA', 'orange'); return null; }
+  try {
+    var resp = await fetch(WORKER_URL + '/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system:     systemPrompt,
+        messages:   [{ role: 'user', content: userPrompt }],
+        max_tokens: maxTokens || 1200,
+        user_key:   key
+      })
+    });
+    var data = await resp.json();
+    if (!data.ok) { showToast('Erreur IA : ' + (data.error || 'Inconnue'), 'red'); return null; }
+    return data.content && data.content[0] ? data.content[0].text : null;
+  } catch(e) { showToast('Erreur IA : ' + e.message, 'red'); return null; }
+}
+
+// ============================================================
+// ACTES JURIDIQUES — localStorage schema LexCab-compatible
+// ============================================================
+function getActesJuridiques() {
+  try { return JSON.parse(localStorage.getItem('actes_juridiques') || '[]'); } catch(e) { return []; }
+}
+function saveActesJuridiques(actes) {
+  localStorage.setItem('actes_juridiques', JSON.stringify(actes));
+}
+function logActeJuridique(acte) {
+  var actes = getActesJuridiques();
+  actes.unshift(acte);
+  saveActesJuridiques(actes);
+  return acte;
+}
+function getActesByLocataire(locId) {
+  return getActesJuridiques().filter(function(a) { return a.locataire_id == locId; });
+}
+function makeActeId(type, locId) {
+  return type.toUpperCase().replace(/_/g,'-') + '-' + locId + '-' + Date.now();
+}
+
+// ============================================================
+// STATUT JURIDIQUE — calcul auto + badge
+// ============================================================
+var STATUT_JUR_LABELS = {
+  normal:        { emoji:'🟢', label:'Normal',          color:'#22c55e', bg:'#f0fdf4' },
+  retard:        { emoji:'🟡', label:'En retard',       color:'#f59e0b', bg:'#fffbeb' },
+  misEnDemeure:  { emoji:'🟠', label:'Mis en demeure',  color:'#f97316', bg:'#fff7ed' },
+  commandement:  { emoji:'🔴', label:'Commandement',    color:'#ef4444', bg:'#fef2f2' },
+  procedure:     { emoji:'🔴', label:'En procédure',    color:'#991b1b', bg:'#fef2f2' }
+};
+
+function calculerStatutJuridique(l) {
+  if (!l) return 'normal';
+  if (l.statutJuridique === 'procedure' || l.statutJuridique === 'commandement') return l.statutJuridique;
+  var nbMois = getNbMoisArrieres(l);
+  var actes  = getActesByLocataire(l.id);
+  var aMED   = actes.some(function(a) { return a.type === 'mise_en_demeure' && a.statut !== 'annulee'; });
+  if (nbMois === 0)   return 'normal';
+  if (nbMois < 1)     return 'retard';
+  if (nbMois >= 1 && aMED) return 'misEnDemeure';
+  if (nbMois >= 1)    return 'retard';
+  return 'normal';
+}
+
+function badgeStatutJuridique(l) {
+  var s   = calculerStatutJuridique(l);
+  var cfg = STATUT_JUR_LABELS[s] || STATUT_JUR_LABELS.normal;
+  return '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700;background:' + cfg.bg + ';color:' + cfg.color + ';">'
+       + cfg.emoji + ' ' + cfg.label + '</span>';
+}
+
+// Export dossier LexCab
+function exporterDossierLexCab(locId) {
+  var l   = DATA.locataires.find(function(x) { return x.id === locId; });
+  if (!l) return null;
+  var im  = DATA.immeubles.find(function(i) { return i.id === l.iid; }) || {};
+  var pays = DATA.paiements.filter(function(p) { return p.locId === locId; });
+  var actes = getActesByLocataire(locId);
+  var dossier = {
+    export_date:   new Date().toISOString(),
+    source:        'immogest',
+    version:       '1.0',
+    locataire:     Object.assign({}, l, { source:'immogest' }),
+    immeuble:      { id:im.id, nom:im.nom, ville:im.ville, adresse:im.adresse },
+    paiements:     pays,
+    actes_juridiques: actes,
+    statut_juridique: calculerStatutJuridique(l)
+  };
+  var blob = new Blob([JSON.stringify(dossier, null, 2)], { type:'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Dossier_LexCab_' + (l.nom || locId).replace(/\s+/g,'_') + '.json';
+  a.click();
+  showToast('Dossier exporté pour LexCab ✓');
+}
+
+// ============================================================
 // DATA LAYER
 // ============================================================
 const STORE_KEY = 'immogest_v12';
@@ -522,7 +650,10 @@ function renderImmeuble(iid) {
             ${getAlertLabel(l) ? '<br><span style="font-size:10px;font-weight:700;">' + getAlertLabel(l) + '</span>' : ''}
             ${l.reste > 0 && l.loyer > 0 ? '<br><span style="font-size:10px;color:var(--red);">' + (l.reste/l.loyer).toFixed(1) + ' mois dus</span>' : ''}
           </td>
-          <td><span class="badge ${l.s==='payé'?'badge-green':'badge-red'}">${t(l.s)}</span></td>
+          <td>
+            <span class="badge ${l.s==='payé'?'badge-green':'badge-red'}">${t(l.s)}</span>
+            ${calculerStatutJuridique(l)!=='normal' ? '<br>' + badgeStatutJuridique(l) : ''}
+          </td>
           <td class="td-amount ${l.reste>0?'red':l.reste<0?'blue':'green'}" style="font-size:11px;">
             ${l.reste>0 ? fmtReste(l) : l.reste<0 ? fmtReste(l) : '–'}
           </td>
@@ -810,13 +941,21 @@ function renderRelances() {
 
   // ── SECTION 1 : ALERTES >= 2 mois ──────────────────────────────────────
   if (alertes.length > 0) {
-    html += `<div id="section-lettres" style="background:#FDF0F0;border:1.5px solid #C0392B;border-radius:8px;padding:10px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-      <div>
-        <div style="font-weight:700;color:#C0392B;font-size:14px;">🚨 ${t('Dossiers en alerte (≥ 2 mois)')} — ${alertes.length} ${t('locataire(s) avec ≥ 2 mois d\'arriérés')}</div>
-        <div style="font-size:12px;color:#888;margin-top:2px;">${t('Mise en demeure et plainte générées automatiquement')}</div>
-      </div>
-      <button class="btn btn-sm" style="background:#C0392B;color:#fff;border-color:#C0392B;" data-tooltip="Télécharger tous les dossiers d'alerte" onclick="telechargerTousAlertes()">⬇ ${t('Tout télécharger')} (${alertes.length} ${t('dossiers')})</button>
-    </div>`;
+    var nbEnMED = alertes.filter(function(l){ return calculerStatutJuridique(l)==='misEnDemeure'; }).length;
+    var nbEnCmd = alertes.filter(function(l){ return l.statutJuridique==='commandement'||l.statutJuridique==='procedure'; }).length;
+    html += '<div id="section-lettres" style="background:#FDF0F0;border:1.5px solid #C0392B;border-radius:8px;padding:10px 16px;margin-bottom:16px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">'
+      + '<div>'
+      + '<div style="font-weight:700;color:#C0392B;font-size:14px;">🚨 ' + t('Dossiers en alerte (≥ 2 mois)') + ' — ' + alertes.length + ' ' + t('locataire(s)') + '</div>'
+      + '<div style="font-size:12px;color:#888;margin-top:4px;display:flex;gap:10px;flex-wrap:wrap;">'
+      + (nbEnMED?'<span style="color:#f97316;">🟠 '+nbEnMED+' en demeure</span>':'')
+      + (nbEnCmd?'<span style="color:#ef4444;">🔴 '+nbEnCmd+' commandement/procédure</span>':'')
+      + '</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+      + (isIAActive()?'<button class="btn btn-sm" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;" onclick="_prioriserDossiersIA()">✨ IA : Prioriser</button>':'')
+      + '<button class="btn btn-sm" style="background:#C0392B;color:#fff;border-color:#C0392B;" onclick="telechargerTousAlertes()">⬇ ' + t('Tout télécharger') + ' (' + alertes.length + ')</button>'
+      + '</div></div></div>';
 
     // Group alertes by immeuble
     const byImmAlertes = {};
@@ -929,6 +1068,32 @@ function _filterRelances() {
     r.style.display = !q || (r.dataset.search||'').indexOf(q) >= 0 ? '' : 'none';
   });
 }
+async function _prioriserDossiersIA() {
+  if (!isIAActive()) { showToast('⚙️ Clé API manquante dans Paramètres', 'orange'); return; }
+  var alertes = getAlertes();
+  if (!alertes.length) { showToast('Aucun dossier en alerte', 'green'); return; }
+  showToast('✨ Analyse en cours…', 'blue');
+
+  var sys = 'Tu es un gestionnaire immobilier expert et juriste. Tu analyses des dossiers de locataires en retard et les priorises par niveau d\'urgence avec recommandations d\'action. Sois concis et actionnable.';
+  var dossiersStr = alertes.map(function(l) {
+    var im = DATA.immeubles.find(function(i){ return i.id===l.iid; }) || {};
+    var statut = calculerStatutJuridique(l);
+    var actes  = getActesByLocataire(l.id);
+    return '- ' + l.nom + ' (Immeuble:' + im.nom + ', Arriérés:' + getNbMoisArrieresFmt(l) + ' mois, Reste:' + fmt(l.reste) + ', Statut:' + statut + ', Actes:' + (actes.length||'aucun') + ')';
+  }).join('\n');
+
+  var prompt = 'Analyse et priorise ces dossiers de locataires en retard par niveau d\'urgence :\n' + dossiersStr + '\n\nPour chaque dossier : niveau d\'urgence (🔴/🟠/🟡), action immédiate recommandée. Classe du plus urgent au moins urgent.';
+  var result = await callAnthropicIA(sys, prompt, 1000);
+  if (!result) return;
+
+  var html = '<div class="modal-header"><h3>✨ Priorisation IA des dossiers</h3></div>'
+    + '<div style="padding:16px;">'
+    + '<div style="background:var(--bg4);border-radius:8px;padding:14px;font-size:13px;line-height:1.7;white-space:pre-wrap;">' + result + '</div>'
+    + '</div>'
+    + '<div class="modal-footer"><button class="btn btn-ghost" onclick="closeModals()">Fermer</button></div>';
+  showGenericModal(html);
+}
+
 async function telechargerTousAlertes() {
   const alertes = getAlertes();
   if (alertes.length === 0) { showToast("Aucun dossier en alerte","accent"); return; }
@@ -2392,9 +2557,13 @@ function ouvrirFicheSuivi(locId) {
   const { im } = fd;
   const ficheContent = genFicheHtml(fd);
 
+  const _tabStyle = (active) => 'padding:7px 16px;font-size:12px;font-weight:600;border:none;cursor:pointer;border-bottom:2px solid ' + (active?'var(--accent)':'transparent') + ';background:none;color:' + (active?'var(--accent)':'var(--text3)') + ';';
   let html = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-      <h3 style="margin:0;">📋 Fiche de suivi — ${l.nom}</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h3 style="margin:0;">📋 ${l.nom}</h3>
+        ${badgeStatutJuridique(l)}
+      </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <label style="font-size:12px;color:var(--text3);">Année :</label>
         <select id="fiche-annee" onchange="rafraichirFiche(${locId})" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);font-size:13px;">
@@ -2402,11 +2571,18 @@ function ouvrirFicheSuivi(locId) {
         </select>
       </div>
     </div>
-    <div id="fiche-preview">${ficheContent}</div>
-    <div id="pay-block-${locId}"></div>
+    <div style="border-bottom:1px solid var(--border);margin-bottom:14px;display:flex;gap:0;">
+      <button style="${_tabStyle(true)}" id="tab-fiche-btn" onclick="_switchFicheTab('fiche',${locId})">📊 Suivi</button>
+      <button style="${_tabStyle(false)}" id="tab-contentieux-btn" onclick="_switchFicheTab('contentieux',${locId})">⚖️ Contentieux ${getActesByLocataire(locId).length>0?'<span style=\'background:#ef4444;color:#fff;border-radius:99px;font-size:10px;padding:1px 5px;margin-left:4px;\'>'+getActesByLocataire(locId).length+'</span>':''}</button>
+    </div>
+    <div id="fiche-tab-fiche">
+      <div id="fiche-preview">${ficheContent}</div>
+      <div id="pay-block-${locId}"></div>
+    </div>
+    <div id="fiche-tab-contentieux" style="display:none;">${renderOngletContentieux(locId)}</div>
     <div class="modal-footer" style="margin-top:12px;">
       <button class="btn btn-ghost" onclick="closeModals()">Fermer</button>
-      <button class="btn btn-ghost" onclick="_analyserDossierLocataire(${locId})" style="gap:6px;">✨ Analyse IA</button>
+      <button class="btn btn-ghost" onclick="_analyserDossierLocataireIA(${locId})" style="gap:6px;">✨ Analyse IA</button>
       <button class="btn btn-primary" onclick="downloadFicheSuivi(${locId})" data-tooltip="Télécharger la fiche en PDF">⬇ Télécharger PDF</button>
     </div>
   `;
@@ -2419,6 +2595,26 @@ function ouvrirFicheSuivi(locId) {
     if (typeof renderPaymentBlock === 'function') {
       setTimeout(function(){ renderPaymentBlock(locId, 'pay-block-' + locId); }, 50);
     }
+  }
+}
+
+function _switchFicheTab(tab, locId) {
+  var ficheDiv  = document.getElementById('fiche-tab-fiche');
+  var contxDiv  = document.getElementById('fiche-tab-contentieux');
+  var ficheBtn  = document.getElementById('tab-fiche-btn');
+  var contxBtn  = document.getElementById('tab-contentieux-btn');
+  if (!ficheDiv || !contxDiv) return;
+  var accent = 'var(--accent)', text3 = 'var(--text3)';
+  if (tab === 'fiche') {
+    ficheDiv.style.display = ''; contxDiv.style.display = 'none';
+    if (ficheBtn) { ficheBtn.style.borderBottomColor = accent; ficheBtn.style.color = accent; }
+    if (contxBtn) { contxBtn.style.borderBottomColor = 'transparent'; contxBtn.style.color = text3; }
+  } else {
+    ficheDiv.style.display = 'none'; contxDiv.style.display = '';
+    if (ficheBtn) { ficheBtn.style.borderBottomColor = 'transparent'; ficheBtn.style.color = text3; }
+    if (contxBtn) { contxBtn.style.borderBottomColor = accent; contxBtn.style.color = accent; }
+    // Rafraîchir le contenu contentieux
+    if (contxDiv) contxDiv.innerHTML = renderOngletContentieux(locId);
   }
 }
 
@@ -3975,6 +4171,411 @@ async function genDocxMiseEnDemeure(locId) {
   showToast('Lettre téléchargée ✓');
 }
 
+
+// ═══════════════════════════════════════════════════════════════
+// MODULE JURIDIQUE v1 — MED + Commandement + Contentieux + IA
+// ═══════════════════════════════════════════════════════════════
+
+// ── Modal Mise en Demeure avec assistance IA ─────────────────
+function ouvrirModalMED(locId) {
+  if (!can('canJuridique')) { showToast('Accès refusé', 'red'); return; }
+  var l  = DATA.locataires.find(function(x){ return x.id===locId; });
+  var im = l ? DATA.immeubles.find(function(i){ return i.id===l.iid; }) : null;
+  if (!l || !im) return;
+  var cab = _cabInfo();
+  var iaActive = isIAActive();
+  var html = '<div class="modal-header"><h3>🟠 Mise en demeure — ' + l.nom + '</h3></div>'
+    + '<div style="padding:0 16px;">'
+    + '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#9a3412;">'
+    + '⚠️ Montant dû : <strong>' + fmt(l.reste) + '</strong> · Immeuble : <strong>' + im.nom + '</strong> · Local : <strong>' + (l.appt||'–') + '</strong>'
+    + '</div>'
+    + '<div class="form-group" style="margin-bottom:12px;">'
+    + '<label style="font-size:12px;font-weight:700;">Texte de la mise en demeure</label>'
+    + '<textarea id="med-texte" rows="10" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:var(--font);box-sizing:border-box;resize:vertical;">'
+    + _texteParDefautMED(l, im, cab)
+    + '</textarea>'
+    + '</div>';
+
+  if (iaActive) {
+    html += '<button class="btn btn-primary" style="width:100%;margin-bottom:10px;" onclick="_genMEDAvecIA(' + locId + ')">'
+          + '✨ IA : Rédiger une version juridiquement solide'
+          + '</button>';
+  } else {
+    html += '<div style="background:var(--bg4);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--text3);margin-bottom:10px;">'
+          + '⚙️ <a href="#" onclick="naviguerVers(\'parametres\')">Configurez votre clé API</a> pour activer l\'assistance IA'
+          + '</div>';
+  }
+
+  html += '<div id="med-ia-spinner" style="display:none;text-align:center;padding:12px;color:var(--text3);font-size:13px;">✨ L\'IA rédige votre mise en demeure…</div>'
+        + '</div>'
+        + '<div class="modal-footer">'
+        + '<button class="btn btn-ghost" onclick="closeModals()">Annuler</button>'
+        + '<button class="btn btn-primary" onclick="_genererMEDFinale(' + locId + ')">📄 Générer le document DOCX</button>'
+        + '</div>';
+
+  showGenericModal(html);
+}
+
+function _texteParDefautMED(l, im, cab) {
+  var today = new Date().toLocaleDateString('fr-FR');
+  return 'MISE EN DEMEURE\n\n'
+    + im.ville + ', le ' + today + '\n\n'
+    + 'À l\'attention de : ' + l.nom + '\n'
+    + 'Local ' + (l.appt||'–') + ', Immeuble ' + im.nom + '\n\n'
+    + 'Objet : MISE EN DEMEURE DE PAYER – Arriérés de loyer\n\n'
+    + 'Monsieur/Madame,\n\n'
+    + 'Par la présente, nous vous mettons formellement en demeure de procéder au règlement immédiat '
+    + 'de la somme de ' + fmt(l.reste) + ' au titre des arriérés de loyer de votre local susvisé.\n\n'
+    + 'Conformément aux dispositions du Code Civil et de l\'Acte Uniforme OHADA relatif au droit commercial général, '
+    + 'vous disposez d\'un délai de HUIT (8) JOURS à compter de la réception des présentes pour vous acquitter '
+    + 'de cette somme.\n\n'
+    + 'À défaut de règlement dans ce délai, nous nous verrons contraints d\'engager sans autre préavis toutes '
+    + 'les procédures légales disponibles, notamment la résiliation judiciaire du bail et la procédure d\'expulsion.\n\n'
+    + 'Veuillez agréer, Monsieur/Madame, l\'expression de nos salutations distinguées.\n\n'
+    + cab.nom;
+}
+
+async function _genMEDAvecIA(locId) {
+  var l  = DATA.locataires.find(function(x){ return x.id===locId; });
+  var im = l ? DATA.immeubles.find(function(i){ return i.id===l.iid; }) : null;
+  if (!l || !im) return;
+  var cab = _cabInfo();
+  var spinner = document.getElementById('med-ia-spinner');
+  var textarea = document.getElementById('med-texte');
+  if (spinner) spinner.style.display = 'block';
+  if (textarea) textarea.style.opacity = '0.4';
+
+  var sys = 'Tu es un juriste expert en droit immobilier camerounais et OHADA. '
+    + 'Tu rédiges des actes juridiques formels, précis et professionnels. '
+    + 'Utilise les textes légaux applicables (OHADA AUA, Code Civil camerounais, Code Pénal art.318-1). '
+    + 'Réponds uniquement avec le texte de l\'acte, sans commentaire ni introduction.';
+
+  var periodes = (l.obs || 'voir historique des paiements');
+  var prompt = 'Rédige une mise en demeure formelle et juridiquement solide avec les éléments suivants :\n'
+    + '- Locataire : ' + l.nom + '\n'
+    + '- Bien : Local ' + (l.appt||'–') + ', Immeuble ' + im.nom + ', ' + im.ville + '\n'
+    + '- Montant total dû : ' + fmt(l.reste) + '\n'
+    + '- Observations : ' + periodes + '\n'
+    + '- Bailleur/Gestionnaire : ' + cab.nom + '\n'
+    + '- Date : ' + new Date().toLocaleDateString('fr-FR') + '\n\n'
+    + 'La mise en demeure doit : citer les textes applicables (OHADA AUA art.1-3, droit camerounais), '
+    + 'fixer un délai de 8 jours, avertir des suites judiciaires (résiliation, expulsion, poursuites pénales art.318-1 CP), '
+    + 'avoir un ton juridique ferme mais professionnel. Inclure les formules de politesse appropriées.';
+
+  var result = await callAnthropicIA(sys, prompt, 1500);
+  if (spinner) spinner.style.display = 'none';
+  if (textarea) { textarea.style.opacity = '1'; if (result) textarea.value = result; }
+}
+
+async function _genererMEDFinale(locId) {
+  var texte = (document.getElementById('med-texte') || {}).value || '';
+  if (!texte.trim()) { showToast('Le texte est vide', 'orange'); return; }
+
+  // Log acte
+  var acteId = makeActeId('med', locId);
+  var acte = {
+    id:            acteId,
+    type:          'mise_en_demeure',
+    locataire_id:  locId,
+    immeuble_id:   (DATA.locataires.find(function(x){return x.id===locId;})||{}).iid,
+    date_creation: new Date().toISOString().slice(0,10),
+    date_envoi:    null,
+    mode_envoi:    null,
+    numero_ar:     null,
+    statut:        'generee',
+    source:        'immogest',
+    exportable_lexcab: true
+  };
+  logActeJuridique(acte);
+
+  // Générer DOCX depuis le texte
+  await genDocxMiseEnDemeure(locId);
+  closeModals();
+
+  // Modal confirmation envoi AR
+  setTimeout(function(){ _modalConfirmationEnvoiMED(locId, acteId); }, 600);
+}
+
+function _modalConfirmationEnvoiMED(locId, acteId) {
+  var html = '<div class="modal-header"><h3>📬 Envoi de la mise en demeure</h3></div>'
+    + '<div style="padding:0 16px 16px;">'
+    + '<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px 16px;margin-bottom:16px;">'
+    + '⚠️ <strong>Pour valeur probante au tribunal</strong>, la mise en demeure doit être envoyée par :'
+    + '<ul style="margin:8px 0 0 16px;font-size:13px;">'
+    + '<li><strong>Lettre recommandée avec accusé de réception (LR/AR)</strong></li>'
+    + '<li><strong>Remise en main propre contre décharge signée</strong></li>'
+    + '</ul>'
+    + '</div>'
+    + '<div class="form-group">'
+    + '<label style="font-size:12px;font-weight:700;">Mode d\'envoi</label>'
+    + '<select id="med-mode-envoi" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);">'
+    + '<option value="lr_ar">Lettre recommandée avec AR</option>'
+    + '<option value="remise_main_propre">Remise en main propre</option>'
+    + '<option value="huissier">Par huissier de justice</option>'
+    + '<option value="non_envoye">Pas encore envoyée</option>'
+    + '</select>'
+    + '</div>'
+    + '<div class="form-group">'
+    + '<label style="font-size:12px;font-weight:700;">Numéro AR / Référence remise</label>'
+    + '<input type="text" id="med-num-ar" placeholder="Ex: AR2026-XXXXXX ou date de remise" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);box-sizing:border-box;">'
+    + '</div>'
+    + '</div>'
+    + '<div class="modal-footer">'
+    + '<button class="btn btn-ghost" onclick="closeModals()">Plus tard</button>'
+    + '<button class="btn btn-primary" onclick="_sauvegarderEnvoiMED(\'' + acteId + '\', ' + locId + ')">💾 Enregistrer l\'envoi</button>'
+    + '</div>';
+  showGenericModal(html);
+}
+
+function _sauvegarderEnvoiMED(acteId, locId) {
+  var mode = (document.getElementById('med-mode-envoi')||{}).value || '';
+  var numAR = (document.getElementById('med-num-ar')||{}).value || '';
+  var actes = getActesJuridiques();
+  var idx = actes.findIndex(function(a){ return a.id === acteId; });
+  if (idx >= 0) {
+    actes[idx].mode_envoi  = mode;
+    actes[idx].numero_ar   = numAR;
+    actes[idx].date_envoi  = new Date().toISOString().slice(0,10);
+    actes[idx].statut      = mode === 'non_envoye' ? 'generee' : 'envoyee';
+    saveActesJuridiques(actes);
+  }
+  // Mettre à jour statutJuridique
+  var l = DATA.locataires.find(function(x){ return x.id===locId; });
+  if (l && mode !== 'non_envoye') { l.statutJuridique = 'misEnDemeure'; saveData(); }
+  closeModals();
+  showToast('Envoi enregistré ✓', 'green');
+}
+
+// ── Analyse IA dossier locataire ─────────────────────────────
+async function _analyserDossierLocataireIA(locId) {
+  var l = DATA.locataires.find(function(x){ return x.id===locId; });
+  if (!l) return;
+  if (!isIAActive()) { showToast('⚙️ Configurez votre clé API dans Paramètres → IA', 'orange'); return; }
+  var im = DATA.immeubles.find(function(i){ return i.id===l.iid; }) || {};
+  var pays = DATA.paiements.filter(function(p){ return p.locId===locId; }).slice(-24);
+  var actes = getActesByLocataire(locId);
+
+  var sys = 'Tu es un juriste expert en contentieux immobilier et gestion locative. '
+    + 'Tu analyses des dossiers locataires et fournis des recommandations claires et actionnables. '
+    + 'Sois concis (max 300 mots), structuré et pratique. Contexte : droit camerounais/OHADA.';
+
+  var hist = pays.map(function(p){
+    return MNOMS[p.moisC] + ' ' + p.anneeC + ' : ' + fmt(p.montant) + ' (' + (p.type||'loyer') + ')';
+  }).join(', ') || 'Aucun paiement enregistré';
+
+  var actesStr = actes.length ? actes.map(function(a){
+    return a.type + ' du ' + a.date_creation + ' (' + a.statut + ')';
+  }).join(', ') : 'Aucun acte';
+
+  var prompt = 'Analyse ce dossier locataire :\n'
+    + '- Locataire : ' + l.nom + '\n'
+    + '- Immeuble : ' + im.nom + ', ' + (im.ville||'') + '\n'
+    + '- Loyer mensuel : ' + fmt(l.loyer) + '\n'
+    + '- Reste dû : ' + fmt(l.reste) + '\n'
+    + '- Arriérés : ' + getNbMoisArrieresFmt(l) + ' mois\n'
+    + '- Historique paiements (24 derniers) : ' + hist + '\n'
+    + '- Actes déjà posés : ' + actesStr + '\n\n'
+    + 'Fournis : 1) Évaluation du risque contentieux (Faible/Moyen/Élevé) avec justification, '
+    + '2) Recommandation d\'action immédiate, '
+    + '3) Prochaine étape juridique recommandée.';
+
+  showToast('✨ Analyse en cours…', 'blue');
+  var result = await callAnthropicIA(sys, prompt, 800);
+  if (!result) return;
+
+  var html = '<div class="modal-header"><h3>✨ Analyse IA — ' + l.nom + '</h3></div>'
+    + '<div style="padding:16px;">'
+    + '<div style="background:var(--bg4);border-radius:8px;padding:14px;font-size:13px;line-height:1.7;white-space:pre-wrap;">' + result + '</div>'
+    + '</div>'
+    + '<div class="modal-footer">'
+    + '<button class="btn btn-ghost" onclick="closeModals()">Fermer</button>'
+    + '<button class="btn btn-primary" onclick="ouvrirModalMED(' + locId + ')">🟠 Générer MED</button>'
+    + '</div>';
+  showGenericModal(html);
+}
+
+// ── Onglet Contentieux dans la fiche locataire ───────────────
+function renderOngletContentieux(locId) {
+  var l = DATA.locataires.find(function(x){ return x.id===locId; });
+  if (!l) return '';
+  var actes = getActesByLocataire(locId);
+  var statut = calculerStatutJuridique(l);
+  var cfg = STATUT_JUR_LABELS[statut];
+
+  var html = '<div style="padding:12px 0;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">'
+    + '<div style="display:flex;align-items:center;gap:10px;">'
+    + '<span style="font-size:13px;font-weight:700;">Statut juridique :</span>'
+    + badgeStatutJuridique(l)
+    + '</div>'
+    + '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+
+  if (can('canJuridique')) {
+    html += '<button class="btn btn-sm" onclick="ouvrirModalMED(' + locId + ')">🟠 Mise en demeure</button>';
+    html += '<button class="btn btn-sm" onclick="ouvrirModalCommandement(' + locId + ')">🔴 Commandement</button>';
+    html += '<button class="btn btn-sm btn-ghost" onclick="exporterDossierLexCab(' + locId + ')">📤 Export LexCab</button>';
+  }
+  if (isIAActive()) {
+    html += '<button class="btn btn-sm" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;" onclick="_analyserDossierLocataireIA(' + locId + ')">✨ Analyse IA</button>';
+  }
+  html += '</div></div>';
+
+  // Historique des actes
+  if (actes.length === 0) {
+    html += '<div class="empty" style="padding:24px;"><div class="empty-icon">📂</div><div class="empty-text">Aucun acte juridique enregistré</div></div>';
+  } else {
+    html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+    actes.forEach(function(a) {
+      var typeLabels = { mise_en_demeure:'Mise en demeure', commandement:'Commandement de payer', quittance:'Quittance', recu_caution:'Reçu de caution' };
+      var statutColors = { generee:'#f59e0b', envoyee:'#3b82f6', cloturee:'#22c55e', annulee:'#6b7280' };
+      html += '<div style="background:var(--bg4);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+        + '<span style="font-size:18px;">' + (a.type==='mise_en_demeure'?'🟠':a.type==='commandement'?'🔴':'📄') + '</span>'
+        + '<div style="flex:1;">'
+        + '<div style="font-size:12px;font-weight:700;">' + (typeLabels[a.type]||a.type) + '</div>'
+        + '<div style="font-size:11px;color:var(--text3);">Réf: ' + a.id + ' · Créé le ' + a.date_creation + (a.date_envoi?' · Envoyé le '+a.date_envoi:'') + '</div>'
+        + (a.numero_ar?'<div style="font-size:11px;color:var(--text3);">AR/Réf: ' + a.numero_ar + '</div>':'')
+        + '</div>'
+        + '<span style="padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;background:' + (statutColors[a.statut]||'#888') + '20;color:' + (statutColors[a.statut]||'#888') + ';">' + (a.statut||'–') + '</span>'
+        + '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Bouton résumé IA
+  if (isIAActive() && actes.length > 0) {
+    html += '<button class="btn btn-ghost" style="width:100%;margin-top:14px;" onclick="_resumeDossierIA(' + locId + ')">✨ IA : Résumer ce dossier contentieux</button>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+async function _resumeDossierIA(locId) {
+  var l = DATA.locataires.find(function(x){ return x.id===locId; });
+  if (!l || !isIAActive()) return;
+  var actes = getActesByLocataire(locId);
+  var pays = DATA.paiements.filter(function(p){ return p.locId===locId; }).slice(-12);
+
+  var sys = 'Tu es un assistant juridique. Tu rédiges des résumés chronologiques de dossiers contentieux pour préparer des consultations d\'avocat ou des saisines de tribunal. Sois factuel, chronologique et professionnel.';
+  var prompt = 'Résume chronologiquement ce dossier contentieux :\n'
+    + 'Locataire : ' + l.nom + ', Arriérés : ' + fmt(l.reste) + ' (' + getNbMoisArrieresFmt(l) + ' mois)\n'
+    + 'Actes : ' + actes.map(function(a){ return a.type + ' du ' + a.date_creation + ' statut:' + a.statut; }).join(', ') + '\n'
+    + 'Paiements récents : ' + pays.map(function(p){ return MNOMS[p.moisC]+' '+p.anneeC+':'+fmt(p.montant); }).join(', ') + '\n'
+    + 'Fournis un résumé structuré prêt pour consultation d\'avocat ou saisine de tribunal.';
+
+  showToast('✨ Résumé en cours…', 'blue');
+  var result = await callAnthropicIA(sys, prompt, 800);
+  if (!result) return;
+
+  var html = '<div class="modal-header"><h3>✨ Résumé dossier — ' + l.nom + '</h3></div>'
+    + '<div style="padding:16px;">'
+    + '<div style="background:var(--bg4);border-radius:8px;padding:14px;font-size:13px;line-height:1.7;white-space:pre-wrap;">' + result + '</div>'
+    + '</div>'
+    + '<div class="modal-footer"><button class="btn btn-ghost" onclick="closeModals()">Fermer</button></div>';
+  showGenericModal(html);
+}
+
+// ── Commandement de payer ─────────────────────────────────────
+function ouvrirModalCommandement(locId) {
+  if (!can('canJuridique')) { showToast('Accès refusé', 'red'); return; }
+  var l  = DATA.locataires.find(function(x){ return x.id===locId; });
+  var im = l ? DATA.immeubles.find(function(i){ return i.id===l.iid; }) : null;
+  if (!l || !im) return;
+
+  var html = '<div class="modal-header"><h3>🔴 Commandement de payer — ' + l.nom + '</h3></div>'
+    + '<div style="padding:0 16px;">'
+    + '<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:12px;color:#991b1b;">'
+    + '🔴 <strong>Étape précédant la procédure judiciaire.</strong> Le commandement de payer doit idéalement être signifié par un <strong>huissier de justice</strong>. Il est conseillé de consulter un avocat avant cette étape.'
+    + '</div>'
+    + '<div class="form-group">'
+    + '<label style="font-size:12px;font-weight:700;">Texte du commandement</label>'
+    + '<textarea id="cmd-texte" rows="9" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:var(--font);box-sizing:border-box;resize:vertical;">'
+    + _texteParDefautCommandement(l, im)
+    + '</textarea>'
+    + '</div>';
+
+  if (isIAActive()) {
+    html += '<button class="btn btn-primary" style="width:100%;margin-bottom:10px;" onclick="_genCommandementAvecIA(' + locId + ')">'
+          + '✨ IA : Rédiger le commandement'
+          + '</button>';
+  }
+
+  html += '<div id="cmd-ia-spinner" style="display:none;text-align:center;padding:12px;color:var(--text3);">✨ Rédaction en cours…</div>'
+        + '</div>'
+        + '<div class="modal-footer">'
+        + '<button class="btn btn-ghost" onclick="closeModals()">Annuler</button>'
+        + '<button class="btn btn-primary" onclick="_genererCommandementFinal(' + locId + ')">📄 Générer DOCX</button>'
+        + '</div>';
+
+  showGenericModal(html);
+}
+
+function _texteParDefautCommandement(l, im) {
+  var today = new Date().toLocaleDateString('fr-FR');
+  var cab = _cabInfo();
+  return 'COMMANDEMENT DE PAYER\n\n'
+    + im.ville + ', le ' + today + '\n\n'
+    + 'À : ' + l.nom + ', Local ' + (l.appt||'–') + ', Immeuble ' + im.nom + '\n\n'
+    + 'Nous vous faisons COMMANDEMENT DE PAYER dans les vingt-quatre (24) heures la somme de '
+    + fmt(l.reste) + ' en principal, représentant les arriérés de loyer échus et exigibles.\n\n'
+    + 'À défaut, il sera procédé à la résiliation judiciaire du bail et à votre expulsion des lieux '
+    + 'que vous occupez sans droit ni titre, conformément aux dispositions de l\'Acte Uniforme OHADA '
+    + 'portant organisation des procédures simplifiées de recouvrement et des voies d\'exécution.\n\n'
+    + 'À faire signifier par huissier de justice.\n\n' + cab.nom;
+}
+
+async function _genCommandementAvecIA(locId) {
+  var l  = DATA.locataires.find(function(x){ return x.id===locId; });
+  var im = l ? DATA.immeubles.find(function(i){ return i.id===l.iid; }) : null;
+  if (!l || !im) return;
+  var spinner  = document.getElementById('cmd-ia-spinner');
+  var textarea = document.getElementById('cmd-texte');
+  if (spinner) spinner.style.display = 'block';
+  if (textarea) textarea.style.opacity = '0.4';
+
+  var sys = 'Tu es un huissier de justice et juriste spécialisé en droit OHADA et camerounais. Rédige un commandement de payer formel, précis et juridiquement exécutoire. Réponds uniquement avec le texte de l\'acte.';
+  var prompt = 'Rédige un commandement de payer pour :\n'
+    + '- Locataire : ' + l.nom + '\n'
+    + '- Local : ' + (l.appt||'–') + ', Immeuble ' + im.nom + ', ' + im.ville + '\n'
+    + '- Montant dû : ' + fmt(l.reste) + '\n'
+    + '- Bailleur : ' + _cabInfo().nom + '\n'
+    + 'Citer : OHADA AUPSRVE (Acte Uniforme portant organisation des procédures simplifiées de recouvrement et des voies d\'exécution). '
+    + 'Mentionner que cet acte précède la procédure judiciaire. Délai 24h.';
+
+  var result = await callAnthropicIA(sys, prompt, 1200);
+  if (spinner) spinner.style.display = 'none';
+  if (textarea) { textarea.style.opacity = '1'; if (result) textarea.value = result; }
+}
+
+async function _genererCommandementFinal(locId) {
+  var texte = (document.getElementById('cmd-texte')||{}).value || '';
+  if (!texte.trim()) { showToast('Le texte est vide', 'orange'); return; }
+  var l = DATA.locataires.find(function(x){ return x.id===locId; });
+  if (l) { l.statutJuridique = 'commandement'; saveData(); }
+
+  var acteId = makeActeId('cmd', locId);
+  logActeJuridique({
+    id: acteId, type:'commandement', locataire_id:locId,
+    immeuble_id:(l||{}).iid, date_creation:new Date().toISOString().slice(0,10),
+    date_envoi:null, mode_envoi:null, numero_ar:null,
+    statut:'generee', source:'immogest', exportable_lexcab:true
+  });
+
+  // Générer DOCX simple
+  if (!window.docx) { showToast('Bibliothèque docx manquante','red'); return; }
+  var _d = window.docx;
+  var doc = new _d.Document({ sections:[{ children:[
+    new _d.Paragraph({ children:[new _d.TextRun({ text:texte, size:22, font:'Times New Roman' })], spacing:{after:0} })
+  ]}]});
+  var today = new Date().toLocaleDateString('fr-FR').replace(/\//g,'-');
+  var buf = await _d.Packer.toBlob(doc);
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(buf);
+  a.download = 'Commandement_' + ((l&&l.nom)||locId).replace(/\s+/g,'_') + '_' + today + '.docx';
+  a.click();
+  closeModals();
+  showToast('Commandement généré ✓', 'green');
+}
 
 async function genDocxPlainte(locId) {
   if (!window.docx) { showToast("Bibliothèque docx non chargée","red"); return; }
@@ -7445,6 +8046,44 @@ function renderParametres() {
         💾 Enregistrer les paramètres pub
       </button>
     </div>
+
+    <!-- Section Intelligence Artificielle -->
+    <div class="card" style="max-width:520px;margin-top:16px;" id="card-ia-params">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:36px;height:36px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">✨</div>
+          <div>
+            <div class="card-title" style="margin:0;">Intelligence Artificielle</div>
+            <div id="ia-status-badge" style="font-size:11px;margin-top:2px;"></div>
+          </div>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;">
+          <input type="checkbox" id="ia-active-toggle" style="width:16px;height:16px;" onchange="saveIASettings()">
+          <span>Activer</span>
+        </label>
+      </div>
+      <p style="font-size:12px;color:var(--text2);margin:12px 0 16px;">
+        Activez l\'assistance IA pour rédiger des mises en demeure, analyser les dossiers locataires et obtenir des conseils juridiques.<br>
+        Nécessite un compte <strong>Anthropic</strong> (console.anthropic.com → API Keys).
+      </p>
+      <div class="form-group">
+        <label style="font-size:12px;font-weight:700;">Clé API Anthropic <span style="color:var(--text3);font-weight:400;">(sk-ant-...)</span></label>
+        <div style="display:flex;gap:8px;">
+          <input type="password" id="ia-api-key" placeholder="sk-ant-api03-..."
+            style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box;">
+          <button class="btn btn-ghost btn-sm" onclick="toggleIAKeyVisibility()" data-tooltip="Afficher/masquer">👁</button>
+        </div>
+      </div>
+      <div style="background:var(--bg4);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:11px;color:var(--text3);">
+        🔒 Votre clé API est stockée <strong>uniquement sur votre appareil</strong> (localStorage) et n\'est jamais transmise à nos serveurs.
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:14px;padding:12px;" onclick="saveIASettings()">
+        ✨ Enregistrer la configuration IA
+      </button>
+      <button class="btn btn-ghost" style="width:100%;margin-top:8px;padding:10px;font-size:12px;" onclick="testerCleIA()">
+        🧪 Tester la connexion IA
+      </button>
+    </div>
   `;
 
   // Injecter le formulaire config paiement loyer
@@ -7454,6 +8093,12 @@ function renderParametres() {
   }
   // Afficher le statut OneSignal actuel
   if (typeof _updateOneSignalStatusBadge === 'function') _updateOneSignalStatusBadge();
+  // Pré-remplir et afficher statut IA
+  _updateIAStatusBadge();
+  var iaKeyEl = document.getElementById('ia-api-key');
+  if (iaKeyEl && getAnthropicKey()) iaKeyEl.value = getAnthropicKey();
+  var iaToggle = document.getElementById('ia-active-toggle');
+  if (iaToggle) iaToggle.checked = localStorage.getItem('ia_active') !== 'false';
   // Pré-remplir les champs pub
   const adsCfg = (DATA.settings && DATA.settings.ads) || {};
   const adsEnabled = document.getElementById('ads-enabled');
@@ -7478,6 +8123,55 @@ function saveParametresAds() {
   };
   saveData();
   showToast('Paramètres pub enregistrés ✓', 'green');
+}
+
+// ── IA Settings ──────────────────────────────────────────────
+function saveIASettings() {
+  var key    = (document.getElementById('ia-api-key') || {}).value || '';
+  var active = document.getElementById('ia-active-toggle') ? document.getElementById('ia-active-toggle').checked : true;
+  if (key) localStorage.setItem('anthropic_api_key', key.trim());
+  localStorage.setItem('ia_active', active ? 'true' : 'false');
+  _updateIAStatusBadge();
+  showToast('Configuration IA enregistrée ✓', 'green');
+}
+
+function _updateIAStatusBadge() {
+  var badge = document.getElementById('ia-status-badge');
+  if (!badge) return;
+  var key = getAnthropicKey();
+  if (!key) {
+    badge.innerHTML = '<span style="color:#f59e0b;">⚠️ Clé API manquante</span>';
+  } else if (localStorage.getItem('ia_active') === 'false') {
+    badge.innerHTML = '<span style="color:#6b7280;">⏸ IA désactivée</span>';
+  } else {
+    badge.innerHTML = '<span style="color:#22c55e;">✅ IA connectée</span>';
+  }
+}
+
+function toggleIAKeyVisibility() {
+  var el = document.getElementById('ia-api-key');
+  if (!el) return;
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+async function testerCleIA() {
+  var key = (document.getElementById('ia-api-key') || {}).value || getAnthropicKey();
+  if (!key) { showToast('Entrez d\'abord votre clé API', 'orange'); return; }
+  showToast('Test en cours…', 'blue');
+  try {
+    var resp = await fetch(WORKER_URL + '/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system:'Tu es un assistant.', messages:[{role:'user',content:'Réponds uniquement: OK'}], max_tokens:10, user_key:key })
+    });
+    var data = await resp.json();
+    if (data.ok) {
+      showToast('✅ Connexion IA réussie !', 'green');
+      document.getElementById('ia-status-badge').innerHTML = '<span style="color:#22c55e;">✅ IA connectée</span>';
+    } else {
+      showToast('❌ Clé invalide : ' + (data.error || 'Erreur'), 'red');
+    }
+  } catch(e) { showToast('Erreur connexion : ' + e.message, 'red'); }
 }
 
 function sauvegarderNomAdmin() {
@@ -9091,9 +9785,54 @@ function renderBibliotheque() {
     html += '<div class="empty"><div class="empty-icon">📚</div><div class="empty-text">Aucun résultat pour "' + q + '"</div></div>';
   }
 
+  // ── Section Aide juridique IA ──────────────────────────────
+  html += '<div class="card" style="margin-top:8px;">'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">'
+    + '<div style="width:38px;height:38px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;">✨</div>'
+    + '<div><div class="card-title" style="margin:0;">Aide juridique IA</div>'
+    + '<div style="font-size:11px;color:var(--text3);">Posez une question sur le droit immobilier camerounais / OHADA</div>'
+    + '</div></div>';
+
+  if (!isIAActive()) {
+    html += '<div style="background:var(--bg4);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text3);">'
+      + '⚙️ <a href="#" onclick="naviguerVers(\'parametres\')">Configurez votre clé API Anthropic</a> dans Paramètres pour activer cette fonctionnalité.'
+      + '</div>';
+  } else {
+    html += '<div style="display:flex;gap:8px;margin-bottom:10px;">'
+      + '<input type="text" id="biblio-ia-question" placeholder="Ex: Quelle est la procédure d\'expulsion au Cameroun ?" '
+      + 'style="flex:1;padding:9px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font);box-sizing:border-box;" '
+      + 'onkeydown="if(event.key===\'Enter\')_poserQuestionJuridiqueIA()">'
+      + '<button class="btn btn-primary" onclick="_poserQuestionJuridiqueIA()">✨ Envoyer</button>'
+      + '</div>'
+      + '<div id="biblio-ia-reponse" style="display:none;background:var(--bg4);border-radius:8px;padding:14px;font-size:13px;line-height:1.7;white-space:pre-wrap;"></div>'
+      + '<div id="biblio-ia-spinner" style="display:none;text-align:center;padding:12px;color:var(--text3);">✨ L\'IA recherche…</div>';
+  }
+
+  html += '<div style="background:#fff3cd;border-radius:8px;padding:8px 12px;margin-top:10px;font-size:11px;color:#7a4800;">'
+    + '⚠️ Cette assistance est <strong>informative uniquement</strong>. Consultez un juriste ou avocat pour toute décision importante.'
+    + '</div></div>';
+
   document.getElementById('content').innerHTML = html;
   // Remettre le focus sur la recherche
   if (q) { var el = document.getElementById('search-biblio'); if(el) { el.focus(); el.setSelectionRange(q.length,q.length); } }
+}
+
+async function _poserQuestionJuridiqueIA() {
+  var q = (document.getElementById('biblio-ia-question')||{}).value || '';
+  if (!q.trim()) return;
+  var spinner = document.getElementById('biblio-ia-spinner');
+  var reponse = document.getElementById('biblio-ia-reponse');
+  if (spinner) spinner.style.display = 'block';
+  if (reponse) reponse.style.display = 'none';
+
+  var sys = 'Tu es un juriste expert en droit immobilier camerounais, droit OHADA, et droit africain francophone. '
+    + 'Tu réponds aux questions de gestionnaires immobiliers et propriétaires de manière claire, pratique et précise. '
+    + 'Cite les textes applicables quand c\'est pertinent. Maximum 400 mots. '
+    + 'Termine toujours par : "⚠️ Pour toute décision importante, consultez un juriste ou avocat qualifié."';
+
+  var result = await callAnthropicIA(sys, q, 800);
+  if (spinner) spinner.style.display = 'none';
+  if (reponse && result) { reponse.style.display = 'block'; reponse.textContent = result; }
 }
 
 function _biblioCatToggle(catId) {
@@ -10292,9 +11031,10 @@ function _locDropdownItems(l) {
   s += `<div class="action-dropdown-item" onclick="_closeDropdowns();notifCiblee(${l.id})">🔔 ${t('Notification push')}</div>`;
   if (l.tel) s += `<div class="action-dropdown-item" onclick="envoyerAccesWhatsApp(${l.id});${cl}">📲 ${t('Envoyer accès WhatsApp')}</div>`;
   if (l.pinResetRequested) s += `<div class="action-dropdown-item" style="color:var(--yellow);" onclick="reinitialiserPIN(${l.id});${cl}">🔑 ${t('Réinitialiser PIN (demandé)')}</div>`;
-  if (can('canJuridique')) s += `<div class="action-dropdown-item" onclick="ouvrirGenDocx(${l.id});${cl}">📄 ${t('Documents')}</div>`;
   if (can('canJuridique')) s += `<div class="action-dropdown-item" onclick="ouvrirContratLocataire(${l.id});${cl}">📜 ${t('Contrat de bail')}</div>`;
-  if (can('canJuridique')) s += `<div class="action-dropdown-item" onclick="previewMiseEnDemeure(${l.id});${cl}">📨 ${t('Mise en demeure')}</div>`;
+  if (can('canJuridique')) s += `<div class="action-dropdown-item" onclick="ouvrirModalMED(${l.id});${cl}">🟠 ${t('Mise en demeure')}</div>`;
+  if (can('canJuridique')) s += `<div class="action-dropdown-item" onclick="ouvrirModalCommandement(${l.id});${cl}">🔴 ${t('Commandement de payer')}</div>`;
+  if (can('canJuridique')) { const nbActes = getActesByLocataire(l.id).length; s += '<div class="action-dropdown-item" onclick="ouvrirFicheSuivi(' + l.id + ');setTimeout(function(){_switchFicheTab(\'contentieux\',' + l.id + ')},300);' + cl + '">⚖️ ' + t('Contentieux') + (nbActes?' <span style="background:var(--red);color:#fff;border-radius:99px;font-size:10px;padding:1px 5px;">'+nbActes+'</span>':'') + '</div>'; }
   s += `<div class="action-dropdown-sep"></div>`;
   if (can('canEditLocataires')) s += `<div class="action-dropdown-item danger" onclick="ouvrirLiberation(${l.id});${cl}">🔓 ${t('Libérer')}</div>`;
   if (can('canEditLocataires')) s += `<div class="action-dropdown-item danger" onclick="supprimerLocataire(${l.id});${cl}">🗑️ ${t('Supprimer')}</div>`;
