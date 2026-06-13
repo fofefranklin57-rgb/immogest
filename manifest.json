@@ -1,14 +1,25 @@
 {
+  "id": "/",
   "name": "ImmoGest",
   "short_name": "ImmoGest",
   "description": "Plateforme de gestion immobilière — Locataires, encaissements, rapports, documents et marketplace",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait",
   "background_color": "#0E6AAF",
   "theme_color": "#0E6AAF",
   "lang": "fr",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "related_applications": [
+    {
+      "platform": "play",
+      "id": "com.immogest.app"
+    }
+  ],
+  "iarc_rating_id": "",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -38,6 +49,48 @@
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Gestion des locataires"
+    },
+    {
+      "src": "/playstore/screenshot_wide.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "ImmoGest sur tablette"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Tableau de bord",
+      "short_name": "Dashboard",
+      "description": "Voir les encaissements du mois",
+      "url": "/?shortcut=dashboard",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Locataires",
+      "short_name": "Locataires",
+      "description": "Liste des locataires",
+      "url": "/?shortcut=locataires",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Marketplace",
+      "short_name": "Marketplace",
+      "description": "Annonces immobilières",
+      "url": "/marche.html",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }
