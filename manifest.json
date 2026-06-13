@@ -1,8 +1,9 @@
 {
   "name": "ImmoGest",
   "short_name": "ImmoGest",
-  "description": "Plateforme de gestion immobilière — Locataires, encaissements, rapports",
+  "description": "Plateforme de gestion immobilière — Locataires, encaissements, rapports, documents et marketplace",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0E6AAF",
@@ -23,5 +24,20 @@
     }
   ],
   "categories": ["business", "productivity"],
-  "screenshots": []
+  "screenshots": [
+    {
+      "src": "/playstore/screenshot1.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Tableau de bord ImmoGest"
+    },
+    {
+      "src": "/playstore/screenshot2.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Gestion des locataires"
+    }
+  ]
 }

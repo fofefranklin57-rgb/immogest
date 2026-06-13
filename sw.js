@@ -1,12 +1,16 @@
-// ImmoGest Service Worker — DEPLOY23
-const CACHE_NAME = 'immogest-v23';
+// ImmoGest Service Worker — DEPLOY24
+const CACHE_NAME = 'immogest-v24';
 const ASSETS = [
   '/',
   '/index.html',
   '/app.css',
+  '/docx.bundle.js',
   '/js/app.js',
   '/js/supabase.js',
   '/js/i18n.js',
+  '/js/pay-config.js',
+  '/js/signature.js',
+  '/js/marketplace.js',
   '/js/monetisation.js',
   '/js/onesignal.js',
   '/js/portail-locataire.js',
