@@ -5859,6 +5859,7 @@ function deleteUser(userId) {
 
 // ── Sync utilisateurs Supabase → localStorage après login ─────────────────────
 async function syncUsersAfterLogin() {
+  if (typeof _sbAuthFailed !== 'undefined' && _sbAuthFailed) return;
   const sbUsers = await loadUsersFromSupabase();
   if (sbUsers === null) return; // erreur réseau — garder localStorage
 

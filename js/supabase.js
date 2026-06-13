@@ -319,14 +319,22 @@ async function contratTemplateExists(immeubleId) {
 async function loadDataFromSupabase() {
   try {
     showToast('Chargement des données...', 'blue');
-    const [immeubles, locataires, paiements, _sbSettings] = await Promise.all([
-      sbLoad('immeubles'),
+
+    // Test d'auth rapide avant le chargement parallèle — évite le flood de 401
+    const _testAuth = await sbLoad('immeubles');
+    if (_testAuth === null) {
+      console.warn('Supabase indisponible — fallback localStorage');
+      return false;
+    }
+
+    const [locataires, paiements, _sbSettings] = await Promise.all([
       sbLoad('locataires'),
       sbLoad('paiements'),
       loadParametresFromSupabase()
     ]);
+    const immeubles = _testAuth;
 
-    if (immeubles === null || locataires === null) {
+    if (locataires === null) {
       console.warn('Supabase indisponible — fallback localStorage');
       return false;
     }
