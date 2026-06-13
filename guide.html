@@ -22,10 +22,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f4fa;color:#1a233
 /* ── TOC ── */
 .toc{background:#fff;border-radius:14px;padding:24px 28px;max-width:900px;margin:32px auto 0;box-shadow:0 2px 12px rgba(0,0,0,.07)}
 .toc h2{font-size:15px;font-weight:700;color:#0D2657;margin-bottom:14px}
-.toc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}
+.toc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px}
 .toc a{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;text-decoration:none;color:#334;font-size:13px;transition:background .15s}
 .toc a:hover{background:#f0f4fa}
-.toc-num{font-size:10px;font-weight:700;background:#e8f0fb;color:#1a5db5;padding:2px 7px;border-radius:99px}
+.toc-num{font-size:10px;font-weight:700;background:#e8f0fb;color:#1a5db5;padding:2px 7px;border-radius:99px;white-space:nowrap}
 
 /* ── LAYOUT ── */
 .container{max-width:900px;margin:0 auto;padding:32px 20px 60px}
@@ -50,7 +50,7 @@ strong{color:#222}
 .step-desc{font-size:13px;color:#556;line-height:1.6}
 
 /* ── CARDS RÔLES ── */
-.roles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:12px}
+.roles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:12px}
 .role-card{border-radius:10px;padding:14px 16px;border:1.5px solid}
 .role-admin{background:#fff9e6;border-color:#f59e0b}
 .role-gestionnaire{background:#e8f4ff;border-color:#3b82f6}
@@ -65,6 +65,7 @@ strong{color:#222}
 .tip-icon{font-size:18px;flex-shrink:0}
 .warn{background:#fff8e1;color:#7a4800}
 .danger{background:#fff0f0;color:#7a0000}
+.success{background:#e8fff0;color:#1a6e3a}
 
 /* ── TABLE ── */
 table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0}
@@ -77,6 +78,10 @@ tr:hover td{background:#fafcff}
 .badge-free{background:#e5e7eb;color:#374151}
 .badge-starter{background:#dbeafe;color:#1d4ed8}
 .badge-pro{background:#fef3c7;color:#92400e}
+.badge-new{background:#dcfce7;color:#166534}
+
+/* ── NEW LABEL ── */
+.new-label{display:inline-block;background:#0D2657;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;margin-left:8px;vertical-align:middle}
 
 /* ── FOOTER ── */
 .footer{text-align:center;padding:32px;font-size:12px;color:#8a99b3}
@@ -95,7 +100,7 @@ tr:hover td{background:#fafcff}
 <div class="hero">
   <div class="hero-logo">🏢</div>
   <h1>Guide d'utilisation ImmoGest</h1>
-  <p>Tout ce qu'il faut savoir pour gérer vos immeubles, locataires, paiements et documents avec ImmoGest.</p>
+  <p>Tout ce qu'il faut savoir pour gérer vos immeubles, locataires, paiements, documents et bien plus avec ImmoGest.</p>
   <div class="hero-btns">
     <a href="guide.html" class="btn-dl" onclick="window.print();return false;">🖨️ Imprimer / Enregistrer en PDF</a>
     <a href="https://immogest-34w.pages.dev" class="btn-secondary" target="_blank">🚀 Accéder à l'application</a>
@@ -108,19 +113,21 @@ tr:hover td{background:#fafcff}
   <h2>📋 Table des matières</h2>
   <div class="toc-grid">
     <a href="#s1"><span class="toc-num">1</span> Présentation</a>
-    <a href="#s2"><span class="toc-num">2</span> Démarrage</a>
+    <a href="#s2"><span class="toc-num">2</span> Démarrage & Installation</a>
     <a href="#s3"><span class="toc-num">3</span> Rôles & accès</a>
-    <a href="#s4"><span class="toc-num">4</span> Immeubles</a>
-    <a href="#s5"><span class="toc-num">5</span> Locataires</a>
+    <a href="#s4"><span class="toc-num">4</span> Gestion des immeubles</a>
+    <a href="#s5"><span class="toc-num">5</span> Gestion des locataires</a>
     <a href="#s6"><span class="toc-num">6</span> Paiements</a>
-    <a href="#s7"><span class="toc-num">7</span> Documents</a>
-    <a href="#s8"><span class="toc-num">8</span> Rapports</a>
-    <a href="#s9"><span class="toc-num">9</span> Marketplace</a>
-    <a href="#s10"><span class="toc-num">10</span> IA intégrée</a>
-    <a href="#s11"><span class="toc-num">11</span> Paiement loyer en ligne</a>
-    <a href="#s12"><span class="toc-num">12</span> Abonnements</a>
-    <a href="#s13"><span class="toc-num">13</span> Paramètres</a>
-    <a href="#s14"><span class="toc-num">14</span> FAQ</a>
+    <a href="#s7"><span class="toc-num">7</span> Documents & Signatures</a>
+    <a href="#s8"><span class="toc-num">8</span> Module Juridique IA ✦</a>
+    <a href="#s9"><span class="toc-num">9</span> Rapports & Analyses</a>
+    <a href="#s10"><span class="toc-num">10</span> Marketplace</a>
+    <a href="#s11"><span class="toc-num">11</span> Assistant IA</a>
+    <a href="#s12"><span class="toc-num">12</span> Paiement loyer en ligne</a>
+    <a href="#s13"><span class="toc-num">13</span> Multi-espace</a>
+    <a href="#s14"><span class="toc-num">14</span> Abonnements</a>
+    <a href="#s15"><span class="toc-num">15</span> Paramètres</a>
+    <a href="#s16"><span class="toc-num">16</span> FAQ</a>
   </div>
 </div>
 </div>
@@ -133,18 +140,20 @@ tr:hover td{background:#fafcff}
     <div class="section-icon" style="background:#e8f0fb">🏢</div>
     <h2>1. Présentation d'ImmoGest <small>Qu'est-ce que c'est ?</small></h2>
   </div>
-  <p><strong>ImmoGest</strong> est une application web et mobile de gestion immobilière complète. Elle permet à un cabinet ou un particulier de gérer l'ensemble de son parc immobilier : immeubles, locataires, paiements, contrats, rapports et marketplace.</p>
+  <p><strong>ImmoGest</strong> est une application web et mobile de gestion immobilière complète. Elle permet à un cabinet ou un particulier de gérer l'ensemble de son parc immobilier : immeubles, locataires, paiements, contrats, rapports, juridique et marketplace — depuis n'importe quel appareil.</p>
 
   <h3>Ce que vous pouvez faire avec ImmoGest</h3>
   <ul>
     <li>Gérer plusieurs immeubles et des centaines de locataires</li>
-    <li>Enregistrer les paiements de loyer et générer des reçus</li>
-    <li>Suivre les arriérés et envoyer des relances automatiques</li>
-    <li>Générer des contrats de bail, mises en demeure, états des lieux</li>
-    <li>Produire des rapports financiers mensuels et annuels</li>
-    <li>Publier et consulter des annonces immobilières (marketplace)</li>
-    <li>Permettre à vos locataires de payer leur loyer en ligne</li>
-    <li>Consulter une IA spécialisée en immobilier</li>
+    <li>Enregistrer les paiements de loyer et générer des reçus automatiques</li>
+    <li>Suivre les arriérés et envoyer des relances WhatsApp en un clic</li>
+    <li>Générer des contrats de bail, mises en demeure, états des lieux (Word/PDF)</li>
+    <li>Signer des documents électroniquement</li>
+    <li>Produire des rapports financiers mensuels et annuels (avec charges détaillées)</li>
+    <li>Publier et consulter des annonces immobilières (marketplace publique)</li>
+    <li>Permettre à vos locataires de payer leur loyer en ligne (MoMo, Orange Money, Wave)</li>
+    <li>Obtenir des conseils juridiques et rédiger des actes via l'IA intégrée</li>
+    <li>Gérer plusieurs espaces (cabinets) depuis un seul compte</li>
   </ul>
 
   <h3>Disponibilité</h3>
@@ -152,40 +161,47 @@ tr:hover td{background:#fafcff}
     <tr><th>Plateforme</th><th>Accès</th></tr>
     <tr><td>🌐 Web (tous navigateurs)</td><td><a href="https://immogest-34w.pages.dev">immogest-34w.pages.dev</a></td></tr>
     <tr><td>📱 Android</td><td>Google Play Store — "ImmoGest"</td></tr>
-    <tr><td>🍎 iOS / iPhone</td><td>Ajoutez le site à votre écran d'accueil (PWA)</td></tr>
+    <tr><td>🍎 iOS / iPhone</td><td>Safari → Partager → "Sur l'écran d'accueil" (PWA)</td></tr>
+    <tr><td>💻 PC / Mac</td><td>Aucune installation — navigateur web uniquement</td></tr>
   </table>
+
+  <h3>Pays supportés</h3>
+  <p>ImmoGest est disponible dans <strong>7 pays</strong> avec devise, langue et cadre juridique adaptés automatiquement : Cameroun, Côte d'Ivoire, Sénégal, Mali, Burkina Faso, Togo, Bénin.</p>
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
 <div class="section" id="s2">
   <div class="section-header">
     <div class="section-icon" style="background:#e8f4e8">🚀</div>
-    <h2>2. Démarrage <small>Créer un compte et se connecter</small></h2>
+    <h2>2. Démarrage & Installation <small>Créer un compte et se connecter</small></h2>
   </div>
 
   <h3>Créer votre espace (administrateur)</h3>
   <div class="steps">
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Ouvrir ImmoGest</div><div class="step-desc">Rendez-vous sur <strong>immogest-34w.pages.dev</strong> ou ouvrez l'app Android.</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Choisir "Créer un espace"</div><div class="step-desc">Cliquez sur "Créer un espace" puis choisissez <strong>Mode individuel</strong> (un seul propriétaire) ou <strong>Mode cabinet</strong> (plusieurs utilisateurs).</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Renseigner vos informations</div><div class="step-desc">Entrez votre nom, un identifiant de connexion et un mot de passe sécurisé.</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Accéder au tableau de bord</div><div class="step-desc">Votre espace est créé. Vous bénéficiez d'un <strong>essai gratuit de 30 jours</strong> avec toutes les fonctionnalités débloquées.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Ouvrir ImmoGest</div><div class="step-desc">Rendez-vous sur <strong>immogest-34w.pages.dev</strong> ou ouvrez l'app Android depuis le Play Store.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Choisir "Créer un espace"</div><div class="step-desc">Sur l'écran d'accueil, cliquez <strong>Créer un espace</strong>. Choisissez <strong>Mode individuel</strong> (propriétaire seul) ou <strong>Mode cabinet</strong> (équipe de gestionnaires).</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Renseigner vos informations</div><div class="step-desc">Entrez votre nom, un identifiant de connexion et un mot de passe sécurisé (minimum 6 caractères).</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Accéder au tableau de bord</div><div class="step-desc">Votre espace est créé. Vous bénéficiez d'un <strong>essai gratuit de 30 jours</strong> avec toutes les fonctionnalités débloquées. Un assistant de bienvenue vous guide pour configurer votre cabinet.</div></div></div>
   </div>
 
   <h3>Se connecter (compte existant)</h3>
   <div class="steps">
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Cliquer sur "Se connecter"</div><div class="step-desc">Sur l'écran d'accueil, sélectionnez votre espace ou entrez votre identifiant.</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Entrer vos identifiants</div><div class="step-desc">Identifiant + mot de passe. Les données se synchronisent automatiquement depuis le cloud.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Sélectionner votre espace</div><div class="step-desc">Cliquez sur <strong>Se connecter</strong>. Si vous avez plusieurs espaces, un sélecteur s'affiche.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Entrer vos identifiants</div><div class="step-desc">Identifiant + mot de passe. Vos données sont synchronisées automatiquement depuis le cloud.</div></div></div>
   </div>
 
   <h3>Rejoindre un espace (locataire / employé)</h3>
-  <div class="tip"><div class="tip-icon">ℹ️</div><div>Si votre gestionnaire vous a donné un <strong>code d'invitation</strong> (format <strong>IM-XXXX</strong>), cliquez sur "Rejoindre un espace" et entrez ce code. Vous accéderez à votre espace personnel.</div></div>
+  <div class="tip"><div class="tip-icon">ℹ️</div><div>Si votre gestionnaire vous a donné un <strong>code d'invitation</strong> (format <strong>IM-XXXX</strong>), cliquez sur <strong>Rejoindre un espace</strong>, entrez ce code et créez votre mot de passe. Vous accédez directement à votre espace personnel.</div></div>
 
-  <h3>Installation</h3>
-  <ul>
-    <li><strong>Android</strong> : téléchargez ImmoGest depuis le <strong>Google Play Store</strong></li>
-    <li><strong>iPhone / iPad</strong> : ouvrez Safari → <strong>immogest-34w.pages.dev</strong> → icône partage ↑ → "Sur l'écran d'accueil"</li>
-    <li><strong>PC / Mac</strong> : aucune installation — accédez directement via votre navigateur</li>
-  </ul>
+  <h3>Installation sur mobile</h3>
+  <table>
+    <tr><th>Appareil</th><th>Procédure</th></tr>
+    <tr><td>📱 Android</td><td>Google Play Store → chercher "ImmoGest" → Installer</td></tr>
+    <tr><td>🍎 iPhone / iPad</td><td>Safari → <strong>immogest-34w.pages.dev</strong> → icône ↑ → "Sur l'écran d'accueil"</td></tr>
+    <tr><td>💻 PC / Mac</td><td>Aucune installation requise — navigateur Chrome, Firefox, Edge ou Safari</td></tr>
+  </table>
+
+  <div class="tip"><div class="tip-icon">💡</div><div>L'application fonctionne <strong>hors ligne</strong>. Vos données sont sauvegardées localement et synchronisées avec le cloud dès la reconnexion internet.</div></div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
@@ -194,7 +210,7 @@ tr:hover td{background:#fafcff}
     <div class="section-icon" style="background:#fef3c7">👥</div>
     <h2>3. Rôles & niveaux d'accès <small>Qui peut faire quoi ?</small></h2>
   </div>
-  <p>ImmoGest gère 5 rôles distincts. Chaque rôle a un accès adapté à ses responsabilités.</p>
+  <p>ImmoGest gère <strong>5 rôles</strong> distincts. Chaque rôle a un accès adapté à ses responsabilités.</p>
 
   <div class="roles-grid">
     <div class="role-card role-admin">
@@ -205,6 +221,7 @@ tr:hover td{background:#fafcff}
         <li>Configurer le cabinet</li>
         <li>Accès à la facturation</li>
         <li>Supprimer des données</li>
+        <li>Module juridique complet</li>
       </ul>
     </div>
     <div class="role-card role-gestionnaire">
@@ -212,8 +229,9 @@ tr:hover td{background:#fafcff}
       <ul>
         <li>Gérer immeubles & locataires</li>
         <li>Enregistrer paiements</li>
-        <li>Générer documents</li>
+        <li>Générer tous les documents</li>
         <li>Voir tous les rapports</li>
+        <li>Accès module juridique</li>
         <li>Pas d'accès facturation</li>
       </ul>
     </div>
@@ -223,6 +241,7 @@ tr:hover td{background:#fafcff}
         <li>Voir les finances</li>
         <li>Générer rapports</li>
         <li>Enregistrer paiements</li>
+        <li>Configurer MoMo</li>
         <li>Pas de modification locataires</li>
         <li>Pas d'accès utilisateurs</li>
       </ul>
@@ -233,8 +252,7 @@ tr:hover td{background:#fafcff}
         <li>Voir ses immeubles</li>
         <li>Consulter ses locataires</li>
         <li>Voir ses encaissements</li>
-        <li>Lecture seule</li>
-        <li>Portail dédié</li>
+        <li>Portail dédié en lecture</li>
       </ul>
     </div>
     <div class="role-card role-locataire">
@@ -243,7 +261,7 @@ tr:hover td{background:#fafcff}
         <li>Sa fiche de suivi</li>
         <li>Ses paiements</li>
         <li>Ses documents</li>
-        <li>Payer en ligne</li>
+        <li>Payer son loyer en ligne</li>
         <li>Lecture seule</li>
       </ul>
     </div>
@@ -254,8 +272,11 @@ tr:hover td{background:#fafcff}
     <li>Menu latéral → <strong>Gestion des utilisateurs</strong></li>
     <li>Cliquer <strong>+ Nouvel utilisateur</strong></li>
     <li>Choisir le rôle, entrer nom + identifiant + mot de passe</li>
-    <li>L'utilisateur reçoit un code d'invitation pour se connecter</li>
+    <li>L'utilisateur reçoit ses identifiants par WhatsApp automatiquement</li>
+    <li>Il se connecte avec le code d'invitation <strong>IM-XXXX</strong> de l'espace</li>
   </ol>
+
+  <div class="tip"><div class="tip-icon">💡</div><div>Les identifiants sont automatiquement envoyés par WhatsApp à la création d'un locataire ou d'un utilisateur, si un numéro de téléphone est renseigné.</div></div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
@@ -267,21 +288,36 @@ tr:hover td{background:#fafcff}
 
   <h3>Ajouter un immeuble</h3>
   <div class="steps">
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Cliquer "＋ Immeuble"</div><div class="step-desc">Bouton en haut à droite du tableau de bord, ou via la barre latérale.</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Remplir les informations</div><div class="step-desc">Nom de l'immeuble, propriétaire, ville, quartier, couleur d'identification. Entrez la composition : nombre d'appartements, studios, chambres, duplex.</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Configurer la commission (optionnel)</div><div class="step-desc">Saisissez le montant ou pourcentage de commission du cabinet sur cet immeuble.</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Configurer le paiement loyer (optionnel)</div><div class="step-desc">Activez MoMo, Orange Money ou votre plateforme de paiement pour les locataires de cet immeuble.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Cliquer "＋ Immeuble"</div><div class="step-desc">Bouton en haut à droite du tableau de bord, ou via la barre latérale → "＋".</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Remplir les informations</div><div class="step-desc">Nom de l'immeuble, propriétaire associé, ville, quartier, couleur d'identification. Saisissez la composition : nombre d'appartements, studios, chambres, duplex, commerces.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Configurer la commission (optionnel)</div><div class="step-desc">Saisissez le montant fixe ou le pourcentage de commission du cabinet sur cet immeuble. Sera déduit automatiquement dans les rapports.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Configurer le paiement loyer (optionnel)</div><div class="step-desc">Activez MoMo, Orange Money ou une plateforme de paiement pour les locataires de cet immeuble. Peut être différent pour chaque immeuble.</div></div></div>
   </div>
 
   <h3>Naviguer dans un immeuble</h3>
-  <p>Cliquez sur un immeuble dans la barre latérale pour voir :</p>
+  <p>Cliquez sur un immeuble dans la barre latérale (pliable avec ☰) pour voir :</p>
   <ul>
-    <li><strong>Liste des locaux</strong> : occupés (verts), libres (gris), en retard (rouges)</li>
-    <li><strong>Métriques</strong> : loyers attendus, encaissés, arriérés, taux d'occupation</li>
-    <li><strong>Actions rapides</strong> : ajouter locataire, enregistrer paiement, générer rapport</li>
+    <li><strong>Carte des locaux</strong> : occupés (verts), libres (gris), en retard (rouges), partiels (orange)</li>
+    <li><strong>Métriques clés</strong> : loyers attendus, encaissés, arriérés, taux d'occupation</li>
+    <li><strong>Actions rapides</strong> : ajouter locataire, paiement, rapport</li>
   </ul>
 
-  <div class="tip"><div class="tip-icon">💡</div><div>Faites un <strong>clic droit</strong> sur un immeuble dans la barre latérale pour accéder au menu rapide : Ouvrir, Paiement, Modifier, Config paiement loyer, Rapport, Supprimer.</div></div>
+  <h3>Menu contextuel d'un immeuble</h3>
+  <p>Faites un <strong>clic droit</strong> (ou appui long sur mobile) sur un immeuble dans la barre latérale :</p>
+  <ul>
+    <li>📂 Ouvrir</li>
+    <li>💰 Paiement rapide</li>
+    <li>✏️ Modifier les infos</li>
+    <li>⚙️ Config paiement loyer</li>
+    <li>📊 Rapport mensuel</li>
+    <li>👥 Voir les locataires</li>
+    <li>🗑️ Supprimer</li>
+  </ul>
+
+  <h3>Ajouter un local supplémentaire</h3>
+  <p>Depuis la vue d'un immeuble → bouton <strong>+ Local</strong> (ou menu actions de l'immeuble). Saisissez le type (studio, chambre, appartement…) et le numéro.</p>
+
+  <div class="tip"><div class="tip-icon">💡</div><div>La <strong>barre latérale est pliable</strong> : cliquez le bouton ☰ pour l'ouvrir ou la réduire et avoir plus d'espace sur l'écran.</div></div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
@@ -293,27 +329,44 @@ tr:hover td{background:#fafcff}
 
   <h3>Ajouter un locataire</h3>
   <div class="steps">
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Ouvrir l'immeuble → "＋ Locataire"</div><div class="step-desc">Ou via le menu "Actions" d'un local libre.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Ouvrir l'immeuble → "＋ Locataire"</div><div class="step-desc">Ou via le menu actions d'un local libre, ou depuis le bouton "+ Locataire" de la topbar.</div></div></div>
     <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Informations personnelles</div><div class="step-desc">Nom complet, téléphone, numéro de CNI (optionnel), type de local, numéro de local.</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Conditions financières</div><div class="step-desc">Montant du loyer, montant de la caution, date d'entrée, jour de paiement dans le mois.</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Arriérés initiaux (optionnel)</div><div class="step-desc">Si le locataire arrive avec des mois déjà dus, saisissez le montant restant dû.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Conditions financières</div><div class="step-desc">Montant du loyer, caution versée, date d'entrée, jour de paiement habituel dans le mois.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Arriérés initiaux (optionnel)</div><div class="step-desc">Si le locataire reprend un bail avec des mois déjà dus, saisissez le montant restant dû à l'entrée.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Envoi automatique des identifiants</div><div class="step-desc">Si un téléphone est renseigné, un message WhatsApp avec les identifiants de connexion est envoyé automatiquement au locataire.</div></div></div>
   </div>
 
   <h3>Fiche de suivi</h3>
-  <p>La fiche de suivi est le document central d'un locataire. Elle présente :</p>
+  <p>La fiche de suivi est le document central d'un locataire :</p>
   <ul>
     <li>Historique complet des paiements mois par mois</li>
-    <li>Solde restant dû ou avance</li>
+    <li>Solde actuel : restant dû ou avance créditrice</li>
     <li>Statut de chaque mois : payé ✅, partiel 🟡, impayé ❌</li>
+    <li>Bouton <strong>✨ Analyse IA</strong> : rapport automatique sur le comportement de paiement</li>
     <li>Téléchargeable en PDF</li>
-    <li>Analysable par l'IA</li>
+    <li>Score de fiabilité du locataire</li>
   </ul>
-  <p>Accès : clic sur un locataire → <strong>📋 Fiche de suivi</strong>, ou clic droit → Fiche de suivi.</p>
+  <p>Accès : clic sur le nom d'un locataire, ou clic droit → <strong>📋 Fiche de suivi</strong>.</p>
+
+  <h3>Menu contextuel d'un locataire</h3>
+  <p>Clic droit sur un locataire :</p>
+  <ul>
+    <li>📋 Fiche de suivi</li>
+    <li>💰 Enregistrer un paiement</li>
+    <li>📝 Générer un contrat</li>
+    <li>⚖️ Mise en demeure</li>
+    <li>📋 État des lieux</li>
+    <li>🔑 PIN locataire (code d'accès à sa fiche)</li>
+    <li>📦 Archiver (départ)</li>
+  </ul>
 
   <h3>Archiver / Départ d'un locataire</h3>
-  <p>Clic droit sur le locataire → <strong>Archiver</strong>. Saisissez la date de sortie et le motif. Le locataire est retiré de la liste active mais ses données sont conservées dans les archives.</p>
+  <p>Clic droit → <strong>Archiver</strong>. Saisissez la date de sortie et le motif. Le locataire est retiré de la liste active mais ses données sont conservées dans les archives.</p>
 
-  <div class="tip warn"><div class="tip-icon">⚠️</div><div>Un locataire archivé n'est pas supprimé. Ses paiements restent dans les rapports historiques.</div></div>
+  <h3>Restaurer un locataire archivé</h3>
+  <p>Menu → <strong>Archives</strong> → trouvez le locataire → bouton <strong>Restaurer</strong>. Toutes ses données (paiements, documents) reviennent intact.</p>
+
+  <div class="tip warn"><div class="tip-icon">⚠️</div><div>Un locataire archivé n'est jamais supprimé. Ses paiements continuent d'apparaître dans les rapports historiques.</div></div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
@@ -325,234 +378,482 @@ tr:hover td{background:#fafcff}
 
   <h3>Enregistrer un paiement</h3>
   <div class="steps">
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Cliquer "＋ Paiement"</div><div class="step-desc">Bouton dans la topbar, ou clic droit sur un locataire → Paiement.</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Sélectionner le locataire</div><div class="step-desc">Cherchez par nom ou sélectionnez dans la liste.</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Remplir les détails</div><div class="step-desc">Montant, date, type (loyer / caution / autre), mode (espèces, virement, MoMo…), note optionnelle.</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Valider</div><div class="step-desc">Le solde du locataire est mis à jour instantanément. Un reçu peut être généré immédiatement.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Cliquer "＋ Paiement"</div><div class="step-desc">Bouton dans la topbar, ou clic droit sur un locataire → Paiement, ou depuis la page Encaissements.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Sélectionner le locataire</div><div class="step-desc">Cherchez par nom ou sélectionnez dans la liste déroulante.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Remplir les détails</div><div class="step-desc">Montant, date, type (loyer / caution / réparation / autre), mode de paiement (espèces, virement, MoMo, Orange Money, Wave, chèque…), note optionnelle.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Valider</div><div class="step-desc">Le solde du locataire est mis à jour instantanément. Un reçu peut être généré immédiatement en cliquant 🖨️.</div></div></div>
   </div>
 
   <h3>Paiements partiels</h3>
-  <p>Si un locataire paie partiellement, saisissez le montant exact. ImmoGest calcule automatiquement combien de mois sont couverts et met à jour le solde restant dû.</p>
+  <p>Si un locataire paie partiellement, saisissez le montant exact reçu. ImmoGest calcule automatiquement combien de mois sont couverts (complets ou partiels) et met à jour le solde restant dû.</p>
 
   <h3>Page Encaissements</h3>
-  <p>Menu → <strong>Encaissements</strong> : vue de tous les paiements du mois en cours, avec filtres par immeuble, mois et type.</p>
+  <p>Menu → <strong>Encaissements</strong> : liste de tous les paiements enregistrés, avec filtres par immeuble, mois et type. Chaque ligne affiche un bouton reçu 🖨️.</p>
 
-  <h3>Relances automatiques</h3>
-  <p>Menu → <strong>Relances</strong> : liste de tous les locataires en retard, avec un bouton pour envoyer un message WhatsApp de rappel prédéfini en un clic.</p>
+  <h3>Relances automatiques WhatsApp</h3>
+  <p>Menu → <strong>Relances</strong> : liste de tous les locataires en retard (classés par montant dû). Bouton <strong>📱 WhatsApp</strong> pour envoyer instantanément un message de rappel prédéfini avec le montant exact dû.</p>
+
+  <div class="tip"><div class="tip-icon">💡</div><div>L'IA peut <strong>prioriser automatiquement les dossiers</strong> en retard selon leur montant, leur durée d'arriéré et leur historique. Bouton ✨ dans la page Relances.</div></div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
 <div class="section" id="s7">
   <div class="section-header">
     <div class="section-icon" style="background:#fff5e8">📄</div>
-    <h2>7. Documents <small>Contrats, reçus, mises en demeure</small></h2>
+    <h2>7. Documents & Signatures <small>Contrats, reçus, mises en demeure, signature électronique</small></h2>
   </div>
 
   <h3>Générer un reçu de paiement</h3>
-  <p>Après chaque paiement enregistré, cliquez sur <strong>🖨️ Reçu</strong> dans la ligne du paiement (page Encaissements). Le reçu au format PDF est généré avec les informations du cabinet, du locataire et du paiement.</p>
+  <p>Après chaque paiement enregistré, cliquez sur <strong>🖨️</strong> dans la ligne du paiement (page Encaissements ou fiche de suivi). Le reçu PDF est généré avec les informations du cabinet, du locataire et du paiement. Il inclut automatiquement le logo de votre cabinet si configuré.</p>
 
   <h3>Générer un contrat de bail</h3>
   <ol>
-    <li>Clic droit sur un locataire → <strong>📝 Contrat</strong></li>
-    <li>Vérifiez les informations pré-remplies</li>
+    <li>Clic droit sur un locataire → <strong>📝 Contrat de bail</strong></li>
+    <li>Les informations du locataire, de l'immeuble et du cabinet sont pré-remplies</li>
     <li>Cliquez <strong>Générer le contrat</strong> → téléchargement Word (.docx)</li>
+    <li>Le contrat est conforme au droit de votre pays (sélectionné dans Paramètres)</li>
   </ol>
-  <div class="tip"><div class="tip-icon">💡</div><div>Vous pouvez uploader un modèle de contrat personnalisé (fichier .docx) dans Paramètres → Modèles. ImmoGest remplira automatiquement les variables.</div></div>
 
   <h3>Mise en demeure</h3>
-  <p>Pour les locataires en retard : clic droit → <strong>⚖️ Mise en demeure</strong>. Choisissez le modèle et générez le document officiel.</p>
+  <p>Pour les locataires en retard : clic droit → <strong>⚖️ Mise en demeure</strong>. Le document est généré automatiquement avec le montant exact des arriérés, les références légales de votre pays et les coordonnées de votre cabinet.</p>
 
   <h3>État des lieux</h3>
-  <p>Disponible à l'entrée et à la sortie du locataire. Clic droit → <strong>📋 État des lieux</strong>.</p>
+  <p>Disponible à l'entrée et à la sortie du locataire. Clic droit → <strong>📋 État des lieux</strong>. Le document liste les pièces et leur état, avec espace pour photos et signatures.</p>
 
-  <h3>Bibliothèque juridique</h3>
-  <p>Menu → <strong>Bibliothèque</strong> : accédez à des modèles de documents juridiques immobiliers (baux, quittances, congés, relances) adaptés à votre pays.</p>
+  <h3>Signature électronique <span class="new-label">NOUVEAU</span></h3>
+  <p>Tous les documents générés (contrat, état des lieux, mise en demeure) peuvent être signés électroniquement :</p>
+  <ol>
+    <li>Générez le document</li>
+    <li>Cliquez <strong>✍️ Signer</strong> sur le document affiché</li>
+    <li>Tracez votre signature au doigt ou à la souris dans le cadre</li>
+    <li>La signature est intégrée au document PDF</li>
+    <li>Partagez via WhatsApp ou email pour la contre-signature</li>
+  </ol>
+
+  <h3>Bibliothèque de modèles</h3>
+  <p>Menu → <strong>Bibliothèque</strong> : modèles de documents juridiques immobiliers adaptés à chaque pays (baux, quittances, congés, mises en demeure, courriers officiels). Téléchargeables et modifiables.</p>
+
+  <div class="tip"><div class="tip-icon">💡</div><div>Les en-têtes de tous les documents incluent automatiquement le <strong>nom, logo, téléphone et adresse du cabinet</strong> configurés dans Paramètres → Cabinet.</div></div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
 <div class="section" id="s8">
   <div class="section-header">
-    <div class="section-icon" style="background:#e8f0fb">📊</div>
-    <h2>8. Rapports <small>Financier mensuel, annuel, par immeuble</small></h2>
+    <div class="section-icon" style="background:#f3e8ff">⚖️</div>
+    <h2>8. Module Juridique IA <span class="new-label">NOUVEAU</span> <small>Actes juridiques et conseils assistés par l'IA</small></h2>
   </div>
 
-  <h3>Rapport mensuel par immeuble</h3>
-  <p>Menu → <strong>Rapports</strong> → sélectionnez un immeuble et un mois. Le rapport affiche :</p>
+  <p>Le Module Juridique est la fonctionnalité la plus avancée d'ImmoGest. Il combine des modèles d'actes juridiques immobiliers avec l'intelligence artificielle pour vous guider dans toutes les situations légales.</p>
+
+  <h3>Accéder au Module Juridique</h3>
+  <p>Menu latéral → <strong>⚖️ Juridique</strong>. Accès réservé aux rôles Admin et Gestionnaire.</p>
+
+  <h3>Actes juridiques disponibles</h3>
+  <table>
+    <tr><th>Catégorie</th><th>Actes disponibles</th></tr>
+    <tr><td>📝 Baux</td><td>Contrat de bail standard, bail commercial, bail précaire, renouvellement</td></tr>
+    <tr><td>⚠️ Contentieux</td><td>Mise en demeure, commandement de payer, résiliation de bail, congé</td></tr>
+    <tr><td>🔄 Transactions</td><td>Quittance de loyer, avenant, état des lieux, restitution caution</td></tr>
+    <tr><td>📋 Gestion</td><td>Mandat de gestion, procuration, règlement intérieur</td></tr>
+  </table>
+
+  <h3>Générer un acte juridique</h3>
+  <div class="steps">
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Choisir le type d'acte</div><div class="step-desc">Dans le Module Juridique, sélectionnez la catégorie puis l'acte souhaité.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Sélectionner le locataire (si applicable)</div><div class="step-desc">Les données du locataire, de l'immeuble et du cabinet sont injectées automatiquement dans le modèle.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Personnaliser si nécessaire</div><div class="step-desc">Modifiez les champs spécifiques à la situation (motif, montants, dates).</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Générer et télécharger</div><div class="step-desc">Document Word (.docx) ou PDF, prêt à imprimer et signer.</div></div></div>
+  </div>
+
+  <h3>Consultation juridique IA</h3>
+  <p>L'IA intégrée peut répondre à vos questions juridiques immobilières :</p>
   <ul>
-    <li>Liste des locataires avec statut de paiement</li>
-    <li>Total attendu vs encaissé</li>
-    <li>Arriérés cumulés</li>
-    <li>Commission du cabinet</li>
-    <li>Versement net au propriétaire</li>
+    <li>"Quels sont mes droits si mon locataire ne paie pas depuis 3 mois ?"</li>
+    <li>"Comment résilier un bail en Côte d'Ivoire ?"</li>
+    <li>"Le locataire a dégradé l'appartement, quelle procédure suivre ?"</li>
+    <li>"Quel est le délai légal de préavis dans mon pays ?"</li>
   </ul>
+  <p>L'IA connaît le cadre juridique de votre pays (sélectionné dans Paramètres) et adapte ses réponses en conséquence.</p>
 
-  <h3>Rapport annuel</h3>
-  <p>Menu → <strong>Rapport annuel</strong> : vue consolidée de toute l'année avec graphiques (revenus par mois, taux de recouvrement, évolution des arriérés).</p>
+  <h3>Rédaction assistée par IA</h3>
+  <p>Pour les cas complexes, l'IA peut rédiger un acte sur mesure :</p>
+  <ol>
+    <li>Décrivez votre situation en langage naturel dans le chat IA</li>
+    <li>L'IA génère le texte de l'acte adapté à votre cas</li>
+    <li>Relisez, modifiez si nécessaire</li>
+    <li>Téléchargez en Word ou PDF</li>
+  </ol>
 
-  <h3>Export</h3>
-  <p>Tous les rapports sont exportables en <strong>PDF</strong> et en <strong>Word (.docx)</strong>. Bouton <strong>⬇ Exporter</strong> en haut du rapport.</p>
-
-  <div class="tip"><div class="tip-icon">💡</div><div>Le rapport peut être envoyé directement au propriétaire via WhatsApp en un clic.</div></div>
+  <div class="tip"><div class="tip-icon">⚙️</div><div>Pour utiliser la consultation IA, configurez votre clé API Anthropic dans <strong>Paramètres → Intégrations → IA</strong>. La clé est stockée uniquement sur votre appareil.</div></div>
+  <div class="tip warn"><div class="tip-icon">⚠️</div><div>Les actes générés par l'IA sont des suggestions à titre indicatif. Pour des situations complexes ou contentieuses, consultez un avocat spécialisé.</div></div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
 <div class="section" id="s9">
   <div class="section-header">
-    <div class="section-icon" style="background:#f0fff4">🏘️</div>
-    <h2>9. Marketplace <small>Publier et trouver des annonces</small></h2>
+    <div class="section-icon" style="background:#e8f0fb">📊</div>
+    <h2>9. Rapports & Analyses <small>Financier mensuel, annuel, charges, exportation</small></h2>
   </div>
 
-  <p>La marketplace ImmoGest permet de publier des annonces immobilières visibles par tout le monde, sans compte requis pour consulter.</p>
+  <h3>Rapport mensuel par immeuble</h3>
+  <p>Menu → <strong>Rapports</strong> → sélectionnez un immeuble et un mois. Le rapport affiche :</p>
+  <ul>
+    <li>Liste des locataires avec statut de paiement (payé / partiel / impayé)</li>
+    <li>Total attendu vs encaissé, avec taux de recouvrement</li>
+    <li>Arriérés cumulés et évolution</li>
+    <li>Commission du cabinet</li>
+    <li>Versement net au propriétaire</li>
+    <li><strong>Charges déductibles</strong> (voir ci-dessous)</li>
+  </ul>
 
-  <h3>Publier une annonce</h3>
-  <div class="steps">
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Accéder à la Marketplace</div><div class="step-desc">Menu latéral → <strong>🏘️ Marketplace</strong> (s'ouvre dans un onglet dédié).</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Cliquer "+ Publier"</div><div class="step-desc">Remplissez : type de bien, ville, quartier, prix, description, photos (URL), contact WhatsApp.</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Choisir la visibilité</div><div class="step-desc">Annonce standard (gratuite) ou <strong>boostée</strong> (mise en avant, badge "Boost") via un paiement NotchPay.</div></div></div>
-  </div>
+  <h3>Charges par catégorie <span class="new-label">NOUVEAU</span></h3>
+  <p>Dans le rapport mensuel, une section <strong>Charges</strong> permet de déduire les dépenses de l'immeuble :</p>
+  <table>
+    <tr><th>Catégorie</th><th>Exemples</th></tr>
+    <tr><td>🔧 Entretien</td><td>Réparations, nettoyage, jardinage</td></tr>
+    <tr><td>💡 Énergie</td><td>Électricité parties communes, eau</td></tr>
+    <tr><td>👮 Sécurité</td><td>Gardien, alarme, caméras</td></tr>
+    <tr><td>📋 Administratif</td><td>Assurance, frais bancaires, honoraires</td></tr>
+    <tr><td>🏗️ Travaux</td><td>Rénovations, aménagements</td></tr>
+    <tr><td>➕ Autre</td><td>Toute dépense personnalisée</td></tr>
+  </table>
+  <p>Le <strong>résultat net</strong> (encaissements − charges − commission) est affiché clairement dans le rapport et dans l'export DOCX.</p>
 
-  <h3>Contacter un vendeur</h3>
-  <p>Chaque annonce affiche un bouton <strong>💬 WhatsApp</strong> pour contacter directement le propriétaire. Aucun intermédiaire.</p>
+  <h3>Rapport annuel</h3>
+  <p>Menu → <strong>Rapport annuel</strong> : vue consolidée de toute l'année avec :</p>
+  <ul>
+    <li>Graphique des revenus mensuels</li>
+    <li>Taux de recouvrement moyen sur l'année</li>
+    <li>Évolution des arriérés mois par mois</li>
+    <li>Total charges annuelles par catégorie</li>
+    <li>Résultat net annuel par immeuble</li>
+  </ul>
 
-  <h3>Boost d'annonce</h3>
-  <p>Une annonce boostée apparaît en tête de liste avec un badge coloré. Le boost est payé via NotchPay (MoMo, Orange Money, Wave, carte). Durée : 7 ou 30 jours selon le plan choisi.</p>
+  <h3>Export et partage</h3>
+  <ul>
+    <li><strong>PDF</strong> : impression directe depuis le navigateur</li>
+    <li><strong>Word (.docx)</strong> : document complet avec en-tête cabinet, logo, tableaux formatés</li>
+    <li><strong>WhatsApp</strong> : envoi direct au propriétaire en un clic</li>
+  </ul>
+
+  <div class="tip"><div class="tip-icon">💡</div><div>L'IA peut <strong>analyser votre rapport</strong> et identifier les tendances : mois le moins performant, locataires chroniquement en retard, immeuble le plus rentable.</div></div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
 <div class="section" id="s10">
   <div class="section-header">
-    <div class="section-icon" style="background:#f5f0ff">✨</div>
-    <h2>10. Assistant IA <small>Conseils et analyses intelligentes</small></h2>
+    <div class="section-icon" style="background:#f0fff4">🏘️</div>
+    <h2>10. Marketplace <small>Publier, trouver et booster des annonces immobilières</small></h2>
   </div>
 
-  <p>ImmoGest intègre un assistant IA spécialisé en immobilier. Il s'adapte à votre rôle et n'affiche que les informations pertinentes.</p>
+  <p>La marketplace ImmoGest est une plateforme publique d'annonces immobilières — visible sans compte, accessible depuis le menu principal. Elle accueille propriétaires particuliers, agents immobiliers et agences.</p>
 
-  <h3>Ouvrir l'assistant IA</h3>
-  <p>Cliquez sur le bouton <strong>✨</strong> en bas à droite de l'écran (visible uniquement si vous êtes connecté).</p>
+  <h3>Accéder à la Marketplace</h3>
+  <p>Menu latéral → <strong>🏘️ Marketplace</strong> (s'ouvre dans un onglet dédié pour isolation totale). Ou directement via <strong>immogest-34w.pages.dev/marche.html</strong>.</p>
 
-  <h3>Ce que l'IA peut faire</h3>
+  <h3>Publier une annonce</h3>
+  <div class="steps">
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Cliquer "+ Publier une annonce"</div><div class="step-desc">Bouton visible sur la marketplace. Vous devez être connecté à votre espace ImmoGest.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Remplir l'annonce</div><div class="step-desc">Type de bien (appartement, studio, maison, bureau, terrain, commerce…), ville, quartier, superficie, prix, description détaillée, photos (URL), numéro WhatsApp.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Choisir la visibilité</div><div class="step-desc">Annonce standard (gratuite, dans la liste normale) ou <strong>Boostée</strong> (mise en avant, badge coloré, position prioritaire).</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Publier</div><div class="step-desc">L'annonce est visible immédiatement par tout le monde, sans compte requis pour consulter.</div></div></div>
+  </div>
+
+  <h3>Boost d'annonce</h3>
+  <p>Une annonce <strong>boostée</strong> apparaît en tête de liste avec un badge "🚀 Boost" visible. Le boost est payé via <strong>NotchPay</strong> (MoMo, Orange Money, Wave, carte bancaire).</p>
+  <table>
+    <tr><th>Durée</th><th>Visibilité</th></tr>
+    <tr><td>7 jours</td><td>Position prioritaire 1 semaine</td></tr>
+    <tr><td>30 jours</td><td>Position prioritaire 1 mois</td></tr>
+  </table>
+
+  <h3>Espace Agents & Agences <span class="new-label">NOUVEAU</span></h3>
+  <p>La marketplace dispose d'un espace dédié aux professionnels de l'immobilier :</p>
   <ul>
-    <li><strong>Admin / Gestionnaire</strong> : analyser le taux de recouvrement, identifier les locataires à risque, résumer les arriérés, suggérer des actions</li>
-    <li><strong>Comptable</strong> : analyser les flux financiers, projections de revenus</li>
-    <li><strong>Propriétaire</strong> : résumé de ses revenus, statut de ses locataires</li>
-    <li><strong>Locataire</strong> : consulter le résumé de sa situation, comprendre son solde</li>
+    <li>Profil agent avec photo, zone géographique, spécialités et coordonnées</li>
+    <li>Badge <strong>Agent Certifié</strong> (plan Pro)</li>
+    <li>Annonces taguées "Agent" pour plus de crédibilité</li>
+    <li>Mise en avant dans la section "Agents de confiance"</li>
+    <li>Upgrade vers le profil Agent Pro via NotchPay</li>
   </ul>
 
-  <h3>Analyse d'un dossier locataire</h3>
-  <p>Dans la fiche de suivi → bouton <strong>✨ Analyse IA</strong> : l'IA génère un rapport complet sur le comportement de paiement du locataire.</p>
+  <h3>Visites virtuelles 3D <span class="new-label">NOUVEAU</span></h3>
+  <p>Chaque annonce peut proposer une <strong>visite virtuelle 3D</strong> :</p>
+  <ul>
+    <li>Bouton <strong>🏠 Visite 3D</strong> sur l'annonce</li>
+    <li>Le visiteur remplit un formulaire (nom, téléphone, date souhaitée)</li>
+    <li>Le propriétaire est contacté automatiquement par WhatsApp pour confirmer</li>
+    <li>Idéal pour les acheteurs ou locataires hors de la ville</li>
+  </ul>
 
-  <div class="tip"><div class="tip-icon">💡</div><div>L'IA connaît vos données réelles (immeubles, locataires, paiements) et peut répondre à des questions comme "Quel est mon taux de recouvrement ce mois ?" ou "Quels locataires ont plus de 2 mois d'arriérés ?"</div></div>
+  <h3>Partage d'annonce</h3>
+  <p>Chaque annonce dispose de boutons de partage direct sur <strong>WhatsApp</strong>, <strong>Facebook</strong>, <strong>X (Twitter)</strong> et <strong>Instagram</strong>. Un lien unique est généré pour chaque annonce.</p>
+
+  <h3>Filtres et recherche</h3>
+  <p>Les visiteurs peuvent filtrer les annonces par :</p>
+  <ul>
+    <li>Type de bien (location / vente)</li>
+    <li>Ville et quartier</li>
+    <li>Fourchette de prix</li>
+    <li>Type de logement (studio, appartement, maison…)</li>
+  </ul>
+
+  <h3>Conformité légale</h3>
+  <p>La marketplace est conforme aux réglementations immobilières de <strong>7 pays</strong> : chaque annonce affiche les mentions légales appropriées selon le pays de la propriété. CGU, politique de confidentialité et licences agents sont intégrées.</p>
+
+  <div class="tip"><div class="tip-icon">💡</div><div>La marketplace est disponible en <strong>6 langues</strong> : français, anglais, portugais, espagnol, haoussa, arabe. La langue est détectée automatiquement selon le navigateur.</div></div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
 <div class="section" id="s11">
   <div class="section-header">
-    <div class="section-icon" style="background:#e8fff0">💳</div>
-    <h2>11. Paiement de loyer en ligne <small>MoMo, Orange Money, plateforme</small></h2>
+    <div class="section-icon" style="background:#f5f0ff">✨</div>
+    <h2>11. Assistant IA <small>Conseils, analyses et rédaction intelligentes</small></h2>
   </div>
 
-  <h3>Pour l'administrateur — Configuration</h3>
-  <div class="steps">
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Paramètres globaux</div><div class="step-desc">Menu → <strong>Paramètres</strong> → section "Paiement loyer en ligne". Activez MTN MoMo, Orange Money et/ou votre plateforme de paiement.</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Config par immeuble (optionnel)</div><div class="step-desc">Clic droit sur un immeuble → <strong>⚙️ Config paiement loyer</strong>. Cochez "Utiliser une configuration spécifique" pour des numéros différents sur cet immeuble.</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Choisir la plateforme</div><div class="step-desc">Options : <strong>Lien personnalisé</strong> (URL avec {montant}), <strong>NotchPay</strong> (clé API), <strong>CinetPay</strong>, <strong>PayDunya</strong>, <strong>Wave</strong>.</div></div></div>
-  </div>
+  <p>ImmoGest intègre un assistant IA de nouvelle génération (Claude par Anthropic). Il s'adapte automatiquement à votre rôle et connaît vos données réelles (immeubles, locataires, paiements).</p>
 
-  <h3>Pour le locataire — Payer son loyer</h3>
+  <h3>Ouvrir l'assistant IA</h3>
+  <p>Cliquez sur le bouton <strong>✨</strong> flottant en bas à droite de l'écran. Il est visible uniquement si vous êtes connecté et que l'IA est configurée.</p>
+
+  <h3>Ce que l'IA peut faire selon votre rôle</h3>
+  <table>
+    <tr><th>Rôle</th><th>Capacités IA</th></tr>
+    <tr><td>👑 Admin / 🏢 Gestionnaire</td><td>Analyser le taux de recouvrement, identifier les locataires à risque, résumer les arriérés, prioriser les relances, conseils juridiques, rédiger des actes</td></tr>
+    <tr><td>📊 Comptable</td><td>Analyser les flux financiers, projections de revenus, résumé des charges, résultat net</td></tr>
+    <tr><td>🏠 Propriétaire</td><td>Résumé de ses revenus du mois, statut de ses locataires, comparatif mensuel</td></tr>
+    <tr><td>🔑 Locataire</td><td>Comprendre son solde, résumé de sa situation, prochaine date de paiement</td></tr>
+  </table>
+
+  <h3>Exemples de questions</h3>
+  <ul>
+    <li>"Quel est mon taux de recouvrement ce mois ?"</li>
+    <li>"Quels locataires ont plus de 2 mois d'arriérés ?"</li>
+    <li>"Combien ai-je encaissé en Immeuble Bastos depuis janvier ?"</li>
+    <li>"Rédige une mise en demeure pour M. Dupont qui doit 3 mois de loyer"</li>
+    <li>"Est-ce que je peux expulser un locataire après 2 mois d'impayés au Cameroun ?"</li>
+    <li>"Génère un résumé mensuel à envoyer au propriétaire"</li>
+  </ul>
+
+  <h3>Analyse d'un dossier locataire</h3>
+  <p>Dans la fiche de suivi → bouton <strong>✨ Analyse IA</strong> : l'IA génère un rapport complet sur le comportement de paiement du locataire (ponctualité, tendances, risque).</p>
+
+  <h3>Configuration requise</h3>
   <ol>
-    <li>Ouvrir sa fiche de suivi (via le code d'invitation IM-XXXX)</li>
-    <li>Le bloc <strong>💳 Payer votre loyer</strong> affiche les options configurées</li>
-    <li>Cliquer sur le numéro MoMo/OM pour le copier, ou cliquer <strong>Payer en ligne</strong></li>
-    <li>Si NotchPay : la page de paiement s'ouvre, le locataire choisit son mode (MoMo, carte, Wave…)</li>
-    <li>Après paiement : le paiement est <strong>enregistré automatiquement</strong> dans la fiche de suivi</li>
+    <li>Créez un compte sur <strong>console.anthropic.com</strong></li>
+    <li>Générez une clé API (menu "API Keys" → "+ Create Key")</li>
+    <li>Dans ImmoGest : <strong>Paramètres → Intégrations → IA</strong></li>
+    <li>Collez la clé et cliquez "Enregistrer"</li>
+    <li>Cliquez "Tester la connexion" pour vérifier</li>
   </ol>
 
-  <div class="tip"><div class="tip-icon">✅</div><div>Avec NotchPay, l'enregistrement du paiement est <strong>entièrement automatique</strong> : fiche de suivi, solde et rapport sont mis à jour dès la confirmation du paiement.</div></div>
+  <div class="tip"><div class="tip-icon">🔒</div><div>Votre clé API est stockée <strong>uniquement sur votre appareil</strong> (dans le navigateur). Elle n'est jamais envoyée à nos serveurs ni partagée.</div></div>
+  <div class="tip"><div class="tip-icon">💰</div><div>L'IA est facturée directement par Anthropic sur votre compte (environ 0,20 à 0,50 USD/mois pour une utilisation normale). Vous gardez le contrôle total de votre consommation.</div></div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
 <div class="section" id="s12">
   <div class="section-header">
-    <div class="section-icon" style="background:#fef9e7">⭐</div>
-    <h2>12. Abonnements <small>Plans et renouvellement</small></h2>
+    <div class="section-icon" style="background:#e8fff0">💳</div>
+    <h2>12. Paiement de loyer en ligne <small>MoMo, Orange Money, plateformes intégrées</small></h2>
   </div>
 
-  <h3>Plans disponibles</h3>
-  <table>
-    <tr><th>Plan</th><th>Prix</th><th>Immeubles</th><th>Locataires</th><th>Fonctionnalités</th></tr>
-    <tr><td><span class="badge badge-free">FREE</span></td><td>Gratuit</td><td>Limité</td><td>Limité</td><td>Fonctions de base</td></tr>
-    <tr><td><span class="badge badge-starter">STARTER</span></td><td>À partir de 2 900 FCFA/mois</td><td>5</td><td>50</td><td>Documents, rapports PDF</td></tr>
-    <tr><td><span class="badge badge-pro">PRO</span></td><td>À partir de 5 900 FCFA/mois</td><td>Illimité</td><td>Illimité</td><td>Tout + IA + multi-utilisateurs</td></tr>
-  </table>
+  <h3>Pour l'administrateur — Configuration globale</h3>
+  <div class="steps">
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Ouvrir les Paramètres → Paiements</div><div class="step-desc">Menu → <strong>Paramètres</strong> → onglet <strong>💳 Paiements</strong> → section "Paiement de loyer en ligne".</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Choisir la plateforme</div><div class="step-desc">Options disponibles : <strong>Lien personnalisé</strong> (votre URL avec {montant}), <strong>NotchPay</strong> (clé API), <strong>CinetPay</strong>, <strong>PayDunya</strong>, <strong>Wave</strong>.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Saisir les numéros MoMo globaux</div><div class="step-desc">Dans la section "Numéros Mobile Money", entrez vos numéros MTN MoMo, Orange Money et Wave. Ce sont les numéros par défaut pour tous les immeubles.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Config par immeuble (optionnel)</div><div class="step-desc">Clic droit sur un immeuble → <strong>⚙️ Config paiement loyer</strong>. Activez "Configuration spécifique" pour utiliser des numéros différents sur cet immeuble uniquement.</div></div></div>
+  </div>
 
-  <h3>Souscrire un abonnement</h3>
+  <h3>Pour le locataire — Payer son loyer</h3>
   <ol>
-    <li>Cliquez sur votre badge de plan (coin supérieur droit) → <strong>Voir les offres</strong></li>
-    <li>Choisissez votre plan et la durée (1, 3, 6 ou 12 mois — réductions jusqu'à 17%)</li>
-    <li>Entrez votre numéro de téléphone</li>
-    <li>La page NotchPay s'ouvre : payez via MoMo, Orange Money, Wave ou carte bancaire</li>
-    <li>L'abonnement est activé <strong>automatiquement</strong> après confirmation du paiement</li>
+    <li>Ouvrir sa fiche de suivi (via code PIN ou code d'invitation IM-XXXX)</li>
+    <li>Le bloc <strong>💳 Payer votre loyer</strong> affiche les options configurées par le gestionnaire</li>
+    <li>Cliquer sur le numéro MTN/Orange/Wave pour le copier → effectuer le virement</li>
+    <li>Ou cliquer <strong>Payer en ligne</strong> → page de paiement NotchPay s'ouvre</li>
+    <li>Choisir le mode de paiement (MoMo, carte, Wave…) et valider</li>
+    <li>Après confirmation : le paiement est <strong>enregistré automatiquement</strong> dans la fiche de suivi</li>
   </ol>
 
-  <h3>Renouvellement et expiration</h3>
-  <ul>
-    <li>Une <strong>bannière d'avertissement</strong> apparaît 7 jours avant l'expiration</li>
-    <li>À l'expiration : <strong>7 jours de grâce</strong> — toutes les fonctionnalités restent actives</li>
-    <li>Après la grâce : retour automatique au plan FREE (vos données sont conservées)</li>
-    <li>Un renouvellement restaure <strong>immédiatement</strong> l'accès complet</li>
-  </ul>
+  <div class="tip success"><div class="tip-icon">✅</div><div>Avec <strong>NotchPay</strong>, l'enregistrement du paiement est entièrement automatique : fiche de suivi, solde et rapport sont mis à jour dès la confirmation du paiement — aucune saisie manuelle nécessaire.</div></div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
 <div class="section" id="s13">
   <div class="section-header">
-    <div class="section-icon" style="background:#f0f4fa">⚙️</div>
-    <h2>13. Paramètres <small>Configuration du cabinet et de l'application</small></h2>
+    <div class="section-icon" style="background:#e8f4ff">🔄</div>
+    <h2>13. Multi-espace <span class="new-label">NOUVEAU</span> <small>Gérer plusieurs cabinets depuis un seul compte</small></h2>
   </div>
 
-  <h3>Identité du cabinet</h3>
-  <p>Paramètres → <strong>Identité du cabinet</strong> : nom, adresse, téléphone, email, RCCM, slogan, logo URL. Ces informations apparaissent sur tous les documents générés.</p>
+  <p>ImmoGest permet de rejoindre et gérer <strong>plusieurs espaces (cabinets)</strong> depuis un seul compte utilisateur. Pratique pour un gestionnaire qui travaille pour plusieurs propriétaires ou cabinets différents.</p>
 
-  <h3>Pays & devise</h3>
-  <p>Sélectionnez votre pays pour configurer automatiquement la devise, la langue et les modèles juridiques adaptés.</p>
+  <h3>Créer un deuxième espace</h3>
+  <ol>
+    <li>Menu → icône de profil → <strong>Changer d'espace</strong></li>
+    <li>Cliquer <strong>+ Créer un nouvel espace</strong></li>
+    <li>Configurer le nouvel espace (nom, mode, etc.)</li>
+  </ol>
 
-  <h3>Numéros Mobile Money</h3>
-  <p>Paramètres → entrez vos numéros MTN MoMo et Orange Money. Ils seront affichés aux locataires qui veulent payer leur loyer.</p>
+  <h3>Rejoindre un espace existant</h3>
+  <ol>
+    <li>Menu → icône de profil → <strong>Rejoindre un espace</strong></li>
+    <li>Entrer le code d'invitation <strong>IM-XXXX</strong> donné par l'administrateur</li>
+    <li>L'espace est ajouté à votre liste</li>
+  </ol>
 
-  <h3>Notifications push</h3>
-  <p>Configurez OneSignal (gratuit) pour envoyer des rappels automatiques aux locataires en retard.</p>
+  <h3>Passer d'un espace à l'autre</h3>
+  <p>Sur l'écran de sélection d'espace (affiché au démarrage ou via le menu profil), cliquez sur l'espace souhaité. Les données chargées correspondent uniquement à cet espace.</p>
 
-  <h3>Langue</h3>
-  <p>ImmoGest est disponible en <strong>français</strong>, <strong>anglais</strong> et d'autres langues. Changez via le sélecteur de langue dans les paramètres.</p>
-
-  <h3>Synchronisation des données</h3>
-  <p>Vos données sont synchronisées automatiquement avec le cloud (Supabase) à chaque modification. Vous pouvez continuer à travailler hors ligne — la sync se fera dès la reconnexion.</p>
+  <div class="tip"><div class="tip-icon">ℹ️</div><div>Chaque espace a ses propres données, immeubles et locataires. Passer d'un espace à l'autre ne mélange pas les données.</div></div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
 <div class="section" id="s14">
   <div class="section-header">
+    <div class="section-icon" style="background:#fef9e7">⭐</div>
+    <h2>14. Abonnements <small>Plans, renouvellement et période de grâce</small></h2>
+  </div>
+
+  <h3>Plans disponibles</h3>
+  <table>
+    <tr><th>Plan</th><th>Prix mensuel</th><th>Immeubles</th><th>Locataires</th><th>Fonctionnalités</th></tr>
+    <tr><td><span class="badge badge-free">FREE</span></td><td>Gratuit</td><td>2</td><td>10</td><td>Fonctions de base, pas de documents</td></tr>
+    <tr><td><span class="badge badge-starter">STARTER</span></td><td>À partir de 2 900 FCFA</td><td>5</td><td>50</td><td>Documents PDF/Word, rapports, MoMo</td></tr>
+    <tr><td><span class="badge badge-pro">PRO</span></td><td>À partir de 5 900 FCFA</td><td>Illimité</td><td>Illimité</td><td>Tout + IA + multi-utilisateurs + juridique + marketplace pro</td></tr>
+  </table>
+
+  <h3>Réductions sur la durée</h3>
+  <ul>
+    <li>1 mois — tarif normal</li>
+    <li>3 mois — réduction 5%</li>
+    <li>6 mois — réduction 10%</li>
+    <li>12 mois — réduction 17%</li>
+  </ul>
+
+  <h3>Souscrire un abonnement</h3>
+  <ol>
+    <li>Cliquez sur votre badge de plan (coin supérieur) → <strong>Voir les offres</strong></li>
+    <li>Choisissez votre plan et la durée</li>
+    <li>Entrez votre numéro de téléphone</li>
+    <li>La page <strong>NotchPay</strong> s'ouvre : payez via MoMo, Orange Money, Wave ou carte bancaire</li>
+    <li>L'abonnement est activé <strong>automatiquement</strong> dès la confirmation du paiement</li>
+  </ol>
+
+  <h3>Expiration et période de grâce</h3>
+  <ul>
+    <li>Une <strong>bannière d'avertissement</strong> apparaît <strong>7 jours avant</strong> l'expiration avec rappels progressifs</li>
+    <li>À l'expiration : <strong>7 jours de grâce</strong> — toutes les fonctionnalités restent actives</li>
+    <li>Après la période de grâce : retour automatique au plan FREE (données conservées)</li>
+    <li>Un renouvellement restaure <strong>immédiatement</strong> l'accès complet, même après downgrade</li>
+  </ul>
+
+  <div class="tip warn"><div class="tip-icon">⚠️</div><div>Pendant la période de grâce, un bandeau rouge s'affiche en haut de l'application. Renouvelez avant la fin des 7 jours pour ne pas perdre l'accès aux fonctionnalités avancées.</div></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="section" id="s15">
+  <div class="section-header">
+    <div class="section-icon" style="background:#f0f4fa">⚙️</div>
+    <h2>15. Paramètres <small>Configuration organisée en 3 onglets</small></h2>
+  </div>
+
+  <p>Les Paramètres sont organisés en <strong>3 onglets thématiques</strong> pour une navigation claire.</p>
+
+  <h3>🏢 Onglet Cabinet</h3>
+
+  <p><strong>Mon compte</strong> (mode individuel uniquement) — modifiez votre nom affiché dans l'application.</p>
+
+  <p><strong>Pays & Devise</strong> — sélectionnez votre pays pour configurer automatiquement :</p>
+  <ul>
+    <li>La devise et le symbole monétaire (FCFA, XOF, GNF…)</li>
+    <li>La langue par défaut</li>
+    <li>Le cadre juridique et les modèles de documents adaptés</li>
+  </ul>
+
+  <p><strong>Identité du Cabinet</strong> — ces informations apparaissent sur <em>tous</em> les documents générés :</p>
+  <ul>
+    <li>Nom du cabinet ou société</li>
+    <li>Ville et quartier / adresse</li>
+    <li>Téléphones 1 et 2</li>
+    <li>Email professionnel</li>
+    <li>RCCM / Numéro contribuable</li>
+    <li>Slogan ou mention légale</li>
+    <li>URL du logo (PNG ou JPG — affiché dans les rapports DOCX)</li>
+  </ul>
+
+  <h3>💳 Onglet Paiements</h3>
+
+  <p><strong>Numéros Mobile Money</strong> — entrez les numéros de votre cabinet :</p>
+  <ul>
+    <li>MTN Mobile Money</li>
+    <li>Orange Money</li>
+    <li>Wave</li>
+  </ul>
+  <p>Ces numéros sont affichés aux locataires dans leur fiche de paiement.</p>
+
+  <p><strong>Paiement de loyer en ligne</strong> — configurez la plateforme de paiement globale (NotchPay, CinetPay, PayDunya, Wave, lien personnalisé). Chaque immeuble peut avoir sa propre configuration via clic droit → ⚙️ Config.</p>
+
+  <h3>🔌 Onglet Intégrations</h3>
+
+  <p><strong>Intelligence Artificielle</strong> :</p>
+  <ul>
+    <li>Activez ou désactivez l'IA avec la case à cocher</li>
+    <li>Entrez votre clé API Anthropic (sk-ant-…)</li>
+    <li>Bouton 👁 pour afficher/masquer la clé</li>
+    <li>Bouton 🗑 pour supprimer la clé de l'appareil</li>
+    <li>Bouton "Tester" pour vérifier que la connexion fonctionne</li>
+  </ul>
+
+  <p><strong>OneSignal — Notifications push</strong> :</p>
+  <ul>
+    <li>Entrez votre App ID et REST API Key OneSignal (compte gratuit sur onesignal.com)</li>
+    <li>Permet d'envoyer des rappels automatiques aux locataires</li>
+    <li>Bouton "Rappel impayés" : envoie une notification à tous les locataires en retard</li>
+  </ul>
+
+  <div class="tip"><div class="tip-icon">💡</div><div>L'onglet actif est mémorisé automatiquement. Si vous revenez aux Paramètres, vous retrouvez le même onglet qu'à votre dernière visite.</div></div>
+
+  <h3>Langue de l'interface</h3>
+  <p>Changez la langue via le sélecteur dans la barre de navigation. ImmoGest est disponible en <strong>français</strong>, <strong>anglais</strong>, <strong>portugais</strong>, <strong>espagnol</strong>, <strong>haoussa</strong> et <strong>arabe</strong>.</p>
+
+  <h3>Synchronisation des données</h3>
+  <p>Vos données sont synchronisées automatiquement avec le cloud à chaque modification. En cas de perte de connexion, le mode hors ligne prend le relais et la synchronisation reprend dès le retour d'internet.</p>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="section" id="s16">
+  <div class="section-header">
     <div class="section-icon" style="background:#fff0f0">❓</div>
-    <h2>14. Questions fréquentes (FAQ)</h2>
+    <h2>16. Questions fréquentes (FAQ)</h2>
   </div>
 
   <h3>Mes données sont-elles sécurisées ?</h3>
-  <p>Oui. Toutes les données sont chiffrées en transit (TLS) et stockées sur Supabase, un service cloud sécurisé. Nous ne partageons jamais vos données avec des tiers sans votre consentement.</p>
+  <p>Oui. Toutes les données sont chiffrées en transit (TLS/HTTPS) et stockées sur Supabase, un service cloud sécurisé et conforme RGPD. Nous ne partageons jamais vos données avec des tiers.</p>
 
   <h3>Que se passe-t-il si je perds ma connexion internet ?</h3>
-  <p>ImmoGest fonctionne partiellement hors ligne. Les données sont sauvegardées localement et synchronisées dès que la connexion est rétablie.</p>
+  <p>ImmoGest fonctionne en mode hors ligne. Vos données sont sauvegardées localement et synchronisées automatiquement dès la reconnexion internet.</p>
 
   <h3>Puis-je utiliser ImmoGest sur plusieurs appareils ?</h3>
-  <p>Oui, vos données sont synchronisées automatiquement. Connectez-vous avec les mêmes identifiants sur n'importe quel appareil.</p>
+  <p>Oui. Vos données sont synchronisées via le cloud. Connectez-vous avec les mêmes identifiants sur n'importe quel appareil (téléphone, tablette, PC).</p>
 
   <h3>Comment récupérer un locataire archivé ?</h3>
-  <p>Menu → <strong>Archives</strong> (dans la gestion des locataires) → trouvez le locataire → bouton <strong>Restaurer</strong>.</p>
+  <p>Menu → <strong>Archives</strong> → trouvez le locataire → bouton <strong>Restaurer</strong>. Toutes ses données (paiements, documents) reviennent intact dans la liste active.</p>
 
   <h3>Puis-je avoir plusieurs gestionnaires sur le même espace ?</h3>
-  <p>Oui, avec le plan <strong>PRO</strong>. Créez des comptes gestionnaires, comptables ou propriétaires depuis la gestion des utilisateurs.</p>
+  <p>Oui, avec le plan <strong>PRO</strong>. Créez des comptes gestionnaires, comptables ou propriétaires depuis la Gestion des utilisateurs. Chacun a son propre accès adapté à son rôle.</p>
 
   <h3>Le code d'invitation IM-XXXX ne fonctionne pas ?</h3>
   <p>Vérifiez que vous avez bien saisi les 7 caractères (IM- suivi de 4 chiffres/lettres). Si le problème persiste, demandez à votre gestionnaire de vérifier que votre compte est bien créé dans le système.</p>
+
+  <h3>Comment supprimer ma clé API IA ?</h3>
+  <p>Paramètres → onglet <strong>Intégrations</strong> → section IA → cliquez le bouton <strong>🗑</strong> rouge à droite du champ. La clé est supprimée de votre appareil immédiatement.</p>
+
+  <h3>La marketplace est-elle payante pour publier ?</h3>
+  <p>La publication d'annonces est <strong>gratuite</strong>. Seul le boost d'annonce (mise en avant) est payant, via NotchPay.</p>
+
+  <h3>Puis-je annuler mon abonnement ?</h3>
+  <p>Oui, votre abonnement reste actif jusqu'à la date d'expiration. Il n'est pas renouvelé automatiquement — vous devez renouveler manuellement. Vous disposez en plus de 7 jours de grâce après expiration.</p>
 
   <h3>Comment contacter le support ?</h3>
   <p>📧 <a href="mailto:fofefranklin57@gmail.com">fofefranklin57@gmail.com</a><br>
@@ -564,7 +865,7 @@ tr:hover td{background:#fafcff}
 </div><!-- /container -->
 
 <div class="footer">
-  <p>📘 <strong>ImmoGest — Guide d'utilisation v1.0</strong> · Juin 2026</p>
+  <p>📘 <strong>ImmoGest — Guide d'utilisation v2.0</strong> · Juin 2026</p>
   <p style="margin-top:6px;"><a href="https://immogest-34w.pages.dev">immogest-34w.pages.dev</a> · <a href="privacy.html">Politique de confidentialité</a> · <a href="mailto:fofefranklin57@gmail.com">Contact</a></p>
 </div>
 
