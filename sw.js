@@ -1,5 +1,5 @@
-// ImmoGest Service Worker — DEPLOY25
-const CACHE_NAME = 'immogest-v25';
+// ImmoGest Service Worker — DEPLOY26
+const CACHE_NAME = 'immogest-v26';
 const ASSETS = [
   '/',
   '/index.html',

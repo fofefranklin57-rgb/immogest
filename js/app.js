@@ -4125,6 +4125,23 @@ async function genDocxRelances(iid) {
 // ============================================================
 // STATISTIQUES
 // ============================================================
+function copyRapport() {
+  const el = document.getElementById('rapport-preview-html');
+  if (!el) return;
+  const text = el.innerText || el.textContent || '';
+  navigator.clipboard.writeText(text).then(function() {
+    showToast('Rapport copié dans le presse-papiers', 'green');
+  }).catch(function() {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Rapport copié', 'green');
+  });
+}
+
 function previewDownload() {
   closeModals();
   setTimeout(() => genDocxRapportMensuel(_previewIidFilter), 200);
