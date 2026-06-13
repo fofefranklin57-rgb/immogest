@@ -782,20 +782,7 @@ function hidePromoToast() {
 }
 
 // ── PAIEMENT ──
-let selectedPaymentMethod = 'mtn';
 let selectedPlan = 'pro';
-
-function selectPaymentMethod(el, method) {
-  document.querySelectorAll('.payment-method').forEach(e => e.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedPaymentMethod = method;
-  // Afficher/cacher le champ téléphone selon le mode
-  var phoneRow = document.querySelector('#pay-phone')?.closest('.form-row');
-  if (phoneRow) {
-    phoneRow.style.display = (method === 'mtn' || method === 'orange') ? '' : 'none';
-  }
-  calculateTotal();
-}
 
 function startSubscription(plan) {
   // Plan Customisation → formulaire contact WhatsApp
@@ -820,13 +807,6 @@ function startSubscription(plan) {
     `;
   }
 
-  // Réinitialiser : sélectionner MTN par défaut, afficher champ téléphone
-  selectedPaymentMethod = 'mtn';
-  document.querySelectorAll('.payment-method').forEach(e => e.classList.remove('selected'));
-  var payMtn = document.getElementById('pay-mtn');
-  if (payMtn) payMtn.classList.add('selected');
-  var phoneRow = document.querySelector('#pay-phone')?.closest('.form-row');
-  if (phoneRow) phoneRow.style.display = '';
 
   document.getElementById('modal-upgrade').classList.remove('open');
   if (modal) modal.classList.add('open');
@@ -863,84 +843,15 @@ function calculateTotal() {
 
 function processPaymentAbonnement() {
   var planInfo = getCurrentPlans()[selectedPlan] || getCurrentPlans().pro || getCurrentPlans().starter;
-  var dureeEl  = document.getElementById('pay-duree');
-  var phoneEl  = document.getElementById('pay-phone');
-  var duree    = dureeEl ? parseInt(dureeEl.value) : 1;
-  var phone    = phoneEl ? phoneEl.value.trim() : '';
-
-  // Calcul montant avec réduction
+  var duree    = parseInt((document.getElementById('pay-duree') || {}).value) || 1;
   var monthly  = planInfo.price;
   var discount = duree === 3 ? 0.05 : duree === 6 ? 0.10 : duree === 12 ? 0.17 : 0;
   var total    = Math.round(monthly * duree * (1 - discount));
 
-  var isMobile    = selectedPaymentMethod === 'mtn' || selectedPaymentMethod === 'orange';
-  var isCard      = selectedPaymentMethod === 'card';
-  var isWhatsApp  = selectedPaymentMethod === 'whatsapp';
-
-  // Validation numéro pour Mobile Money
-  if (isMobile && (!phone || phone.replace(/\D/g, '').length < 9)) {
-    if (typeof showToast === 'function') showToast('Veuillez entrer votre numéro de téléphone', 'error');
-    return;
-  }
-
-  // Fermer le modal de sélection
   var modal = document.getElementById('modal-paiement-abonnement');
   if (modal) modal.classList.remove('open');
 
-  // ─ Numéros ImmoGest (configurés dans IMMOGEST_PAIEMENT) ─
-  var P = (typeof IMMOGEST_PAIEMENT !== 'undefined') ? IMMOGEST_PAIEMENT : {
-    mtn: '6 73 95 00 19', orange: '6 90 40 99 29', whatsapp: '237690409929',
-    telephone: '+237 690 40 99 29', email: 'fofefranklin57@gmail.com', nom: 'ImmoGest'
-  };
-
-  var methodNames = { mtn: 'MTN Mobile Money', orange: 'Orange Money', card: 'Carte prépayée', whatsapp: 'WhatsApp' };
-  var methodIcons = { mtn: '📱', orange: '🟠', card: '💳', whatsapp: '💬' };
-
-  // ─ WhatsApp : ouvrir directement ─
-  if (isWhatsApp) {
-    var waText = encodeURIComponent(
-      'Bonjour, je souhaite souscrire au plan *' + planInfo.label + '* d\'ImmoGest' +
-      ' pour ' + duree + ' mois (' + total.toLocaleString('fr-FR') + ' FCFA). Comment procéder ?'
-    );
-    window.open('https://wa.me/' + P.whatsapp + '?text=' + waText, '_blank');
-    return;
-  }
-
-  // ─ MTN / Orange → Campay (USSD push automatique) ─
-  if (isMobile) {
-    payerAvecCampay(selectedPlan, duree, phone, selectedPaymentMethod, total);
-    return;
-  }
-
-  // ─ Carte prépayée → instructions manuelles ─
-  if (isCard) {
-    var overlay = document.createElement('div');
-    overlay.className = 'overlay open';
-    overlay.id = 'modal-paiement-confirm';
-    overlay.style.zIndex = '10005';
-    overlay.innerHTML =
-      '<div class="modal" style="max-width:460px;">' +
-        '<h3 style="margin-bottom:4px;">💳 Carte prépayée</h3>' +
-        '<div style="font-size:12px;color:var(--text3);margin-bottom:12px;">' +
-          'Plan <strong>' + planInfo.label + '</strong> · ' + duree + ' mois' +
-        '</div>' +
-        '<div style="background:linear-gradient(135deg,#e8eaf6,#f3f4ff);border:1.5px solid #5C6BC0;border-radius:10px;padding:16px;margin:16px 0;text-align:center;">' +
-          '<div style="font-size:32px;margin-bottom:6px;">💳</div>' +
-          '<div style="font-size:20px;font-weight:800;color:#283593;margin-bottom:4px;">' + total.toLocaleString('fr-FR') + ' FCFA</div>' +
-          '<div style="font-size:11px;color:#5C6BC0;">MoMo Card · Orange Card · Visa · Mastercard</div>' +
-        '</div>' +
-        '<div style="background:var(--bg3);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.8;">' +
-          'Envoyez la preuve de paiement par WhatsApp ou email :<br><br>' +
-          '<strong>📞 ' + P.telephone + '</strong> (WhatsApp)<br>' +
-          '<strong>✉️ ' + P.email + '</strong>' +
-        '</div>' +
-        '<div class="modal-footer">' +
-          '<button class="btn btn-ghost" onclick="this.closest(\'.overlay\').remove()">Annuler</button>' +
-          '<button class="btn btn-primary" style="background:#25D366;border-color:#25D366;" onclick="window.open(\'https://wa.me/' + P.whatsapp + '\',\'_blank\');this.closest(\'.overlay\').remove();">💬 Envoyer la preuve</button>' +
-        '</div>' +
-      '</div>';
-    document.body.appendChild(overlay);
-  }
+  payerAvecNotchPay(selectedPlan, duree, total);
 }
 
 function _confirmerPaiementAbonnement(plan, duree, txId) {
@@ -953,7 +864,7 @@ function _confirmerPaiementAbonnement(plan, duree, txId) {
   var sub = {
     plan:      plan,
     duree:     duree,
-    provider:  selectedPaymentMethod,
+    provider:  'notchpay',
     phone:     (document.getElementById('pay-phone') ? document.getElementById('pay-phone').value : ''),
     ref:       ref || ('SUB-' + Date.now()),
     statut:    'en_attente',
@@ -999,6 +910,119 @@ function _confirmerPaiementAbonnement(plan, duree, txId) {
 // CAMPAY — Paiement automatique MTN / Orange Money
 // ══════════════════════════════════════════════════════════════
 const _CAMPAY_WORKER = 'https://immogest1.fofefranklin57.workers.dev';
+
+var _NOTCHPAY_PK_MON = 'pk.tUNTim9P4CegA7U4mi1lHGuVWHZRGIP2K2malINDMc0p3hrMlboEF9mHI7yaC7tctAQ9Vu1VfVy2YSI0dlY6Za8RQPTHJiNIfIW4xZS9Mm9uGzuksmQluS12IbR9d';
+var _notchTimer   = null;
+var _notchTicks   = 0;
+var _NOTCH_MAXSEC = 120;
+
+async function payerAvecNotchPay(plan, duree, total) {
+  document.querySelectorAll('.overlay.open').forEach(function(el) { el.classList.remove('open'); });
+
+  var overlay = document.createElement('div');
+  overlay.id = 'campay-pending-overlay';
+  overlay.className = 'overlay open';
+  overlay.style.zIndex = '10010';
+  overlay.innerHTML =
+    '<div class="modal" style="max-width:380px;text-align:center;padding:32px 24px;">' +
+      '<div style="font-size:52px;margin-bottom:12px;">🔒</div>' +
+      '<h3 style="margin-bottom:8px;">Paiement en cours…</h3>' +
+      '<p style="font-size:13px;color:var(--text2);line-height:1.7;margin:0 0 20px;">' +
+        'Une page NotchPay s\'est ouverte dans un nouvel onglet.<br>' +
+        'Choisissez votre mode de paiement (MoMo, Wave, carte…)<br>puis revenez ici.' +
+      '</p>' +
+      '<div style="display:flex;justify-content:center;margin-bottom:16px;"><div class="campay-spinner"></div></div>' +
+      '<div id="campay-status-msg" style="font-size:12px;color:var(--text3);margin-bottom:16px;">En attente de confirmation…</div>' +
+      '<button class="btn btn-ghost" style="font-size:12px;" onclick="_cancelCampay()">Annuler</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  try {
+    var planInfo = getCurrentPlans()[plan] || getCurrentPlans().pro || { label: plan };
+    var reference = 'sub_' + plan + '_' + Date.now();
+    var resp = await fetch('https://api.notchpay.co/payments/initialize', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + _NOTCHPAY_PK_MON,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        email:       'client@immogest.app',
+        amount:      total,
+        currency:    'XAF',
+        description: 'Abonnement ImmoGest ' + planInfo.label + ' — ' + duree + ' mois',
+        reference:   reference,
+        callback:    'https://immogest-34w.pages.dev/'
+      })
+    });
+    var data = await resp.json();
+    if (!resp.ok) throw new Error(data.message || 'Erreur NotchPay');
+
+    var ref = data.reference || (data.transaction && data.transaction.reference) || reference;
+    var authUrl = data.authorization_url || (data.transaction && data.transaction.authorization_url);
+    if (authUrl) window.open(authUrl, '_blank');
+
+    _pollNotchpayStatus(ref, plan, duree);
+
+  } catch(e) {
+    var ov = document.getElementById('campay-pending-overlay');
+    if (ov) ov.remove();
+    showToast('❌ ' + e.message, 'error');
+  }
+}
+
+function _pollNotchpayStatus(reference, plan, duree) {
+  _notchTicks = 0;
+  _notchTimer = setInterval(async function() {
+    _notchTicks += 5;
+    var msgEl = document.getElementById('campay-status-msg');
+
+    if (_notchTicks >= _NOTCH_MAXSEC) {
+      clearInterval(_notchTimer);
+      var ov = document.getElementById('campay-pending-overlay');
+      if (ov) ov.remove();
+      showToast('⏱ Délai dépassé. Réessayez ou contactez-nous via WhatsApp.', 'error');
+      return;
+    }
+
+    try {
+      var resp = await fetch('https://api.notchpay.co/payments/' + reference, {
+        headers: { 'Authorization': 'Bearer ' + _NOTCHPAY_PK_MON, 'Accept': 'application/json' }
+      });
+      var data  = await resp.json();
+      var st    = (data.transaction && data.transaction.status) || data.status || '';
+
+      if (st === 'complete') {
+        clearInterval(_notchTimer);
+        var ov = document.getElementById('campay-pending-overlay');
+        if (ov) ov.remove();
+        MONETISATION.plan = plan;
+        var expiry = new Date(Date.now() + (duree || 1) * 30 * 86400000).toISOString();
+        localStorage.setItem('immogest_subscription', JSON.stringify({
+          tier: plan, ref: reference,
+          startDate: new Date().toISOString(), expiryDate: expiry
+        }));
+        saveMonetisation();
+        applyPlan();
+        updatePlanBadge();
+        _showAbonnementSuccess(plan, duree || 1);
+
+      } else if (st === 'failed' || st === 'canceled') {
+        clearInterval(_notchTimer);
+        var ov = document.getElementById('campay-pending-overlay');
+        if (ov) ov.remove();
+        showToast('❌ Paiement refusé. Vérifiez votre solde et réessayez.', 'error');
+
+      } else {
+        var restant = _NOTCH_MAXSEC - _notchTicks;
+        if (msgEl) msgEl.textContent = 'En attente… (' + restant + 's restantes)';
+      }
+    } catch(e) {
+      console.warn('[NotchPay] Poll error:', e.message);
+    }
+  }, 5000);
+}
 
 async function payerAvecCampay(plan, duree, phone, provider, total) {
   // Normaliser le numéro → 237XXXXXXXXX

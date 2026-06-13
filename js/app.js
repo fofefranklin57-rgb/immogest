@@ -2403,6 +2403,7 @@ function ouvrirFicheSuivi(locId) {
       </div>
     </div>
     <div id="fiche-preview">${ficheContent}</div>
+    <div id="pay-block-${locId}"></div>
     <div class="modal-footer" style="margin-top:12px;">
       <button class="btn btn-ghost" onclick="closeModals()">Fermer</button>
       <button class="btn btn-ghost" onclick="_analyserDossierLocataire(${locId})" style="gap:6px;">✨ Analyse IA</button>
@@ -2414,6 +2415,10 @@ function ouvrirFicheSuivi(locId) {
   if (modal) {
     modal.querySelector('.modal').innerHTML = html;
     modal.classList.add('open');
+    // Afficher le bloc paiement après rendu
+    if (typeof renderPaymentBlock === 'function') {
+      setTimeout(function(){ renderPaymentBlock(locId, 'pay-block-' + locId); }, 50);
+    }
   }
 }
 
@@ -2462,6 +2467,7 @@ function ouvrirFicheSuiviReadOnly(locId) {
       </div>
     </div>
     <div id="fiche-preview">${ficheContent}</div>
+    <div id="pay-block-${locId}"></div>
     <div class="modal-footer" style="margin-top:12px;">
       <button class="btn btn-ghost" onclick="closeModals()">Fermer</button>
     </div>
@@ -2471,6 +2477,9 @@ function ouvrirFicheSuiviReadOnly(locId) {
   if (modal) {
     modal.querySelector('.modal').innerHTML = html;
     modal.classList.add('open');
+    if (typeof renderPaymentBlock === 'function') {
+      setTimeout(function(){ renderPaymentBlock(locId, 'pay-block-' + locId); }, 50);
+    }
   }
 }
 
@@ -7341,19 +7350,22 @@ function renderParametres() {
       </button>
     </div>
 
-    <!-- Section Campay -->
-    <div class="card" style="max-width:520px;margin-top:16px;">
+    <!-- Section Paiement loyer -->
+    <div class="card" style="max-width:520px;margin-top:16px;" id="card-pay-loyer-global">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-        <div style="width:36px;height:36px;background:linear-gradient(135deg,#FFC107,#FF8F00);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">💳</div>
+        <div style="width:36px;height:36px;background:linear-gradient(135deg,#2ecc71,#27ae60);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">💳</div>
         <div>
-          <div class="card-title" style="margin:0;">Campay — Paiements MTN & Orange</div>
-          <div style="font-size:11px;color:var(--green);margin-top:2px;">✅ Actif — USSD push automatique</div>
+          <div class="card-title" style="margin:0;">Paiement de loyer en ligne</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">Numéros MoMo/OM et plateforme visibles par les locataires</div>
         </div>
       </div>
-      <p style="font-size:12px;color:var(--text2);margin:0;">
-        Les abonnements ImmoGest sont payés automatiquement via MTN Mobile Money et Orange Money.
-        Le client reçoit une demande USSD sur son téléphone et confirme avec son PIN.
+      <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">
+        Configurez ici les numéros Mobile Money et/ou votre plateforme de paiement.
+        Ces paramètres s'appliquent à <strong>tous vos immeubles</strong>.
+        Chaque immeuble peut avoir sa propre config via <em>clic droit → ⚙️ Config paiement loyer</em>.
       </p>
+      <div id="pay-config-global-inline"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="_savePayConfigInline()">💾 Enregistrer la configuration</button>
     </div>
 
     <!-- Section OneSignal -->
@@ -7435,6 +7447,11 @@ function renderParametres() {
     </div>
   `;
 
+  // Injecter le formulaire config paiement loyer
+  if (typeof renderPayConfigForm === 'function') {
+    const inlineEl = document.getElementById('pay-config-global-inline');
+    if (inlineEl) inlineEl.innerHTML = renderPayConfigForm(PAY_CONFIG, 'pcg', false);
+  }
   // Afficher le statut OneSignal actuel
   if (typeof _updateOneSignalStatusBadge === 'function') _updateOneSignalStatusBadge();
   // Pré-remplir les champs pub
@@ -9308,10 +9325,12 @@ function showCtxImm(e, immId) {
   const items = document.getElementById('ctx-menu-items');
   var nav = "navigate('immeuble'," + immId + ");hideCtxMenu()";
   var rpt = "window._rptIid=" + immId + ";ouvrirRapportImmeuble(" + immId + ");hideCtxMenu()";
+  const canCfgPay = can('canManageUsers') || can('canEditImmeuble');
   items.innerHTML =
     '<div class="ctx-item" onclick="' + nav + '">🏠 Ouvrir</div>' +
     '<div class="ctx-item" onclick="openModalPaiement(' + immId + ');hideCtxMenu()">💳 Paiement</div>' +
     '<div class="ctx-item" onclick="editImmeuble(' + immId + ');hideCtxMenu()">✏️ Modifier</div>' +
+    (canCfgPay ? '<div class="ctx-item" onclick="editImmPayConfig(' + immId + ');hideCtxMenu()">⚙️ Config paiement loyer</div>' : '') +
     '<div class="ctx-item" onclick="' + rpt + '">📊 Rapport</div>' +
     '<div class="ctx-sep"></div>' +
     '<div class="ctx-item ctx-danger" onclick="supprimerImmeuble(' + immId + ');hideCtxMenu()">🗑️ Supprimer</div>';
@@ -9618,6 +9637,20 @@ function _updateImmTotalLocaux() {
 
 function editImmeuble(immId) { openModalImmeuble(immId); }
 
+// Ouvre directement la section paiement de la modale immeuble
+function editImmPayConfig(immId) {
+  openModalImmeuble(immId);
+  setTimeout(function() {
+    var det = document.querySelector('#modal-immeuble details');
+    if (det) { det.open = true; det.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  }, 150);
+}
+
+// Accessible depuis le menu global (admin/gestionnaire)
+function openGlobalPayConfig() {
+  if (typeof openPayConfigPanel === 'function') openPayConfigPanel();
+}
+
 function openModalImmeuble(immId) {
   const isEdit = immId && immId > 0;
   const im = isEdit ? DATA.immeubles.find(i => i.id === immId) : null;
@@ -9641,6 +9674,11 @@ function openModalImmeuble(immId) {
   const comm = im && im.commission ? im.commission : { type: 'forfait', valeur: 0 };
   document.getElementById('imm-commission-type').value = comm.type || 'forfait';
   document.getElementById('imm-commission-valeur').value = comm.valeur || 0;
+  // Section paiement loyer
+  if (typeof renderPayConfigForm === 'function') {
+    const wrapper = document.getElementById('imm-pay-config-wrapper');
+    if (wrapper) wrapper.innerHTML = renderPayConfigForm(im ? (im.payConfig || {}) : {}, 'imm-pc', true);
+  }
   document.getElementById('modal-immeuble').classList.add('open');
 }
 
@@ -9662,17 +9700,24 @@ function saveImmeuble() {
   const duplex    = parseInt(document.getElementById('imm-duplex').value)   || 0;
   // nom (affiché) = nomImmeuble pour la sidebar/cards
   const nom = nomImmeuble;
+  // Lire config paiement loyer
+  let payConfig = null;
+  if (typeof readPayConfigForm === 'function') {
+    const ovEl = document.getElementById('imm-pc-override');
+    const override = ovEl ? ovEl.checked : false;
+    payConfig = Object.assign({ override }, readPayConfigForm('imm-pc'));
+  }
   if (existId > 0) {
     const idx = DATA.immeubles.findIndex(i => i.id === existId);
     if (idx >= 0) {
-      DATA.immeubles[idx] = { ...DATA.immeubles[idx], nom, nomImmeuble, nomProprio, telProprio, ville, quartier, col, commission, apparts, studios, chambres, duplex };
+      DATA.immeubles[idx] = { ...DATA.immeubles[idx], nom, nomImmeuble, nomProprio, telProprio, ville, quartier, col, commission, apparts, studios, chambres, duplex, ...(payConfig !== null ? { payConfig } : {}) };
     }
     // Édition : créer les locaux manquants si la composition a augmenté
     const nbCrees = _autoCreerLocaux(existId, apparts, studios, chambres, duplex);
     showToast('Immeuble modifié ✓' + (nbCrees > 0 ? ' · ' + nbCrees + ' nouveau(x) local(aux) créé(s)' : ''), 'green');
   } else {
     const newId = Math.max(0, ...DATA.immeubles.map(i => i.id)) + 1;
-    DATA.immeubles.push({ id: newId, nom, nomImmeuble, nomProprio, telProprio, ville, quartier, col, commission, apparts, studios, chambres, duplex });
+    DATA.immeubles.push({ id: newId, nom, nomImmeuble, nomProprio, telProprio, ville, quartier, col, commission, apparts, studios, chambres, duplex, ...(payConfig !== null ? { payConfig } : {}) });
     // ── Étape 3 : création automatique compte propriétaire ──────────────────
     if (telProprio) {
       const telClean = telProprio.replace(/[^0-9]/g, '');
