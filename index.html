@@ -1733,29 +1733,31 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 <!-- Portal dropdown — enfant direct de body, jamais coupé par backdrop-filter parent -->
 <div id="_dd_portal" class="action-dropdown" style="display:none;position:fixed;z-index:99999;"></div>
 
-<!-- Bouton téléchargement APK Android — affiché uniquement sur Android hors TWA -->
-<div id="apk-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;
+<!-- Bouton téléchargement APK Android — pill en haut à droite, hors TWA -->
+<div id="apk-banner" style="display:none;position:fixed;top:14px;right:14px;z-index:9995;
   background:linear-gradient(135deg,#0D2657,#0E6AAF);color:#fff;
-  padding:12px 16px;display:flex;align-items:center;gap:12px;
-  box-shadow:0 -2px 16px rgba(0,0,0,.3);">
-  <div style="font-size:28px;flex-shrink:0;">📱</div>
-  <div style="flex:1;">
-    <div style="font-weight:700;font-size:14px;">ImmoGest pour Android</div>
-    <div style="font-size:12px;opacity:.85;">Installez l'app native — 2 Mo — gratuit</div>
+  padding:8px 12px 8px 10px;border-radius:12px;
+  flex-direction:column;gap:4px;
+  box-shadow:0 4px 20px rgba(0,0,0,.35);max-width:220px;">
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span style="font-size:18px;flex-shrink:0;">📱</span>
+    <div style="flex:1;min-width:0;">
+      <div style="font-weight:700;font-size:12px;white-space:nowrap;">ImmoGest Android</div>
+      <div style="font-size:10px;opacity:.8;">App native · 2 Mo · gratuit</div>
+    </div>
+    <button onclick="document.getElementById('apk-banner').style.display='none';localStorage.setItem('apk_banner_dismissed','1');"
+      style="flex-shrink:0;background:none;border:none;color:rgba(255,255,255,.6);font-size:16px;cursor:pointer;padding:0;line-height:1;">✕</button>
   </div>
   <a href="https://github.com/fofefranklin57-rgb/immogest/releases/download/v1.0.0/ImmoGest-v1.0.0.apk"
      download="ImmoGest.apk"
-     style="flex-shrink:0;background:#fff;color:#0D2657;font-weight:700;font-size:13px;
-            padding:9px 16px;border-radius:8px;text-decoration:none;white-space:nowrap;">
-    ⬇ Télécharger
+     style="display:block;text-align:center;background:#fff;color:#0D2657;font-weight:700;font-size:12px;
+            padding:6px 10px;border-radius:7px;text-decoration:none;">
+    ⬇ Télécharger l'APK
   </a>
-  <button onclick="document.getElementById('apk-banner').style.display='none';localStorage.setItem('apk_banner_dismissed','1');"
-    style="flex-shrink:0;background:none;border:none;color:rgba(255,255,255,.6);font-size:20px;cursor:pointer;padding:4px;">✕</button>
 </div>
 
 <script>
 (function() {
-  // Afficher uniquement sur Android, hors TWA (TWA = standalone sans barre)
   var isAndroid = /Android/i.test(navigator.userAgent);
   var isTWA = window.matchMedia('(display-mode: standalone)').matches && document.referrer.includes('android-app://');
   var dismissed = localStorage.getItem('apk_banner_dismissed');

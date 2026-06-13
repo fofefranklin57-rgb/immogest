@@ -345,6 +345,9 @@ function navigate(page, immId) {
   renderCurrent();
   // Mettre à jour la barre de nav mobile
   _updateMobileBottomNav(page);
+  // Garantir que le bouton IA reste visible partout
+  var _aib = document.getElementById('ai-float-btn');
+  if (_aib && SESSION) _aib.style.display = 'flex';
 }
 
 function _updateMobileBottomNav(page) {

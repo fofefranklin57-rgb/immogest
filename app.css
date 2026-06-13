@@ -1145,14 +1145,15 @@ body.dark .ctx-item {
 /* ════════════════════════════════════════════════════════
    AI Panel v3
    ════════════════════════════════════════════════════════ */
-#ai-float-btn { position:fixed;bottom:28px;right:28px;width:54px;height:54px;border-radius:16px;background:linear-gradient(135deg,#0e6aaf,#6b46c1);color:#fff;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(14,106,175,0.45);z-index:8888;display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s; }
+#ai-float-btn { position:fixed;bottom:28px;right:28px;width:54px;height:54px;border-radius:16px;background:linear-gradient(135deg,#0e6aaf,#6b46c1);color:#fff;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(14,106,175,0.45);z-index:9990;display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s,bottom .3s; }
 #ai-float-btn::before { content:'';position:absolute;inset:-5px;border-radius:21px;background:linear-gradient(135deg,rgba(14,106,175,.35),rgba(107,70,193,.35));animation:aiPulse 2.8s ease-in-out infinite;z-index:-1; }
 #ai-float-btn:hover { transform:scale(1.07);box-shadow:0 6px 28px rgba(14,106,175,0.6); }
 #ai-float-btn svg { width:24px;height:24px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round; }
 #ai-fab-badge { position:absolute;top:-5px;right:-5px;background:#e74c3c;color:#fff;font-size:9px;font-weight:700;border-radius:99px;padding:2px 5px;min-width:16px;text-align:center;line-height:1.4;border:2px solid #fff;display:none; }
 @keyframes aiPulse { 0%,100%{transform:scale(1);opacity:.5} 50%{transform:scale(1.2);opacity:0} }
 
-#ai-chat-panel { position:fixed;bottom:90px;right:28px;width:400px;height:580px;background:var(--bg2);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.22),0 4px 16px rgba(0,0,0,0.1);z-index:8887;display:none;flex-direction:column;overflow:hidden;border:1px solid rgba(0,0,0,0.07);transform-origin:bottom right; }
+#ai-chat-panel { position:fixed;bottom:90px;right:28px;width:400px;height:580px;background:var(--bg2);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.22),0 4px 16px rgba(0,0,0,0.1);z-index:9989;display:none;flex-direction:column;overflow:hidden;border:1px solid rgba(0,0,0,0.07);transform-origin:bottom right; }
+@media(max-width:480px){ #ai-chat-panel { right:8px;left:8px;width:auto;bottom:82px; } }
 #ai-chat-panel.open { display:flex;animation:aiPanelIn .22s cubic-bezier(.2,.8,.4,1.05) both; }
 @keyframes aiPanelIn { from{opacity:0;transform:scale(0.9) translateY(16px)} to{opacity:1;transform:scale(1) translateY(0)} }
 
