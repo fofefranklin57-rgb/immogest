@@ -7800,7 +7800,7 @@ function renderParametres() {
   // Mode individuel : afficher aussi la section "Mon compte" pour modifier le nom
   const isIndiv = SESSION && SESSION.version === 'individuel';
   document.getElementById('page-title').textContent = t('Paramètres');
-  document.getElementById('page-sub').textContent = t('Configuration Mobile Money');
+  document.getElementById('page-sub').textContent = '';
   document.getElementById('topbar-main-btn').textContent = '';
 
   if (!DATA.settings) DATA.settings = {};
@@ -7808,40 +7808,74 @@ function renderParametres() {
   if (!DATA.settings.cabinet) DATA.settings.cabinet = {};
   const m = DATA.settings.momo;
   const cab = DATA.settings.cabinet;
-
   const monNom = SESSION ? SESSION.nom : '';
-  const sectionMonCompte = isIndiv ? `
-    <div class="card" style="max-width:520px;margin-bottom:16px;">
-      <div class="card-title" style="margin-bottom:16px;">${t('👤 Mon compte')}</div>
+
+  const paysOptions = Object.keys(_PAYS_CONFIG).map(c =>
+    `<option value="${c}" ${_PAYS_COURANT===c?'selected':''}>${_PAYS_CONFIG[c].nom} — ${_PAYS_CONFIG[c].symbole}</option>`
+  ).join('');
+
+  document.getElementById('content').innerHTML = `
+  <style>
+    .param-tabs { display:flex; gap:0; border-bottom:2px solid var(--border); margin-bottom:20px; overflow-x:auto; }
+    .param-tab  { padding:10px 20px; font-weight:700; font-size:13px; cursor:pointer; border:none; background:none;
+                  color:var(--text2); border-bottom:3px solid transparent; margin-bottom:-2px;
+                  white-space:nowrap; transition:.15s; font-family:var(--font); }
+    .param-tab:hover { color:var(--text1); }
+    .param-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+    .param-panel { display:none; max-width:540px; }
+    .param-panel.active { display:block; }
+    .param-section-title {
+      display:flex; align-items:center; gap:10px;
+      padding:12px 0 8px; margin-bottom:16px;
+      border-bottom:1px solid var(--border);
+      font-weight:800; font-size:15px; color:var(--text1);
+    }
+    .param-section-title .icon {
+      width:34px; height:34px; border-radius:8px;
+      display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0;
+    }
+  </style>
+
+  <div class="param-tabs">
+    <button class="param-tab active" onclick="_paramTab(this,'cabinet')">🏢 Cabinet</button>
+    <button class="param-tab" onclick="_paramTab(this,'paiements')">💳 Paiements</button>
+    <button class="param-tab" onclick="_paramTab(this,'integ')">🔌 Intégrations</button>
+  </div>
+
+  <!-- ═══════════════════════════════ ONGLET CABINET ═══════════════════════ -->
+  <div class="param-panel active" id="pp-cabinet">
+
+    ${isIndiv ? `
+    <div class="card" style="margin-bottom:16px;">
+      <div class="param-section-title">
+        <div class="icon" style="background:linear-gradient(135deg,#0E6AAF,#1a82d4);">👤</div>
+        ${t('Mon compte')}
+      </div>
       <div class="form-group">
         <label>${t('Mon nom affiché')}</label>
         <input type="text" id="admin-nom-perso" value="${monNom}" placeholder="Votre nom" class="form-control">
       </div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="sauvegarderNomAdmin()">${t('💾 Enregistrer mon nom')}</button>
-    </div>` : '';
+    </div>` : ''}
 
-  // Sélecteur pays
-  const paysOptions = Object.keys(_PAYS_CONFIG).map(c =>
-    `<option value="${c}" ${_PAYS_COURANT===c?'selected':''}>${_PAYS_CONFIG[c].nom} — ${_PAYS_CONFIG[c].symbole}</option>`
-  ).join('');
-  const sectionPays = `
-    <div class="card" style="max-width:520px;margin-bottom:16px;">
-      <div class="card-title" style="margin-bottom:12px;">🌍 ${t('Pays & Devise')}</div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">${t('Configure automatiquement la devise, la langue et le cadre juridique.')}</p>
-      <div class="form-group">
-        <label>${t('PAYS')}</label>
-        <select id="param-pays" onchange="appliquerPays(this.value)" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
-          <option value="">— ${t('Sélectionnez votre pays')} —</option>
-          ${paysOptions}
-        </select>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="param-section-title">
+        <div class="icon" style="background:linear-gradient(135deg,#2e7d32,#388e3c);">🌍</div>
+        ${t('Pays & Devise')}
       </div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">${t('Configure automatiquement la devise, la langue et le cadre juridique.')}</p>
+      <select id="param-pays" onchange="appliquerPays(this.value)" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
+        <option value="">— ${t('Sélectionnez votre pays')} —</option>
+        ${paysOptions}
+      </select>
       ${_PAYS_COURANT ? `<div style="margin-top:8px;font-size:12px;color:var(--text2);">💰 ${t('Devise')} : <strong>${_SYMBOLE_COURANT}</strong> &nbsp;|&nbsp; ⚖️ ${_PAYS_CONFIG[_PAYS_COURANT]?.legal||''}</div>` : ''}
-    </div>`;
+    </div>
 
-  document.getElementById('content').innerHTML = sectionMonCompte + sectionPays + `
-
-    <div class="card" style="max-width:520px;margin-bottom:16px;">
-      <div class="card-title" style="margin-bottom:16px;">${t('🏢 Identité du Cabinet')}</div>
+    <div class="card">
+      <div class="param-section-title">
+        <div class="icon" style="background:linear-gradient(135deg,#0D2657,#1a3a7c);">🏢</div>
+        ${t('Identité du Cabinet')}
+      </div>
       <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">${t('Ces informations apparaissent sur tous les documents générés : reçus, contrats, mises en demeure, rapports.')}</p>
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div class="form-group">
@@ -7849,31 +7883,31 @@ function renderParametres() {
           <input type="text" id="cab-nom" value="${cab.nom||''}" placeholder="Cabinet de Gestion Immobilière XYZ" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
         </div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          <div class="form-group" style="flex:1;min-width:160px;">
+          <div class="form-group" style="flex:1;min-width:140px;">
             <label>${t('Ville')}</label>
             <input type="text" id="cab-ville" value="${cab.ville||''}" placeholder="Yaoundé" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
           </div>
-          <div class="form-group" style="flex:1;min-width:160px;">
+          <div class="form-group" style="flex:1;min-width:140px;">
             <label>${t('Quartier / Adresse')}</label>
             <input type="text" id="cab-adresse" value="${cab.adresse||''}" placeholder="Bastos, Immeuble XYZ" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
           </div>
         </div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          <div class="form-group" style="flex:1;min-width:160px;">
+          <div class="form-group" style="flex:1;min-width:140px;">
             <label>${t('Téléphone 1')}</label>
             <input type="tel" id="cab-tel1" value="${cab.tel1||''}" placeholder="+237 6XX XXX XXX" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
           </div>
-          <div class="form-group" style="flex:1;min-width:160px;">
+          <div class="form-group" style="flex:1;min-width:140px;">
             <label>${t('Téléphone 2')}</label>
             <input type="tel" id="cab-tel2" value="${cab.tel2||''}" placeholder="+237 6XX XXX XXX" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
           </div>
         </div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          <div class="form-group" style="flex:1;min-width:160px;">
+          <div class="form-group" style="flex:1;min-width:140px;">
             <label>Email</label>
             <input type="email" id="cab-email" value="${cab.email||''}" placeholder="contact@cabinet.cm" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
           </div>
-          <div class="form-group" style="flex:1;min-width:160px;">
+          <div class="form-group" style="flex:1;min-width:140px;">
             <label>${t('RCCM / N° contribuable')}</label>
             <input type="text" id="cab-rccm" value="${cab.rccm||''}" placeholder="RC/YAO/2020/B/XXX" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);box-sizing:border-box;">
           </div>
@@ -7892,73 +7926,61 @@ function renderParametres() {
         ${t('💾 Enregistrer les infos cabinet')}
       </button>
     </div>
+  </div>
 
-    <div class="card" style="max-width:520px;">
-      <div class="card-title" style="margin-bottom:20px;">${t('📱 Numéros Mobile Money du Cabinet')}</div>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:24px;">${t('Ces numéros seront affichés aux locataires quand ils souhaitent payer par Mobile Money.')}</p>
+  <!-- ═══════════════════════════════ ONGLET PAIEMENTS ════════════════════ -->
+  <div class="param-panel" id="pp-paiements">
 
-      <div style="display:flex;flex-direction:column;gap:20px;">
-
-        <!-- MTN -->
-        <div style="display:flex;align-items:center;gap:16px;padding:16px;border:2px solid #FFCC00;border-radius:12px;background:#FFFDE7;">
-          <div style="width:52px;height:52px;flex-shrink:0;">
-            <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" width="52" height="52">
-              <circle cx="26" cy="26" r="26" fill="#FFCC00"/>
-              <text x="26" y="22" text-anchor="middle" font-size="10" font-weight="900" font-family="Arial,sans-serif" fill="#00338D">MTN</text>
-              <text x="26" y="34" text-anchor="middle" font-size="7" font-family="Arial,sans-serif" fill="#00338D">Mobile Money</text>
-            </svg>
-          </div>
-          <div style="flex:1;">
-            <label style="font-weight:700;font-size:13px;color:#00338D;display:block;margin-bottom:6px;">MTN Mobile Money</label>
-            <input type="tel" id="momo-mtn" value="${m.mtn || ''}" placeholder="6XX XXX XXX" style="width:100%;padding:10px 12px;border:1px solid #CBD5E0;border-radius:8px;font-size:14px;font-family:var(--font);box-sizing:border-box;">
-          </div>
-        </div>
-
-        <!-- Orange -->
-        <div style="display:flex;align-items:center;gap:16px;padding:16px;border:2px solid #FF6600;border-radius:12px;background:#FFF3E0;">
-          <div style="width:52px;height:52px;flex-shrink:0;">
-            <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" width="52" height="52">
-              <circle cx="26" cy="26" r="26" fill="#FF6600"/>
-              <rect x="10" y="18" width="32" height="16" rx="3" fill="#fff"/>
-              <text x="26" y="30" text-anchor="middle" font-size="9" font-weight="900" font-family="Arial,sans-serif" fill="#FF6600">orange</text>
-            </svg>
-          </div>
-          <div style="flex:1;">
-            <label style="font-weight:700;font-size:13px;color:#FF6600;display:block;margin-bottom:6px;">Orange Money</label>
-            <input type="tel" id="momo-orange" value="${m.orange || ''}" placeholder="6XX XXX XXX" style="width:100%;padding:10px 12px;border:1px solid #CBD5E0;border-radius:8px;font-size:14px;font-family:var(--font);box-sizing:border-box;">
-          </div>
-        </div>
-
-        <!-- Wave -->
-        <div style="display:flex;align-items:center;gap:16px;padding:16px;border:2px solid #1BA7E2;border-radius:12px;background:#E3F6FD;">
-          <div style="width:52px;height:52px;flex-shrink:0;">
-            <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" width="52" height="52">
-              <circle cx="26" cy="26" r="26" fill="#1BA7E2"/>
-              <text x="26" y="24" text-anchor="middle" font-size="11" font-weight="900" font-family="Arial,sans-serif" fill="#fff">Wave</text>
-              <path d="M14 32 Q20 28 26 32 Q32 36 38 32" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <div style="flex:1;">
-            <label style="font-weight:700;font-size:13px;color:#1BA7E2;display:block;margin-bottom:6px;">Wave</label>
-            <input type="tel" id="momo-wave" value="${m.wave || ''}" placeholder="7XX XXX XXX" style="width:100%;padding:10px 12px;border:1px solid #CBD5E0;border-radius:8px;font-size:14px;font-family:var(--font);box-sizing:border-box;">
-          </div>
-        </div>
-
+    <div class="card" style="margin-bottom:16px;">
+      <div class="param-section-title">
+        <div class="icon" style="background:linear-gradient(135deg,#FFCC00,#e6b800);">📱</div>
+        ${t('Numéros Mobile Money')}
       </div>
-
-      <button class="btn btn-primary" style="width:100%;margin-top:24px;padding:14px;" onclick="saveParametresMomo()">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:20px;">${t('Ces numéros seront affichés aux locataires quand ils souhaitent payer par Mobile Money.')}</p>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div style="display:flex;align-items:center;gap:14px;padding:14px;border:2px solid #FFCC00;border-radius:12px;background:#FFFDE7;">
+          <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" width="46" height="46" style="flex-shrink:0">
+            <circle cx="26" cy="26" r="26" fill="#FFCC00"/>
+            <text x="26" y="22" text-anchor="middle" font-size="10" font-weight="900" font-family="Arial,sans-serif" fill="#00338D">MTN</text>
+            <text x="26" y="34" text-anchor="middle" font-size="7" font-family="Arial,sans-serif" fill="#00338D">Mobile Money</text>
+          </svg>
+          <div style="flex:1;">
+            <label style="font-weight:700;font-size:12px;color:#00338D;display:block;margin-bottom:5px;">MTN Mobile Money</label>
+            <input type="tel" id="momo-mtn" value="${m.mtn||''}" placeholder="6XX XXX XXX" style="width:100%;padding:9px 12px;border:1px solid #CBD5E0;border-radius:8px;font-size:14px;font-family:var(--font);box-sizing:border-box;">
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;padding:14px;border:2px solid #FF6600;border-radius:12px;background:#FFF3E0;">
+          <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" width="46" height="46" style="flex-shrink:0">
+            <circle cx="26" cy="26" r="26" fill="#FF6600"/>
+            <rect x="10" y="18" width="32" height="16" rx="3" fill="#fff"/>
+            <text x="26" y="30" text-anchor="middle" font-size="9" font-weight="900" font-family="Arial,sans-serif" fill="#FF6600">orange</text>
+          </svg>
+          <div style="flex:1;">
+            <label style="font-weight:700;font-size:12px;color:#FF6600;display:block;margin-bottom:5px;">Orange Money</label>
+            <input type="tel" id="momo-orange" value="${m.orange||''}" placeholder="6XX XXX XXX" style="width:100%;padding:9px 12px;border:1px solid #CBD5E0;border-radius:8px;font-size:14px;font-family:var(--font);box-sizing:border-box;">
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;padding:14px;border:2px solid #1BA7E2;border-radius:12px;background:#E3F6FD;">
+          <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" width="46" height="46" style="flex-shrink:0">
+            <circle cx="26" cy="26" r="26" fill="#1BA7E2"/>
+            <text x="26" y="24" text-anchor="middle" font-size="11" font-weight="900" font-family="Arial,sans-serif" fill="#fff">Wave</text>
+            <path d="M14 32 Q20 28 26 32 Q32 36 38 32" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          </svg>
+          <div style="flex:1;">
+            <label style="font-weight:700;font-size:12px;color:#1BA7E2;display:block;margin-bottom:5px;">Wave</label>
+            <input type="tel" id="momo-wave" value="${m.wave||''}" placeholder="7XX XXX XXX" style="width:100%;padding:9px 12px;border:1px solid #CBD5E0;border-radius:8px;font-size:14px;font-family:var(--font);box-sizing:border-box;">
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:20px;padding:13px;" onclick="saveParametresMomo()">
         ${t('💾 Enregistrer les numéros')}
       </button>
     </div>
 
-    <!-- Section Paiement loyer -->
-    <div class="card" style="max-width:520px;margin-top:16px;" id="card-pay-loyer-global">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-        <div style="width:36px;height:36px;background:linear-gradient(135deg,#2ecc71,#27ae60);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">💳</div>
-        <div>
-          <div class="card-title" style="margin:0;">Paiement de loyer en ligne</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px;">Numéros MoMo/OM et plateforme visibles par les locataires</div>
-        </div>
+    <div class="card" id="card-pay-loyer-global">
+      <div class="param-section-title">
+        <div class="icon" style="background:linear-gradient(135deg,#2ecc71,#27ae60);">💳</div>
+        Paiement de loyer en ligne
       </div>
       <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">
         Configurez ici les numéros Mobile Money et/ou votre plateforme de paiement.
@@ -7968,19 +7990,50 @@ function renderParametres() {
       <div id="pay-config-global-inline"></div>
       <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="_savePayConfigInline()">💾 Enregistrer la configuration</button>
     </div>
+  </div>
 
-    <!-- Section OneSignal -->
-    <div class="card" style="max-width:520px;margin-top:16px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-        <div style="width:36px;height:36px;background:#E8244D;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🔔</div>
-        <div>
-          <div class="card-title" style="margin:0;">OneSignal — Notifications push</div>
-          <div id="onesignal-status-badge" style="font-size:11px;margin-top:2px;"></div>
-        </div>
+  <!-- ═══════════════════════════════ ONGLET INTÉGRATIONS ════════════════ -->
+  <div class="param-panel" id="pp-integ">
+
+    <div class="card" style="margin-bottom:16px;" id="card-ia-params">
+      <div class="param-section-title">
+        <div class="icon" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);">✨</div>
+        <div style="flex:1;">Intelligence Artificielle <span id="ia-status-badge" style="font-size:11px;font-weight:400;margin-left:8px;"></span></div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:400;">
+          <input type="checkbox" id="ia-active-toggle" style="width:16px;height:16px;" onchange="saveIASettings()">
+          <span>Activer</span>
+        </label>
       </div>
       <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">
-        Envoie des notifications gratuites à tes locataires et propriétaires (loyers, rappels, confirmations).
-        Crée un compte gratuit sur <strong>onesignal.com</strong> → New App → Web App.
+        Rédige des mises en demeure, analyse des dossiers locataires et obtiens des conseils juridiques.<br>
+        Nécessite un compte <strong>Anthropic</strong> (console.anthropic.com → API Keys).
+      </p>
+      <div class="form-group">
+        <label style="font-size:12px;font-weight:700;">Clé API Anthropic <span style="color:var(--text3);font-weight:400;">(sk-ant-...)</span></label>
+        <div style="display:flex;gap:8px;">
+          <input type="password" id="ia-api-key" placeholder="sk-ant-api03-..."
+            style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box;">
+          <button class="btn btn-ghost btn-sm" onclick="toggleIAKeyVisibility()" title="Afficher/masquer">👁</button>
+          <button class="btn btn-ghost btn-sm" style="color:#e53e3e;" onclick="if(confirm('Supprimer la clé API ?')){localStorage.removeItem('anthropic_api_key');document.getElementById('ia-api-key').value='';_updateIAStatusBadge();showToast('Clé supprimée','green');}" title="Supprimer la clé">🗑</button>
+        </div>
+      </div>
+      <div style="background:var(--bg4);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:11px;color:var(--text3);">
+        🔒 Votre clé est stockée <strong>uniquement sur cet appareil</strong> (localStorage) — jamais transmise à nos serveurs.
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button class="btn btn-primary" style="flex:1;padding:11px;" onclick="saveIASettings()">✨ Enregistrer</button>
+        <button class="btn btn-ghost" style="flex:1;padding:11px;font-size:12px;" onclick="testerCleIA()">🧪 Tester</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="param-section-title">
+        <div class="icon" style="background:#E8244D;">🔔</div>
+        <div style="flex:1;">OneSignal — Notifications push <span id="onesignal-status-badge" style="font-size:11px;font-weight:400;margin-left:8px;"></span></div>
+      </div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">
+        Envoie des notifications gratuites à tes locataires et propriétaires (loyers, rappels, confirmations).<br>
+        Crée un compte sur <strong>onesignal.com</strong> → New App → Web App.
       </p>
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div class="form-group">
@@ -7994,96 +8047,13 @@ function renderParametres() {
             style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box;">
         </div>
       </div>
-      <button class="btn btn-primary" style="width:100%;margin-top:16px;padding:12px;" onclick="saveOneSignalKeys()">
-        🔔 Activer les notifications
-      </button>
-      <button class="btn btn-ghost" style="width:100%;margin-top:8px;padding:10px;font-size:12px;" onclick="notifTousImpayés()">
-        ⚠️ Envoyer rappel à tous les locataires impayés
-      </button>
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button class="btn btn-primary" style="flex:1;padding:11px;" onclick="saveOneSignalKeys()">🔔 Activer</button>
+        <button class="btn btn-ghost" style="flex:1;padding:11px;font-size:12px;" onclick="notifTousImpayés()">⚠️ Rappel impayés</button>
+      </div>
     </div>
 
-    <!-- Section Publicités -->
-    <div class="card" style="max-width:520px;margin-top:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:36px;height:36px;background:linear-gradient(135deg,#1877F2,#0A5DC2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">📢</div>
-          <div>
-            <div class="card-title" style="margin:0;">Publicités — PropellerAds</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:1px;">Portail locataire & propriétaire uniquement</div>
-          </div>
-        </div>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;">
-          <input type="checkbox" id="ads-enabled" style="width:16px;height:16px;" onchange="saveParametresAds()">
-          <span>Actif</span>
-        </label>
-      </div>
-      <p style="font-size:12px;color:var(--text2);margin:12px 0 16px;">
-        Les pubs s'affichent <strong>uniquement</strong> aux locataires et propriétaires (utilisateurs gratuits).<br>
-        Gestionnaires abonnés → zéro pub.<br><br>
-        Crée ton compte sur <strong>propellerads.com</strong> → Publishers → Add Zone (bannière 320×50 et 320×100).
-      </p>
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <div class="form-group">
-          <label style="font-size:12px;font-weight:700;">Publisher ID <span style="color:var(--text3);font-weight:400;">(ex: 123456)</span></label>
-          <input type="text" id="ads-publisher-id" placeholder="Ton Publisher ID PropellerAds"
-            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box;">
-        </div>
-        <div class="form-group">
-          <label style="font-size:12px;font-weight:700;">Zone ID — Bannière sticky 320×50 <span style="color:var(--text3);font-weight:400;">(bas de page)</span></label>
-          <input type="text" id="ads-zone-sticky" placeholder="Zone ID bannière sticky"
-            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box;">
-        </div>
-        <div class="form-group">
-          <label style="font-size:12px;font-weight:700;">Zone ID — Bannière native 320×100 <span style="color:var(--text3);font-weight:400;">(entre sections)</span></label>
-          <input type="text" id="ads-zone-native" placeholder="Zone ID bannière native"
-            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box;">
-        </div>
-      </div>
-      <div style="background:var(--bg4);border-radius:8px;padding:10px 12px;margin-top:14px;font-size:11px;color:var(--text3);">
-        💡 <strong>Quand l'APK Android est prêt :</strong> remplace PropellerAds par le SDK Facebook Audience Network — même slots, zéro recode.
-      </div>
-      <button class="btn btn-primary" style="width:100%;margin-top:16px;padding:12px;" onclick="saveParametresAds()">
-        💾 Enregistrer les paramètres pub
-      </button>
-    </div>
-
-    <!-- Section Intelligence Artificielle -->
-    <div class="card" style="max-width:520px;margin-top:16px;" id="card-ia-params">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:36px;height:36px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">✨</div>
-          <div>
-            <div class="card-title" style="margin:0;">Intelligence Artificielle</div>
-            <div id="ia-status-badge" style="font-size:11px;margin-top:2px;"></div>
-          </div>
-        </div>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;">
-          <input type="checkbox" id="ia-active-toggle" style="width:16px;height:16px;" onchange="saveIASettings()">
-          <span>Activer</span>
-        </label>
-      </div>
-      <p style="font-size:12px;color:var(--text2);margin:12px 0 16px;">
-        Activez l\'assistance IA pour rédiger des mises en demeure, analyser les dossiers locataires et obtenir des conseils juridiques.<br>
-        Nécessite un compte <strong>Anthropic</strong> (console.anthropic.com → API Keys).
-      </p>
-      <div class="form-group">
-        <label style="font-size:12px;font-weight:700;">Clé API Anthropic <span style="color:var(--text3);font-weight:400;">(sk-ant-...)</span></label>
-        <div style="display:flex;gap:8px;">
-          <input type="password" id="ia-api-key" placeholder="sk-ant-api03-..."
-            style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box;">
-          <button class="btn btn-ghost btn-sm" onclick="toggleIAKeyVisibility()" data-tooltip="Afficher/masquer">👁</button>
-        </div>
-      </div>
-      <div style="background:var(--bg4);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:11px;color:var(--text3);">
-        🔒 Votre clé API est stockée <strong>uniquement sur votre appareil</strong> (localStorage) et n\'est jamais transmise à nos serveurs.
-      </div>
-      <button class="btn btn-primary" style="width:100%;margin-top:14px;padding:12px;" onclick="saveIASettings()">
-        ✨ Enregistrer la configuration IA
-      </button>
-      <button class="btn btn-ghost" style="width:100%;margin-top:8px;padding:10px;font-size:12px;" onclick="testerCleIA()">
-        🧪 Tester la connexion IA
-      </button>
-    </div>
+  </div>
   `;
 
   // Injecter le formulaire config paiement loyer
@@ -8091,39 +8061,33 @@ function renderParametres() {
     const inlineEl = document.getElementById('pay-config-global-inline');
     if (inlineEl) inlineEl.innerHTML = renderPayConfigForm(PAY_CONFIG, 'pcg', false);
   }
-  // Afficher le statut OneSignal actuel
+  // Statut OneSignal
   if (typeof _updateOneSignalStatusBadge === 'function') _updateOneSignalStatusBadge();
-  // Pré-remplir et afficher statut IA
+  // Statut + valeur IA
   _updateIAStatusBadge();
   var iaKeyEl = document.getElementById('ia-api-key');
   if (iaKeyEl && getAnthropicKey()) iaKeyEl.value = getAnthropicKey();
   var iaToggle = document.getElementById('ia-active-toggle');
   if (iaToggle) iaToggle.checked = localStorage.getItem('ia_active') !== 'false';
-  // Pré-remplir les champs pub
-  const adsCfg = (DATA.settings && DATA.settings.ads) || {};
-  const adsEnabled = document.getElementById('ads-enabled');
-  if (adsEnabled) adsEnabled.checked = adsCfg.enabled !== false;
-  const adsFields = { 'ads-publisher-id': 'publisherId', 'ads-zone-sticky': 'zoneSticky', 'ads-zone-native': 'zoneNative' };
-  Object.entries(adsFields).forEach(([id, key]) => {
-    const el = document.getElementById(id);
-    if (el && adsCfg[key]) el.value = adsCfg[key];
-  });
+  // Restaurer l'onglet actif si mémorisé
+  const savedTab = sessionStorage.getItem('param_tab');
+  if (savedTab) {
+    const btn = document.querySelector(`.param-tab[onclick*="${savedTab}"]`);
+    if (btn) _paramTab(btn, savedTab);
+  }
+}
+
+function _paramTab(btn, panel) {
+  document.querySelectorAll('.param-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.param-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const el = document.getElementById('pp-' + panel);
+  if (el) el.classList.add('active');
+  sessionStorage.setItem('param_tab', panel);
 }
 
 
 
-function saveParametresAds() {
-  if (!DATA.settings) DATA.settings = {};
-  DATA.settings.ads = {
-    enabled:     document.getElementById('ads-enabled') ? document.getElementById('ads-enabled').checked : true,
-    network:     'propellerads',
-    publisherId: (document.getElementById('ads-publisher-id') || {}).value || '',
-    zoneSticky:  (document.getElementById('ads-zone-sticky')  || {}).value || '',
-    zoneNative:  (document.getElementById('ads-zone-native')  || {}).value || '',
-  };
-  saveData();
-  showToast('Paramètres pub enregistrés ✓', 'green');
-}
 
 // ── IA Settings ──────────────────────────────────────────────
 function saveIASettings() {
