@@ -5102,6 +5102,7 @@ function toggleEntLocataire() {
 }
 
 function startSession(user, version) {
+  if (typeof resetSbAuth === 'function') resetSbAuth();
   SESSION = {
     userId: user.id, role: user.role, version,
     nom: user.nom, immeubles: user.immeubles||[],

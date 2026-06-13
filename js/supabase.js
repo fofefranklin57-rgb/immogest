@@ -6,7 +6,11 @@ const WORKER_URL = 'https://immogest1.fofefranklin57.workers.dev';
 // ── Proxy sécurisé via Cloudflare Worker ──────────────────────
 // Toutes les opérations sur les tables critiques passent par le Worker
 // (service_role key côté serveur, jamais exposée au client)
+var _sbAuthFailed = false; // coupe-circuit : évite le flood de 401
+function resetSbAuth() { _sbAuthFailed = false; }
+
 async function _dbProxy(op, table, data, filter) {
+  if (_sbAuthFailed) throw new Error('Non authentifié');
   const res = await fetch(WORKER_URL + '/db', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -19,6 +23,7 @@ async function _dbProxy(op, table, data, filter) {
   });
   if (!res.ok) {
     const err = await res.json().catch(function() { return {}; });
+    if (res.status === 401) _sbAuthFailed = true;
     throw new Error(err.error || 'Worker /db error ' + res.status);
   }
   const json = await res.json();
@@ -722,7 +727,7 @@ async function saveParametresToSupabase(settings) {
 // Pousse tous les immeubles, locataires actifs et paiements vers Supabase.
 var _syncBusy = false;
 async function syncAllToSupabase() {
-  if (!SESSION || _syncBusy) return false;
+  if (!SESSION || _syncBusy || _sbAuthFailed) return false;
   if (!navigator.onLine) return false;
   _syncBusy = true;
   try {
