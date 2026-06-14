@@ -223,7 +223,7 @@
           <div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:4px;letter-spacing:.5px;text-transform:uppercase;" data-i18n="Mode Personnel">Mode Personnel</div>
         </div>
         <label style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.5px;display:block;margin-bottom:6px;" data-i18n="Numéro de téléphone">NUMÉRO DE TÉLÉPHONE</label>
-        <input type="tel" id="proprio-tel" class="auth-input" placeholder="Ex: 699 00 00 00" style="margin-bottom:12px;"
+        <input type="tel" id="proprio-tel" class="auth-input" placeholder="675345623" style="margin-bottom:12px;"
           onkeydown="if(event.key==='Enter')document.getElementById('proprio-pwd').focus()">
         <label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:6px;" data-i18n="MOT DE PASSE">MOT DE PASSE</label>
         <input type="password" id="proprio-pwd" class="auth-input" placeholder="Mot de passe" style="margin-bottom:16px;"
@@ -242,7 +242,7 @@
           <div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:4px;letter-spacing:.5px;" data-i18n="Numéro + Code PIN">NUMÉRO + CODE PIN</div>
         </div>
         <label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:6px;" data-i18n="Numéro de téléphone">NUMÉRO DE TÉLÉPHONE</label>
-        <input type="tel" id="loc-tel-login" class="auth-input" placeholder="Ex: 699 00 00 00" style="margin-bottom:16px;"
+        <input type="tel" id="loc-tel-login" class="auth-input" placeholder="675345623" style="margin-bottom:16px;"
           onkeydown="if(event.key==='Enter')document.getElementById('loc-pin1').focus()">
         <label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:6px;" data-i18n="Code PIN">CODE PIN</label>
         <div class="pin-row">
@@ -291,7 +291,7 @@
         <!-- Formulaire locataire (phone + PIN) -->
         <div id="pin-section-new" style="display:none;">
           <label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:8px;" data-i18n="Numéro de téléphone">NUMÉRO DE TÉLÉPHONE</label>
-          <input type="tel" id="loc-tel-login-ent" class="auth-input" placeholder="Ex: 699 00 00 00" style="margin-bottom:12px;"
+          <input type="tel" id="loc-tel-login-ent" class="auth-input" placeholder="675345623" style="margin-bottom:12px;"
             onkeydown="if(event.key==='Enter')document.getElementById('pin1').focus()">
           <label style="font-size:10px;font-weight:700;color:rgba(232,240,254,0.45);letter-spacing:1.5px;display:block;margin-bottom:8px;" data-i18n="Code PIN">CODE PIN</label>
           <div class="pin-row">
@@ -615,12 +615,12 @@
     <input type="hidden" id="loc-id">
     <div class="form-row">
       <div class="form-group"><label data-i18n="Nom complet *">Nom complet *</label><input type="text" id="loc-nom" placeholder="Nom Prénom"></div>
-      <div class="form-group"><label data-i18n="Téléphone">Téléphone</label><input type="text" id="loc-tel" placeholder="6XX XXX XXX"></div>
+      <div class="form-group"><label data-i18n="Téléphone">Téléphone</label><input type="text" id="loc-tel" placeholder="675345623"></div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label>💬 WhatsApp <span style="font-size:11px;color:var(--text3);" data-i18n="(si différent du tél)">(si différent du tél)</span></label>
-        <input type="text" id="loc-whatsapp" placeholder="6XX XXX XXX — laisser vide si identique">
+        <input type="text" id="loc-whatsapp" placeholder="675345623 — laisser vide si identique">
       </div>
     </div>
     <div class="form-group"><label data-i18n="Immeuble *">Immeuble *</label><select id="loc-imm"></select></div>
@@ -863,12 +863,12 @@
     <div class="alert alert-green" id="nal-local-info">Local disponible</div>
     <div class="form-row">
       <div class="form-group"><label>Nom complet *</label><input type="text" id="nal-nom" placeholder="Nom Prénom"></div>
-      <div class="form-group"><label>Téléphone</label><input type="text" id="nal-tel" placeholder="6XX XXX XXX"></div>
+      <div class="form-group"><label>Téléphone</label><input type="text" id="nal-tel" placeholder="675345623"></div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label>💬 WhatsApp <span style="font-size:11px;color:var(--text3);">(si différent du tél)</span></label>
-        <input type="text" id="nal-whatsapp" placeholder="6XX XXX XXX — laisser vide si identique">
+        <input type="text" id="nal-whatsapp" placeholder="675345623 — laisser vide si identique">
       </div>
     </div>
     <div class="form-row">
@@ -1518,7 +1518,7 @@ self.addEventListener('fetch', (event) => {
 
     <div class="form-group">
       <label data-i18n="Numéro de téléphone">Numéro de téléphone</label>
-      <input type="tel" id="pay-phone" placeholder="6XX XXX XXX">
+      <input type="tel" id="pay-phone" placeholder="675345623">
     </div>
 
     <button class="btn btn-success" style="width: 100%; margin-top: 16px;" onclick="processPayment()" data-i18n="🔒 Payer maintenant">
@@ -1736,7 +1736,7 @@ self.addEventListener('fetch', (event) => {
     </p>
     <div class="form-group">
       <label>Numéro de téléphone</label>
-      <input type="tel" id="reset-tel" placeholder="6XX XXX XXX" class="form-control">
+      <input type="tel" id="reset-tel" placeholder="675345623" class="form-control">
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="document.getElementById('modal-pin-reset').classList.remove('open')">Annuler</button>
