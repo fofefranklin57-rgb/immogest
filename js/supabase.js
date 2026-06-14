@@ -461,15 +461,18 @@ async function saveLocataireToSupabase(l) {
 // Colonnes existantes dans paiements : id, locataire_id, montant, date_paiement,
 //   mois, annee, mode_paiement, note
 async function savePaiementToSupabase(p) {
+  // mois Supabase = 1-12 ; moisC local = 0-11 → convertir si nécessaire
+  const mois  = p.mois  != null ? p.mois  : (p.moisC  != null ? p.moisC  + 1 : null);
+  const annee = p.annee != null ? p.annee : (p.anneeC != null ? p.anneeC      : null);
   return sbUpsert('paiements', [{
     id:            p.id,
     locataire_id:  p.locId,
-    mois:          p.mois,
-    annee:         p.annee,
+    mois,
+    annee,
     montant:       p.montant || 0,
     date_paiement: p.date || '',
     mode_paiement: p.mode || 'espèces',
-    note:          p.notes || ''
+    note:          p.notes || p.note || ''
   }]);
 }
 

@@ -1986,10 +1986,13 @@ function saveNouveauApresLib() {
   }
   saveData(); closeModals();
   showToast('Nouveau locataire enregistré ✓');
-  // Sync Supabase
+  // Sync Supabase — locataire + tous les paiements créés (caution + avances)
   if (SESSION) {
-    const newLoc = DATA.locataires[DATA.locataires.length - 1];
-    if (newLoc) saveLocataireToSupabase(newLoc);
+    const savedLocId = existing ? existing.id : obj.id;
+    const savedLoc = DATA.locataires.find(function(x){ return x.id === savedLocId; });
+    if (savedLoc) saveLocataireToSupabase(savedLoc);
+    DATA.paiements.filter(function(p){ return p.locId === savedLocId; })
+      .forEach(function(p){ savePaiementToSupabase(p); });
   }
   renderCurrent();
 }
