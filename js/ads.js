@@ -44,6 +44,9 @@
 
   // ── Bannière principale ───────────────────────────────────────
   function injectBanner() {
+    // Ne pas afficher les pubs aux abonnés payants
+    if (typeof MONETISATION !== 'undefined' &&
+        MONETISATION.plan && MONETISATION.plan !== 'gratuit') return;
     if (document.getElementById('immogest-ad-bar')) return;
 
     injectCSS();

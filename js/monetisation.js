@@ -719,6 +719,15 @@ function isEnterprisePlan() { return MONETISATION.plan === 'customisation'; }
 
 function applyPlan() {
   updatePlanBadge();
+  // Masquer la bannière pub pour les abonnés payants
+  if (MONETISATION.plan && MONETISATION.plan !== 'gratuit') {
+    var adBar = document.getElementById('immogest-ad-bar');
+    if (adBar) adBar.style.display = 'none';
+    var adStyle = document.getElementById('immogest-ads-style');
+    if (adStyle) adStyle.remove();
+    var shell = document.getElementById('app-shell');
+    if (shell) shell.style.paddingBottom = '';
+  }
   var badge = document.getElementById('current-plan-badge');
   if (badge) {
     var info = _planBadgeInfo();
