@@ -9188,23 +9188,49 @@ function _majActifProprietaire(immId) {
   saveUsers();
 }
 
-async function supprimerLocataire(locId) {
+function supprimerLocataire(locId) {
   const l = DATA.locataires.find(x => x.id === locId);
   if (!l || l.s === 'libre') return;
-  if (!confirm('Supprimer ' + l.nom + ' ?\nIl ira dans la corbeille pendant 30 jours.')) return;
-  
-  // Move to trash
+
+  // Afficher un choix : corbeille ou suppression définitive
+  var overlay = document.createElement('div');
+  overlay.id = 'confirm-suppr-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML = '<div style="background:var(--bg2,#fff);border-radius:16px;padding:24px;max-width:360px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.3);">'
+    + '<div style="font-size:20px;font-weight:700;color:var(--text1,#111);margin-bottom:8px;">Supprimer ' + l.nom + ' ?</div>'
+    + '<p style="font-size:13px;color:var(--text2,#555);margin-bottom:20px;line-height:1.5;">Choisissez comment supprimer ce locataire.</p>'
+    + '<button id="btn-suppr-corbeille" style="width:100%;padding:11px;margin-bottom:8px;background:var(--bg3,#f5f5f5);border:1px solid var(--border,#ddd);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:left;">🗑️ Corbeille <span style="font-weight:400;color:var(--text3,#888);">— récupérable 30 jours</span></button>'
+    + '<button id="btn-suppr-definitif" style="width:100%;padding:11px;margin-bottom:8px;background:#fff0f0;border:1px solid #fca5a5;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:left;color:#dc2626;">🚫 Supprimer définitivement <span style="font-weight:400;color:#ef4444;">— sans archivage</span></button>'
+    + '<button id="btn-suppr-annuler" style="width:100%;padding:10px;background:transparent;border:none;border-radius:10px;font-size:13px;color:var(--text3,#888);cursor:pointer;">Annuler</button>'
+    + '</div>';
+  document.body.appendChild(overlay);
+
+  document.getElementById('btn-suppr-annuler').onclick = function() { overlay.remove(); };
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+
+  document.getElementById('btn-suppr-corbeille').onclick = async function() {
+    overlay.remove();
+    await _envoyerCorbeille(locId);
+  };
+
+  document.getElementById('btn-suppr-definitif').onclick = function() {
+    overlay.remove();
+    if (!confirm('Supprimer définitivement ' + l.nom + ' ? Cette action est irréversible.')) return;
+    _supprimerDefinitivement(locId);
+  };
+}
+
+async function _envoyerCorbeille(locId) {
+  const l = DATA.locataires.find(x => x.id === locId);
+  if (!l) return;
   if (!DATA.corbeille) DATA.corbeille = [];
   DATA.corbeille.push({
     ...l,
     _deletedAt: new Date().toISOString(),
     _paiements: DATA.paiements.filter(p => p.locId === locId)
   });
-  // Sync Supabase corbeille
   var _paiesLoc = DATA.paiements.filter(function(p){return p.locId===locId;});
   await mettreEnCorbeilleSupabase(l, _paiesLoc);
-  
-  // Reset local to libre
   const idx = DATA.locataires.findIndex(x => x.id === locId);
   if (idx >= 0) {
     DATA.locataires[idx] = {
@@ -9215,19 +9241,40 @@ async function supprimerLocataire(locId) {
       s: 'libre', jourPaiement: 1,
     };
   }
-  
-  // Remove payments from active data (kept in corbeille)
   DATA.paiements = DATA.paiements.filter(p => p.locId !== locId);
-  
-  // Étape 4 : bloquer le compte locataire
   if (l.tel) _bloquerUserParTel(l.tel);
-
-  // Update corbeille badge
   updateCorbeilleBadge();
   updateArchivesBadge();
   saveData();
   renderCurrent();
   showToast(l.nom + ' déplacé dans la corbeille 🗑️');
+}
+
+async function _supprimerDefinitivement(locId) {
+  const l = DATA.locataires.find(x => x.id === locId);
+  if (!l) return;
+  // Supprimer les paiements de ce locataire
+  DATA.paiements = DATA.paiements.filter(p => p.locId !== locId);
+  // Supprimer dans Supabase
+  if (SESSION) {
+    sbDelete('locataires', locId);
+    DATA.paiements.filter(p => p.locId === locId).forEach(p => sbDelete('paiements', p.id));
+  }
+  // Remettre le local en libre (ou supprimer complètement si locataire sans local fixe)
+  const idx = DATA.locataires.findIndex(x => x.id === locId);
+  if (idx >= 0) {
+    DATA.locataires[idx] = {
+      id: locId, iid: l.iid, appt: l.appt,
+      type: l.type || 'appartement',
+      nom: '(Libre)', tel: '', loyer: l.loyer || 0,
+      reste: 0, caution: 0, entree: '', obs: '',
+      s: 'libre', jourPaiement: 1,
+    };
+  }
+  if (l.tel) _bloquerUserParTel(l.tel);
+  saveData();
+  renderCurrent();
+  showToast(l.nom + ' supprimé définitivement ✓', 'green');
 }
 
 function restaurerDepuisCorbeille(locId) {
