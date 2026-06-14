@@ -1099,7 +1099,34 @@ async function payerAvecNotchPay(plan, duree, total) {
   } catch(e) {
     var ov = document.getElementById('notchpay-pending-overlay');
     if (ov) ov.remove();
-    showToast('❌ ' + e.message, 'error');
+    // Afficher modal de fallback paiement manuel
+    var planInfo = getCurrentPlans()[plan] || {};
+    var planLabel = planInfo.label || plan;
+    var fallbackModal = document.createElement('div');
+    fallbackModal.className = 'overlay open';
+    fallbackModal.style.zIndex = '10010';
+    fallbackModal.innerHTML =
+      '<div class="modal" style="max-width:380px;text-align:center;">' +
+        '<div style="font-size:48px;margin-bottom:12px;">📱</div>' +
+        '<h3 style="margin-bottom:8px;">Paiement par transfert</h3>' +
+        '<p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:16px;">' +
+          'Le paiement automatique est temporairement indisponible.<br>' +
+          'Effectuez un virement de <strong>' + fmt(total) + ' FCFA</strong><br>' +
+          'puis envoyez votre preuve de paiement.' +
+        '</p>' +
+        '<div style="background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:16px;text-align:left;font-size:13px;">' +
+          '<div style="margin-bottom:8px;"><strong>📱 MTN MoMo :</strong> <code style="font-size:14px;font-weight:700;">673 950 019</code></div>' +
+          '<div><strong>🟠 Orange Money :</strong> <code style="font-size:14px;font-weight:700;">690 409 929</code></div>' +
+        '</div>' +
+        '<div style="font-size:11px;color:var(--text3);margin-bottom:16px;">' +
+          'Objet du virement : ImmoGest ' + planLabel + ' — ' + (duree || 1) + ' mois' +
+        '</div>' +
+        '<div class="modal-footer">' +
+          '<button class="btn btn-ghost" onclick="this.closest(\'.overlay\').remove()">Fermer</button>' +
+          '<a href="https://wa.me/237690409929?text=' + encodeURIComponent('Bonjour, je souhaite souscrire au plan ImmoGest ' + planLabel + ' (' + (duree||1) + ' mois). Voici ma preuve de paiement :') + '" target="_blank" class="btn btn-primary">WhatsApp →</a>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(fallbackModal);
   }
 }
 
