@@ -5111,7 +5111,7 @@ async function loginEntrepriseLocataire() {
   }
   if (!locataire.pin) { locataire.pin = pin; saveData(); }
   _bfReset();
-  startSession({ id:'loc_'+locataire.id, nom:locataire.nom, role:'locataire', locId:locataire.id, iid:locataire.iid, version:'entreprise' }, 'entreprise');
+  startSession({ id:'loc_'+locataire.id, nom:locataire.nom, role:'locataire', locId:locataire.id, iid:locataire.iid, version:'entreprise', pin: locataire.pin || pin }, 'entreprise');
   if (locataire.firstLogin) setTimeout(() => showPINChangeSuggestion(locataire.id, true), 800);
 }
 

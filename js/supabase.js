@@ -24,14 +24,15 @@ async function _dbProxy(op, table, data, filter) {
       })
     });
   } catch(netErr) {
-    // ERR_CONNECTION_CLOSED ou autre erreur réseau → coupe-circuit 60s
+    // ERR_CONNECTION_CLOSED ou autre erreur réseau → coupe-circuit 15s
     _sbAuthFailed = true;
-    setTimeout(function() { _sbAuthFailed = false; }, 60000);
+    setTimeout(function() { _sbAuthFailed = false; }, 15000);
     throw netErr;
   }
   if (!res.ok) {
     const err = await res.json().catch(function() { return {}; });
-    if (res.status === 401) _sbAuthFailed = true;
+    // Ne déclenche le coupe-circuit que sur les vraies erreurs d'auth (pas les 401 transitoires)
+    if (res.status === 401 && err.error !== 'Non authentifié') _sbAuthFailed = true;
     throw new Error(err.error || 'Worker /db error ' + res.status);
   }
   const json = await res.json();
@@ -340,7 +341,7 @@ async function loadDataFromSupabase() {
       sbLoad('paiements'),
       loadParametresFromSupabase()
     ]);
-    const immeubles = _testAuth;
+    let immeubles = _testAuth;
 
     if (locataires === null) {
       console.warn('Supabase indisponible — fallback localStorage');
