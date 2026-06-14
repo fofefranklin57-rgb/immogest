@@ -109,9 +109,15 @@
 
     document.body.appendChild(bar);
 
-    // Décaler le contenu
+    // Décaler le contenu principal
     var shell = document.getElementById('app-shell');
     if (shell) shell.style.paddingBottom = '54px';
+
+    // Remonter le bouton IA flottant et le promo-toast au-dessus de la bannière
+    var aiFab = document.getElementById('ai-float-btn');
+    if (aiFab) aiFab.style.bottom = '82px';
+    var promoToast = document.getElementById('promo-toast');
+    if (promoToast) promoToast.style.bottom = '58px';
   }
 
   // Injection automatique — pas besoin d'appeler initAds()
