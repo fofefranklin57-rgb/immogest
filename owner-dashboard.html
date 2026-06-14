@@ -3,370 +3,810 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ImmoGest — Vue Propriétaire</title>
+<title>ImmoGest — Creator Dashboard</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0f172a">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
 
-  /* ── Auth ── */
-  #auth-screen {
-    display: flex; align-items: center; justify-content: center;
-    min-height: 100vh; background: #0f172a;
-  }
-  .auth-card {
-    background: #1e293b; border-radius: 16px; padding: 40px;
-    width: 100%; max-width: 380px; text-align: center;
-    box-shadow: 0 25px 50px rgba(0,0,0,.5);
-  }
-  .auth-card .logo { font-size: 2.5rem; margin-bottom: 8px; }
-  .auth-card h1 { font-size: 1.4rem; color: #f1f5f9; margin-bottom: 4px; }
-  .auth-card p { font-size: .85rem; color: #64748b; margin-bottom: 28px; }
-  .auth-card input {
-    width: 100%; padding: 12px 16px; border-radius: 10px;
-    border: 1px solid #334155; background: #0f172a; color: #e2e8f0;
-    font-size: 1rem; margin-bottom: 12px; outline: none;
-  }
-  .auth-card input:focus { border-color: #6366f1; }
-  .auth-card button {
-    width: 100%; padding: 12px; background: #6366f1; color: #fff;
-    border: none; border-radius: 10px; font-size: 1rem; font-weight: 600;
-    cursor: pointer; transition: background .2s;
-  }
-  .auth-card button:hover { background: #4f46e5; }
-  .auth-error { color: #f87171; font-size: .85rem; margin-top: 8px; display: none; }
+/* ── Auth / Contact public ── */
+#public-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;flex-direction:column;gap:24px}
+.auth-card{background:#1e293b;border-radius:16px;padding:36px 32px;width:100%;max-width:400px;box-shadow:0 25px 50px rgba(0,0,0,.5)}
+.auth-card .logo{font-size:2.2rem;text-align:center;margin-bottom:6px}
+.auth-card h1{font-size:1.3rem;color:#f1f5f9;text-align:center;margin-bottom:4px}
+.auth-card p{font-size:.82rem;color:#64748b;text-align:center;margin-bottom:24px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;padding:11px 14px;border-radius:9px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:.9rem;outline:none;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#6366f1}
+.field textarea{min-height:90px}
+.btn-main{width:100%;padding:12px;background:#6366f1;color:#fff;border:none;border-radius:9px;font-size:.95rem;font-weight:600;cursor:pointer;transition:background .2s}
+.btn-main:hover{background:#4f46e5}
+.btn-main:disabled{background:#334155;cursor:not-allowed}
+.auth-error{color:#f87171;font-size:.82rem;margin-top:8px;text-align:center;display:none}
+.auth-success{color:#4ade80;font-size:.82rem;margin-top:8px;text-align:center;display:none}
+.divider{color:#334155;text-align:center;font-size:.8rem;margin:16px 0;position:relative}
+.divider::before,.divider::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:#334155}
+.divider::before{left:0}.divider::after{right:0}
 
-  /* ── Dashboard ── */
-  #dashboard { display: none; }
+/* ── Dashboard ── */
+#dashboard{display:none;min-height:100vh;flex-direction:column}
 
-  header {
-    background: #1e293b; border-bottom: 1px solid #334155;
-    padding: 16px 28px; display: flex; align-items: center; justify-content: space-between;
-  }
-  header h1 { font-size: 1.2rem; color: #f1f5f9; font-weight: 700; }
-  header span { font-size: .8rem; color: #64748b; }
-  .refresh-btn {
-    background: #334155; border: none; color: #94a3b8; padding: 8px 14px;
-    border-radius: 8px; cursor: pointer; font-size: .85rem; transition: background .2s;
-  }
-  .refresh-btn:hover { background: #475569; color: #f1f5f9; }
+header{background:#1e293b;border-bottom:1px solid #334155;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:100}
+.hdr-left{display:flex;align-items:center;gap:12px}
+.hdr-left h1{font-size:1.1rem;color:#f1f5f9;font-weight:700}
+.hdr-badge{background:#6366f1;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.hdr-btn{background:#334155;border:none;color:#94a3b8;padding:7px 13px;border-radius:7px;cursor:pointer;font-size:.82rem;transition:all .2s}
+.hdr-btn:hover{background:#475569;color:#f1f5f9}
+.hdr-btn.install{background:#6366f133;color:#a5b4fc;border:1px solid #6366f144}
+.hdr-btn.install:hover{background:#6366f144}
+#last-update{font-size:.75rem;color:#475569}
 
-  main { padding: 28px; max-width: 1200px; margin: 0 auto; }
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid #334155;background:#1e293b;padding:0 24px}
+.tab-btn{padding:12px 20px;font-size:.85rem;color:#64748b;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;transition:all .2s;position:relative;display:flex;align-items:center;gap:6px}
+.tab-btn.active{color:#a5b4fc;border-bottom-color:#6366f1}
+.tab-btn:hover:not(.active){color:#94a3b8}
+.tab-badge{background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
 
-  .section-title {
-    font-size: .75rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .1em; color: #64748b; margin-bottom: 16px; margin-top: 32px;
-  }
-  .section-title:first-child { margin-top: 0; }
+main{padding:24px;max-width:1280px;margin:0 auto;width:100%;flex:1}
+.tab-content{display:none}
+.tab-content.active{display:block}
 
-  /* ── KPI Cards ── */
-  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
-  .kpi-card {
-    background: #1e293b; border-radius: 12px; padding: 20px 22px;
-    border: 1px solid #334155; position: relative; overflow: hidden;
-  }
-  .kpi-card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    background: var(--accent, #6366f1);
-  }
-  .kpi-label { font-size: .78rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
-  .kpi-value { font-size: 2rem; font-weight: 800; color: #f1f5f9; line-height: 1; }
-  .kpi-sub { font-size: .8rem; color: #94a3b8; margin-top: 6px; }
+/* Section */
+.section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:14px;margin-top:28px}
+.section-title:first-child{margin-top:0}
 
-  /* ── Charts ── */
-  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  @media (max-width: 768px) { .charts-grid { grid-template-columns: 1fr; } }
-  .chart-card {
-    background: #1e293b; border-radius: 12px; padding: 20px;
-    border: 1px solid #334155;
-  }
-  .chart-card h3 { font-size: .9rem; color: #94a3b8; margin-bottom: 16px; font-weight: 600; }
-  .chart-card canvas { max-height: 220px; }
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:14px;margin-bottom:6px}
+.kpi-card{background:#1e293b;border-radius:12px;padding:18px 20px;border:1px solid #334155;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent,#6366f1)}
+.kpi-label{font-size:.72rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.kpi-value{font-size:1.9rem;font-weight:800;color:#f1f5f9;line-height:1}
+.kpi-sub{font-size:.75rem;color:#94a3b8;margin-top:5px}
 
-  /* ── Status indicator ── */
-  .status-bar {
-    display: flex; align-items: center; gap: 8px;
-    font-size: .78rem; color: #64748b; margin-top: 20px;
-  }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-  .dot.error { background: #ef4444; animation: none; }
+/* Charts */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
+@media(max-width:768px){.charts-grid{grid-template-columns:1fr}}
+.chart-card{background:#1e293b;border-radius:12px;padding:18px;border:1px solid #334155}
+.chart-card h3{font-size:.82rem;color:#94a3b8;margin-bottom:14px;font-weight:600}
+.chart-card canvas{max-height:200px}
 
-  .loading { color: #64748b; font-size: .9rem; padding: 40px; text-align: center; }
+/* Messages */
+.msg-list{display:flex;flex-direction:column;gap:12px;margin-top:4px}
+.msg-card{background:#1e293b;border-radius:12px;padding:18px;border:1px solid #334155;position:relative;transition:border-color .2s}
+.msg-card.unread{border-color:#6366f155;background:#1e293b}
+.msg-card.unread::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#6366f1;border-radius:3px 0 0 3px}
+.msg-meta{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.msg-name{font-weight:700;color:#f1f5f9;font-size:.9rem}
+.msg-email{color:#64748b;font-size:.8rem}
+.msg-date{color:#475569;font-size:.75rem;margin-left:auto}
+.msg-sujet{font-size:.82rem;font-weight:600;color:#a5b4fc;margin-bottom:6px}
+.msg-body{font-size:.85rem;color:#94a3b8;line-height:1.6}
+.msg-actions{display:flex;gap:8px;margin-top:12px}
+.btn-sm{padding:5px 12px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.btn-read{background:#22c55e22;color:#4ade80;border:1px solid #22c55e33}
+.btn-read:hover{background:#22c55e33}
+.btn-del{background:#ef444422;color:#f87171;border:1px solid #ef444433}
+.btn-del:hover{background:#ef444433}
+.btn-reply{background:#6366f122;color:#a5b4fc;border:1px solid #6366f133}
+.btn-reply:hover{background:#6366f133}
+.empty-state{text-align:center;padding:60px 20px;color:#475569}
+.empty-state .icon{font-size:3rem;margin-bottom:12px}
+
+/* Package */
+.pkg-form{background:#1e293b;border-radius:12px;padding:24px;border:1px solid #334155;max-width:520px}
+.pkg-form h3{font-size:.95rem;color:#f1f5f9;font-weight:700;margin-bottom:20px}
+.field-note{font-size:.75rem;color:#64748b;margin-top:4px}
+.plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px}
+.plan-opt{border:2px solid #334155;border-radius:8px;padding:10px;text-align:center;cursor:pointer;transition:all .2s}
+.plan-opt.selected{border-color:#6366f1;background:#6366f122}
+.plan-opt .plan-name{font-weight:700;font-size:.85rem;color:#f1f5f9}
+.plan-opt .plan-price{font-size:.75rem;color:#64748b;margin-top:2px}
+.pkg-history{margin-top:28px}
+.pkg-history h3{font-size:.85rem;color:#94a3b8;font-weight:600;margin-bottom:12px}
+.pkg-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0f172a;border-radius:8px;margin-bottom:6px;font-size:.82rem}
+.pkg-row .tenant{flex:1;color:#e2e8f0;font-weight:600;font-family:monospace;font-size:.78rem}
+.plan-chip{padding:3px 9px;border-radius:20px;font-size:.72rem;font-weight:700;text-transform:uppercase}
+.plan-chip.gratuit{background:#47494d33;color:#94a3b8}
+.plan-chip.starter{background:#0ea5e922;color:#38bdf8}
+.plan-chip.pro{background:#6366f122;color:#a5b4fc}
+.plan-chip.entreprise{background:#a855f722;color:#d8b4fe}
+.plan-chip.expired{background:#ef444422;color:#f87171}
+.pkg-date{color:#475569;font-size:.75rem}
+
+/* Status */
+.status-bar{display:flex;align-items:center;gap:8px;font-size:.75rem;color:#475569;margin-top:20px;padding-top:16px;border-top:1px solid #1e293b}
+.dot{width:7px;height:7px;border-radius:50%;background:#22c55e;flex-shrink:0;animation:pulse 2s infinite}
+.dot.error{background:#ef4444;animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.loading{color:#64748b;font-size:.88rem;padding:40px;text-align:center}
+.alert{padding:10px 14px;border-radius:8px;font-size:.82rem;margin-top:8px;display:none}
+.alert.success{background:#22c55e22;color:#4ade80;border:1px solid #22c55e33}
+.alert.error{background:#ef444422;color:#f87171;border:1px solid #ef444433}
 </style>
 </head>
 <body>
 
-<!-- ── Écran de connexion ── -->
-<div id="auth-screen">
-  <div class="auth-card">
+<!-- ══════════════════════════════════════════════
+     ÉCRAN PUBLIC : Connexion + Formulaire Contact
+══════════════════════════════════════════════ -->
+<div id="public-screen">
+
+  <!-- Auth -->
+  <div class="auth-card" id="auth-block">
     <div class="logo">🏢</div>
     <h1>ImmoGest</h1>
-    <p>Vue propriétaire — accès restreint</p>
-    <input type="password" id="pwd-input" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')checkAuth()" autofocus>
-    <button onclick="checkAuth()">Accéder</button>
+    <p>Accès réservé — Creator Dashboard</p>
+    <div class="field">
+      <label>Mot de passe</label>
+      <input type="password" id="pwd-input" placeholder="••••••••••" onkeydown="if(event.key==='Enter')checkAuth()">
+    </div>
+    <button class="btn-main" onclick="checkAuth()">Accéder</button>
     <div class="auth-error" id="auth-error">Mot de passe incorrect</div>
   </div>
+
+  <!-- Divider -->
+  <div style="width:100%;max-width:400px">
+    <div class="divider">ou</div>
+  </div>
+
+  <!-- Contact public -->
+  <div class="auth-card" id="contact-block">
+    <div class="logo" style="font-size:1.6rem">✉️</div>
+    <h1 style="font-size:1.1rem">Contacter l'équipe ImmoGest</h1>
+    <p>Support, partenariat, demande de devis</p>
+    <div class="field">
+      <label>Votre nom *</label>
+      <input type="text" id="c-nom" placeholder="Jean Dupont">
+    </div>
+    <div class="field">
+      <label>Email *</label>
+      <input type="email" id="c-email" placeholder="vous@exemple.com">
+    </div>
+    <div class="field">
+      <label>Sujet</label>
+      <select id="c-sujet">
+        <option value="Support technique">Support technique</option>
+        <option value="Abonnement">Abonnement / Tarif</option>
+        <option value="Partenariat">Partenariat</option>
+        <option value="Devis personnalisé">Devis personnalisé</option>
+        <option value="Autre">Autre</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Message *</label>
+      <textarea id="c-message" placeholder="Décrivez votre besoin…"></textarea>
+    </div>
+    <div class="field">
+      <label>Votre ID espace <span style="color:#475569;font-weight:400;">(optionnel)</span></label>
+      <input type="text" id="c-tenant" placeholder="Trouvez-le dans Paramètres → Mon espace">
+      <div class="field-note">Permet de vous identifier plus rapidement</div>
+    </div>
+    <button class="btn-main" id="btn-send-contact" onclick="sendContact()">📨 Envoyer le message</button>
+    <div class="alert success" id="contact-ok">✅ Message envoyé ! Nous vous répondrons sous 24h.</div>
+    <div class="alert error" id="contact-err">Erreur d'envoi. Vérifiez votre connexion.</div>
+  </div>
+
 </div>
 
-<!-- ── Dashboard ── -->
-<div id="dashboard">
+
+<!-- ══════════════════════════════════════════════
+     DASHBOARD PRIVÉ
+══════════════════════════════════════════════ -->
+<div id="dashboard" style="display:none;">
+
+  <!-- Header -->
   <header>
-    <h1>🏢 ImmoGest — Vue propriétaire</h1>
-    <div style="display:flex;align-items:center;gap:12px">
+    <div class="hdr-left">
+      <h1>🏢 ImmoGest Creator</h1>
+      <span class="hdr-badge" id="hdr-version">v1.0</span>
+    </div>
+    <div class="hdr-right">
       <span id="last-update">—</span>
-      <button class="refresh-btn" onclick="loadStats()">↻ Actualiser</button>
+      <button class="hdr-btn install" id="btn-install" style="display:none" onclick="installPWA()">📲 Installer</button>
+      <button class="hdr-btn" onclick="loadAll()">↻ Actualiser</button>
+      <button class="hdr-btn" onclick="logout()" style="color:#f87171">Déconnexion</button>
     </div>
   </header>
 
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('stats',this)">📊 Statistiques</button>
+    <button class="tab-btn" onclick="switchTab('messages',this)" id="tab-messages-btn">
+      ✉️ Messages <span class="tab-badge" id="badge-msgs" style="display:none">0</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('packages',this)">🎁 Offrir package</button>
+  </div>
+
   <main>
-    <div class="loading" id="loading-msg">Chargement des données…</div>
 
-    <div id="content" style="display:none">
+    <!-- ── TAB: STATISTIQUES ── -->
+    <div class="tab-content active" id="tab-stats">
+      <div class="loading" id="stats-loading">Chargement des données…</div>
+      <div id="stats-content" style="display:none">
 
-      <div class="section-title">Vue d'ensemble</div>
-      <div class="kpi-grid">
-        <div class="kpi-card" style="--accent:#6366f1">
-          <div class="kpi-label">Immeubles</div>
-          <div class="kpi-value" id="kpi-immeubles">—</div>
-          <div class="kpi-sub">enregistrés</div>
+        <div class="section-title">💳 Abonnements</div>
+        <div class="kpi-grid">
+          <div class="kpi-card" style="--accent:#6366f1">
+            <div class="kpi-label">Espaces actifs</div>
+            <div class="kpi-value" id="k-actifs">—</div>
+            <div class="kpi-sub">abonnements en cours</div>
+          </div>
+          <div class="kpi-card" style="--accent:#22c55e">
+            <div class="kpi-label">Revenus total</div>
+            <div class="kpi-value" id="k-revenus">—</div>
+            <div class="kpi-sub">encaissés</div>
+          </div>
+          <div class="kpi-card" style="--accent:#0ea5e9">
+            <div class="kpi-label">Plan Starter</div>
+            <div class="kpi-value" id="k-starter">—</div>
+            <div class="kpi-sub" id="k-starter-sub">—</div>
+          </div>
+          <div class="kpi-card" style="--accent:#a855f7">
+            <div class="kpi-label">Plan Pro</div>
+            <div class="kpi-value" id="k-pro">—</div>
+            <div class="kpi-sub" id="k-pro-sub">—</div>
+          </div>
+          <div class="kpi-card" style="--accent:#f59e0b">
+            <div class="kpi-label">Plan Entreprise</div>
+            <div class="kpi-value" id="k-entreprise">—</div>
+            <div class="kpi-sub" id="k-ent-sub">—</div>
+          </div>
+          <div class="kpi-card" style="--accent:#64748b">
+            <div class="kpi-label">Gratuit</div>
+            <div class="kpi-value" id="k-gratuit">—</div>
+            <div class="kpi-sub">sans abonnement</div>
+          </div>
         </div>
-        <div class="kpi-card" style="--accent:#22c55e">
-          <div class="kpi-label">Locataires actifs</div>
-          <div class="kpi-value" id="kpi-locataires">—</div>
-          <div class="kpi-sub" id="kpi-loc-sub">—</div>
+
+        <div class="charts-grid">
+          <div class="chart-card">
+            <h3>Revenus par mois (6 mois)</h3>
+            <canvas id="chart-revenus"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Distribution des plans</h3>
+            <canvas id="chart-plans"></canvas>
+          </div>
         </div>
-        <div class="kpi-card" style="--accent:#f59e0b">
-          <div class="kpi-label">Taux d'occupation</div>
-          <div class="kpi-value" id="kpi-taux">—</div>
-          <div class="kpi-sub">des locaux</div>
+
+        <div class="section-title" style="margin-top:32px">🏢 Activité immobilière</div>
+        <div class="kpi-grid">
+          <div class="kpi-card" style="--accent:#6366f1">
+            <div class="kpi-label">Immeubles</div>
+            <div class="kpi-value" id="k-immeubles">—</div>
+            <div class="kpi-sub">enregistrés</div>
+          </div>
+          <div class="kpi-card" style="--accent:#22c55e">
+            <div class="kpi-label">Locataires actifs</div>
+            <div class="kpi-value" id="k-locataires">—</div>
+            <div class="kpi-sub" id="k-loc-sub">—</div>
+          </div>
+          <div class="kpi-card" style="--accent:#f59e0b">
+            <div class="kpi-label">Taux d'occupation</div>
+            <div class="kpi-value" id="k-taux">—</div>
+            <div class="kpi-sub">des locaux</div>
+          </div>
+          <div class="kpi-card" style="--accent:#0ea5e9">
+            <div class="kpi-label">Paiements ce mois</div>
+            <div class="kpi-value" id="k-pays">—</div>
+            <div class="kpi-sub" id="k-pays-sub">—</div>
+          </div>
+          <div class="kpi-card" style="--accent:#ef4444">
+            <div class="kpi-label">Impayés</div>
+            <div class="kpi-value" id="k-impayes">—</div>
+            <div class="kpi-sub">locataires en retard</div>
+          </div>
+          <div class="kpi-card" style="--accent:#a855f7">
+            <div class="kpi-label">Maintenances</div>
+            <div class="kpi-value" id="k-maint">—</div>
+            <div class="kpi-sub" id="k-maint-sub">—</div>
+          </div>
         </div>
-        <div class="kpi-card" style="--accent:#0ea5e9">
-          <div class="kpi-label">Paiements ce mois</div>
-          <div class="kpi-value" id="kpi-pays-mois">—</div>
-          <div class="kpi-sub" id="kpi-pays-sub">—</div>
+
+        <div class="charts-grid">
+          <div class="chart-card">
+            <h3>Paiements — 6 derniers mois</h3>
+            <canvas id="chart-pays"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Statut des locataires</h3>
+            <canvas id="chart-statuts"></canvas>
+          </div>
         </div>
-        <div class="kpi-card" style="--accent:#ef4444">
-          <div class="kpi-label">Impayés</div>
-          <div class="kpi-value" id="kpi-impayes">—</div>
-          <div class="kpi-sub">locataires en retard</div>
+
+        <div class="status-bar">
+          <div class="dot" id="status-dot"></div>
+          <span id="status-text">Connecté à Supabase</span>
         </div>
-        <div class="kpi-card" style="--accent:#a855f7">
-          <div class="kpi-label">Maintenances</div>
-          <div class="kpi-value" id="kpi-maintenances">—</div>
-          <div class="kpi-sub" id="kpi-maint-sub">—</div>
-        </div>
+
       </div>
-
-      <div class="section-title">Activité</div>
-      <div class="charts-grid">
-        <div class="chart-card">
-          <h3>Paiements — 6 derniers mois (nombre)</h3>
-          <canvas id="chart-pays"></canvas>
-        </div>
-        <div class="chart-card">
-          <h3>Statut des locataires</h3>
-          <canvas id="chart-statuts"></canvas>
-        </div>
-        <div class="chart-card">
-          <h3>Nouveaux locataires par mois (6 mois)</h3>
-          <canvas id="chart-nouveaux"></canvas>
-        </div>
-        <div class="chart-card">
-          <h3>Répartition par immeuble (locaux occupés)</h3>
-          <canvas id="chart-immeubles"></canvas>
-        </div>
-      </div>
-
-      <div class="status-bar">
-        <div class="dot" id="status-dot"></div>
-        <span id="status-text">Connecté à Supabase</span>
-      </div>
-
     </div>
+
+    <!-- ── TAB: MESSAGES ── -->
+    <div class="tab-content" id="tab-messages">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div>
+          <div class="section-title" style="margin:0">✉️ Messages reçus</div>
+          <div style="font-size:.78rem;color:#475569;margin-top:4px">
+            Partagez ce lien pour recevoir des messages :
+            <a href="#" id="contact-url" style="color:#6366f1;text-decoration:none" onclick="copyContactUrl(event)">📋 Copier l'URL</a>
+          </div>
+        </div>
+        <button class="hdr-btn" onclick="loadMessages()">↻</button>
+      </div>
+      <div class="loading" id="msgs-loading" style="display:none">Chargement…</div>
+      <div class="msg-list" id="msg-list"></div>
+    </div>
+
+    <!-- ── TAB: OFFRIR PACKAGE ── -->
+    <div class="tab-content" id="tab-packages">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
+
+        <div class="pkg-form">
+          <h3>🎁 Offrir un plan à un utilisateur</h3>
+
+          <div class="field">
+            <label>Tenant ID de l'utilisateur *</label>
+            <input type="text" id="pkg-tenant" placeholder="ex: abc123-def456…">
+            <div class="field-note">L'utilisateur le trouve dans Paramètres → Mon espace → ID espace</div>
+          </div>
+
+          <div class="field">
+            <label>Plan à offrir</label>
+            <div class="plan-grid">
+              <div class="plan-opt selected" onclick="selectPlan('starter',this)">
+                <div class="plan-name">Starter</div>
+                <div class="plan-price">9 999 FCFA</div>
+              </div>
+              <div class="plan-opt" onclick="selectPlan('pro',this)">
+                <div class="plan-name">Pro</div>
+                <div class="plan-price">19 999 FCFA</div>
+              </div>
+              <div class="plan-opt" onclick="selectPlan('entreprise',this)">
+                <div class="plan-name">Entreprise</div>
+                <div class="plan-price">29 999 FCFA</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Durée</label>
+            <select id="pkg-duree">
+              <option value="1">1 mois</option>
+              <option value="3">3 mois</option>
+              <option value="6">6 mois (−10%)</option>
+              <option value="12" selected>12 mois (−20%)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Note interne <span style="color:#475569;font-weight:400">(optionnel)</span></label>
+            <input type="text" id="pkg-note" placeholder="ex: offert suite à un partenariat">
+          </div>
+
+          <button class="btn-main" onclick="offrirPackage()">🎁 Offrir ce plan</button>
+          <div class="alert success" id="pkg-ok">✅ Plan activé avec succès !</div>
+          <div class="alert error" id="pkg-err">Erreur. Vérifiez le Tenant ID.</div>
+        </div>
+
+        <div class="pkg-history">
+          <div class="section-title" style="margin-top:0">Abonnements actifs</div>
+          <div class="loading" id="pkg-loading" style="display:none">Chargement…</div>
+          <div id="pkg-list"></div>
+        </div>
+
+      </div>
+    </div>
+
   </main>
 </div>
 
 <script>
-// ── CONFIG ─────────────────────────────────────────────────────────
-const OWNER_PWD    = 'immogest2025owner'; // ← change ce mot de passe
+// ── CONFIG ────────────────────────────────────────────────────────────
+const OWNER_PWD    = 'immogest2025owner';
 const SUPABASE_URL = 'https://uggxfmwpttfsfcirmeqx.supabase.co';
-const SUPABASE_ANON= 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZ3hmbXdwdHRmc2ZjaXJtZXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNTA4MjIsImV4cCI6MjA5NDYyNjgyMn0.l8iYlJHOt6evNlBQ3zRskZasn_J2BjAUs1l2vKOZNvY';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZ3hmbXdwdHRmc2ZjaXJtZXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNTA4MjIsImV4cCI6MjA5NDYyNjgyMn0.l8iYlJHOt6evNlBQ3zRskZasn_J2BjAUs1l2vKOZNvY';
 
-const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let charts = {};
+let _selectedPlan = 'starter';
 
-// ── AUTH ────────────────────────────────────────────────────────────
+// ── PWA INSTALL ────────────────────────────────────────────────────────
+let _deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredPrompt = e;
+  const btn = document.getElementById('btn-install');
+  if (btn) btn.style.display = 'flex';
+});
+function installPWA() {
+  if (!_deferredPrompt) return;
+  _deferredPrompt.prompt();
+  _deferredPrompt.userChoice.then(() => {
+    _deferredPrompt = null;
+    document.getElementById('btn-install').style.display = 'none';
+  });
+}
+window.addEventListener('appinstalled', () => {
+  document.getElementById('btn-install').style.display = 'none';
+});
+
+// ── AUTH ──────────────────────────────────────────────────────────────
 function checkAuth() {
   const val = document.getElementById('pwd-input').value;
   if (val === OWNER_PWD) {
     sessionStorage.setItem('owner_ok', '1');
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'block';
-    loadStats();
+    showDashboard();
   } else {
-    document.getElementById('auth-error').style.display = 'block';
+    const err = document.getElementById('auth-error');
+    err.style.display = 'block';
     document.getElementById('pwd-input').value = '';
     document.getElementById('pwd-input').focus();
+    setTimeout(() => err.style.display = 'none', 3000);
   }
 }
+function logout() {
+  sessionStorage.removeItem('owner_ok');
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('public-screen').style.display = 'flex';
+}
+function showDashboard() {
+  document.getElementById('public-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'flex';
+  document.getElementById('dashboard').style.flexDirection = 'column';
+  loadAll();
+}
+if (sessionStorage.getItem('owner_ok') === '1') showDashboard();
 
-// Auto-login si déjà authentifié dans la session
-if (sessionStorage.getItem('owner_ok') === '1') {
-  document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('dashboard').style.display = 'block';
-  loadStats();
+// ── TABS ──────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'messages') loadMessages();
+  if (name === 'packages') loadAbonnements();
 }
 
-// ── LOAD STATS ──────────────────────────────────────────────────────
-async function loadStats() {
-  document.getElementById('loading-msg').style.display = 'block';
-  document.getElementById('content').style.display = 'none';
+// ── LOAD ALL ──────────────────────────────────────────────────────────
+async function loadAll() {
+  loadStats();
+  loadMessages();
+}
 
+// ── STATS ─────────────────────────────────────────────────────────────
+async function loadStats() {
+  document.getElementById('stats-loading').style.display = 'block';
+  document.getElementById('stats-content').style.display = 'none';
   try {
     const now = new Date();
-    const moisCourant = now.getMonth() + 1;
-    const anneeCourante = now.getFullYear();
+    const mo = now.getMonth() + 1, yr = now.getFullYear();
 
     const [
+      { data: abonnements },
       { data: immeubles },
       { data: locataires },
       { data: paiements },
       { data: maintenances }
     ] = await Promise.all([
-      _sb.from('immeubles').select('id, nom'),
-      _sb.from('locataires').select('id, statut, entree, immeuble_id'),
-      _sb.from('paiements').select('id, mois, annee, montant, date_paiement'),
-      _sb.from('maintenances').select('id, statut')
+      _sb.from('abonnements').select('*'),
+      _sb.from('immeubles').select('id,nom'),
+      _sb.from('locataires').select('id,statut,entree,immeuble_id'),
+      _sb.from('paiements').select('id,mois,annee,montant,date_paiement'),
+      _sb.from('maintenances').select('id,statut').catch(() => ({data:[]}))
     ]);
 
-    // ── KPIs ──
-    const actifs = (locataires || []).filter(l => l.statut !== 'libre');
-    const libres = (locataires || []).filter(l => l.statut === 'libre');
-    const impayes = (locataires || []).filter(l => l.statut === 'impayé');
-    const total = actifs.length + libres.length;
-    const taux = total > 0 ? Math.round(actifs.length / total * 100) : 0;
+    const abs = abonnements || [];
+    const actifs  = abs.filter(a => a.statut === 'actif' || a.statut === 'active');
+    const starters = abs.filter(a => a.plan === 'starter');
+    const pros     = abs.filter(a => a.plan === 'pro');
+    const ents     = abs.filter(a => a.plan === 'entreprise');
+    const gratuits = abs.filter(a => !a.plan || a.plan === 'gratuit');
+    const revenus  = abs.reduce((s, a) => s + (a.montant || 0), 0);
 
-    const paysMois = (paiements || []).filter(p => p.mois === moisCourant && p.annee === anneeCourante);
-    const montantMois = paysMois.reduce((s, p) => s + (p.montant || 0), 0);
+    set('k-actifs', actifs.length);
+    set('k-revenus', fmt(revenus));
+    set('k-starter', starters.length);
+    set('k-starter-sub', fmt(starters.reduce((s,a)=>s+(a.montant||0),0)));
+    set('k-pro', pros.length);
+    set('k-pro-sub', fmt(pros.reduce((s,a)=>s+(a.montant||0),0)));
+    set('k-entreprise', ents.length);
+    set('k-ent-sub', fmt(ents.reduce((s,a)=>s+(a.montant||0),0)));
+    set('k-gratuit', gratuits.length);
 
-    const maintEnAttente = (maintenances || []).filter(m => m.statut === 'en_attente' || m.statut === 'en_cours');
-    const maintTotal = (maintenances || []).length;
+    // Charts abonnements
+    buildChartRevenus(abs, now);
+    buildChartPlans(starters.length, pros.length, ents.length, gratuits.length);
 
-    set('kpi-immeubles', (immeubles || []).length);
-    set('kpi-locataires', actifs.length);
-    set('kpi-loc-sub', libres.length + ' locaux libres');
-    set('kpi-taux', taux + '%');
-    set('kpi-pays-mois', paysMois.length);
-    set('kpi-pays-sub', fmtMontant(montantMois) + ' encaissés');
-    set('kpi-impayes', impayes.length);
-    set('kpi-maintenances', maintEnAttente.length);
-    set('kpi-maint-sub', maintTotal + ' au total');
+    // Stats immobilières
+    const locs = locataires || [];
+    const actifLocs = locs.filter(l => l.statut !== 'libre');
+    const libres    = locs.filter(l => l.statut === 'libre');
+    const impayes   = locs.filter(l => l.statut === 'impayé');
+    const total     = actifLocs.length + libres.length;
+    const taux      = total > 0 ? Math.round(actifLocs.length / total * 100) : 0;
+    const paysMois  = (paiements||[]).filter(p => p.mois === mo && p.annee === yr);
+    const montMois  = paysMois.reduce((s,p)=>s+(p.montant||0),0);
+    const maints    = maintenances || [];
+    const maintPend = maints.filter(m => m.statut==='en_attente'||m.statut==='en_cours');
 
-    // ── Charts ──
-    buildChartPays(paiements || [], now);
-    buildChartStatuts(locataires || []);
-    buildChartNouveaux(locataires || [], now);
-    buildChartImmeubles(immeubles || [], locataires || []);
+    set('k-immeubles', (immeubles||[]).length);
+    set('k-locataires', actifLocs.length);
+    set('k-loc-sub', libres.length + ' locaux libres');
+    set('k-taux', taux + '%');
+    set('k-pays', paysMois.length);
+    set('k-pays-sub', fmt(montMois) + ' encaissés');
+    set('k-impayes', impayes.length);
+    set('k-maint', maintPend.length);
+    set('k-maint-sub', maints.length + ' au total');
 
-    // ── Status ──
-    set('last-update', 'Mis à jour ' + now.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}));
+    buildChartPays(paiements||[], now);
+    buildChartStatuts(locs);
+
+    set('last-update', now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}));
     document.getElementById('status-dot').className = 'dot';
     document.getElementById('status-text').textContent = 'Connecté à Supabase';
-
-    document.getElementById('loading-msg').style.display = 'none';
-    document.getElementById('content').style.display = 'block';
-
+    document.getElementById('stats-loading').style.display = 'none';
+    document.getElementById('stats-content').style.display = 'block';
   } catch(e) {
-    console.error(e);
-    document.getElementById('loading-msg').textContent = 'Erreur de chargement — ' + e.message;
+    document.getElementById('stats-loading').textContent = 'Erreur : ' + e.message;
     document.getElementById('status-dot').className = 'dot error';
-    document.getElementById('status-text').textContent = 'Erreur Supabase';
   }
 }
 
-// ── CHART : paiements 6 mois ─────────────────────────────────────
-function buildChartPays(paiements, now) {
+function buildChartRevenus(abs, now) {
   const labels = [], data = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    labels.push(d.toLocaleDateString('fr-FR', {month:'short', year:'2-digit'}));
-    data.push(paiements.filter(p => p.mois === d.getMonth()+1 && p.annee === d.getFullYear()).length);
+    labels.push(d.toLocaleDateString('fr-FR',{month:'short',year:'2-digit'}));
+    data.push(abs.filter(a => {
+      if (!a.date_paiement) return false;
+      const dp = new Date(a.date_paiement);
+      return dp.getMonth() === d.getMonth() && dp.getFullYear() === d.getFullYear();
+    }).reduce((s,a)=>s+(a.montant||0),0));
   }
-  renderChart('chart-pays', 'bar', labels, [{
-    label: 'Paiements', data, backgroundColor: '#6366f155', borderColor: '#6366f1', borderWidth: 2, borderRadius: 4
+  renderChart('chart-revenus','bar',labels,[{
+    label:'Revenus (FCFA)', data,
+    backgroundColor:'#6366f155', borderColor:'#6366f1', borderWidth:2, borderRadius:4
   }]);
 }
 
-// ── CHART : statuts locataires ────────────────────────────────────
-function buildChartStatuts(locataires) {
-  const counts = { payé:0, impayé:0, partiel:0, libre:0 };
-  locataires.forEach(l => { if (counts[l.statut] !== undefined) counts[l.statut]++; else counts.partiel++; });
-  renderChart('chart-statuts', 'doughnut',
-    ['Payé', 'Impayé', 'Partiel', 'Libre'],
-    [{ data: [counts.payé, counts.impayé, counts.partiel, counts.libre],
-       backgroundColor: ['#22c55e88','#ef444488','#f59e0b88','#64748b88'],
-       borderColor:     ['#22c55e','#ef4444','#f59e0b','#64748b'],
-       borderWidth: 2 }]
+function buildChartPlans(s,p,e,g) {
+  renderChart('chart-plans','doughnut',
+    ['Starter','Pro','Entreprise','Gratuit'],
+    [{data:[s,p,e,g],
+      backgroundColor:['#0ea5e955','#6366f155','#a855f755','#47494d55'],
+      borderColor:['#0ea5e9','#6366f1','#a855f7','#64748b'],borderWidth:2}]
   );
 }
 
-// ── CHART : nouveaux locataires ───────────────────────────────────
-function buildChartNouveaux(locataires, now) {
-  const labels = [], data = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const fin = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
-    labels.push(d.toLocaleDateString('fr-FR', {month:'short', year:'2-digit'}));
-    data.push(locataires.filter(l => {
-      if (!l.entree) return false;
-      const e = new Date(l.entree);
-      return e >= d && e <= fin;
-    }).length);
+function buildChartPays(pays, now) {
+  const labels=[], data=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    labels.push(d.toLocaleDateString('fr-FR',{month:'short',year:'2-digit'}));
+    data.push(pays.filter(p=>p.mois===d.getMonth()+1&&p.annee===d.getFullYear()).length);
   }
-  renderChart('chart-nouveaux', 'line', labels, [{
-    label: 'Nouveaux', data, borderColor: '#22c55e', backgroundColor: '#22c55e22',
-    borderWidth: 2, fill: true, tension: .3, pointRadius: 4
+  renderChart('chart-pays','bar',labels,[{
+    label:'Paiements',data,backgroundColor:'#22c55e55',borderColor:'#22c55e',borderWidth:2,borderRadius:4
   }]);
 }
 
-// ── CHART : répartition par immeuble ─────────────────────────────
-function buildChartImmeubles(immeubles, locataires) {
-  const labels = immeubles.map(im => im.nom || 'Immeuble');
-  const data = immeubles.map(im => locataires.filter(l => l.immeuble_id === im.id && l.statut !== 'libre').length);
-  const colors = ['#6366f1','#22c55e','#f59e0b','#0ea5e9','#a855f7','#ef4444','#14b8a6','#f97316'];
-  renderChart('chart-immeubles', 'bar', labels, [{
-    label: 'Locaux occupés', data,
-    backgroundColor: labels.map((_,i) => colors[i % colors.length] + '88'),
-    borderColor:     labels.map((_,i) => colors[i % colors.length]),
-    borderWidth: 2, borderRadius: 4
-  }]);
+function buildChartStatuts(locs) {
+  const c={payé:0,impayé:0,partiel:0,libre:0};
+  locs.forEach(l=>{if(c[l.statut]!==undefined)c[l.statut]++;else c.partiel++;});
+  renderChart('chart-statuts','doughnut',
+    ['Payé','Impayé','Partiel','Libre'],
+    [{data:[c.payé,c.impayé,c.partiel,c.libre],
+      backgroundColor:['#22c55e88','#ef444488','#f59e0b88','#64748b88'],
+      borderColor:['#22c55e','#ef4444','#f59e0b','#64748b'],borderWidth:2}]
+  );
 }
 
-// ── HELPERS ──────────────────────────────────────────────────────
-function set(id, val) { document.getElementById(id).textContent = val; }
+// ── MESSAGES ─────────────────────────────────────────────────────────
+async function loadMessages() {
+  document.getElementById('msgs-loading').style.display = 'block';
+  try {
+    const { data } = await _sb.from('contact_messages').select('*').order('created_at',{ascending:false});
+    const msgs = data || [];
+    const unread = msgs.filter(m => !m.lu).length;
+    const badge = document.getElementById('badge-msgs');
+    if (unread > 0) { badge.textContent = unread; badge.style.display = 'inline-block'; }
+    else badge.style.display = 'none';
 
-function fmtMontant(n) {
-  return new Intl.NumberFormat('fr-FR', {style:'currency', currency:'XAF', maximumFractionDigits:0}).format(n);
+    const list = document.getElementById('msg-list');
+    if (msgs.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="icon">📭</div><div>Aucun message pour l\'instant</div><div style="font-size:.8rem;margin-top:8px;color:#334155">Partagez l\'URL du dashboard pour recevoir des messages</div></div>';
+    } else {
+      list.innerHTML = msgs.map(m => `
+        <div class="msg-card ${m.lu?'':'unread'}" id="msg-${m.id}">
+          <div class="msg-meta">
+            <span class="msg-name">${esc(m.nom||'Anonyme')}</span>
+            <span class="msg-email">${esc(m.email||'')}</span>
+            ${m.tenant_id?`<span style="font-family:monospace;font-size:.72rem;color:#475569;background:#0f172a;padding:2px 6px;border-radius:4px">${esc(m.tenant_id)}</span>`:''}
+            <span class="msg-date">${fmtDate(m.created_at)}</span>
+            ${!m.lu?'<span style="background:#6366f1;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">Nouveau</span>':''}
+          </div>
+          <div class="msg-sujet">📌 ${esc(m.sujet||'Sans sujet')}</div>
+          <div class="msg-body">${esc(m.message||'')}</div>
+          <div class="msg-actions">
+            ${!m.lu?`<button class="btn-sm btn-read" onclick="markRead('${m.id}')">✓ Marquer lu</button>`:''}
+            ${m.email?`<button class="btn-sm btn-reply" onclick="replyMsg('${esc(m.email)}','${esc(m.nom||'')}')">↩️ Répondre</button>`:''}
+            <button class="btn-sm btn-del" onclick="deleteMsg('${m.id}')">🗑 Supprimer</button>
+          </div>
+        </div>`).join('');
+    }
+  } catch(e) {
+    document.getElementById('msg-list').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><div>Erreur de chargement</div><div style="font-size:.8rem;color:#475569;margin-top:6px">Table contact_messages introuvable — voir instructions de configuration</div></div>';
+  }
+  document.getElementById('msgs-loading').style.display = 'none';
 }
 
-function renderChart(id, type, labels, datasets) {
+async function markRead(id) {
+  await _sb.from('contact_messages').update({lu:true}).eq('id',id);
+  loadMessages();
+}
+async function deleteMsg(id) {
+  if (!confirm('Supprimer ce message ?')) return;
+  await _sb.from('contact_messages').delete().eq('id',id);
+  document.getElementById('msg-'+id).remove();
+}
+function replyMsg(email, nom) {
+  window.open('mailto:'+email+'?subject=Re: ImmoGest — Votre message&body=Bonjour '+nom+',\n\n', '_blank');
+}
+function copyContactUrl(e) {
+  e.preventDefault();
+  const url = window.location.origin + '/owner-dashboard.html';
+  navigator.clipboard.writeText(url).then(()=>alert('URL copiée : '+url));
+}
+
+// ── CONTACT FORM (public) ─────────────────────────────────────────────
+async function sendContact() {
+  const nom     = document.getElementById('c-nom').value.trim();
+  const email   = document.getElementById('c-email').value.trim();
+  const sujet   = document.getElementById('c-sujet').value;
+  const message = document.getElementById('c-message').value.trim();
+  const tenant  = document.getElementById('c-tenant').value.trim();
+
+  if (!nom || !email || !message) { alert('Nom, email et message sont requis.'); return; }
+
+  const btn = document.getElementById('btn-send-contact');
+  btn.disabled = true; btn.textContent = 'Envoi…';
+
+  try {
+    const { error } = await _sb.from('contact_messages').insert([{
+      nom, email, sujet, message, tenant_id: tenant || null, lu: false
+    }]);
+    if (error) throw error;
+    document.getElementById('contact-ok').style.display = 'block';
+    document.getElementById('c-nom').value = '';
+    document.getElementById('c-email').value = '';
+    document.getElementById('c-message').value = '';
+    document.getElementById('c-tenant').value = '';
+  } catch(e) {
+    document.getElementById('contact-err').style.display = 'block';
+    setTimeout(()=>document.getElementById('contact-err').style.display='none', 4000);
+  }
+  btn.disabled = false; btn.textContent = '📨 Envoyer le message';
+}
+
+// ── PACKAGES ─────────────────────────────────────────────────────────
+function selectPlan(plan, el) {
+  _selectedPlan = plan;
+  document.querySelectorAll('.plan-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function offrirPackage() {
+  const tenant = document.getElementById('pkg-tenant').value.trim();
+  const duree  = parseInt(document.getElementById('pkg-duree').value);
+  const note   = document.getElementById('pkg-note').value.trim();
+  if (!tenant) { alert('Entrez l\'ID de l\'espace.'); return; }
+
+  const dateFin = new Date();
+  dateFin.setMonth(dateFin.getMonth() + duree);
+
+  try {
+    const { error } = await _sb.from('abonnements').upsert([{
+      user_id: tenant,
+      plan: _selectedPlan,
+      statut: 'actif',
+      date_fin: dateFin.toISOString(),
+      reference: 'OFFERT-' + Date.now(),
+      montant: 0,
+      date_paiement: new Date().toISOString(),
+      note: note || null
+    }], { onConflict: 'user_id' });
+    if (error) throw error;
+    document.getElementById('pkg-ok').style.display = 'block';
+    setTimeout(()=>document.getElementById('pkg-ok').style.display='none', 4000);
+    document.getElementById('pkg-tenant').value = '';
+    loadAbonnements();
+  } catch(e) {
+    document.getElementById('pkg-err').style.display = 'block';
+    document.getElementById('pkg-err').textContent = 'Erreur : ' + e.message;
+    setTimeout(()=>document.getElementById('pkg-err').style.display='none', 5000);
+  }
+}
+
+async function loadAbonnements() {
+  document.getElementById('pkg-loading').style.display = 'block';
+  try {
+    const { data } = await _sb.from('abonnements').select('*').order('date_paiement',{ascending:false});
+    const abs = data || [];
+    const now = new Date();
+    document.getElementById('pkg-list').innerHTML = abs.length === 0
+      ? '<div style="color:#475569;font-size:.85rem;text-align:center;padding:20px">Aucun abonnement</div>'
+      : abs.map(a => {
+        const fin = a.date_fin ? new Date(a.date_fin) : null;
+        const expired = fin && fin < now;
+        const planClass = expired ? 'expired' : (a.plan || 'gratuit').toLowerCase();
+        return `<div class="pkg-row">
+          <span class="tenant" title="${esc(a.user_id||'')}">${(a.user_id||'—').substring(0,16)}…</span>
+          <span class="plan-chip ${planClass}">${a.plan||'gratuit'}</span>
+          <span class="pkg-date">${fin ? fin.toLocaleDateString('fr-FR') : '∞'}</span>
+        </div>`;
+      }).join('');
+  } catch(e) { document.getElementById('pkg-list').innerHTML = '<div style="color:#f87171;font-size:.82rem">Erreur</div>'; }
+  document.getElementById('pkg-loading').style.display = 'none';
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────
+function set(id, val) { const el = document.getElementById(id); if(el) el.textContent = val; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmt(n) { return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'XAF',maximumFractionDigits:0}).format(n||0); }
+function fmtDate(s) {
+  if (!s) return '—';
+  return new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+function renderChart(id,type,labels,datasets) {
   if (charts[id]) charts[id].destroy();
-  const ctx = document.getElementById(id).getContext('2d');
-  charts[id] = new Chart(ctx, {
-    type,
-    data: { labels, datasets },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
-      scales: type !== 'doughnut' ? {
-        x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
-        y: { ticks: { color: '#64748b' }, grid: { color: '#334155' }, beginAtZero: true }
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  charts[id] = new Chart(ctx.getContext('2d'), {
+    type, data:{labels,datasets},
+    options:{
+      responsive:true, maintainAspectRatio:true,
+      plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},
+      scales: type!=='doughnut' ? {
+        x:{ticks:{color:'#64748b'},grid:{color:'#1e293b'}},
+        y:{ticks:{color:'#64748b'},grid:{color:'#334155'},beginAtZero:true}
       } : {}
     }
   });
 }
 </script>
+
+<!--
+═══════════════════════════════════════════
+  ⚙️ CONFIGURATION — À faire une seule fois
+═══════════════════════════════════════════
+  Créer la table contact_messages dans Supabase :
+  → Supabase Dashboard > SQL Editor, coller et exécuter :
+
+  CREATE TABLE IF NOT EXISTS contact_messages (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    nom text, email text, sujet text,
+    message text, tenant_id text,
+    created_at timestamptz DEFAULT now(),
+    lu boolean DEFAULT false
+  );
+  ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
+  CREATE POLICY "insert_public" ON contact_messages FOR INSERT WITH CHECK (true);
+  CREATE POLICY "select_all"   ON contact_messages FOR SELECT USING (true);
+  CREATE POLICY "update_all"   ON contact_messages FOR UPDATE USING (true);
+  CREATE POLICY "delete_all"   ON contact_messages FOR DELETE USING (true);
+
+  Mot de passe dashboard : immogest2025owner
+  (modifier la constante OWNER_PWD dans le script)
+═══════════════════════════════════════════
+-->
 </body>
 </html>
