@@ -769,6 +769,40 @@ function _updateSyncIndicator(ok) {
   }
 }
 
+// Convertit un immeuble local en ligne Supabase
+function _rowImmeuble(im) {
+  return {
+    id: im.id, nom: im.nom, ville: im.ville || '', quartier: im.quartier || '',
+    couleur: im.col || '#0E6AAF',
+    apparts: im.apparts || 0, studios: im.studios || 0,
+    chambres: im.chambres || 0, duplex: im.duplex || 0,
+    nom_immeuble: im.nomImmeuble || im.nom || '',
+    nom_proprio: im.nomProprio || '', tel_proprio: im.telProprio || '',
+    commission: im.commission || null
+  };
+}
+// Convertit un locataire local en ligne Supabase
+function _rowLocataire(l) {
+  return {
+    id: l.id, immeuble_id: l.iid, nom: l.nom,
+    telephone: l.tel || '', whatsapp: l.whatsapp || '',
+    appt: l.appt || '', type_local: l.type || 'appartement',
+    loyer: l.loyer || 0, reste: l.reste || 0,
+    statut: l.s || 'libre', observations: l.obs || '',
+    entree: l.entree || '', caution: l.caution || 0
+  };
+}
+// Convertit un paiement local en ligne Supabase
+function _rowPaiement(p) {
+  const mois  = p.mois  != null ? p.mois  : (p.moisC  != null ? p.moisC  + 1 : null);
+  const annee = p.annee != null ? p.annee : (p.anneeC != null ? p.anneeC      : null);
+  return {
+    id: p.id, locataire_id: p.locId, mois, annee,
+    montant: p.montant || 0, date_paiement: p.date || '',
+    mode_paiement: p.mode || 'espèces', note: p.notes || p.note || ''
+  };
+}
+
 async function syncAllToSupabase() {
   if (!SESSION || _syncBusy || _sbAuthFailed) return false;
   if (!navigator.onLine) return false;
@@ -785,17 +819,17 @@ async function syncAllToSupabase() {
       return true;
     }
 
-    var tasks = [];
-    immeubles.forEach(function(im)  { tasks.push(saveImmeubleToSupabase(im)); });
-    locataires.forEach(function(l)  { tasks.push(saveLocataireToSupabase(l)); });
-    paiements.forEach(function(p)   { tasks.push(savePaiementToSupabase(p)); });
-
-    var results = await Promise.all(tasks);
+    // 3 requêtes bulk au lieu de N requêtes individuelles
+    var results = await Promise.all([
+      immeubles.length  > 0 ? sbUpsert('immeubles',  immeubles.map(_rowImmeuble))   : true,
+      locataires.length > 0 ? sbUpsert('locataires', locataires.map(_rowLocataire)) : true,
+      paiements.length  > 0 ? sbUpsert('paiements',  paiements.map(_rowPaiement))   : true,
+    ]);
     var failed = results.filter(function(r) { return r === false; }).length;
 
     _syncBusy = false;
     if (failed > 0) {
-      console.warn('syncAllToSupabase: ' + failed + ' erreur(s)');
+      console.warn('syncAllToSupabase: ' + failed + ' table(s) en erreur');
       _updateSyncIndicator(false);
       return false;
     }
