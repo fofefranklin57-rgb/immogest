@@ -5,270 +5,374 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ImmoGest — Creator Dashboard</title>
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#0f172a">
+<meta name="theme-color" content="#0E6AAF">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
+/* ── Design System ImmoGest ── */
+:root {
+  --bg:      #D8E8F7;
+  --bg2:     rgba(255,255,255,0.82);
+  --bg3:     rgba(245,249,255,0.70);
+  --bg4:     rgba(232,240,252,0.75);
+  --border:  rgba(255,255,255,0.85);
+  --border2: rgba(79,142,247,0.22);
+  --text:    #0F172A;
+  --text2:   #3D5270;
+  --text3:   #7A90A8;
+  --accent:  #0E6AAF;
+  --accent2: #0A5490;
+  --green:   #0E7A45;
+  --green-bg:rgba(14,122,69,.10);
+  --red:     #B93020;
+  --red-bg:  rgba(185,48,32,.10);
+  --yellow:  #8B4A00;
+  --yellow-bg:rgba(139,74,0,.10);
+  --purple:  #6B46C1;
+  --purple-bg:rgba(107,70,193,.10);
+  --radius:  14px;
+  --radius-sm:8px;
+  --shadow:  0 4px 24px rgba(79,142,247,0.12), 0 1px 4px rgba(15,23,42,.05);
+  --shadow-md:0 12px 40px rgba(79,142,247,0.18), 0 4px 12px rgba(15,23,42,.08);
+  --font:    'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+  --glass:   blur(14px) saturate(180%);
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s}
 
-/* ── Auth / Contact public ── */
-#public-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;flex-direction:column;gap:24px}
-.auth-card{background:#1e293b;border-radius:16px;padding:36px 32px;width:100%;max-width:400px;box-shadow:0 25px 50px rgba(0,0,0,.5)}
-.auth-card .logo{font-size:2.2rem;text-align:center;margin-bottom:6px}
-.auth-card h1{font-size:1.3rem;color:#f1f5f9;text-align:center;margin-bottom:4px}
-.auth-card p{font-size:.82rem;color:#64748b;text-align:center;margin-bottom:24px}
-.field{margin-bottom:12px}
-.field label{display:block;font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
-.field input,.field select,.field textarea{width:100%;padding:11px 14px;border-radius:9px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:.9rem;outline:none;resize:vertical}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:#6366f1}
-.field textarea{min-height:90px}
-.btn-main{width:100%;padding:12px;background:#6366f1;color:#fff;border:none;border-radius:9px;font-size:.95rem;font-weight:600;cursor:pointer;transition:background .2s}
-.btn-main:hover{background:#4f46e5}
-.btn-main:disabled{background:#334155;cursor:not-allowed}
-.auth-error{color:#f87171;font-size:.82rem;margin-top:8px;text-align:center;display:none}
-.auth-success{color:#4ade80;font-size:.82rem;margin-top:8px;text-align:center;display:none}
-.divider{color:#334155;text-align:center;font-size:.8rem;margin:16px 0;position:relative}
-.divider::before,.divider::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:#334155}
+/* ── ÉCRAN PUBLIC ── */
+#public-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#C8DCF0 0%,#D8E8F7 50%,#E0EEFA 100%)}
+.pub-wrap{width:100%;max-width:460px;display:flex;flex-direction:column;gap:20px}
+.glass-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:32px;box-shadow:var(--shadow-md);backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass)}
+.logo-wrap{text-align:center;margin-bottom:20px}
+.logo-wrap img{width:56px;height:56px;border-radius:14px}
+.logo-wrap .logo-txt{font-size:1.5rem;font-weight:800;color:var(--accent);letter-spacing:-.02em}
+.logo-wrap .logo-sub{font-size:.8rem;color:var(--text3);margin-top:2px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;padding:11px 14px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:rgba(255,255,255,0.9);color:var(--text);font-size:.9rem;outline:none;font-family:var(--font);resize:vertical;transition:border-color .2s,box-shadow .2s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(14,106,175,0.12)}
+.field textarea{min-height:88px}
+.field-note{font-size:.72rem;color:var(--text3);margin-top:4px}
+.btn-primary{width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:.95rem;font-weight:700;cursor:pointer;transition:background .2s,transform .1s;font-family:var(--font)}
+.btn-primary:hover{background:var(--accent2)}
+.btn-primary:active{transform:scale(.98)}
+.btn-primary:disabled{background:var(--text3);cursor:not-allowed}
+.auth-err{color:var(--red);font-size:.82rem;margin-top:8px;text-align:center;display:none}
+.form-alert{padding:10px 14px;border-radius:var(--radius-sm);font-size:.82rem;margin-top:10px;display:none}
+.form-alert.ok{background:var(--green-bg);color:var(--green);border:1px solid rgba(14,122,69,.2)}
+.form-alert.err{background:var(--red-bg);color:var(--red);border:1px solid rgba(185,48,32,.2)}
+.divider{color:var(--text3);text-align:center;font-size:.78rem;margin:4px 0;position:relative}
+.divider::before,.divider::after{content:'';position:absolute;top:50%;width:44%;height:1px;background:var(--border2)}
 .divider::before{left:0}.divider::after{right:0}
 
-/* ── Dashboard ── */
+/* ── HEADER ── */
 #dashboard{display:none;min-height:100vh;flex-direction:column}
+.topbar{background:rgba(255,255,255,0.92);border-bottom:1px solid var(--border2);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);box-shadow:0 1px 16px rgba(79,142,247,0.08)}
+.tb-left{display:flex;align-items:center;gap:12px}
+.tb-logo{font-size:1.1rem;font-weight:800;color:var(--accent);letter-spacing:-.01em}
+.tb-badge{background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.tb-right{display:flex;align-items:center;gap:8px}
+.tb-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);padding:7px 14px;border-radius:var(--radius-sm);cursor:pointer;font-size:.8rem;font-weight:600;transition:all .2s;font-family:var(--font)}
+.tb-btn:hover{background:var(--bg4);color:var(--accent)}
+.tb-btn.danger{color:var(--red)}
+.tb-btn.danger:hover{background:var(--red-bg)}
+.tb-btn.install{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tb-btn.install:hover{background:var(--accent2)}
+#tb-time{font-size:.75rem;color:var(--text3)}
 
-header{background:#1e293b;border-bottom:1px solid #334155;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:100}
-.hdr-left{display:flex;align-items:center;gap:12px}
-.hdr-left h1{font-size:1.1rem;color:#f1f5f9;font-weight:700}
-.hdr-badge{background:#6366f1;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
-.hdr-right{display:flex;align-items:center;gap:8px}
-.hdr-btn{background:#334155;border:none;color:#94a3b8;padding:7px 13px;border-radius:7px;cursor:pointer;font-size:.82rem;transition:all .2s}
-.hdr-btn:hover{background:#475569;color:#f1f5f9}
-.hdr-btn.install{background:#6366f133;color:#a5b4fc;border:1px solid #6366f144}
-.hdr-btn.install:hover{background:#6366f144}
-#last-update{font-size:.75rem;color:#475569}
+/* ── TABS ── */
+.tab-bar{background:rgba(255,255,255,0.82);border-bottom:1px solid var(--border2);padding:0 24px;display:flex;gap:0;overflow-x:auto;backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass)}
+.tab-bar::-webkit-scrollbar{height:2px}.tab-bar::-webkit-scrollbar-thumb{background:var(--border2)}
+.tab-btn{padding:14px 18px;font-size:.82rem;font-weight:600;color:var(--text3);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:all .2s;font-family:var(--font);display:flex;align-items:center;gap:6px}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-btn:hover:not(.active){color:var(--text2)}
+.tab-badge{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
 
-/* Tabs */
-.tabs{display:flex;gap:0;border-bottom:1px solid #334155;background:#1e293b;padding:0 24px}
-.tab-btn{padding:12px 20px;font-size:.85rem;color:#64748b;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;transition:all .2s;position:relative;display:flex;align-items:center;gap:6px}
-.tab-btn.active{color:#a5b4fc;border-bottom-color:#6366f1}
-.tab-btn:hover:not(.active){color:#94a3b8}
-.tab-badge{background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
+/* ── MAIN ── */
+main{padding:24px;max-width:1400px;margin:0 auto;width:100%;flex:1}
+.tab-pane{display:none}.tab-pane.active{display:block}
 
-main{padding:24px;max-width:1280px;margin:0 auto;width:100%;flex:1}
-.tab-content{display:none}
-.tab-content.active{display:block}
+/* ── SECTION TITLE ── */
+.sec-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:14px;margin-top:28px;display:flex;align-items:center;gap:8px}
+.sec-title:first-child{margin-top:0}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border2)}
 
-/* Section */
-.section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:14px;margin-top:28px}
-.section-title:first-child{margin-top:0}
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:14px;margin-bottom:6px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden;backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);transition:box-shadow .2s}
+.kpi:hover{box-shadow:var(--shadow-md)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--kpi-color,var(--accent))}
+.kpi-label{font-size:.7rem;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.kpi-value{font-size:1.8rem;font-weight:800;color:var(--text);line-height:1}
+.kpi-sub{font-size:.72rem;color:var(--text3);margin-top:5px}
+.kpi-trend{font-size:.72rem;font-weight:700;margin-top:4px}
+.kpi-trend.up{color:var(--green)}.kpi-trend.down{color:var(--red)}.kpi-trend.flat{color:var(--text3)}
 
-/* KPI */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:14px;margin-bottom:6px}
-.kpi-card{background:#1e293b;border-radius:12px;padding:18px 20px;border:1px solid #334155;position:relative;overflow:hidden}
-.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent,#6366f1)}
-.kpi-label{font-size:.72rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
-.kpi-value{font-size:1.9rem;font-weight:800;color:#f1f5f9;line-height:1}
-.kpi-sub{font-size:.75rem;color:#94a3b8;margin-top:5px}
+/* ── CHARTS ── */
+.charts-grid{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-top:20px}
+.charts-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
+@media(max-width:900px){.charts-grid,.charts-grid-2{grid-template-columns:1fr}}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass)}
+.chart-card h3{font-size:.8rem;font-weight:700;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:.05em}
+.chart-card canvas{max-height:220px}
 
-/* Charts */
-.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
-@media(max-width:768px){.charts-grid{grid-template-columns:1fr}}
-.chart-card{background:#1e293b;border-radius:12px;padding:18px;border:1px solid #334155}
-.chart-card h3{font-size:.82rem;color:#94a3b8;margin-bottom:14px;font-weight:600}
-.chart-card canvas{max-height:200px}
+/* ── TABLE ── */
+.data-table{width:100%;border-collapse:collapse;margin-top:4px}
+.data-table th{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border2);background:var(--bg3)}
+.data-table td{padding:11px 14px;font-size:.82rem;color:var(--text2);border-bottom:1px solid var(--border2)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:var(--bg3)}
+.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass)}
 
-/* Messages */
-.msg-list{display:flex;flex-direction:column;gap:12px;margin-top:4px}
-.msg-card{background:#1e293b;border-radius:12px;padding:18px;border:1px solid #334155;position:relative;transition:border-color .2s}
-.msg-card.unread{border-color:#6366f155;background:#1e293b}
-.msg-card.unread::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#6366f1;border-radius:3px 0 0 3px}
+/* ── MESSAGES ── */
+.msg-list{display:flex;flex-direction:column;gap:12px}
+.msg-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);position:relative;backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);transition:box-shadow .2s}
+.msg-card:hover{box-shadow:var(--shadow-md)}
+.msg-card.unread{border-left:3px solid var(--accent)}
+.msg-card.unread::before{display:none}
 .msg-meta{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
-.msg-name{font-weight:700;color:#f1f5f9;font-size:.9rem}
-.msg-email{color:#64748b;font-size:.8rem}
-.msg-date{color:#475569;font-size:.75rem;margin-left:auto}
-.msg-sujet{font-size:.82rem;font-weight:600;color:#a5b4fc;margin-bottom:6px}
-.msg-body{font-size:.85rem;color:#94a3b8;line-height:1.6}
-.msg-actions{display:flex;gap:8px;margin-top:12px}
-.btn-sm{padding:5px 12px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;border:none;transition:all .2s}
-.btn-read{background:#22c55e22;color:#4ade80;border:1px solid #22c55e33}
-.btn-read:hover{background:#22c55e33}
-.btn-del{background:#ef444422;color:#f87171;border:1px solid #ef444433}
-.btn-del:hover{background:#ef444433}
-.btn-reply{background:#6366f122;color:#a5b4fc;border:1px solid #6366f133}
-.btn-reply:hover{background:#6366f133}
-.empty-state{text-align:center;padding:60px 20px;color:#475569}
-.empty-state .icon{font-size:3rem;margin-bottom:12px}
+.msg-name{font-weight:700;color:var(--text);font-size:.9rem}
+.msg-email{color:var(--text3);font-size:.78rem}
+.msg-date{color:var(--text3);font-size:.72rem;margin-left:auto}
+.msg-sujet{font-size:.82rem;font-weight:700;color:var(--accent);margin-bottom:6px}
+.msg-body{font-size:.85rem;color:var(--text2);line-height:1.6}
+.msg-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 
-/* Package */
-.pkg-form{background:#1e293b;border-radius:12px;padding:24px;border:1px solid #334155;max-width:520px}
-.pkg-form h3{font-size:.95rem;color:#f1f5f9;font-weight:700;margin-bottom:20px}
-.field-note{font-size:.75rem;color:#64748b;margin-top:4px}
+/* ── CHIPS / BADGES ── */
+.chip{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.chip.gratuit{background:rgba(122,144,168,.12);color:var(--text3)}
+.chip.starter{background:rgba(14,106,175,.12);color:var(--accent)}
+.chip.pro{background:var(--purple-bg);color:var(--purple)}
+.chip.entreprise{background:var(--yellow-bg);color:var(--yellow)}
+.chip.actif{background:var(--green-bg);color:var(--green)}
+.chip.expired{background:var(--red-bg);color:var(--red)}
+.chip.offert{background:rgba(107,70,193,.12);color:var(--purple)}
+.chip.new{background:var(--accent);color:#fff}
+
+/* ── FORM PKG ── */
+.pkg-form{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass)}
 .plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px}
-.plan-opt{border:2px solid #334155;border-radius:8px;padding:10px;text-align:center;cursor:pointer;transition:all .2s}
-.plan-opt.selected{border-color:#6366f1;background:#6366f122}
-.plan-opt .plan-name{font-weight:700;font-size:.85rem;color:#f1f5f9}
-.plan-opt .plan-price{font-size:.75rem;color:#64748b;margin-top:2px}
-.pkg-history{margin-top:28px}
-.pkg-history h3{font-size:.85rem;color:#94a3b8;font-weight:600;margin-bottom:12px}
-.pkg-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0f172a;border-radius:8px;margin-bottom:6px;font-size:.82rem}
-.pkg-row .tenant{flex:1;color:#e2e8f0;font-weight:600;font-family:monospace;font-size:.78rem}
-.plan-chip{padding:3px 9px;border-radius:20px;font-size:.72rem;font-weight:700;text-transform:uppercase}
-.plan-chip.gratuit{background:#47494d33;color:#94a3b8}
-.plan-chip.starter{background:#0ea5e922;color:#38bdf8}
-.plan-chip.pro{background:#6366f122;color:#a5b4fc}
-.plan-chip.entreprise{background:#a855f722;color:#d8b4fe}
-.plan-chip.expired{background:#ef444422;color:#f87171}
-.pkg-date{color:#475569;font-size:.75rem}
+.plan-opt{border:2px solid var(--border2);border-radius:var(--radius-sm);padding:10px;text-align:center;cursor:pointer;transition:all .2s}
+.plan-opt:hover{border-color:var(--accent);background:rgba(14,106,175,.05)}
+.plan-opt.selected{border-color:var(--accent);background:rgba(14,106,175,.08)}
+.plan-opt .plan-name{font-weight:700;font-size:.85rem;color:var(--text)}
+.plan-opt .plan-price{font-size:.72rem;color:var(--text3);margin-top:2px}
 
-/* Status */
-.status-bar{display:flex;align-items:center;gap:8px;font-size:.75rem;color:#475569;margin-top:20px;padding-top:16px;border-top:1px solid #1e293b}
-.dot{width:7px;height:7px;border-radius:50%;background:#22c55e;flex-shrink:0;animation:pulse 2s infinite}
-.dot.error{background:#ef4444;animation:none}
+/* ── BUTTONS ── */
+.btn{padding:8px 16px;border-radius:var(--radius-sm);font-size:.8rem;font-weight:600;cursor:pointer;border:none;font-family:var(--font);transition:all .2s}
+.btn-accent{background:var(--accent);color:#fff}.btn-accent:hover{background:var(--accent2)}
+.btn-ghost{background:var(--bg3);border:1px solid var(--border2);color:var(--text2)}.btn-ghost:hover{background:var(--bg4);color:var(--accent)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(185,48,32,.2)}.btn-danger:hover{background:rgba(185,48,32,.18)}
+.btn-green{background:var(--green-bg);color:var(--green);border:1px solid rgba(14,122,69,.2)}.btn-green:hover{background:rgba(14,122,69,.18)}
+.btn-purple{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(107,70,193,.2)}.btn-purple:hover{background:rgba(107,70,193,.18)}
+
+/* ── SEARCH ── */
+.search-bar{display:flex;gap:10px;align-items:center;margin-bottom:16px}
+.search-input{flex:1;padding:9px 14px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:rgba(255,255,255,0.9);color:var(--text);font-size:.88rem;font-family:var(--font);outline:none;transition:border-color .2s}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(14,106,175,.1)}
+
+/* ── LOADING / EMPTY ── */
+.loading{color:var(--text3);font-size:.88rem;padding:40px;text-align:center}
+.empty{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty .icon{font-size:2.5rem;margin-bottom:12px}
+
+/* ── STATUS BAR ── */
+.status-bar{display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--text3);margin-top:20px;padding-top:14px;border-top:1px solid var(--border2)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
+.dot.err{background:var(--red)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.dot.pulse{animation:pulse 2s infinite}
 
-.loading{color:#64748b;font-size:.88rem;padding:40px;text-align:center}
-.alert{padding:10px 14px;border-radius:8px;font-size:.82rem;margin-top:8px;display:none}
-.alert.success{background:#22c55e22;color:#4ade80;border:1px solid #22c55e33}
-.alert.error{background:#ef444422;color:#f87171;border:1px solid #ef444433}
+/* ── INSIGHT CARDS ── */
+.insight-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:16px}
+.insight{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass)}
+.insight-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:8px}
+.insight-value{font-size:1.4rem;font-weight:800;color:var(--text)}
+.insight-desc{font-size:.78rem;color:var(--text2);margin-top:4px;line-height:1.5}
+
+/* ── PROGRESS BAR ── */
+.progress-wrap{margin-top:8px}
+.progress-label{display:flex;justify-content:space-between;font-size:.72rem;color:var(--text3);margin-bottom:4px}
+.progress-bar{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .5s ease}
+
+/* ── ALERT CONFIG ── */
+.cfg-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border2)}
+.cfg-row:last-child{border-bottom:none}
+.cfg-label{font-size:.88rem;font-weight:600;color:var(--text)}
+.cfg-sub{font-size:.75rem;color:var(--text3);margin-top:2px}
+.toggle{width:44px;height:24px;background:var(--border2);border-radius:12px;cursor:pointer;position:relative;transition:background .2s;border:none}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle.on::after{left:23px}
+
+/* ── SCROLL ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:#fff;padding:10px 20px;border-radius:var(--radius-sm);font-size:.85rem;font-weight:600;z-index:9999;transition:transform .3s;pointer-events:none;white-space:nowrap}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+@media(max-width:768px){
+  main{padding:16px}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .plan-grid{grid-template-columns:1fr 1fr}
+  .topbar{padding:0 16px}
+  .tab-bar{padding:0 12px}
+}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════════
-     ÉCRAN PUBLIC : Connexion + Formulaire Contact
-══════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════
+     ÉCRAN PUBLIC
+═══════════════════════════════════════════ -->
 <div id="public-screen">
+  <div class="pub-wrap">
 
-  <!-- Auth -->
-  <div class="auth-card" id="auth-block">
-    <div class="logo">🏢</div>
-    <h1>ImmoGest</h1>
-    <p>Accès réservé — Creator Dashboard</p>
-    <div class="field">
-      <label>Mot de passe</label>
-      <input type="password" id="pwd-input" placeholder="••••••••••" onkeydown="if(event.key==='Enter')checkAuth()">
+    <!-- Login -->
+    <div class="glass-card" id="auth-card">
+      <div class="logo-wrap">
+        <div class="logo-txt">🏢 ImmoGest</div>
+        <div class="logo-sub">Creator Dashboard — Accès privé</div>
+      </div>
+      <div class="field">
+        <label>Mot de passe</label>
+        <input type="password" id="pwd-input" placeholder="••••••••••••" onkeydown="if(event.key==='Enter')checkAuth()">
+      </div>
+      <button class="btn-primary" onclick="checkAuth()">🔓 Accéder au dashboard</button>
+      <div class="auth-err" id="auth-err">❌ Mot de passe incorrect</div>
     </div>
-    <button class="btn-main" onclick="checkAuth()">Accéder</button>
-    <div class="auth-error" id="auth-error">Mot de passe incorrect</div>
+
+    <!-- Divider -->
+    <div class="divider">ou contacter l'équipe</div>
+
+    <!-- Formulaire contact public -->
+    <div class="glass-card" id="contact-card">
+      <div style="font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:16px">✉️ Contacter ImmoGest</div>
+      <div style="font-size:.78rem;color:var(--text3);margin-bottom:16px">Support · Partenariat · Devis · Abonnement</div>
+      <div class="field">
+        <label>Nom complet *</label>
+        <input type="text" id="c-nom" placeholder="Jean Dupont">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field">
+          <label>Email *</label>
+          <input type="email" id="c-email" placeholder="vous@exemple.com">
+        </div>
+        <div class="field">
+          <label>Sujet</label>
+          <select id="c-sujet">
+            <option value="Support technique">Support technique</option>
+            <option value="Abonnement">Abonnement / Tarif</option>
+            <option value="Partenariat">Partenariat</option>
+            <option value="Devis">Devis personnalisé</option>
+            <option value="Bug">Signaler un bug</option>
+            <option value="Autre">Autre</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Message *</label>
+        <textarea id="c-message" placeholder="Décrivez votre besoin en détail…"></textarea>
+      </div>
+      <div class="field">
+        <label>ID espace <span style="font-weight:400;color:var(--text3)">(optionnel)</span></label>
+        <input type="text" id="c-tenant" placeholder="Paramètres → Mon espace → ID espace">
+        <div class="field-note">Permet de vous identifier plus rapidement si vous êtes déjà client</div>
+      </div>
+      <button class="btn-primary" id="btn-contact" onclick="sendContact()">📨 Envoyer</button>
+      <div class="form-alert ok" id="c-ok">✅ Message envoyé ! Réponse sous 24h.</div>
+      <div class="form-alert err" id="c-err">❌ Erreur d'envoi. Vérifiez votre connexion.</div>
+    </div>
+
   </div>
-
-  <!-- Divider -->
-  <div style="width:100%;max-width:400px">
-    <div class="divider">ou</div>
-  </div>
-
-  <!-- Contact public -->
-  <div class="auth-card" id="contact-block">
-    <div class="logo" style="font-size:1.6rem">✉️</div>
-    <h1 style="font-size:1.1rem">Contacter l'équipe ImmoGest</h1>
-    <p>Support, partenariat, demande de devis</p>
-    <div class="field">
-      <label>Votre nom *</label>
-      <input type="text" id="c-nom" placeholder="Jean Dupont">
-    </div>
-    <div class="field">
-      <label>Email *</label>
-      <input type="email" id="c-email" placeholder="vous@exemple.com">
-    </div>
-    <div class="field">
-      <label>Sujet</label>
-      <select id="c-sujet">
-        <option value="Support technique">Support technique</option>
-        <option value="Abonnement">Abonnement / Tarif</option>
-        <option value="Partenariat">Partenariat</option>
-        <option value="Devis personnalisé">Devis personnalisé</option>
-        <option value="Autre">Autre</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Message *</label>
-      <textarea id="c-message" placeholder="Décrivez votre besoin…"></textarea>
-    </div>
-    <div class="field">
-      <label>Votre ID espace <span style="color:#475569;font-weight:400;">(optionnel)</span></label>
-      <input type="text" id="c-tenant" placeholder="Trouvez-le dans Paramètres → Mon espace">
-      <div class="field-note">Permet de vous identifier plus rapidement</div>
-    </div>
-    <button class="btn-main" id="btn-send-contact" onclick="sendContact()">📨 Envoyer le message</button>
-    <div class="alert success" id="contact-ok">✅ Message envoyé ! Nous vous répondrons sous 24h.</div>
-    <div class="alert error" id="contact-err">Erreur d'envoi. Vérifiez votre connexion.</div>
-  </div>
-
 </div>
 
 
-<!-- ══════════════════════════════════════════════
+<!-- ═══════════════════════════════════════════
      DASHBOARD PRIVÉ
-══════════════════════════════════════════════ -->
-<div id="dashboard" style="display:none;">
+═══════════════════════════════════════════ -->
+<div id="dashboard">
 
-  <!-- Header -->
-  <header>
-    <div class="hdr-left">
-      <h1>🏢 ImmoGest Creator</h1>
-      <span class="hdr-badge" id="hdr-version">v1.0</span>
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="tb-left">
+      <div class="tb-logo">🏢 ImmoGest</div>
+      <span class="tb-badge">Creator</span>
+      <span id="tb-time" style="font-size:.72rem;color:var(--text3);margin-left:4px"></span>
     </div>
-    <div class="hdr-right">
-      <span id="last-update">—</span>
-      <button class="hdr-btn install" id="btn-install" style="display:none" onclick="installPWA()">📲 Installer</button>
-      <button class="hdr-btn" onclick="loadAll()">↻ Actualiser</button>
-      <button class="hdr-btn" onclick="logout()" style="color:#f87171">Déconnexion</button>
+    <div class="tb-right">
+      <button class="tb-btn install" id="btn-install" style="display:none" onclick="installPWA()">📲 Installer</button>
+      <button class="tb-btn" onclick="loadAll()">↻ Actualiser</button>
+      <button class="tb-btn" onclick="exportCSV()">📥 Export CSV</button>
+      <button class="tb-btn danger" onclick="logout()">Déconnexion</button>
     </div>
-  </header>
+  </div>
 
-  <!-- Tabs -->
-  <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('stats',this)">📊 Statistiques</button>
-    <button class="tab-btn" onclick="switchTab('messages',this)" id="tab-messages-btn">
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('overview',this)">📊 Vue d'ensemble</button>
+    <button class="tab-btn" onclick="switchTab('revenus',this)">💰 Revenus</button>
+    <button class="tab-btn" onclick="switchTab('users',this)">👥 Utilisateurs</button>
+    <button class="tab-btn" onclick="switchTab('messages',this)" id="tab-msg-btn">
       ✉️ Messages <span class="tab-badge" id="badge-msgs" style="display:none">0</span>
     </button>
-    <button class="tab-btn" onclick="switchTab('packages',this)">🎁 Offrir package</button>
+    <button class="tab-btn" onclick="switchTab('packages',this)">🎁 Packages</button>
+    <button class="tab-btn" onclick="switchTab('analytics',this)">📈 Analytique</button>
+    <button class="tab-btn" onclick="switchTab('config',this)">⚙️ Configuration</button>
   </div>
 
   <main>
 
-    <!-- ── TAB: STATISTIQUES ── -->
-    <div class="tab-content active" id="tab-stats">
-      <div class="loading" id="stats-loading">Chargement des données…</div>
-      <div id="stats-content" style="display:none">
+    <!-- ══ TAB: VUE D'ENSEMBLE ══ -->
+    <div class="tab-pane active" id="tab-overview">
+      <div class="loading" id="ov-loading">Chargement des données…</div>
+      <div id="ov-content" style="display:none">
 
-        <div class="section-title">💳 Abonnements</div>
+        <div class="sec-title">💳 Abonnements</div>
         <div class="kpi-grid">
-          <div class="kpi-card" style="--accent:#6366f1">
-            <div class="kpi-label">Espaces actifs</div>
+          <div class="kpi" style="--kpi-color:var(--accent)">
+            <div class="kpi-label">Actifs</div>
             <div class="kpi-value" id="k-actifs">—</div>
             <div class="kpi-sub">abonnements en cours</div>
           </div>
-          <div class="kpi-card" style="--accent:#22c55e">
+          <div class="kpi" style="--kpi-color:var(--green)">
+            <div class="kpi-label">MRR</div>
+            <div class="kpi-value" id="k-mrr">—</div>
+            <div class="kpi-sub">revenus mensuels récurrents</div>
+            <div class="kpi-trend" id="k-mrr-trend"></div>
+          </div>
+          <div class="kpi" style="--kpi-color:var(--purple)">
+            <div class="kpi-label">ARR projeté</div>
+            <div class="kpi-value" id="k-arr">—</div>
+            <div class="kpi-sub">×12 du MRR</div>
+          </div>
+          <div class="kpi" style="--kpi-color:#0ea5e9">
             <div class="kpi-label">Revenus total</div>
             <div class="kpi-value" id="k-revenus">—</div>
-            <div class="kpi-sub">encaissés</div>
+            <div class="kpi-sub">depuis l'ouverture</div>
           </div>
-          <div class="kpi-card" style="--accent:#0ea5e9">
-            <div class="kpi-label">Plan Starter</div>
-            <div class="kpi-value" id="k-starter">—</div>
-            <div class="kpi-sub" id="k-starter-sub">—</div>
+          <div class="kpi" style="--kpi-color:var(--yellow)">
+            <div class="kpi-label">Expiration <30j</div>
+            <div class="kpi-value" id="k-expiring">—</div>
+            <div class="kpi-sub">à renouveler</div>
           </div>
-          <div class="kpi-card" style="--accent:#a855f7">
-            <div class="kpi-label">Plan Pro</div>
-            <div class="kpi-value" id="k-pro">—</div>
-            <div class="kpi-sub" id="k-pro-sub">—</div>
-          </div>
-          <div class="kpi-card" style="--accent:#f59e0b">
-            <div class="kpi-label">Plan Entreprise</div>
-            <div class="kpi-value" id="k-entreprise">—</div>
-            <div class="kpi-sub" id="k-ent-sub">—</div>
-          </div>
-          <div class="kpi-card" style="--accent:#64748b">
-            <div class="kpi-label">Gratuit</div>
-            <div class="kpi-value" id="k-gratuit">—</div>
-            <div class="kpi-sub">sans abonnement</div>
+          <div class="kpi" style="--kpi-color:var(--red)">
+            <div class="kpi-label">Churn estimé</div>
+            <div class="kpi-value" id="k-churn">—</div>
+            <div class="kpi-sub">expiré non renouvelé</div>
           </div>
         </div>
 
         <div class="charts-grid">
           <div class="chart-card">
-            <h3>Revenus par mois (6 mois)</h3>
-            <canvas id="chart-revenus"></canvas>
+            <h3>Revenus mensuels (12 mois)</h3>
+            <canvas id="chart-mrr"></canvas>
           </div>
           <div class="chart-card">
             <h3>Distribution des plans</h3>
@@ -276,90 +380,175 @@ main{padding:24px;max-width:1280px;margin:0 auto;width:100%;flex:1}
           </div>
         </div>
 
-        <div class="section-title" style="margin-top:32px">🏢 Activité immobilière</div>
+        <div class="sec-title" style="margin-top:32px">🏢 Activité immobilière</div>
         <div class="kpi-grid">
-          <div class="kpi-card" style="--accent:#6366f1">
+          <div class="kpi" style="--kpi-color:var(--accent)">
             <div class="kpi-label">Immeubles</div>
-            <div class="kpi-value" id="k-immeubles">—</div>
+            <div class="kpi-value" id="k-imm">—</div>
             <div class="kpi-sub">enregistrés</div>
           </div>
-          <div class="kpi-card" style="--accent:#22c55e">
+          <div class="kpi" style="--kpi-color:var(--green)">
             <div class="kpi-label">Locataires actifs</div>
-            <div class="kpi-value" id="k-locataires">—</div>
-            <div class="kpi-sub" id="k-loc-sub">—</div>
+            <div class="kpi-value" id="k-loc">—</div>
+            <div class="kpi-sub" id="k-loc-sub"></div>
           </div>
-          <div class="kpi-card" style="--accent:#f59e0b">
+          <div class="kpi" style="--kpi-color:var(--yellow)">
             <div class="kpi-label">Taux d'occupation</div>
-            <div class="kpi-value" id="k-taux">—</div>
+            <div class="kpi-value" id="k-occ">—</div>
             <div class="kpi-sub">des locaux</div>
           </div>
-          <div class="kpi-card" style="--accent:#0ea5e9">
+          <div class="kpi" style="--kpi-color:#0ea5e9">
             <div class="kpi-label">Paiements ce mois</div>
             <div class="kpi-value" id="k-pays">—</div>
-            <div class="kpi-sub" id="k-pays-sub">—</div>
+            <div class="kpi-sub" id="k-pays-sub"></div>
           </div>
-          <div class="kpi-card" style="--accent:#ef4444">
+          <div class="kpi" style="--kpi-color:var(--red)">
             <div class="kpi-label">Impayés</div>
-            <div class="kpi-value" id="k-impayes">—</div>
+            <div class="kpi-value" id="k-imp">—</div>
             <div class="kpi-sub">locataires en retard</div>
           </div>
-          <div class="kpi-card" style="--accent:#a855f7">
-            <div class="kpi-label">Maintenances</div>
-            <div class="kpi-value" id="k-maint">—</div>
-            <div class="kpi-sub" id="k-maint-sub">—</div>
+          <div class="kpi" style="--kpi-color:var(--purple)">
+            <div class="kpi-label">Taux de paiement</div>
+            <div class="kpi-value" id="k-tpay">—</div>
+            <div class="kpi-sub">loyers payés ce mois</div>
           </div>
         </div>
 
-        <div class="charts-grid">
+        <div class="charts-grid-2">
           <div class="chart-card">
-            <h3>Paiements — 6 derniers mois</h3>
+            <h3>Paiements loyers — 6 mois</h3>
             <canvas id="chart-pays"></canvas>
           </div>
           <div class="chart-card">
-            <h3>Statut des locataires</h3>
-            <canvas id="chart-statuts"></canvas>
+            <h3>Statut locataires</h3>
+            <canvas id="chart-locs"></canvas>
           </div>
         </div>
 
         <div class="status-bar">
-          <div class="dot" id="status-dot"></div>
-          <span id="status-text">Connecté à Supabase</span>
+          <div class="dot pulse" id="status-dot"></div>
+          <span id="status-txt">Connecté à Supabase</span>
+          <span style="margin-left:auto" id="status-time"></span>
         </div>
-
       </div>
     </div>
 
-    <!-- ── TAB: MESSAGES ── -->
-    <div class="tab-content" id="tab-messages">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-        <div>
-          <div class="section-title" style="margin:0">✉️ Messages reçus</div>
-          <div style="font-size:.78rem;color:#475569;margin-top:4px">
-            Partagez ce lien pour recevoir des messages :
-            <a href="#" id="contact-url" style="color:#6366f1;text-decoration:none" onclick="copyContactUrl(event)">📋 Copier l'URL</a>
+    <!-- ══ TAB: REVENUS ══ -->
+    <div class="tab-pane" id="tab-revenus">
+      <div class="loading" id="rev-loading">Chargement…</div>
+      <div id="rev-content" style="display:none">
+
+        <div class="kpi-grid" style="margin-bottom:20px">
+          <div class="kpi" style="--kpi-color:var(--green)">
+            <div class="kpi-label">Total encaissé</div>
+            <div class="kpi-value" id="rv-total">—</div>
+            <div class="kpi-sub">depuis l'ouverture</div>
+          </div>
+          <div class="kpi" style="--kpi-color:var(--accent)">
+            <div class="kpi-label">Ce mois</div>
+            <div class="kpi-value" id="rv-mois">—</div>
+            <div class="kpi-sub" id="rv-mois-n">—</div>
+          </div>
+          <div class="kpi" style="--kpi-color:var(--purple)">
+            <div class="kpi-label">Ticket moyen</div>
+            <div class="kpi-value" id="rv-avg">—</div>
+            <div class="kpi-sub">par abonnement</div>
+          </div>
+          <div class="kpi" style="--kpi-color:var(--yellow)">
+            <div class="kpi-label">LTV estimée</div>
+            <div class="kpi-value" id="rv-ltv">—</div>
+            <div class="kpi-sub">durée moy. × ticket moyen</div>
           </div>
         </div>
-        <button class="hdr-btn" onclick="loadMessages()">↻</button>
+
+        <div class="sec-title">Historique des paiements</div>
+        <div class="search-bar">
+          <input class="search-input" id="rev-search" placeholder="🔍 Rechercher par ID, plan…" oninput="filterRevTable()">
+          <select class="search-input" style="flex:0 0 140px" id="rev-plan-filter" onchange="filterRevTable()">
+            <option value="">Tous les plans</option>
+            <option value="starter">Starter</option>
+            <option value="pro">Pro</option>
+            <option value="entreprise">Entreprise</option>
+          </select>
+          <button class="btn btn-ghost" onclick="exportCSV()">📥 CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="rev-table">
+            <thead><tr>
+              <th>Date</th><th>Tenant ID</th><th>Plan</th><th>Montant</th><th>Référence</th><th>Expire</th><th>Source</th>
+            </tr></thead>
+            <tbody id="rev-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: UTILISATEURS ══ -->
+    <div class="tab-pane" id="tab-users">
+      <div class="loading" id="usr-loading">Chargement…</div>
+      <div id="usr-content" style="display:none">
+
+        <div class="search-bar">
+          <input class="search-input" id="usr-search" placeholder="🔍 Rechercher par Tenant ID…" oninput="filterUsrTable()">
+          <select class="search-input" style="flex:0 0 160px" id="usr-plan-filter" onchange="filterUsrTable()">
+            <option value="">Tous les plans</option>
+            <option value="gratuit">Gratuit</option>
+            <option value="starter">Starter</option>
+            <option value="pro">Pro</option>
+            <option value="entreprise">Entreprise</option>
+            <option value="expired">Expirés</option>
+          </select>
+          <button class="btn btn-ghost" onclick="loadUsers()">↻</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="usr-table">
+            <thead><tr>
+              <th>Tenant ID</th><th>Plan</th><th>Statut</th><th>Expire</th><th>Montant payé</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="usr-tbody"></tbody>
+          </table>
+        </div>
+        <div style="font-size:.72rem;color:var(--text3);margin-top:10px" id="usr-count"></div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: MESSAGES ══ -->
+    <div class="tab-pane" id="tab-messages">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+        <div>
+          <div class="sec-title" style="margin:0">Messages reçus</div>
+          <div style="font-size:.75rem;color:var(--text3);margin-top:4px">
+            Lien de contact public :
+            <a href="#" onclick="copyContactUrl(event)" style="color:var(--accent);text-decoration:none;font-weight:600">📋 Copier l'URL</a>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <select class="search-input" style="width:auto" id="msg-filter" onchange="filterMsgs()">
+            <option value="">Tous</option>
+            <option value="unread">Non lus</option>
+            <option value="read">Lus</option>
+          </select>
+          <button class="btn btn-ghost" onclick="loadMessages()">↻</button>
+          <button class="btn btn-accent" onclick="markAllRead()">✓ Tout marquer lu</button>
+        </div>
       </div>
       <div class="loading" id="msgs-loading" style="display:none">Chargement…</div>
       <div class="msg-list" id="msg-list"></div>
     </div>
 
-    <!-- ── TAB: OFFRIR PACKAGE ── -->
-    <div class="tab-content" id="tab-packages">
+    <!-- ══ TAB: PACKAGES ══ -->
+    <div class="tab-pane" id="tab-packages">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
 
         <div class="pkg-form">
-          <h3>🎁 Offrir un plan à un utilisateur</h3>
-
+          <div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:20px">🎁 Offrir un plan</div>
           <div class="field">
-            <label>Tenant ID de l'utilisateur *</label>
-            <input type="text" id="pkg-tenant" placeholder="ex: abc123-def456…">
+            <label>Tenant ID *</label>
+            <input type="text" id="pkg-tenant" placeholder="ex: abc123-def456-…">
             <div class="field-note">L'utilisateur le trouve dans Paramètres → Mon espace → ID espace</div>
           </div>
-
           <div class="field">
-            <label>Plan à offrir</label>
+            <label>Plan</label>
             <div class="plan-grid">
               <div class="plan-opt selected" onclick="selectPlan('starter',this)">
                 <div class="plan-name">Starter</div>
@@ -375,31 +564,158 @@ main{padding:24px;max-width:1280px;margin:0 auto;width:100%;flex:1}
               </div>
             </div>
           </div>
-
           <div class="field">
             <label>Durée</label>
             <select id="pkg-duree">
               <option value="1">1 mois</option>
-              <option value="3">3 mois</option>
-              <option value="6">6 mois (−10%)</option>
-              <option value="12" selected>12 mois (−20%)</option>
+              <option value="3">3 mois (+5%)</option>
+              <option value="6">6 mois (+10%)</option>
+              <option value="12" selected>12 mois (+17%)</option>
             </select>
           </div>
-
           <div class="field">
-            <label>Note interne <span style="color:#475569;font-weight:400">(optionnel)</span></label>
-            <input type="text" id="pkg-note" placeholder="ex: offert suite à un partenariat">
+            <label>Note interne <span style="font-weight:400;color:var(--text3)">(optionnel)</span></label>
+            <input type="text" id="pkg-note" placeholder="ex: partenariat, compensation, test…">
           </div>
-
-          <button class="btn-main" onclick="offrirPackage()">🎁 Offrir ce plan</button>
-          <div class="alert success" id="pkg-ok">✅ Plan activé avec succès !</div>
-          <div class="alert error" id="pkg-err">Erreur. Vérifiez le Tenant ID.</div>
+          <button class="btn-primary" onclick="offrirPackage()">🎁 Offrir ce plan</button>
+          <div class="form-alert ok" id="pkg-ok">✅ Plan activé avec succès !</div>
+          <div class="form-alert err" id="pkg-err">❌ Erreur. Vérifiez le Tenant ID.</div>
         </div>
 
-        <div class="pkg-history">
-          <div class="section-title" style="margin-top:0">Abonnements actifs</div>
+        <div>
+          <div class="sec-title" style="margin-top:0">Abonnements actifs</div>
           <div class="loading" id="pkg-loading" style="display:none">Chargement…</div>
           <div id="pkg-list"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ TAB: ANALYTIQUE ══ -->
+    <div class="tab-pane" id="tab-analytics">
+      <div class="loading" id="ana-loading">Chargement…</div>
+      <div id="ana-content" style="display:none">
+
+        <div class="sec-title">💡 Indicateurs commerciaux</div>
+        <div class="insight-grid">
+          <div class="insight">
+            <div class="insight-title">Taux de conversion</div>
+            <div class="insight-value" id="ana-conv">—</div>
+            <div class="insight-desc">Ratio utilisateurs payants / total enregistrés</div>
+            <div class="progress-wrap">
+              <div class="progress-bar"><div class="progress-fill" id="ana-conv-bar" style="width:0%"></div></div>
+            </div>
+          </div>
+          <div class="insight">
+            <div class="insight-title">Rétention estimée</div>
+            <div class="insight-value" id="ana-ret">—</div>
+            <div class="insight-desc">Abonnements renouvelés sur total expiré</div>
+            <div class="progress-wrap">
+              <div class="progress-bar"><div class="progress-fill" id="ana-ret-bar" style="width:0%;background:var(--green)"></div></div>
+            </div>
+          </div>
+          <div class="insight">
+            <div class="insight-title">Plan le plus populaire</div>
+            <div class="insight-value" id="ana-top-plan">—</div>
+            <div class="insight-desc" id="ana-top-plan-desc">—</div>
+          </div>
+          <div class="insight">
+            <div class="insight-title">Croissance MoM</div>
+            <div class="insight-value" id="ana-growth">—</div>
+            <div class="insight-desc">Nouveaux abonnements mois courant vs précédent</div>
+          </div>
+          <div class="insight">
+            <div class="insight-title">Revenus moyens / espace</div>
+            <div class="insight-value" id="ana-arpu">—</div>
+            <div class="insight-desc">ARPU — Average Revenue Per User</div>
+          </div>
+          <div class="insight">
+            <div class="insight-title">Abonnements offerts</div>
+            <div class="insight-value" id="ana-offerts">—</div>
+            <div class="insight-desc">Plans offerts manuellement (OFFERT- références)</div>
+          </div>
+        </div>
+
+        <div class="sec-title" style="margin-top:32px">📅 Activité par période</div>
+        <div class="charts-grid-2">
+          <div class="chart-card">
+            <h3>Nouveaux abonnements par mois</h3>
+            <canvas id="chart-new-abs"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Revenus cumulés</h3>
+            <canvas id="chart-cumul"></canvas>
+          </div>
+        </div>
+
+        <div class="sec-title" style="margin-top:32px">⚠️ À surveiller</div>
+        <div class="insight-grid" id="ana-alerts"></div>
+
+      </div>
+    </div>
+
+    <!-- ══ TAB: CONFIGURATION ══ -->
+    <div class="tab-pane" id="tab-config">
+      <div style="max-width:600px">
+
+        <div class="sec-title">🏷️ Tarifs</div>
+        <div class="pkg-form">
+          <div class="cfg-row">
+            <div><div class="cfg-label">Plan Starter</div><div class="cfg-sub">Fonctionnalités de base</div></div>
+            <input type="number" id="cfg-price-starter" value="9999" style="width:120px;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:rgba(255,255,255,0.9);font-family:var(--font);font-size:.88rem;color:var(--text);outline:none">
+          </div>
+          <div class="cfg-row">
+            <div><div class="cfg-label">Plan Pro</div><div class="cfg-sub">Toutes les fonctionnalités</div></div>
+            <input type="number" id="cfg-price-pro" value="19999" style="width:120px;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:rgba(255,255,255,0.9);font-family:var(--font);font-size:.88rem;color:var(--text);outline:none">
+          </div>
+          <div class="cfg-row">
+            <div><div class="cfg-label">Plan Entreprise</div><div class="cfg-sub">Multi-sites, API, priorité</div></div>
+            <input type="number" id="cfg-price-ent" value="29999" style="width:120px;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:rgba(255,255,255,0.9);font-family:var(--font);font-size:.88rem;color:var(--text);outline:none">
+          </div>
+          <div style="margin-top:14px"><button class="btn btn-accent" onclick="savePrices()">✓ Enregistrer les tarifs</button></div>
+          <div class="form-alert ok" id="cfg-ok" style="margin-top:10px">✅ Tarifs enregistrés</div>
+        </div>
+
+        <div class="sec-title" style="margin-top:28px">🔧 Paramètres système</div>
+        <div class="pkg-form">
+          <div class="cfg-row">
+            <div><div class="cfg-label">Mode maintenance</div><div class="cfg-sub">Affiche une bannière sur l'app</div></div>
+            <button class="toggle" id="tog-maint" onclick="toggleCfg('maint')"></button>
+          </div>
+          <div class="cfg-row">
+            <div><div class="cfg-label">Essai gratuit 14 jours</div><div class="cfg-sub">Activer pour les nouveaux comptes</div></div>
+            <button class="toggle on" id="tog-trial" onclick="toggleCfg('trial')"></button>
+          </div>
+          <div class="cfg-row">
+            <div><div class="cfg-label">Inscriptions ouvertes</div><div class="cfg-sub">Permettre la création de nouveaux espaces</div></div>
+            <button class="toggle on" id="tog-reg" onclick="toggleCfg('reg')"></button>
+          </div>
+        </div>
+
+        <div class="sec-title" style="margin-top:28px">📣 Annonce globale</div>
+        <div class="pkg-form">
+          <div class="field">
+            <label>Message d'annonce <span style="font-weight:400;color:var(--text3)">(laissez vide pour désactiver)</span></label>
+            <textarea id="cfg-annonce" placeholder="ex: Maintenance prévue le 15 juillet de 2h à 4h…" style="min-height:70px"></textarea>
+          </div>
+          <button class="btn btn-accent" onclick="saveAnnonce()">📣 Publier l'annonce</button>
+          <div class="form-alert ok" id="ann-ok" style="margin-top:10px">✅ Annonce publiée</div>
+        </div>
+
+        <div class="sec-title" style="margin-top:28px">🔑 Sécurité</div>
+        <div class="pkg-form">
+          <div class="cfg-row">
+            <div><div class="cfg-label">Mot de passe dashboard</div><div class="cfg-sub">Modifier dans le code source (OWNER_PWD)</div></div>
+            <span style="font-size:.75rem;color:var(--text3);font-family:monospace">••••••••••••</span>
+          </div>
+          <div class="cfg-row">
+            <div><div class="cfg-label">Version du cache SW</div><div class="cfg-sub">Service Worker actif</div></div>
+            <span class="chip actif" id="cfg-sw-ver">—</span>
+          </div>
+          <div class="cfg-row">
+            <div><div class="cfg-label">Base de données</div><div class="cfg-sub">Supabase — uggxfmwp…</div></div>
+            <span class="chip actif" id="cfg-db-status">Vérification…</span>
+          </div>
         </div>
 
       </div>
@@ -408,23 +724,31 @@ main{padding:24px;max-width:1280px;margin:0 auto;width:100%;flex:1}
   </main>
 </div>
 
+<div id="toast"></div>
+
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════
 const OWNER_PWD    = 'immogest2025owner';
 const SUPABASE_URL = 'https://uggxfmwpttfsfcirmeqx.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZ3hmbXdwdHRmc2ZjaXJtZXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNTA4MjIsImV4cCI6MjA5NDYyNjgyMn0.l8iYlJHOt6evNlBQ3zRskZasn_J2BjAUs1l2vKOZNvY';
 
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-let charts = {};
+let _charts = {};
 let _selectedPlan = 'starter';
+let _allAbonnements = [];
+let _allMessages = [];
+let _cfgToggles = { maint: false, trial: true, reg: true };
 
-// ── PWA INSTALL ────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
+// PWA INSTALL
+// ════════════════════════════════════════════════════════
 let _deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   _deferredPrompt = e;
-  const btn = document.getElementById('btn-install');
-  if (btn) btn.style.display = 'flex';
+  document.getElementById('btn-install').style.display = 'flex';
 });
 function installPWA() {
   if (!_deferredPrompt) return;
@@ -434,21 +758,19 @@ function installPWA() {
     document.getElementById('btn-install').style.display = 'none';
   });
 }
-window.addEventListener('appinstalled', () => {
-  document.getElementById('btn-install').style.display = 'none';
-});
 
-// ── AUTH ──────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════════
 function checkAuth() {
   const val = document.getElementById('pwd-input').value;
   if (val === OWNER_PWD) {
     sessionStorage.setItem('owner_ok', '1');
     showDashboard();
   } else {
-    const err = document.getElementById('auth-error');
+    const err = document.getElementById('auth-err');
     err.style.display = 'block';
     document.getElementById('pwd-input').value = '';
-    document.getElementById('pwd-input').focus();
     setTimeout(() => err.style.display = 'none', 3000);
   }
 }
@@ -461,129 +783,186 @@ function showDashboard() {
   document.getElementById('public-screen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'flex';
   document.getElementById('dashboard').style.flexDirection = 'column';
+  startClock();
   loadAll();
 }
 if (sessionStorage.getItem('owner_ok') === '1') showDashboard();
 
-// ── TABS ──────────────────────────────────────────────────────────────
+function startClock() {
+  const el = document.getElementById('tb-time');
+  const tick = () => el.textContent = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  tick(); setInterval(tick, 1000);
+}
+
+// ════════════════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════════════════
 function switchTab(name, btn) {
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   btn.classList.add('active');
   if (name === 'messages') loadMessages();
-  if (name === 'packages') loadAbonnements();
+  if (name === 'packages') loadPackages();
+  if (name === 'revenus')  loadRevenus();
+  if (name === 'users')    loadUsers();
+  if (name === 'analytics') loadAnalytics();
+  if (name === 'config')   loadConfig();
 }
 
-// ── LOAD ALL ──────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
+// LOAD ALL
+// ════════════════════════════════════════════════════════
 async function loadAll() {
-  loadStats();
+  await loadOverview();
   loadMessages();
 }
 
-// ── STATS ─────────────────────────────────────────────────────────────
-async function loadStats() {
-  document.getElementById('stats-loading').style.display = 'block';
-  document.getElementById('stats-content').style.display = 'none';
+// ════════════════════════════════════════════════════════
+// VUE D'ENSEMBLE
+// ════════════════════════════════════════════════════════
+async function loadOverview() {
+  show('ov-loading'); hide('ov-content');
   try {
     const now = new Date();
     const mo = now.getMonth() + 1, yr = now.getFullYear();
 
     const [
-      { data: abonnements },
-      { data: immeubles },
-      { data: locataires },
-      { data: paiements },
-      { data: maintenances }
+      { data: abs },
+      { data: imm },
+      { data: locs },
+      { data: pays },
     ] = await Promise.all([
       _sb.from('abonnements').select('*'),
-      _sb.from('immeubles').select('id,nom'),
-      _sb.from('locataires').select('id,statut,entree,immeuble_id'),
-      _sb.from('paiements').select('id,mois,annee,montant,date_paiement'),
-      _sb.from('maintenances').select('id,statut').catch(() => ({data:[]}))
+      _sb.from('immeubles').select('id'),
+      _sb.from('locataires').select('id,statut'),
+      _sb.from('paiements').select('id,mois,annee,montant'),
     ]);
 
-    const abs = abonnements || [];
-    const actifs  = abs.filter(a => a.statut === 'actif' || a.statut === 'active');
-    const starters = abs.filter(a => a.plan === 'starter');
-    const pros     = abs.filter(a => a.plan === 'pro');
-    const ents     = abs.filter(a => a.plan === 'entreprise');
-    const gratuits = abs.filter(a => !a.plan || a.plan === 'gratuit');
-    const revenus  = abs.reduce((s, a) => s + (a.montant || 0), 0);
+    _allAbonnements = abs || [];
+    const actifs   = _allAbonnements.filter(a => isActif(a));
+    const expiring = _allAbonnements.filter(a => isExpiringSoon(a));
+    const expired  = _allAbonnements.filter(a => isExpired(a));
+    const mrr      = calcMRR(actifs);
+    const revTotal = _allAbonnements.reduce((s,a) => s + (a.montant||0), 0);
 
     set('k-actifs', actifs.length);
-    set('k-revenus', fmt(revenus));
-    set('k-starter', starters.length);
-    set('k-starter-sub', fmt(starters.reduce((s,a)=>s+(a.montant||0),0)));
-    set('k-pro', pros.length);
-    set('k-pro-sub', fmt(pros.reduce((s,a)=>s+(a.montant||0),0)));
-    set('k-entreprise', ents.length);
-    set('k-ent-sub', fmt(ents.reduce((s,a)=>s+(a.montant||0),0)));
-    set('k-gratuit', gratuits.length);
+    set('k-mrr', fmtXAF(mrr));
+    set('k-arr', fmtXAF(mrr * 12));
+    set('k-revenus', fmtXAF(revTotal));
+    set('k-expiring', expiring.length);
+    set('k-churn', expired.length);
 
-    // Charts abonnements
-    buildChartRevenus(abs, now);
-    buildChartPlans(starters.length, pros.length, ents.length, gratuits.length);
+    // Trend MRR
+    const mrrPrev = calcMRRPrev(_allAbonnements, now);
+    const trendEl = document.getElementById('k-mrr-trend');
+    if (mrrPrev > 0) {
+      const pct = Math.round((mrr - mrrPrev) / mrrPrev * 100);
+      trendEl.textContent = (pct >= 0 ? '▲ +' : '▼ ') + pct + '% vs mois précédent';
+      trendEl.className = 'kpi-trend ' + (pct >= 0 ? 'up' : 'down');
+    }
 
-    // Stats immobilières
-    const locs = locataires || [];
-    const actifLocs = locs.filter(l => l.statut !== 'libre');
-    const libres    = locs.filter(l => l.statut === 'libre');
-    const impayes   = locs.filter(l => l.statut === 'impayé');
-    const total     = actifLocs.length + libres.length;
-    const taux      = total > 0 ? Math.round(actifLocs.length / total * 100) : 0;
-    const paysMois  = (paiements||[]).filter(p => p.mois === mo && p.annee === yr);
-    const montMois  = paysMois.reduce((s,p)=>s+(p.montant||0),0);
-    const maints    = maintenances || [];
-    const maintPend = maints.filter(m => m.statut==='en_attente'||m.statut==='en_cours');
+    buildChartMRR(_allAbonnements, now);
+    buildChartPlans(_allAbonnements);
 
-    set('k-immeubles', (immeubles||[]).length);
-    set('k-locataires', actifLocs.length);
+    // Immobilier
+    const locsArr    = locs || [];
+    const actifLocs  = locsArr.filter(l => l.statut !== 'libre');
+    const libres     = locsArr.filter(l => l.statut === 'libre');
+    const impayes    = locsArr.filter(l => l.statut === 'impayé');
+    const total      = locsArr.length;
+    const occ        = total > 0 ? Math.round(actifLocs.length / total * 100) : 0;
+    const paysMois   = (pays||[]).filter(p => p.mois === mo && p.annee === yr);
+    const montMois   = paysMois.reduce((s,p) => s + (p.montant||0), 0);
+    const tpay       = actifLocs.length > 0 ? Math.round((actifLocs.length - impayes.length) / actifLocs.length * 100) : 0;
+
+    set('k-imm', (imm||[]).length);
+    set('k-loc', actifLocs.length);
     set('k-loc-sub', libres.length + ' locaux libres');
-    set('k-taux', taux + '%');
+    set('k-occ', occ + '%');
     set('k-pays', paysMois.length);
-    set('k-pays-sub', fmt(montMois) + ' encaissés');
-    set('k-impayes', impayes.length);
-    set('k-maint', maintPend.length);
-    set('k-maint-sub', maints.length + ' au total');
+    set('k-pays-sub', fmtXAF(montMois) + ' encaissés');
+    set('k-imp', impayes.length);
+    set('k-tpay', tpay + '%');
 
-    buildChartPays(paiements||[], now);
-    buildChartStatuts(locs);
+    buildChartPays(pays||[], now);
+    buildChartLocs(locsArr);
 
-    set('last-update', now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}));
-    document.getElementById('status-dot').className = 'dot';
-    document.getElementById('status-text').textContent = 'Connecté à Supabase';
-    document.getElementById('stats-loading').style.display = 'none';
-    document.getElementById('stats-content').style.display = 'block';
+    document.getElementById('status-dot').className = 'dot pulse';
+    set('status-txt', 'Connecté · ' + _allAbonnements.length + ' abonnements · ' + locsArr.length + ' locataires');
+    set('status-time', 'Actualisé ' + now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}));
+
+    hide('ov-loading'); show('ov-content');
   } catch(e) {
-    document.getElementById('stats-loading').textContent = 'Erreur : ' + e.message;
-    document.getElementById('status-dot').className = 'dot error';
+    document.getElementById('ov-loading').textContent = '❌ Erreur : ' + e.message;
+    document.getElementById('status-dot').className = 'dot err';
   }
 }
 
-function buildChartRevenus(abs, now) {
+function calcMRR(actifs) {
+  return actifs.reduce((s,a) => s + ((a.montant||0) / Math.max(1, monthDiff(a.date_paiement, a.date_fin))), 0);
+}
+function calcMRRPrev(abs, now) {
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const actifsPrev = abs.filter(a => {
+    const start = new Date(a.date_paiement||0);
+    const end   = new Date(a.date_fin||0);
+    return start <= prev && end >= prev;
+  });
+  return calcMRR(actifsPrev);
+}
+function monthDiff(d1, d2) {
+  if (!d1 || !d2) return 1;
+  const a = new Date(d1), b = new Date(d2);
+  return Math.max(1, Math.round((b - a) / (30 * 86400000)));
+}
+function isActif(a) {
+  if (a.statut !== 'actif' && a.statut !== 'active') return false;
+  if (a.date_fin && new Date(a.date_fin) < new Date()) return false;
+  return true;
+}
+function isExpiringSoon(a) {
+  if (!isActif(a)) return false;
+  const fin = new Date(a.date_fin||0);
+  const diff = (fin - new Date()) / 86400000;
+  return diff >= 0 && diff <= 30;
+}
+function isExpired(a) {
+  return a.date_fin && new Date(a.date_fin) < new Date();
+}
+
+function buildChartMRR(abs, now) {
   const labels = [], data = [];
-  for (let i = 5; i >= 0; i--) {
+  for (let i = 11; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
     labels.push(d.toLocaleDateString('fr-FR',{month:'short',year:'2-digit'}));
-    data.push(abs.filter(a => {
-      if (!a.date_paiement) return false;
-      const dp = new Date(a.date_paiement);
-      return dp.getMonth() === d.getMonth() && dp.getFullYear() === d.getFullYear();
-    }).reduce((s,a)=>s+(a.montant||0),0));
+    const montant = abs.filter(a => {
+      const dp = new Date(a.date_paiement||0);
+      return dp >= d && dp < end && a.montant > 0;
+    }).reduce((s,a) => s + (a.montant||0), 0);
+    data.push(montant);
   }
-  renderChart('chart-revenus','bar',labels,[{
+  renderChart('chart-mrr', 'bar', labels, [{
     label:'Revenus (FCFA)', data,
-    backgroundColor:'#6366f155', borderColor:'#6366f1', borderWidth:2, borderRadius:4
+    backgroundColor:'rgba(14,106,175,0.15)',
+    borderColor:'#0E6AAF', borderWidth:2, borderRadius:5
   }]);
 }
 
-function buildChartPlans(s,p,e,g) {
-  renderChart('chart-plans','doughnut',
-    ['Starter','Pro','Entreprise','Gratuit'],
-    [{data:[s,p,e,g],
-      backgroundColor:['#0ea5e955','#6366f155','#a855f755','#47494d55'],
-      borderColor:['#0ea5e9','#6366f1','#a855f7','#64748b'],borderWidth:2}]
+function buildChartPlans(abs) {
+  const counts = {Starter:0, Pro:0, Entreprise:0, Gratuit:0};
+  abs.forEach(a => {
+    if (a.plan === 'starter') counts.Starter++;
+    else if (a.plan === 'pro') counts.Pro++;
+    else if (a.plan === 'entreprise') counts.Entreprise++;
+    else counts.Gratuit++;
+  });
+  renderChart('chart-plans', 'doughnut',
+    Object.keys(counts),
+    [{data:Object.values(counts),
+      backgroundColor:['rgba(14,106,175,.25)','rgba(107,70,193,.25)','rgba(139,74,0,.25)','rgba(122,144,168,.25)'],
+      borderColor:['#0E6AAF','#6B46C1','#8B4A00','#7A90A8'],borderWidth:2}]
   );
 }
 
@@ -592,221 +971,552 @@ function buildChartPays(pays, now) {
   for(let i=5;i>=0;i--){
     const d=new Date(now.getFullYear(),now.getMonth()-i,1);
     labels.push(d.toLocaleDateString('fr-FR',{month:'short',year:'2-digit'}));
-    data.push(pays.filter(p=>p.mois===d.getMonth()+1&&p.annee===d.getFullYear()).length);
+    data.push(pays.filter(p=>p.mois===d.getMonth()+1&&p.annee===d.getFullYear()).reduce((s,p)=>s+(p.montant||0),0));
   }
   renderChart('chart-pays','bar',labels,[{
-    label:'Paiements',data,backgroundColor:'#22c55e55',borderColor:'#22c55e',borderWidth:2,borderRadius:4
+    label:'Loyers (FCFA)',data,
+    backgroundColor:'rgba(14,122,69,.15)',borderColor:'#0E7A45',borderWidth:2,borderRadius:5
   }]);
 }
 
-function buildChartStatuts(locs) {
-  const c={payé:0,impayé:0,partiel:0,libre:0};
-  locs.forEach(l=>{if(c[l.statut]!==undefined)c[l.statut]++;else c.partiel++;});
-  renderChart('chart-statuts','doughnut',
+function buildChartLocs(locs) {
+  const c = {payé:0,impayé:0,partiel:0,libre:0};
+  locs.forEach(l => { c[l.statut] !== undefined ? c[l.statut]++ : c.partiel++; });
+  renderChart('chart-locs','doughnut',
     ['Payé','Impayé','Partiel','Libre'],
     [{data:[c.payé,c.impayé,c.partiel,c.libre],
-      backgroundColor:['#22c55e88','#ef444488','#f59e0b88','#64748b88'],
-      borderColor:['#22c55e','#ef4444','#f59e0b','#64748b'],borderWidth:2}]
+      backgroundColor:['rgba(14,122,69,.3)','rgba(185,48,32,.3)','rgba(139,74,0,.3)','rgba(122,144,168,.3)'],
+      borderColor:['#0E7A45','#B93020','#8B4A00','#7A90A8'],borderWidth:2}]
   );
 }
 
-// ── MESSAGES ─────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
+// REVENUS
+// ════════════════════════════════════════════════════════
+async function loadRevenus() {
+  show('rev-loading'); hide('rev-content');
+  try {
+    if (!_allAbonnements.length) {
+      const { data } = await _sb.from('abonnements').select('*').order('date_paiement',{ascending:false});
+      _allAbonnements = data || [];
+    }
+    const abs = _allAbonnements;
+    const now = new Date();
+    const thisMo = abs.filter(a => {
+      const d = new Date(a.date_paiement||0);
+      return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()&&a.montant>0;
+    });
+    const total  = abs.reduce((s,a)=>s+(a.montant||0),0);
+    const paid   = abs.filter(a=>a.montant>0);
+    const avg    = paid.length ? total/paid.length : 0;
+    const ltv    = avg * 6; // 6 mois durée moy estimée
+
+    set('rv-total', fmtXAF(total));
+    set('rv-mois', fmtXAF(thisMo.reduce((s,a)=>s+(a.montant||0),0)));
+    set('rv-mois-n', thisMo.length + ' paiements ce mois');
+    set('rv-avg', fmtXAF(avg));
+    set('rv-ltv', fmtXAF(ltv));
+
+    renderRevTable(abs);
+    hide('rev-loading'); show('rev-content');
+  } catch(e) {
+    document.getElementById('rev-loading').textContent = '❌ ' + e.message;
+  }
+}
+
+function renderRevTable(abs) {
+  const sorted = [...abs].sort((a,b)=>new Date(b.date_paiement||0)-new Date(a.date_paiement||0));
+  const tbody = document.getElementById('rev-tbody');
+  tbody.innerHTML = sorted.map(a => {
+    const expired = isExpired(a);
+    return `<tr>
+      <td>${fmtDate(a.date_paiement)}</td>
+      <td style="font-family:monospace;font-size:.75rem" title="${esc(a.user_id||'')}">${(a.user_id||'—').substring(0,20)}…</td>
+      <td><span class="chip ${a.plan||'gratuit'}">${a.plan||'gratuit'}</span></td>
+      <td style="font-weight:700;color:${a.montant>0?'var(--green)':'var(--text3)'}">${a.montant>0?fmtXAF(a.montant):'Offert'}</td>
+      <td style="font-family:monospace;font-size:.72rem">${esc((a.reference||'').substring(0,20))}</td>
+      <td style="color:${expired?'var(--red)':'var(--text2)'}">${fmtDateShort(a.date_fin)}</td>
+      <td><span class="chip ${(a.reference||'').startsWith('OFFERT')?'offert':'actif'}">${(a.reference||'').startsWith('OFFERT')?'Offert':'Payé'}</span></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:30px">Aucun enregistrement</td></tr>';
+}
+
+function filterRevTable() {
+  const q = document.getElementById('rev-search').value.toLowerCase();
+  const pf = document.getElementById('rev-plan-filter').value;
+  const abs = _allAbonnements.filter(a =>
+    (!q || (a.user_id||'').toLowerCase().includes(q)||(a.reference||'').toLowerCase().includes(q)||(a.plan||'').includes(q)) &&
+    (!pf || a.plan === pf)
+  );
+  renderRevTable(abs);
+}
+
+// ════════════════════════════════════════════════════════
+// UTILISATEURS
+// ════════════════════════════════════════════════════════
+async function loadUsers() {
+  show('usr-loading'); hide('usr-content');
+  try {
+    const { data } = await _sb.from('abonnements').select('*').order('date_paiement',{ascending:false});
+    _allAbonnements = data || [];
+    renderUsrTable(_allAbonnements);
+    hide('usr-loading'); show('usr-content');
+  } catch(e) {
+    document.getElementById('usr-loading').textContent = '❌ ' + e.message;
+  }
+}
+
+function renderUsrTable(abs) {
+  const now = new Date();
+  const tbody = document.getElementById('usr-tbody');
+  tbody.innerHTML = abs.map(a => {
+    const expired = isExpired(a);
+    const actif   = isActif(a);
+    const statut  = actif ? 'actif' : (expired ? 'expired' : 'gratuit');
+    return `<tr>
+      <td style="font-family:monospace;font-size:.75rem" title="${esc(a.user_id||'')}">${esc((a.user_id||'—').substring(0,24))}…</td>
+      <td><span class="chip ${a.plan||'gratuit'}">${a.plan||'gratuit'}</span></td>
+      <td><span class="chip ${statut}">${statut==='actif'?'✓ Actif':statut==='expired'?'✗ Expiré':'Gratuit'}</span></td>
+      <td style="color:${expired?'var(--red)':'var(--text2)'}">${fmtDateShort(a.date_fin)}</td>
+      <td style="font-weight:600">${a.montant>0?fmtXAF(a.montant):'—'}</td>
+      <td>
+        <button class="btn btn-accent" style="font-size:.7rem;padding:4px 10px" onclick="quickOffer('${esc(a.user_id||'')}')">+</button>
+        <button class="btn btn-danger" style="font-size:.7rem;padding:4px 10px;margin-left:4px" onclick="revokeUser('${esc(a.user_id||'')}')">Révoquer</button>
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:30px">Aucun utilisateur</td></tr>';
+  set('usr-count', abs.length + ' utilisateurs affichés');
+}
+
+function filterUsrTable() {
+  const q  = document.getElementById('usr-search').value.toLowerCase();
+  const pf = document.getElementById('usr-plan-filter').value;
+  const filtered = _allAbonnements.filter(a => {
+    if (q && !(a.user_id||'').toLowerCase().includes(q)) return false;
+    if (!pf) return true;
+    if (pf === 'expired') return isExpired(a);
+    if (pf === 'gratuit') return !a.plan || a.plan === 'gratuit';
+    return a.plan === pf;
+  });
+  renderUsrTable(filtered);
+}
+
+async function quickOffer(userId) {
+  document.getElementById('pkg-tenant').value = userId;
+  switchTab('packages', document.querySelector('[onclick*="packages"]'));
+}
+
+async function revokeUser(userId) {
+  if (!confirm('Révoquer l\'abonnement de ' + userId.substring(0,16) + '… ?')) return;
+  try {
+    await _sb.from('abonnements').update({statut:'revoked',date_fin:new Date().toISOString()}).eq('user_id',userId);
+    toast('✓ Abonnement révoqué');
+    loadUsers();
+  } catch(e) { toast('❌ ' + e.message); }
+}
+
+// ════════════════════════════════════════════════════════
+// MESSAGES
+// ════════════════════════════════════════════════════════
 async function loadMessages() {
   document.getElementById('msgs-loading').style.display = 'block';
   try {
     const { data } = await _sb.from('contact_messages').select('*').order('created_at',{ascending:false});
-    const msgs = data || [];
-    const unread = msgs.filter(m => !m.lu).length;
+    _allMessages = data || [];
+    const unread = _allMessages.filter(m => !m.lu).length;
     const badge = document.getElementById('badge-msgs');
-    if (unread > 0) { badge.textContent = unread; badge.style.display = 'inline-block'; }
-    else badge.style.display = 'none';
-
-    const list = document.getElementById('msg-list');
-    if (msgs.length === 0) {
-      list.innerHTML = '<div class="empty-state"><div class="icon">📭</div><div>Aucun message pour l\'instant</div><div style="font-size:.8rem;margin-top:8px;color:#334155">Partagez l\'URL du dashboard pour recevoir des messages</div></div>';
-    } else {
-      list.innerHTML = msgs.map(m => `
-        <div class="msg-card ${m.lu?'':'unread'}" id="msg-${m.id}">
-          <div class="msg-meta">
-            <span class="msg-name">${esc(m.nom||'Anonyme')}</span>
-            <span class="msg-email">${esc(m.email||'')}</span>
-            ${m.tenant_id?`<span style="font-family:monospace;font-size:.72rem;color:#475569;background:#0f172a;padding:2px 6px;border-radius:4px">${esc(m.tenant_id)}</span>`:''}
-            <span class="msg-date">${fmtDate(m.created_at)}</span>
-            ${!m.lu?'<span style="background:#6366f1;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">Nouveau</span>':''}
-          </div>
-          <div class="msg-sujet">📌 ${esc(m.sujet||'Sans sujet')}</div>
-          <div class="msg-body">${esc(m.message||'')}</div>
-          <div class="msg-actions">
-            ${!m.lu?`<button class="btn-sm btn-read" onclick="markRead('${m.id}')">✓ Marquer lu</button>`:''}
-            ${m.email?`<button class="btn-sm btn-reply" onclick="replyMsg('${esc(m.email)}','${esc(m.nom||'')}')">↩️ Répondre</button>`:''}
-            <button class="btn-sm btn-del" onclick="deleteMsg('${m.id}')">🗑 Supprimer</button>
-          </div>
-        </div>`).join('');
-    }
+    badge.textContent = unread;
+    badge.style.display = unread > 0 ? 'inline-block' : 'none';
+    renderMsgs(_allMessages);
   } catch(e) {
-    document.getElementById('msg-list').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><div>Erreur de chargement</div><div style="font-size:.8rem;color:#475569;margin-top:6px">Table contact_messages introuvable — voir instructions de configuration</div></div>';
+    document.getElementById('msg-list').innerHTML = '<div class="empty"><div class="icon">⚠️</div><div>Table contact_messages introuvable<br><small>Créez-la dans Supabase SQL Editor (voir README dans le code)</small></div></div>';
   }
   document.getElementById('msgs-loading').style.display = 'none';
 }
 
+function renderMsgs(msgs) {
+  const list = document.getElementById('msg-list');
+  if (!msgs.length) {
+    list.innerHTML = '<div class="empty"><div class="icon">📭</div><div>Aucun message</div></div>';
+    return;
+  }
+  list.innerHTML = msgs.map(m => `
+    <div class="msg-card ${m.lu?'':'unread'}" id="msg-${m.id}">
+      <div class="msg-meta">
+        <span class="msg-name">${esc(m.nom||'Anonyme')}</span>
+        <span class="msg-email">${esc(m.email||'')}</span>
+        ${m.tenant_id?`<code style="font-size:.7rem;background:var(--bg4);padding:2px 6px;border-radius:4px;color:var(--text3)">${esc(m.tenant_id)}</code>`:''}
+        <span class="msg-date">${fmtDate(m.created_at)}</span>
+        ${!m.lu?'<span class="chip new">Nouveau</span>':''}
+      </div>
+      <div class="msg-sujet">📌 ${esc(m.sujet||'Sans sujet')}</div>
+      <div class="msg-body">${esc(m.message||'')}</div>
+      <div class="msg-actions">
+        ${!m.lu?`<button class="btn btn-green" onclick="markRead('${m.id}')">✓ Marquer lu</button>`:''}
+        ${m.email?`<button class="btn btn-accent" onclick="replyMsg('${esc(m.email)}','${esc(m.nom||'')}','${esc(m.sujet||'')}')">↩️ Répondre</button>`:''}
+        <button class="btn btn-danger" onclick="deleteMsg('${m.id}')">🗑 Supprimer</button>
+      </div>
+    </div>`).join('');
+}
+
+function filterMsgs() {
+  const f = document.getElementById('msg-filter').value;
+  const filtered = !f ? _allMessages :
+    f === 'unread' ? _allMessages.filter(m=>!m.lu) :
+    _allMessages.filter(m=>m.lu);
+  renderMsgs(filtered);
+}
+
 async function markRead(id) {
   await _sb.from('contact_messages').update({lu:true}).eq('id',id);
-  loadMessages();
+  const m = _allMessages.find(m=>m.id===id);
+  if (m) m.lu = true;
+  renderMsgs(_allMessages);
+  const unread = _allMessages.filter(m=>!m.lu).length;
+  const badge = document.getElementById('badge-msgs');
+  badge.textContent = unread;
+  badge.style.display = unread > 0 ? 'inline-block' : 'none';
 }
+
+async function markAllRead() {
+  await _sb.from('contact_messages').update({lu:true}).eq('lu',false);
+  _allMessages.forEach(m=>m.lu=true);
+  renderMsgs(_allMessages);
+  document.getElementById('badge-msgs').style.display = 'none';
+}
+
 async function deleteMsg(id) {
   if (!confirm('Supprimer ce message ?')) return;
   await _sb.from('contact_messages').delete().eq('id',id);
-  document.getElementById('msg-'+id).remove();
+  _allMessages = _allMessages.filter(m=>m.id!==id);
+  renderMsgs(_allMessages);
+  toast('🗑 Message supprimé');
 }
-function replyMsg(email, nom) {
-  window.open('mailto:'+email+'?subject=Re: ImmoGest — Votre message&body=Bonjour '+nom+',\n\n', '_blank');
+
+function replyMsg(email, nom, sujet) {
+  window.open(`mailto:${email}?subject=Re: ${sujet} — ImmoGest&body=Bonjour ${nom},%0A%0A`, '_blank');
 }
+
 function copyContactUrl(e) {
   e.preventDefault();
   const url = window.location.origin + '/owner-dashboard.html';
-  navigator.clipboard.writeText(url).then(()=>alert('URL copiée : '+url));
+  navigator.clipboard.writeText(url).then(() => toast('✓ URL copiée : ' + url));
 }
 
-// ── CONTACT FORM (public) ─────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
+// CONTACT PUBLIC
+// ════════════════════════════════════════════════════════
 async function sendContact() {
-  const nom     = document.getElementById('c-nom').value.trim();
-  const email   = document.getElementById('c-email').value.trim();
-  const sujet   = document.getElementById('c-sujet').value;
-  const message = document.getElementById('c-message').value.trim();
-  const tenant  = document.getElementById('c-tenant').value.trim();
-
-  if (!nom || !email || !message) { alert('Nom, email et message sont requis.'); return; }
-
-  const btn = document.getElementById('btn-send-contact');
+  const nom     = v('c-nom'), email = v('c-email');
+  const sujet   = v('c-sujet'), message = v('c-message');
+  const tenant  = v('c-tenant');
+  if (!nom||!email||!message) { alert('Nom, email et message sont requis.'); return; }
+  const btn = document.getElementById('btn-contact');
   btn.disabled = true; btn.textContent = 'Envoi…';
-
   try {
-    const { error } = await _sb.from('contact_messages').insert([{
-      nom, email, sujet, message, tenant_id: tenant || null, lu: false
-    }]);
+    const { error } = await _sb.from('contact_messages').insert([{nom,email,sujet,message,tenant_id:tenant||null,lu:false}]);
     if (error) throw error;
-    document.getElementById('contact-ok').style.display = 'block';
-    document.getElementById('c-nom').value = '';
-    document.getElementById('c-email').value = '';
-    document.getElementById('c-message').value = '';
-    document.getElementById('c-tenant').value = '';
+    document.getElementById('c-ok').style.display = 'block';
+    ['c-nom','c-email','c-message','c-tenant'].forEach(id => document.getElementById(id).value='');
+    setTimeout(()=>document.getElementById('c-ok').style.display='none',5000);
   } catch(e) {
-    document.getElementById('contact-err').style.display = 'block';
-    setTimeout(()=>document.getElementById('contact-err').style.display='none', 4000);
+    document.getElementById('c-err').style.display = 'block';
+    setTimeout(()=>document.getElementById('c-err').style.display='none',4000);
   }
-  btn.disabled = false; btn.textContent = '📨 Envoyer le message';
+  btn.disabled=false; btn.textContent='📨 Envoyer';
 }
 
-// ── PACKAGES ─────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
+// PACKAGES
+// ════════════════════════════════════════════════════════
 function selectPlan(plan, el) {
   _selectedPlan = plan;
-  document.querySelectorAll('.plan-opt').forEach(o => o.classList.remove('selected'));
+  document.querySelectorAll('.plan-opt').forEach(o=>o.classList.remove('selected'));
   el.classList.add('selected');
 }
 
 async function offrirPackage() {
-  const tenant = document.getElementById('pkg-tenant').value.trim();
+  const tenant = v('pkg-tenant');
   const duree  = parseInt(document.getElementById('pkg-duree').value);
-  const note   = document.getElementById('pkg-note').value.trim();
-  if (!tenant) { alert('Entrez l\'ID de l\'espace.'); return; }
-
+  const note   = v('pkg-note');
+  if (!tenant) { toast('Entrez l\'ID de l\'espace'); return; }
   const dateFin = new Date();
   dateFin.setMonth(dateFin.getMonth() + duree);
-
   try {
     const { error } = await _sb.from('abonnements').upsert([{
-      user_id: tenant,
-      plan: _selectedPlan,
-      statut: 'actif',
-      date_fin: dateFin.toISOString(),
-      reference: 'OFFERT-' + Date.now(),
-      montant: 0,
-      date_paiement: new Date().toISOString(),
-      note: note || null
-    }], { onConflict: 'user_id' });
+      user_id:tenant, plan:_selectedPlan, statut:'actif',
+      date_fin:dateFin.toISOString(), reference:'OFFERT-'+Date.now(),
+      montant:0, date_paiement:new Date().toISOString(), note:note||null
+    }],{onConflict:'user_id'});
     if (error) throw error;
-    document.getElementById('pkg-ok').style.display = 'block';
-    setTimeout(()=>document.getElementById('pkg-ok').style.display='none', 4000);
-    document.getElementById('pkg-tenant').value = '';
-    loadAbonnements();
+    show('pkg-ok'); setTimeout(()=>hide('pkg-ok'),4000);
+    document.getElementById('pkg-tenant').value='';
+    loadPackages();
   } catch(e) {
-    document.getElementById('pkg-err').style.display = 'block';
-    document.getElementById('pkg-err').textContent = 'Erreur : ' + e.message;
-    setTimeout(()=>document.getElementById('pkg-err').style.display='none', 5000);
+    document.getElementById('pkg-err').textContent='❌ '+e.message;
+    show('pkg-err'); setTimeout(()=>hide('pkg-err'),5000);
   }
 }
 
-async function loadAbonnements() {
-  document.getElementById('pkg-loading').style.display = 'block';
+async function loadPackages() {
+  show('pkg-loading');
   try {
     const { data } = await _sb.from('abonnements').select('*').order('date_paiement',{ascending:false});
     const abs = data || [];
     const now = new Date();
     document.getElementById('pkg-list').innerHTML = abs.length === 0
-      ? '<div style="color:#475569;font-size:.85rem;text-align:center;padding:20px">Aucun abonnement</div>'
+      ? '<div class="empty" style="padding:30px">Aucun abonnement</div>'
       : abs.map(a => {
         const fin = a.date_fin ? new Date(a.date_fin) : null;
         const expired = fin && fin < now;
-        const planClass = expired ? 'expired' : (a.plan || 'gratuit').toLowerCase();
-        return `<div class="pkg-row">
-          <span class="tenant" title="${esc(a.user_id||'')}">${(a.user_id||'—').substring(0,16)}…</span>
-          <span class="plan-chip ${planClass}">${a.plan||'gratuit'}</span>
-          <span class="pkg-date">${fin ? fin.toLocaleDateString('fr-FR') : '∞'}</span>
+        const cl = expired ? 'expired' : (a.plan||'gratuit');
+        return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg3);border-radius:var(--radius-sm);margin-bottom:6px;border:1px solid var(--border2)">
+          <code style="flex:1;font-size:.72rem;color:var(--text2)">${(a.user_id||'—').substring(0,18)}…</code>
+          <span class="chip ${cl}">${a.plan||'gratuit'}</span>
+          <span style="font-size:.72rem;color:var(--text3)">${fin?fin.toLocaleDateString('fr-FR'):'∞'}</span>
         </div>`;
       }).join('');
-  } catch(e) { document.getElementById('pkg-list').innerHTML = '<div style="color:#f87171;font-size:.82rem">Erreur</div>'; }
-  document.getElementById('pkg-loading').style.display = 'none';
+  } catch(e) {}
+  hide('pkg-loading');
 }
 
-// ── HELPERS ──────────────────────────────────────────────────────────
-function set(id, val) { const el = document.getElementById(id); if(el) el.textContent = val; }
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmt(n) { return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'XAF',maximumFractionDigits:0}).format(n||0); }
-function fmtDate(s) {
-  if (!s) return '—';
-  return new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+// ════════════════════════════════════════════════════════
+// ANALYTIQUE
+// ════════════════════════════════════════════════════════
+async function loadAnalytics() {
+  show('ana-loading'); hide('ana-content');
+  try {
+    if (!_allAbonnements.length) {
+      const { data } = await _sb.from('abonnements').select('*');
+      _allAbonnements = data || [];
+    }
+    const abs = _allAbonnements;
+    const now = new Date();
+
+    // Compter les tenants uniques (hors abonnements)
+    const { count: totalTenants } = await _sb.from('immeubles').select('*',{count:'exact',head:true}).catch(()=>({count:0}));
+
+    const payants    = abs.filter(a => isActif(a) && a.montant > 0);
+    const total_     = Math.max(abs.length, totalTenants||0, 1);
+    const conv       = Math.round(payants.length / total_ * 100);
+    const expired_   = abs.filter(a => isExpired(a));
+    const renewed    = abs.filter(a => isActif(a) && (a.reference||'').includes('_'));
+    const ret        = expired_.length > 0 ? Math.round(renewed.length / (expired_.length + renewed.length) * 100) : 100;
+    const offerts    = abs.filter(a=>(a.reference||'').startsWith('OFFERT')).length;
+
+    // Plan le plus populaire
+    const planCounts = {starter:0,pro:0,entreprise:0};
+    abs.forEach(a=>{if(planCounts[a.plan]!==undefined)planCounts[a.plan]++;});
+    const topPlan = Object.entries(planCounts).sort((a,b)=>b[1]-a[1])[0];
+
+    // Croissance MoM
+    const thisMo = abs.filter(a=>{const d=new Date(a.date_paiement||0);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).length;
+    const prevMo = abs.filter(a=>{const d=new Date(a.date_paiement||0);const p=new Date(now.getFullYear(),now.getMonth()-1,1);return d.getMonth()===p.getMonth()&&d.getFullYear()===p.getFullYear();}).length;
+    const growth = prevMo > 0 ? Math.round((thisMo-prevMo)/prevMo*100) : (thisMo>0?100:0);
+
+    const mrr  = calcMRR(payants);
+    const arpu = payants.length > 0 ? mrr / payants.length : 0;
+
+    set('ana-conv', conv + '%');
+    document.getElementById('ana-conv-bar').style.width = conv + '%';
+    set('ana-ret', ret + '%');
+    document.getElementById('ana-ret-bar').style.width = ret + '%';
+    set('ana-top-plan', topPlan ? topPlan[0] : '—');
+    set('ana-top-plan-desc', topPlan ? topPlan[1] + ' abonnements sur ' + abs.length : '');
+    set('ana-growth', (growth>=0?'+':'')+growth+'%');
+    document.getElementById('ana-growth').style.color = growth>=0?'var(--green)':'var(--red)';
+    set('ana-arpu', fmtXAF(arpu));
+    set('ana-offerts', offerts);
+
+    // Charts analytique
+    buildChartNewAbs(abs, now);
+    buildChartCumul(abs, now);
+
+    // Alertes
+    const alerts = [];
+    if (abs.filter(a=>isExpiringSoon(a)).length > 0)
+      alerts.push({icon:'⚠️', title:'Abonnements expirant bientôt', desc: abs.filter(a=>isExpiringSoon(a)).length + ' abonnements expirent dans les 30 prochains jours', color:'var(--yellow)'});
+    if (conv < 10)
+      alerts.push({icon:'📉', title:'Taux de conversion faible', desc: 'Moins de 10% des espaces sont payants. Revoir la proposition de valeur.', color:'var(--red)'});
+    if (offerts > payants.length * 0.3)
+      alerts.push({icon:'🎁', title:'Beaucoup de packages offerts', desc: 'Plus de 30% des abonnements actifs sont gratuits.', color:'var(--yellow)'});
+    if (!alerts.length)
+      alerts.push({icon:'✅', title:'Tout semble sain', desc: 'Aucune alerte critique détectée.', color:'var(--green)'});
+
+    document.getElementById('ana-alerts').innerHTML = alerts.map(a => `
+      <div class="insight" style="border-left:3px solid ${a.color}">
+        <div class="insight-title">${a.icon} ${a.title}</div>
+        <div class="insight-desc">${a.desc}</div>
+      </div>`).join('');
+
+    hide('ana-loading'); show('ana-content');
+  } catch(e) {
+    document.getElementById('ana-loading').textContent = '❌ ' + e.message;
+  }
 }
-function renderChart(id,type,labels,datasets) {
-  if (charts[id]) charts[id].destroy();
+
+function buildChartNewAbs(abs, now) {
+  const labels=[], data=[];
+  for(let i=11;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const end=new Date(now.getFullYear(),now.getMonth()-i+1,1);
+    labels.push(d.toLocaleDateString('fr-FR',{month:'short',year:'2-digit'}));
+    data.push(abs.filter(a=>{const dp=new Date(a.date_paiement||0);return dp>=d&&dp<end;}).length);
+  }
+  renderChart('chart-new-abs','bar',labels,[{
+    label:'Nouveaux',data,
+    backgroundColor:'rgba(14,106,175,.18)',borderColor:'#0E6AAF',borderWidth:2,borderRadius:5
+  }]);
+}
+
+function buildChartCumul(abs, now) {
+  const labels=[], data=[];
+  let cumul=0;
+  for(let i=11;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const end=new Date(now.getFullYear(),now.getMonth()-i+1,1);
+    labels.push(d.toLocaleDateString('fr-FR',{month:'short',year:'2-digit'}));
+    cumul += abs.filter(a=>{const dp=new Date(a.date_paiement||0);return dp>=d&&dp<end&&a.montant>0;}).reduce((s,a)=>s+(a.montant||0),0);
+    data.push(cumul);
+  }
+  renderChart('chart-cumul','line',labels,[{
+    label:'Cumulé (FCFA)',data,
+    borderColor:'var(--green)',backgroundColor:'rgba(14,122,69,.08)',
+    borderWidth:2,fill:true,tension:.4,pointRadius:3
+  }]);
+}
+
+// ════════════════════════════════════════════════════════
+// CONFIGURATION
+// ════════════════════════════════════════════════════════
+function loadConfig() {
+  // SW version
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistration().then(reg => {
+      if (reg && reg.active) {
+        set('cfg-sw-ver', 'v28 actif');
+      }
+    });
+  }
+  // DB check
+  _sb.from('abonnements').select('id',{count:'exact',head:true}).then(({count,error}) => {
+    set('cfg-db-status', error ? '❌ Erreur' : '✓ ' + (count||0) + ' enreg.');
+  });
+  // Charger toggles depuis localStorage
+  const saved = JSON.parse(localStorage.getItem('owner_cfg')||'{}');
+  _cfgToggles = Object.assign(_cfgToggles, saved);
+  Object.entries(_cfgToggles).forEach(([k,v]) => {
+    const el = document.getElementById('tog-'+k);
+    if (el) el.className = 'toggle' + (v?' on':'');
+  });
+}
+
+function toggleCfg(key) {
+  _cfgToggles[key] = !_cfgToggles[key];
+  const el = document.getElementById('tog-'+key);
+  if (el) el.className = 'toggle' + (_cfgToggles[key]?' on':'');
+  localStorage.setItem('owner_cfg', JSON.stringify(_cfgToggles));
+  toast('✓ Paramètre ' + key + ' : ' + (_cfgToggles[key]?'activé':'désactivé'));
+}
+
+function savePrices() {
+  const prices = {
+    starter:   parseInt(document.getElementById('cfg-price-starter').value)||9999,
+    pro:       parseInt(document.getElementById('cfg-price-pro').value)||19999,
+    entreprise:parseInt(document.getElementById('cfg-price-ent').value)||29999,
+  };
+  localStorage.setItem('immogest_prices', JSON.stringify(prices));
+  show('cfg-ok'); setTimeout(()=>hide('cfg-ok'),3000);
+  toast('✓ Tarifs enregistrés');
+}
+
+function saveAnnonce() {
+  const txt = document.getElementById('cfg-annonce').value.trim();
+  localStorage.setItem('immogest_annonce', txt);
+  show('ann-ok'); setTimeout(()=>hide('ann-ok'),3000);
+  toast(txt ? '📣 Annonce publiée' : '✓ Annonce effacée');
+}
+
+// ════════════════════════════════════════════════════════
+// EXPORT CSV
+// ════════════════════════════════════════════════════════
+function exportCSV() {
+  if (!_allAbonnements.length) { toast('Chargez d\'abord les données'); return; }
+  const headers = ['user_id','plan','statut','date_paiement','date_fin','montant','reference'];
+  const rows = _allAbonnements.map(a =>
+    headers.map(h => JSON.stringify(a[h]??'')).join(',')
+  );
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'immogest_abonnements_' + new Date().toISOString().substring(0,10) + '.csv';
+  a.click(); URL.revokeObjectURL(url);
+  toast('📥 CSV téléchargé');
+}
+
+// ════════════════════════════════════════════════════════
+// CHART HELPER
+// ════════════════════════════════════════════════════════
+function renderChart(id, type, labels, datasets) {
+  if (_charts[id]) _charts[id].destroy();
   const ctx = document.getElementById(id);
   if (!ctx) return;
-  charts[id] = new Chart(ctx.getContext('2d'), {
+  _charts[id] = new Chart(ctx.getContext('2d'), {
     type, data:{labels,datasets},
     options:{
       responsive:true, maintainAspectRatio:true,
-      plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},
-      scales: type!=='doughnut' ? {
-        x:{ticks:{color:'#64748b'},grid:{color:'#1e293b'}},
-        y:{ticks:{color:'#64748b'},grid:{color:'#334155'},beginAtZero:true}
+      plugins:{legend:{labels:{color:'#7A90A8',font:{size:11}}}},
+      scales: type!=='doughnut'&&type!=='pie' ? {
+        x:{ticks:{color:'#7A90A8',font:{size:10}},grid:{color:'rgba(79,142,247,0.08)'}},
+        y:{ticks:{color:'#7A90A8',font:{size:10}},grid:{color:'rgba(79,142,247,0.08)'},beginAtZero:true}
       } : {}
     }
   });
 }
+
+// ════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════
+function set(id, val) { const el=document.getElementById(id); if(el) el.textContent=val; }
+function show(id) { const el=document.getElementById(id); if(el) el.style.display='block'; }
+function hide(id) { const el=document.getElementById(id); if(el) el.style.display='none'; }
+function v(id) { const el=document.getElementById(id); return el?el.value.trim():''; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtXAF(n) { return new Intl.NumberFormat('fr-FR').format(Math.round(n||0)) + ' XAF'; }
+function fmtDate(s) {
+  if (!s) return '—';
+  return new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+function fmtDateShort(s) {
+  if (!s) return '∞';
+  return new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
+}
+function toast(msg, dur=3000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), dur);
+}
 </script>
 
 <!--
-═══════════════════════════════════════════
-  ⚙️ CONFIGURATION — À faire une seule fois
-═══════════════════════════════════════════
-  Créer la table contact_messages dans Supabase :
-  → Supabase Dashboard > SQL Editor, coller et exécuter :
+═══════════════════════════════════════════════════════════
+  ⚙️ CONFIGURATION SUPABASE — Table contact_messages
+  Coller dans Supabase SQL Editor (une seule fois) :
 
   CREATE TABLE IF NOT EXISTS contact_messages (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    nom text, email text, sujet text,
-    message text, tenant_id text,
-    created_at timestamptz DEFAULT now(),
-    lu boolean DEFAULT false
+    nom text, email text, sujet text, message text, tenant_id text,
+    created_at timestamptz DEFAULT now(), lu boolean DEFAULT false
   );
   ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
   CREATE POLICY "insert_public" ON contact_messages FOR INSERT WITH CHECK (true);
-  CREATE POLICY "select_all"   ON contact_messages FOR SELECT USING (true);
-  CREATE POLICY "update_all"   ON contact_messages FOR UPDATE USING (true);
-  CREATE POLICY "delete_all"   ON contact_messages FOR DELETE USING (true);
+  CREATE POLICY "select_all"   ON contact_messages FOR SELECT  USING (true);
+  CREATE POLICY "update_all"   ON contact_messages FOR UPDATE  USING (true);
+  CREATE POLICY "delete_all"   ON contact_messages FOR DELETE  USING (true);
 
-  Mot de passe dashboard : immogest2025owner
-  (modifier la constante OWNER_PWD dans le script)
-═══════════════════════════════════════════
+  Mot de passe : immogest2025owner (OWNER_PWD dans le script)
+═══════════════════════════════════════════════════════════
 -->
 </body>
 </html>

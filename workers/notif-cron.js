@@ -669,7 +669,7 @@ function jsonResponse(data, status, request) {
 // ══════════════════════════════════════════════════════════════
 async function handleNotchPayInit(request, env) {
   try {
-    const sk = env.NOTCHPAY_SK;
+    const sk = env.NOTCHPAY_SK || env.notchpay;
     if (!sk) return jsonResponse({ ok: false, error: 'NOTCHPAY_SK non configuré' }, 500, request);
 
     const body = await request.json();
@@ -721,7 +721,7 @@ async function handleNotchPayInit(request, env) {
 // GET /notchpay-check?ref=<reference>
 async function handleNotchPayCheck(request, env) {
   try {
-    const sk = env.NOTCHPAY_SK;
+    const sk = env.NOTCHPAY_SK || env.notchpay;
     if (!sk) return jsonResponse({ ok: false, error: 'NOTCHPAY_SK non configuré' }, 500, request);
 
     const url = new URL(request.url);
