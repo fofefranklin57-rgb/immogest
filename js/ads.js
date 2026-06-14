@@ -27,17 +27,18 @@
       'bottom:0',
       'left:0',
       'right:0',
-      'height:50px',
+      'height:56px',
       'z-index:99999',
-      'background:rgba(15,23,42,0.95)',
+      'background:rgba(15,23,42,0.96)',
       'border-top:1px solid rgba(255,255,255,0.10)',
       'display:flex',
       'align-items:center',
-      'padding:0 10px 0 10px',
-      'gap:8px',
+      'padding:0 16px',
+      'gap:12px',
+      'width:100%',
       'cursor:pointer',
       'user-select:none',
-      'box-shadow:0 -2px 12px rgba(0,0,0,0.3)',
+      'box-shadow:0 -2px 16px rgba(0,0,0,0.35)',
       'font-family:system-ui,sans-serif'
     ].join(';'));
 
@@ -54,10 +55,10 @@
 
     // Texte
     var txtWrap = document.createElement('div');
-    txtWrap.setAttribute('style', 'flex:1;min-width:0;overflow:hidden;');
+    txtWrap.setAttribute('style', 'flex:1;min-width:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;');
     txtWrap.innerHTML =
-      '<div style="color:#f1f5f9;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">' + msg.text + '</div>' +
-      '<div style="color:#64748b;font-size:10px;margin-top:2px;line-height:1;">Sponsorisé</div>';
+      '<div style="color:#f1f5f9;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">' + msg.text + '</div>' +
+      '<div style="color:#64748b;font-size:10px;margin-top:3px;line-height:1;letter-spacing:.03em;">Sponsorisé</div>';
     bar.appendChild(txtWrap);
 
     // CTA
@@ -111,7 +112,7 @@
 
     // Décaler le contenu principal
     var shell = document.getElementById('app-shell');
-    if (shell) shell.style.paddingBottom = '54px';
+    if (shell) shell.style.paddingBottom = '60px';
 
     // Remonter le bouton IA flottant et le promo-toast au-dessus de la bannière
     var aiFab = document.getElementById('ai-float-btn');
