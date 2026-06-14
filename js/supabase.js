@@ -24,15 +24,16 @@ async function _dbProxy(op, table, data, filter) {
       })
     });
   } catch(netErr) {
-    // ERR_CONNECTION_CLOSED ou autre erreur réseau → coupe-circuit 15s
-    _sbAuthFailed = true;
-    setTimeout(function() { _sbAuthFailed = false; }, 15000);
+    // Erreur réseau passagère — on ne bloque PAS les requêtes suivantes
     throw netErr;
   }
   if (!res.ok) {
     const err = await res.json().catch(function() { return {}; });
-    // Ne déclenche le coupe-circuit que sur les vraies erreurs d'auth (pas les 401 transitoires)
-    if (res.status === 401 && err.error !== 'Non authentifié') _sbAuthFailed = true;
+    // Coupe-circuit uniquement sur 401 "Session invalide" (vraie erreur d'auth)
+    if (res.status === 401 && err.error === 'Session invalide') {
+      _sbAuthFailed = true;
+      setTimeout(function() { _sbAuthFailed = false; }, 15000);
+    }
     throw new Error(err.error || 'Worker /db error ' + res.status);
   }
   const json = await res.json();
