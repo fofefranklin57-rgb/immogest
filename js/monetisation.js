@@ -1043,11 +1043,9 @@ function _confirmerPaiementAbonnement(plan, duree, txId) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// CAMPAY — Paiement automatique MTN / Orange Money
+// NOTCHPAY — Paiement abonnement (via Worker Cloudflare)
 // ══════════════════════════════════════════════════════════════
-const _CAMPAY_WORKER = 'https://immogest1.fofefranklin57.workers.dev';
-
-var _NOTCHPAY_PK_MON = 'pk.tUNTim9P4CegA7U4mi1lHGuVWHZRGIP2K2malINDMc0p3hrMlboEF9mHI7yaC7tctAQ9Vu1VfVy2YSI0dlY6Za8RQPTHJiNIfIW4xZS9Mm9uGzuksmQluS12IbR9d';
+const _NOTCHPAY_WORKER = 'https://immogest1.fofefranklin57.workers.dev';
 var _notchTimer   = null;
 var _notchTicks   = 0;
 var _NOTCH_MAXSEC = 120;
@@ -1056,7 +1054,7 @@ async function payerAvecNotchPay(plan, duree, total) {
   document.querySelectorAll('.overlay.open').forEach(function(el) { el.classList.remove('open'); });
 
   var overlay = document.createElement('div');
-  overlay.id = 'campay-pending-overlay';
+  overlay.id = 'notchpay-pending-overlay';
   overlay.className = 'overlay open';
   overlay.style.zIndex = '10010';
   overlay.innerHTML =
@@ -1067,42 +1065,30 @@ async function payerAvecNotchPay(plan, duree, total) {
         'Une page NotchPay s\'est ouverte dans un nouvel onglet.<br>' +
         'Choisissez votre mode de paiement (MoMo, Wave, carte…)<br>puis revenez ici.' +
       '</p>' +
-      '<div style="display:flex;justify-content:center;margin-bottom:16px;"><div class="campay-spinner"></div></div>' +
-      '<div id="campay-status-msg" style="font-size:12px;color:var(--text3);margin-bottom:16px;">En attente de confirmation…</div>' +
-      '<button class="btn btn-ghost" style="font-size:12px;" onclick="_cancelCampay()">Annuler</button>' +
+      '<div style="display:flex;justify-content:center;margin-bottom:16px;"><div style="width:32px;height:32px;border:3px solid rgba(14,106,175,0.2);border-top-color:#0E6AAF;border-radius:50%;animation:spin 0.8s linear infinite;"></div></div>' +
+      '<div id="notchpay-status-msg" style="font-size:12px;color:var(--text3);margin-bottom:16px;">En attente de confirmation…</div>' +
+      '<button class="btn btn-ghost" style="font-size:12px;" onclick="_cancelNotchPay()">Annuler</button>' +
     '</div>';
   document.body.appendChild(overlay);
 
   try {
-    var planInfo = getCurrentPlans()[plan] || getCurrentPlans().pro || { label: plan };
-    var reference = 'sub_' + plan + '_' + Date.now();
-    var resp = await fetch('https://api.notchpay.co/payments/initialize', {
+    var userId = (typeof SESSION !== 'undefined' && SESSION && SESSION.userId) ? SESSION.userId : ('anon_' + Date.now());
+    var email  = (typeof SESSION !== 'undefined' && SESSION && SESSION.email) ? SESSION.email : undefined;
+
+    // Appel via Worker (clé secrète côté serveur)
+    var resp = await fetch(_NOTCHPAY_WORKER + '/notchpay-init', {
       method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + _NOTCHPAY_PK_MON,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        email:       'client@immogest.app',
-        amount:      total,
-        currency:    'XAF',
-        description: 'Abonnement ImmoGest ' + planInfo.label + ' — ' + duree + ' mois',
-        reference:   reference,
-        callback:    'https://immogest-34w.pages.dev/'
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan: plan, duree: duree, total: total, userId: userId, email: email })
     });
     var data = await resp.json();
-    if (!resp.ok) throw new Error(data.message || 'Erreur NotchPay');
+    if (!data.ok) throw new Error(data.error || 'Erreur NotchPay');
 
-    var ref = data.reference || (data.transaction && data.transaction.reference) || reference;
-    var authUrl = data.authorization_url || (data.transaction && data.transaction.authorization_url);
-    if (authUrl) window.open(authUrl, '_blank');
-
-    _pollNotchpayStatus(ref, plan, duree);
+    window.open(data.authorization_url, '_blank');
+    _pollNotchpayStatus(data.reference, plan, duree);
 
   } catch(e) {
-    var ov = document.getElementById('campay-pending-overlay');
+    var ov = document.getElementById('notchpay-pending-overlay');
     if (ov) ov.remove();
     showToast('❌ ' + e.message, 'error');
   }
@@ -1112,26 +1098,25 @@ function _pollNotchpayStatus(reference, plan, duree) {
   _notchTicks = 0;
   _notchTimer = setInterval(async function() {
     _notchTicks += 5;
-    var msgEl = document.getElementById('campay-status-msg');
+    var msgEl = document.getElementById('notchpay-status-msg');
 
     if (_notchTicks >= _NOTCH_MAXSEC) {
       clearInterval(_notchTimer);
-      var ov = document.getElementById('campay-pending-overlay');
+      var ov = document.getElementById('notchpay-pending-overlay');
       if (ov) ov.remove();
       showToast('⏱ Délai dépassé. Réessayez ou contactez-nous via WhatsApp.', 'error');
       return;
     }
 
     try {
-      var resp = await fetch('https://api.notchpay.co/payments/' + reference, {
-        headers: { 'Authorization': 'Bearer ' + _NOTCHPAY_PK_MON, 'Accept': 'application/json' }
-      });
+      // Vérification statut via Worker
+      var resp = await fetch(_NOTCHPAY_WORKER + '/notchpay-check?ref=' + encodeURIComponent(reference));
       var data  = await resp.json();
-      var st    = (data.transaction && data.transaction.status) || data.status || '';
+      var st    = data.status || '';
 
       if (st === 'complete') {
         clearInterval(_notchTimer);
-        var ov = document.getElementById('campay-pending-overlay');
+        var ov = document.getElementById('notchpay-pending-overlay');
         if (ov) ov.remove();
         MONETISATION.plan = plan;
         var expiry = new Date(Date.now() + (duree || 1) * 30 * 86400000).toISOString();
@@ -1146,7 +1131,7 @@ function _pollNotchpayStatus(reference, plan, duree) {
 
       } else if (st === 'failed' || st === 'canceled') {
         clearInterval(_notchTimer);
-        var ov = document.getElementById('campay-pending-overlay');
+        var ov = document.getElementById('notchpay-pending-overlay');
         if (ov) ov.remove();
         showToast('❌ Paiement refusé. Vérifiez votre solde et réessayez.', 'error');
 
@@ -1160,128 +1145,9 @@ function _pollNotchpayStatus(reference, plan, duree) {
   }, 5000);
 }
 
-async function payerAvecCampay(plan, duree, phone, provider, total) {
-  // Normaliser le numéro → 237XXXXXXXXX
-  var clean = phone.replace(/\D/g, '');
-  if (!clean.startsWith('237')) clean = '237' + clean.replace(/^0+/, '');
-
-  // Fermer les modals ouverts
-  document.querySelectorAll('.overlay.open').forEach(function(el) { el.classList.remove('open'); });
-
-  // Overlay "en attente"
-  var overlay = document.createElement('div');
-  overlay.id = 'campay-pending-overlay';
-  overlay.className = 'overlay open';
-  overlay.style.zIndex = '10010';
-  overlay.innerHTML =
-    '<div class="modal" style="max-width:380px;text-align:center;padding:32px 24px;">' +
-      '<div style="font-size:52px;margin-bottom:12px;">' + (provider === 'orange' ? '🟠' : '📱') + '</div>' +
-      '<h3 style="margin-bottom:8px;">Confirmez sur votre téléphone</h3>' +
-      '<p style="font-size:13px;color:var(--text2);line-height:1.7;margin:0 0 20px;">' +
-        'Une demande a été envoyée au<br><strong>' + clean + '</strong>.<br>' +
-        'Tapez votre PIN <strong>' + (provider === 'orange' ? 'Orange Money' : 'MTN MoMo') + '</strong> pour valider.' +
-      '</p>' +
-      '<div style="display:flex;justify-content:center;margin-bottom:16px;">' +
-        '<div class="campay-spinner"></div>' +
-      '</div>' +
-      '<div id="campay-status-msg" style="font-size:12px;color:var(--text3);margin-bottom:16px;">En attente de confirmation…</div>' +
-      '<div id="campay-sandbox-badge" style="display:none;background:#f59e0b;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;margin-bottom:12px;">MODE TEST — 25 XAF</div>' +
-      '<button class="btn btn-ghost" style="font-size:12px;" onclick="_cancelCampay()">Annuler</button>' +
-    '</div>';
-  document.body.appendChild(overlay);
-
-  try {
-    var userId = (typeof SESSION !== 'undefined' && SESSION)
-      ? (SESSION.username || SESSION.email || SESSION.nom || 'user')
-      : 'user';
-
-    var resp = await fetch(_CAMPAY_WORKER + '/pay', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ phone: clean, amount: total, plan: plan, duree: duree, userId: userId })
-    });
-    var data = await resp.json();
-
-    if (!data.ok || !data.reference) {
-      throw new Error(data.error || 'Impossible d\'initier le paiement');
-    }
-
-    // Afficher badge sandbox si mode test
-    if (data.sandbox) {
-      var badge = document.getElementById('campay-sandbox-badge');
-      if (badge) badge.style.display = 'inline-block';
-    }
-
-    _pollCampayStatus(data.reference, plan, duree);
-
-  } catch (e) {
-    var ov = document.getElementById('campay-pending-overlay');
-    if (ov) ov.remove();
-    showToast('❌ ' + e.message, 'error');
-  }
-}
-
-var _campayTimer   = null;
-var _campayTicks   = 0;
-var _CAMPAY_MAXSEC = 120; // 2 minutes
-
-function _pollCampayStatus(reference, plan, duree) {
-  _campayTicks = 0;
-  _campayTimer = setInterval(async function() {
-    _campayTicks += 5;
-
-    var msgEl = document.getElementById('campay-status-msg');
-
-    if (_campayTicks >= _CAMPAY_MAXSEC) {
-      clearInterval(_campayTimer);
-      var ov = document.getElementById('campay-pending-overlay');
-      if (ov) ov.remove();
-      showToast('⏱ Délai dépassé. Réessayez ou contactez-nous via WhatsApp.', 'error');
-      return;
-    }
-
-    try {
-      var resp = await fetch(_CAMPAY_WORKER + '/check-pay?ref=' + reference);
-      var data = await resp.json();
-      var st   = data.status;
-
-      if (st === 'SUCCESSFUL') {
-        clearInterval(_campayTimer);
-        var ov = document.getElementById('campay-pending-overlay');
-        if (ov) ov.remove();
-
-        // Activer plan localement (la persistence se fait via webhook Supabase)
-        MONETISATION.plan = plan;
-        var expiry = new Date(Date.now() + (duree || 1) * 30 * 86400000).toISOString();
-        localStorage.setItem('immogest_subscription', JSON.stringify({
-          tier: plan, ref: reference,
-          startDate: new Date().toISOString(), expiryDate: expiry
-        }));
-        saveMonetisation();
-        applyPlan();
-        updatePlanBadge();
-        _showAbonnementSuccess(plan, duree || 1);
-
-      } else if (st === 'FAILED') {
-        clearInterval(_campayTimer);
-        var ov = document.getElementById('campay-pending-overlay');
-        if (ov) ov.remove();
-        showToast('❌ Paiement refusé. Vérifiez votre solde et réessayez.', 'error');
-
-      } else {
-        var restant = _CAMPAY_MAXSEC - _campayTicks;
-        if (msgEl) msgEl.textContent = 'En attente… (' + restant + 's restantes)';
-      }
-    } catch (e) {
-      console.warn('[Campay] Poll error:', e.message);
-    }
-
-  }, 5000); // vérifier toutes les 5 secondes
-}
-
-function _cancelCampay() {
-  clearInterval(_campayTimer);
-  var ov = document.getElementById('campay-pending-overlay');
+function _cancelNotchPay() {
+  clearInterval(_notchTimer);
+  var ov = document.getElementById('notchpay-pending-overlay');
   if (ov) ov.remove();
 }
 
@@ -1431,9 +1297,8 @@ function initTrial() {
           MONETISATION.plan = 'pro';
           MONETISATION.trialEnd = trial.end;
         }
-        if (daysLeft <= 4) {
-          setTimeout(function() { showTrialCountdown(daysLeft); }, 3500);
-        }
+        // Afficher le bandeau dès le 1er jour
+        setTimeout(function() { showTrialCountdown(daysLeft); }, 3500);
         return;
       }
 

@@ -1,14 +1,12 @@
 // ═══════════════════════════════════════════════════════════════
 // IMMOGEST — Cloudflare Worker
 // - Cron  : rappels loyers via OneSignal + rapport WhatsApp gestionnaire
-// - POST /pay              : initier collecte Campay (MTN/Orange)
-// - GET  /check-pay?ref=xx : vérifier statut transaction Campay
-// - POST /campay-webhook   : webhook Campay → activer abonnement Supabase
+// - POST /notchpay-init    : initialiser paiement abonnement NotchPay
+// - GET  /notchpay-check   : vérifier statut paiement NotchPay
 // - POST /ai               : proxy Anthropic API
 // - GET  /wa-impayés       : page HTML liens WhatsApp impayés (gestionnaire)
 // - GET  /test-notifs, /health
-// Secrets requis : CAMPAY_TOKEN (permanent access token), CAMPAY_WEBHOOK_KEY,
-//                  CAMPAY_ENV (demo|prod),
+// Secrets requis : NOTCHPAY_SK (clé secrète NotchPay),
 //                  SUPABASE_URL, SUPABASE_KEY (anon), SUPABASE_SERVICE_KEY (service_role),
 //                  ONESIGNAL_APP_ID, ONESIGNAL_REST_KEY,
 //                  ANTHROPIC_API_KEY,
@@ -30,18 +28,6 @@ export default {
     // CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders(request) });
-    }
-
-    if (url.pathname === '/pay' && request.method === 'POST') {
-      return handleCampayCollect(request, env);
-    }
-
-    if (url.pathname === '/check-pay' && request.method === 'GET') {
-      return handleCampayCheck(request, env);
-    }
-
-    if (url.pathname === '/campay-webhook' && request.method === 'POST') {
-      return handleCampayWebhook(request, env);
     }
 
     if (url.pathname === '/ai' && request.method === 'POST') {
@@ -85,167 +71,17 @@ export default {
       });
     }
 
+    if (url.pathname === '/notchpay-init' && request.method === 'POST') {
+      return handleNotchPayInit(request, env);
+    }
+
+    if (url.pathname === '/notchpay-check' && request.method === 'GET') {
+      return handleNotchPayCheck(request, env);
+    }
+
     return new Response('ImmoGest Worker', { status: 200 });
   }
 };
-
-// ══════════════════════════════════════════════════════════════
-// CAMPAY — Initier une collecte (MTN MoMo / Orange Money)
-// POST /pay  { phone, amount, plan, duree, userId }
-// ══════════════════════════════════════════════════════════════
-async function handleCampayCollect(request, env) {
-  try {
-    const body = await request.json();
-    const { phone, amount, plan, duree, userId } = body;
-
-    if (!phone || !amount || !plan) {
-      return jsonResponse({ ok: false, error: 'Paramètres manquants (phone, amount, plan)' }, 400, request);
-    }
-
-    if (!env.CAMPAY_TOKEN) {
-      return jsonResponse({ ok: false, error: 'CAMPAY_TOKEN non configuré' }, 500, request);
-    }
-
-    const isProd   = (env.CAMPAY_ENV === 'prod');
-    const base     = isProd ? 'https://campay.net' : 'https://demo.campay.net';
-    const safeUser = String(userId || 'user').replace(/[|]/g, '').slice(0, 30);
-    const extRef   = `IG|${plan}|${duree || 1}|${safeUser}`;
-
-    // Sandbox : limiter à 25 XAF (limite Campay demo)
-    const finalAmount = isProd ? String(amount) : '25';
-
-    const resp = await fetch(`${base}/api/collect/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Token ${env.CAMPAY_TOKEN}`
-      },
-      body: JSON.stringify({
-        amount:             finalAmount,
-        currency:           'XAF',
-        from:               String(phone),
-        description:        isProd
-          ? `ImmoGest ${plan} – ${duree || 1} mois`
-          : `[TEST] ImmoGest ${plan} – ${duree || 1} mois`,
-        external_reference: extRef,
-        webhook_url:        'https://immogest1.fofefranklin57.workers.dev/campay-webhook'
-      })
-    });
-
-    const data = await resp.json();
-    console.log('[Campay] collect →', JSON.stringify(data));
-
-    if (data.reference) {
-      return jsonResponse({ ok: true, reference: data.reference, status: data.status, sandbox: !isProd }, 200, request);
-    }
-
-    console.error('[Campay] Erreur collect:', JSON.stringify(data));
-    return jsonResponse({ ok: false, error: data.message || data.detail || 'Campay collect échoué', details: data }, 502, request);
-
-  } catch (e) {
-    console.error('[Campay] /pay exception:', e.message);
-    return jsonResponse({ ok: false, error: e.message }, 500, request);
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
-// CAMPAY — Vérifier le statut d'une transaction
-// GET /check-pay?ref=<reference>
-// ══════════════════════════════════════════════════════════════
-async function handleCampayCheck(request, env) {
-  try {
-    const url  = new URL(request.url);
-    const ref  = url.searchParams.get('ref');
-
-    if (!ref) {
-      return jsonResponse({ ok: false, error: 'Paramètre ref manquant' }, 400, request);
-    }
-
-    const base = (env.CAMPAY_ENV === 'prod') ? 'https://campay.net' : 'https://demo.campay.net';
-    const resp = await fetch(`${base}/api/transaction/${ref}/`, {
-      headers: { 'Authorization': `Token ${env.CAMPAY_TOKEN}` }
-    });
-
-    const data = await resp.json();
-    return jsonResponse({ ok: true, status: data.status, data }, 200, request);
-
-  } catch (e) {
-    return jsonResponse({ ok: false, error: e.message }, 500, request);
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
-// CAMPAY — Webhook : paiement confirmé → activer abonnement Supabase
-// POST /campay-webhook
-// ══════════════════════════════════════════════════════════════
-async function handleCampayWebhook(request, env) {
-  try {
-    // Vérifier l'authenticité du webhook via la Webhook Key
-    const webhookKey = request.headers.get('webhook-key') || request.headers.get('x-webhook-key') || '';
-    if (env.CAMPAY_WEBHOOK_KEY && webhookKey !== env.CAMPAY_WEBHOOK_KEY) {
-      console.warn('[Campay] Webhook key invalide — requête ignorée');
-      return new Response('Unauthorized', { status: 401 });
-    }
-
-    const body = await request.json();
-    console.log('[Campay] Webhook reçu:', JSON.stringify(body));
-
-    const { reference, external_reference, status, amount } = body;
-
-    // Toujours répondre 200 à Campay pour éviter les retries inutiles
-    if (status !== 'SUCCESSFUL') {
-      console.log('[Campay] Statut non réussi:', status);
-      return new Response('OK', { status: 200 });
-    }
-
-    // Parser external_reference : IG|plan|duree|userId
-    const parts  = (external_reference || '').split('|');
-    const plan   = parts[1] || 'starter';
-    const duree  = parseInt(parts[2]) || 1;
-    const userId = parts[3] || '';
-
-    if (!userId) {
-      console.error('[Campay] userId absent dans external_reference:', external_reference);
-      return new Response('OK', { status: 200 });
-    }
-
-    const expiry = new Date(Date.now() + duree * 30 * 86400000).toISOString();
-
-    // Upsert dans Supabase table abonnements (un enregistrement par cabinet)
-    const _sbKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY;
-    const _sbUrl0 = env.SUPABASE_URL || 'https://uggxfmwpttfsfcirmeqx.supabase.co';
-    const sbResp = await fetch(`${_sbUrl0}/rest/v1/abonnements`, {
-      method:  'POST',
-      headers: {
-        'apikey':        _sbKey,
-        'Authorization': `Bearer ${_sbKey}`,
-        'Content-Type':  'application/json',
-        'Prefer':        'resolution=merge-duplicates'
-      },
-      body: JSON.stringify({
-        user_id:       userId,
-        plan:          plan,
-        statut:        'actif',
-        date_fin:      expiry,
-        reference:     reference,
-        montant:       Math.round(parseFloat(amount) || 0),
-        date_paiement: new Date().toISOString()
-      })
-    });
-
-    if (!sbResp.ok) {
-      console.error('[Campay] Supabase error:', sbResp.status, await sbResp.text());
-    } else {
-      console.log(`[Campay] ✅ Abonnement ${plan} activé pour ${userId} jusqu'au ${expiry}`);
-    }
-
-    return new Response('OK', { status: 200 });
-
-  } catch (e) {
-    console.error('[Campay] Webhook exception:', e.message);
-    return new Response('OK', { status: 200 }); // toujours 200 pour Campay
-  }
-}
 
 // ══════════════════════════════════════════════════════════════
 // ANTHROPIC AI — Proxy sécurisé
@@ -824,6 +660,87 @@ function jsonResponse(data, status, request) {
       ...corsHeaders(request)
     }
   });
+}
+
+// ══════════════════════════════════════════════════════════════
+// NOTCHPAY — Initialiser un paiement abonnement
+// POST /notchpay-init  { plan, duree, total, userId, email }
+// Nécessite le secret NOTCHPAY_SK dans les variables Worker
+// ══════════════════════════════════════════════════════════════
+async function handleNotchPayInit(request, env) {
+  try {
+    const sk = env.NOTCHPAY_SK;
+    if (!sk) return jsonResponse({ ok: false, error: 'NOTCHPAY_SK non configuré' }, 500, request);
+
+    const body = await request.json();
+    const { plan, duree, total, userId, email } = body;
+    if (!total || !userId) return jsonResponse({ ok: false, error: 'Paramètres manquants' }, 400, request);
+
+    const ref = 'abo_' + userId + '_' + Date.now();
+    const callback = 'https://immogest-34w.pages.dev/?notchpay_ref=' + ref;
+
+    const resp = await fetch('https://api.notchpay.co/payments/initialize', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + sk,
+        'Content-Type':  'application/json',
+        'Accept':        'application/json'
+      },
+      body: JSON.stringify({
+        email:       email || ('user_' + userId + '@immogest.app'),
+        amount:      total,
+        currency:    'XAF',
+        description: 'Abonnement ImmoGest ' + plan + ' — ' + duree + ' mois',
+        reference:   ref,
+        callback:    callback
+      })
+    });
+
+    const data = await resp.json();
+    console.log('[NotchPay] init →', JSON.stringify(data));
+
+    if (!resp.ok) {
+      return jsonResponse({ ok: false, error: data.message || 'Erreur NotchPay' }, 502, request);
+    }
+
+    const authUrl = data.authorization_url
+      || (data.transaction && data.transaction.authorization_url);
+
+    if (!authUrl) {
+      return jsonResponse({ ok: false, error: 'Pas de authorization_url dans la réponse NotchPay', raw: data }, 502, request);
+    }
+
+    return jsonResponse({ ok: true, authorization_url: authUrl, reference: ref }, 200, request);
+
+  } catch (e) {
+    console.error('[NotchPay] /notchpay-init exception:', e.message);
+    return jsonResponse({ ok: false, error: e.message }, 500, request);
+  }
+}
+
+// GET /notchpay-check?ref=<reference>
+async function handleNotchPayCheck(request, env) {
+  try {
+    const sk = env.NOTCHPAY_SK;
+    if (!sk) return jsonResponse({ ok: false, error: 'NOTCHPAY_SK non configuré' }, 500, request);
+
+    const url = new URL(request.url);
+    const ref = url.searchParams.get('ref');
+    if (!ref) return jsonResponse({ ok: false, error: 'ref manquant' }, 400, request);
+
+    const resp = await fetch('https://api.notchpay.co/payments/' + ref, {
+      headers: { 'Authorization': 'Bearer ' + sk, 'Accept': 'application/json' }
+    });
+
+    const data = await resp.json();
+    const status = (data.transaction && data.transaction.status) || data.status || 'unknown';
+
+    return jsonResponse({ ok: true, status, raw: data }, 200, request);
+
+  } catch (e) {
+    console.error('[NotchPay] /notchpay-check exception:', e.message);
+    return jsonResponse({ ok: false, error: e.message }, 500, request);
+  }
 }
 
 function sleep(ms) {
