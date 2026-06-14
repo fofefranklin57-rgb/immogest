@@ -1085,7 +1085,7 @@ async function payerAvecNotchPay(plan, duree, total) {
     if (!data.ok) throw new Error(data.error || 'Erreur NotchPay');
 
     window.open(data.authorization_url, '_blank');
-    _pollNotchpayStatus(data.reference, plan, duree);
+    _pollNotchpayStatus(data.reference, plan, duree, total);
 
   } catch(e) {
     var ov = document.getElementById('notchpay-pending-overlay');
@@ -1094,7 +1094,7 @@ async function payerAvecNotchPay(plan, duree, total) {
   }
 }
 
-function _pollNotchpayStatus(reference, plan, duree) {
+function _pollNotchpayStatus(reference, plan, duree, total) {
   _notchTicks = 0;
   _notchTimer = setInterval(async function() {
     _notchTicks += 5;
@@ -1119,14 +1119,27 @@ function _pollNotchpayStatus(reference, plan, duree) {
         var ov = document.getElementById('notchpay-pending-overlay');
         if (ov) ov.remove();
         MONETISATION.plan = plan;
-        var expiry = new Date(Date.now() + (duree || 1) * 30 * 86400000).toISOString();
+        var now = new Date();
+        var expiry = new Date(now.getTime() + (duree || 1) * 30 * 86400000).toISOString();
         localStorage.setItem('immogest_subscription', JSON.stringify({
           tier: plan, ref: reference,
-          startDate: new Date().toISOString(), expiryDate: expiry
+          startDate: now.toISOString(), expiryDate: expiry
         }));
         saveMonetisation();
         applyPlan();
         updatePlanBadge();
+        // Sauvegarder en Supabase pour persistence multi-appareils
+        if (typeof SESSION !== 'undefined' && SESSION && SESSION.username && typeof _sb !== 'undefined') {
+          _sb.from('abonnements').upsert({
+            user_id: SESSION.username,
+            plan: plan,
+            statut: 'actif',
+            date_fin: expiry,
+            reference: reference,
+            montant: total || 0,
+            date_paiement: now.toISOString()
+          }, { onConflict: 'user_id' }).catch(function(){});
+        }
         _showAbonnementSuccess(plan, duree || 1);
 
       } else if (st === 'failed' || st === 'canceled') {
