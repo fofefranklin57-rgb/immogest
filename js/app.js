@@ -5941,8 +5941,9 @@ function initApp() {
   if (can('canManageUsers')) {
     const sidebarNav = document.querySelector('.sidebar-nav');
     const userNavItem = document.createElement('div');
-    userNavItem.innerHTML = '<div class="nav-section">' + t('Administration') + '</div><div class="nav-item" onclick="navigate(\'utilisateurs\')"><span class="nav-icon">👥</span> ' + t('Utilisateurs') + '</div>';
+    userNavItem.innerHTML = '<div class="nav-section" data-i18n="Administration">Administration</div><div class="nav-item" onclick="navigate(\'utilisateurs\')"><span class="nav-icon">👥</span> <span data-i18n="Utilisateurs">Utilisateurs</span></div>';
     sidebarNav.appendChild(userNavItem);
+    applyStaticI18n();
   }
 
   // Add validation nav for comptable
@@ -5951,8 +5952,9 @@ function initApp() {
     const sidebarNav = document.querySelector('.sidebar-nav');
     if (sidebarNav) {
       const valDiv = document.createElement('div');
-      valDiv.innerHTML = "<div class=\"nav-section\">" + t('Comptabilité') + "</div><div class=\"nav-item\" onclick=\"navigate('validation')\" style=\"position:relative;\"><span class=\"nav-icon\">✅</span> " + t('Valider paiements') + "<span id=\"badge-validation\" class=\"nav-badge\" style=\"display:none;\">0</span></div>";
+      valDiv.innerHTML = '<div class="nav-section" data-i18n="Comptabilité">Comptabilité</div><div class="nav-item" onclick="navigate(\'validation\')" style="position:relative;"><span class="nav-icon">✅</span> <span data-i18n="Valider paiements">Valider paiements</span><span id="badge-validation" class="nav-badge" style="display:none;">0</span></div>';
       sidebarNav.appendChild(valDiv);
+      applyStaticI18n();
     }
   }
 

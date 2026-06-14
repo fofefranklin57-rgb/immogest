@@ -1,115 +1,122 @@
-// ── ImmoGest Ads — Monetag ────────────────────────────────────────
-// Locataires    : bannière discrète fixe en bas — TOUJOURS (revenu garanti)
-// Plan gratuit  : In-Page Push + Vignette Banner
-// Plan payant   : zéro pub
+// ── ImmoGest Ads — Monetag Direct Link ───────────────────────────
+// Bannière discrète fixe en bas — TOUT LE MONDE, TOUJOURS
+// Direct Link zone 11144803
 // ─────────────────────────────────────────────────────────────────
 
 (function() {
 
-  var _inPageLoaded  = false;
-  var _vignetteLoaded = false;
+  var DIRECT_LINK = 'https://omg10.com/4/11144803';
 
-  // In-Page Push (zone 11087888)
-  function loadInPagePush() {
-    if (_inPageLoaded) return;
-    _inPageLoaded = true;
-    var s = document.createElement('script');
-    s.dataset.zone = '11087888';
-    s.src = 'https://nap5k.com/tag.min.js';
-    s.async = true;
-    document.body.appendChild(s);
-  }
+  // Messages rotatifs pour rendre la bannière naturelle
+  var ADS_MSGS = [
+    { icon: '💰', text: 'Boostez vos revenus locatifs — offre exclusive', cta: 'Voir' },
+    { icon: '🏦', text: 'Gestion financière simplifiée — essai gratuit',   cta: 'Essayer' },
+    { icon: '📱', text: 'Application mobile — téléchargez maintenant',     cta: 'Télécharger' },
+    { icon: '🎁', text: 'Offre spéciale pour propriétaires immobiliers',   cta: 'Découvrir' },
+    { icon: '💳', text: 'Paiements en ligne sécurisés — sans frais cachés', cta: 'En savoir +' },
+  ];
 
-  // Vignette Banner (zone 11135220) — 65% CPM plus élevé, non intrusif
-  function loadVignette() {
-    if (_vignetteLoaded) return;
-    _vignetteLoaded = true;
-    var s = document.createElement('script');
-    s.dataset.zone = '11135220';
-    s.src = 'https://n6wxm.com/vignette.min.js';
-    s.async = true;
-    document.body.appendChild(s);
-  }
+  var _bannerShown = false;
 
-  function injectDiscreteBanner() {
+  function injectBanner() {
     if (document.getElementById('immogest-ad-bar')) return;
+    _bannerShown = true;
+
+    var msg = ADS_MSGS[Math.floor(Math.random() * ADS_MSGS.length)];
+
     var bar = document.createElement('div');
     bar.id = 'immogest-ad-bar';
     bar.style.cssText = [
       'position:fixed', 'bottom:0', 'left:0', 'right:0',
-      'height:52px', 'z-index:998',
-      'background:rgba(248,249,250,0.97)',
-      'border-top:1px solid #e2e8f0',
-      'display:flex', 'align-items:center', 'justify-content:center',
-      'overflow:hidden'
+      'height:50px', 'z-index:9998',
+      'background:rgba(15,23,42,0.93)',
+      'backdrop-filter:blur(6px)',
+      'border-top:1px solid rgba(255,255,255,0.08)',
+      'display:flex', 'align-items:center',
+      'padding:0 12px 0 10px',
+      'gap:10px',
+      'cursor:pointer',
+      'user-select:none',
+      'box-shadow:0 -2px 12px rgba(0,0,0,0.18)'
     ].join(';');
 
-    var slot = document.createElement('div');
-    slot.style.cssText = 'width:320px;height:50px;overflow:hidden;';
-    bar.appendChild(slot);
+    // Click sur la barre → ouvre le lien
+    bar.addEventListener('click', function(e) {
+      if (e.target === closeBtn) return;
+      window.open(DIRECT_LINK, '_blank', 'noopener');
+    });
 
+    // Icône
+    var icon = document.createElement('span');
+    icon.textContent = msg.icon;
+    icon.style.cssText = 'font-size:20px;flex-shrink:0;';
+    bar.appendChild(icon);
+
+    // Texte + label "Sponsorisé"
+    var txtWrap = document.createElement('div');
+    txtWrap.style.cssText = 'flex:1;min-width:0;overflow:hidden;';
+    txtWrap.innerHTML =
+      '<div style="color:#f1f5f9;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + msg.text + '</div>' +
+      '<div style="color:#64748b;font-size:10px;margin-top:1px;">Sponsorisé</div>';
+    bar.appendChild(txtWrap);
+
+    // Bouton CTA
+    var cta = document.createElement('a');
+    cta.href = DIRECT_LINK;
+    cta.target = '_blank';
+    cta.rel = 'noopener';
+    cta.textContent = msg.cta;
+    cta.style.cssText = [
+      'flex-shrink:0',
+      'background:#3b82f6',
+      'color:#fff',
+      'font-size:11px',
+      'font-weight:600',
+      'padding:5px 10px',
+      'border-radius:6px',
+      'text-decoration:none',
+      'white-space:nowrap'
+    ].join(';');
+    cta.addEventListener('click', function(e) { e.stopPropagation(); });
+    bar.appendChild(cta);
+
+    // Bouton fermer
     var closeBtn = document.createElement('button');
     closeBtn.innerHTML = '✕';
-    closeBtn.title = 'Fermer';
     closeBtn.style.cssText = [
-      'position:absolute', 'right:6px', 'top:50%',
-      'transform:translateY(-50%)',
+      'flex-shrink:0',
       'background:none', 'border:none',
-      'color:#94a3b8', 'font-size:11px',
-      'cursor:pointer', 'padding:4px', 'line-height:1'
+      'color:#475569', 'font-size:11px',
+      'cursor:pointer', 'padding:4px',
+      'line-height:1', 'margin-left:4px'
     ].join(';');
-    closeBtn.onclick = function() {
+    closeBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
       bar.style.display = 'none';
-      // Réafficher après 5 min pour les locataires
-      if (window._adsRole === 'locataire' || window._adsRole === 'proprietaire') {
-        setTimeout(function() { bar.style.display = 'flex'; }, 5 * 60 * 1000);
-      }
-    };
+      // Réafficher après 3 min
+      setTimeout(function() {
+        if (document.getElementById('immogest-ad-bar')) {
+          document.getElementById('immogest-ad-bar').style.display = 'flex';
+        }
+      }, 3 * 60 * 1000);
+    });
     bar.appendChild(closeBtn);
+
     document.body.appendChild(bar);
 
+    // Décaler le contenu principal pour ne pas cacher du contenu
     var shell = document.getElementById('app-shell');
-    if (shell) shell.style.paddingBottom = '56px';
+    if (shell) shell.style.paddingBottom = '54px';
   }
 
-  function removeDiscreteBanner() {
-    var bar = document.getElementById('immogest-ad-bar');
-    if (bar) bar.remove();
-    var shell = document.getElementById('app-shell');
-    if (shell) shell.style.paddingBottom = '';
-  }
-
-  // ── Point d'entrée appelé après login ──
+  // ── Point d'entrée — appelé après login, TOUT LE MONDE ──
   window.initAds = function() {
-    if (!window.SESSION) return;
-
-    var role = SESSION.role || 'admin';
-    var plan = (window.MONETISATION && window.MONETISATION.plan) || 'gratuit';
-    window._adsRole = role;
-
-    if (role === 'locataire' || role === 'proprietaire') {
-      // Locataires/propriétaires : bannière discrète + In-Page Push toujours
-      injectDiscreteBanner();
-      loadInPagePush();
-      return;
-    }
-
-    // Gestionnaires / admins
-    if (plan === 'gratuit') {
-      // Plan gratuit : In-Page Push + Vignette Banner + bannière discrète
-      loadInPagePush();
-      loadVignette();
-      injectDiscreteBanner();
-    } else {
-      // Plan payant : zéro pub
-      removeDiscreteBanner();
-    }
+    injectBanner();
   };
 
-  // ── Appelé après upgrade de plan ──
+  // ── Appelé après upgrade — on garde la bannière quand même ──
   window.refreshAds = function() {
-    removeDiscreteBanner();
-    window.initAds();
+    injectBanner();
   };
 
 })();

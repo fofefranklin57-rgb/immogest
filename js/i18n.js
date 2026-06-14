@@ -41,6 +41,9 @@ var TR = { en: {
 
   // ── Sections navigation ──────────────────────────────────────
   'Principal': 'Main',
+  'Finances': 'Finances',
+  'Juridique': 'Legal',
+  'Communication': 'Communication',
   'Immeubles': 'Buildings',
   'Gestion': 'Management',
   'Administration': 'Administration',
@@ -865,6 +868,9 @@ es: {
 
   // ── Sections navigation ──────────────────────────────────────
   'Principal': 'Principal',
+  'Finances': 'Finanzas',
+  'Juridique': 'Jurídico',
+  'Communication': 'Comunicación',
   'Immeubles': 'Edificios',
   'Gestion': 'Gestión',
   'Administration': 'Administración',
@@ -1308,6 +1314,9 @@ es: {
 ha: {
 
   'Principal': 'Babba',
+  'Finances': 'Kuɗi',
+  'Juridique': 'Doka',
+  'Communication': 'Sadarwa',
   'Immeubles': 'Gidaje',
   'Gestion': 'Gudanarwa',
   'Administration': 'Gudanarwa',
@@ -1895,6 +1904,9 @@ ha: {
 ff: {
 
   'Principal': 'Mawɗo',
+  'Finances': 'Kuɗi',
+  'Juridique': 'Laawol',
+  'Communication': 'Haɓɓande',
   'Immeubles': 'Gallé',
   'Gestion': 'Hooreende',
   'Administration': 'Laamu',
@@ -2314,6 +2326,9 @@ pt: {
 
   // ── Sections navigation ──────────────────────────────────────
   'Principal': 'Principal',
+  'Finances': 'Finanças',
+  'Juridique': 'Jurídico',
+  'Communication': 'Comunicação',
   'Immeubles': 'Edifícios',
   'Gestion': 'Gestão',
   'Administration': 'Administração',
@@ -3087,6 +3102,9 @@ pt: {
 ar: {
 
   'Principal': 'الرئيسية',
+  'Finances': 'المالية',
+  'Juridique': 'القانونية',
+  'Communication': 'التواصل',
   'Immeubles': 'المباني',
   'Gestion': 'الإدارة',
   'Administration': 'الإدارة',

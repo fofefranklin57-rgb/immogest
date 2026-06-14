@@ -334,7 +334,7 @@
 
       <!-- Finances -->
       <div class="nav-section" onclick="toggleSidebarFinances()" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;">
-        <span>💰 Finances</span> <span id="fin-toggle-icon">▸</span>
+        <span>💰 <span data-i18n="Finances">Finances</span></span> <span id="fin-toggle-icon">▸</span>
       </div>
       <div id="sidebar-finances" style="display:none;">
         <div class="nav-item" onclick="navigate('encaissements')" data-tooltip="Enregistrer et suivre les paiements de loyer"><span class="nav-icon">💰</span> <span data-i18n="Encaissements">Encaissements</span></div>
@@ -346,7 +346,7 @@
 
       <!-- Juridique -->
       <div class="nav-section" onclick="toggleSidebarJuridique()" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;">
-        <span>⚖️ Juridique</span> <span id="jur-toggle-icon">▸</span>
+        <span>⚖️ <span data-i18n="Juridique">Juridique</span></span> <span id="jur-toggle-icon">▸</span>
       </div>
       <div id="sidebar-juridique" style="display:none;">
         <div class="nav-item" onclick="navigate('bibliotheque')" data-tooltip="Modèles de contrats, textes de loi et IA juridique"><span class="nav-icon">📚</span> <span data-i18n="Bibliothèque juridique">Bibliothèque juridique</span></div>
@@ -354,7 +354,7 @@
 
       <!-- Communication -->
       <div class="nav-section" onclick="toggleSidebarComm()" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;">
-        <span>💬 Communication</span> <span id="comm-toggle-icon">▸</span>
+        <span>💬 <span data-i18n="Communication">Communication</span></span> <span id="comm-toggle-icon">▸</span>
       </div>
       <div id="sidebar-comm" style="display:none;">
         <div class="nav-item" onclick="navigate('messagerie')" style="position:relative;" data-tooltip="Envoyer des messages à vos locataires"><span class="nav-icon">💬</span> <span data-i18n="Messagerie">Messagerie</span> <span class="nav-badge" id="badge-messagerie" style="display:none;">0</span></div>
