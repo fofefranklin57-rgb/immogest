@@ -98,7 +98,15 @@ function _mapImmeuble(r) {
     col:      r.couleur || '#0E6AAF',
     proprio:  '',
     tel:      '',
-    notes:    ''
+    notes:    '',
+    apparts:  r.apparts  || 0,
+    studios:  r.studios  || 0,
+    chambres: r.chambres || 0,
+    duplex:   r.duplex   || 0,
+    nomImmeuble: r.nom_immeuble || r.nom || '',
+    nomProprio:  r.nom_proprio  || '',
+    telProprio:  r.tel_proprio  || '',
+    commission:  r.commission   || { type: 'forfait', valeur: 0 }
   };
 }
 
@@ -430,11 +438,19 @@ async function loadDataFromSupabase() {
 // Colonnes existantes dans immeubles : id, nom, ville, quartier, couleur
 async function saveImmeubleToSupabase(im) {
   return sbUpsert('immeubles', [{
-    id:       im.id,
-    nom:      im.nom,
-    ville:    im.ville || '',
-    quartier: im.quartier || '',
-    couleur:  im.col || '#0E6AAF'
+    id:           im.id,
+    nom:          im.nom,
+    ville:        im.ville || '',
+    quartier:     im.quartier || '',
+    couleur:      im.col || '#0E6AAF',
+    apparts:      im.apparts  || 0,
+    studios:      im.studios  || 0,
+    chambres:     im.chambres || 0,
+    duplex:       im.duplex   || 0,
+    nom_immeuble: im.nomImmeuble || im.nom || '',
+    nom_proprio:  im.nomProprio  || '',
+    tel_proprio:  im.telProprio  || '',
+    commission:   im.commission  || null
   }]);
 }
 

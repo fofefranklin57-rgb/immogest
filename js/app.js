@@ -10317,9 +10317,15 @@ function _autoCreerLocaux(iid, apparts, studios, chambres, duplex) {
 
   types.forEach(function({ type, prefix, count }) {
     if (!count || count <= 0) return;
-    for (var i = 1; i <= count; i++) {
+    // Compter les locaux existants de ce type pour cet immeuble (quel que soit le code)
+    const existingOfType = DATA.locataires.filter(function(l) {
+      return l.iid === iid && l.type === type;
+    }).length;
+    const toCreate = count - existingOfType;
+    if (toCreate <= 0) return; // déjà assez de locaux de ce type
+    for (var i = existingOfType + 1; i <= count; i++) {
       const apptCode = prefix + i;
-      // Ne pas recréer un local qui existe déjà (même appt + même iid)
+      // Ne pas recréer un local qui existe déjà avec ce code exact
       const alreadyExists = DATA.locataires.some(function(l) {
         return l.iid === iid && l.appt === apptCode;
       });
