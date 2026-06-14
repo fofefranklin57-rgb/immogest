@@ -5208,6 +5208,15 @@ function changerNomAdmin() {
 }
 
 function logout() {
+  // Avertir si des données ne sont pas encore synchronisées avec Supabase
+  if (SESSION && typeof _lastSyncFail !== 'undefined' && _lastSyncFail) {
+    var delai = _lastSyncOk ? Math.round((Date.now() - _lastSyncOk) / 60000) : null;
+    var msg = '⚠️ Vos données ne sont pas encore synchronisées avec le cloud.\n\n'
+      + (delai !== null ? 'Dernière synchro réussie il y a ' + delai + ' min.\n\n' : 'Aucune synchro réussie dans cette session.\n\n')
+      + 'Si vous videz le cache ou changez d\'appareil, les modifications récentes seront perdues.\n\n'
+      + 'Se déconnecter quand même ?';
+    if (!confirm(msg)) return;
+  }
   if (typeof logoutOneSignal === 'function') logoutOneSignal();
   clearSession();
   location.reload();
@@ -7521,7 +7530,7 @@ function _saveDataNow() {
       clearTimeout(_syncSupabaseTimer);
       _syncSupabaseTimer = setTimeout(function() {
         syncAllToSupabase().then(function(ok) {
-          if (!ok) showToast('⚠️ Sauvegarde cloud échouée — données locales conservées', 'orange');
+          if (!ok) showToast('⚠️ Non synchronisé — vos données sont en local uniquement', 'orange');
         });
       }, 3000);
     }

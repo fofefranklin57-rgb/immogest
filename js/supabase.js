@@ -762,6 +762,25 @@ async function saveParametresToSupabase(settings) {
 // Appelé automatiquement après chaque saveData() et au retour en ligne.
 // Pousse tous les immeubles, locataires actifs et paiements vers Supabase.
 var _syncBusy = false;
+var _lastSyncOk   = null;  // timestamp de la dernière synchro réussie
+var _lastSyncFail = false; // true si la dernière tentative a échoué
+
+function _updateSyncIndicator(ok) {
+  _lastSyncFail = !ok;
+  var el = document.getElementById('last-save');
+  if (!el) return;
+  if (ok) {
+    _lastSyncOk = Date.now();
+    el.innerHTML = '☁️ ' + (window.t ? t('Synchronisé') : 'Synchronisé') + ' '
+      + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    el.style.color = '';
+  } else {
+    el.innerHTML = '⚠️ Non synchronisé — <a href="#" onclick="syncAllToSupabase();return false;" '
+      + 'style="color:inherit;text-decoration:underline;">Réessayer</a>';
+    el.style.color = '#f59e0b';
+  }
+}
+
 async function syncAllToSupabase() {
   if (!SESSION || _syncBusy || _sbAuthFailed) return false;
   if (!navigator.onLine) return false;
@@ -789,14 +808,15 @@ async function syncAllToSupabase() {
     _syncBusy = false;
     if (failed > 0) {
       console.warn('syncAllToSupabase: ' + failed + ' erreur(s)');
+      _updateSyncIndicator(false);
       return false;
     }
-    var el = document.getElementById('last-save');
-    if (el) el.textContent = t('Synchronisé') + ' ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    _updateSyncIndicator(true);
     return true;
   } catch(e) {
     _syncBusy = false;
     console.warn('syncAllToSupabase error:', e);
+    _updateSyncIndicator(false);
     return false;
   }
 }
