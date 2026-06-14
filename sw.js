@@ -104,6 +104,11 @@ self.addEventListener('notificationclick', event => {
   );
 });
 
+// ── Message (doit être enregistré à l'évaluation initiale) ───
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
 // ── Background Sync ──────────────────────────────────────────
 self.addEventListener('sync', event => {
   if (event.tag === 'immogest-sync') {
