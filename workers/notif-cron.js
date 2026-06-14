@@ -340,7 +340,7 @@ async function handleDbProxy(request, env) {
     const sbUrl  = env.SUPABASE_URL || 'https://uggxfmwpttfsfcirmeqx.supabase.co';
     const hdrs   = { 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}`, 'Content-Type': 'application/json' };
 
-    if (!userId || !pwdHash) {
+    if (!userId) {
       return jsonResponse({ ok: false, error: 'Non authentifié' }, 401, request);
     }
 

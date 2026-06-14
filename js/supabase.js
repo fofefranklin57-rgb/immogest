@@ -397,21 +397,8 @@ async function loadDataFromSupabase() {
     DATA.immeubles  = immeubles.map(_mapImmeuble);
     DATA.locataires = locataires.map(_mapLocataire);
 
-    // Si Supabase retourne 0 paiements mais localStorage en a → migration
+    // Paiements
     var _payList = paiements || [];
-    if (_payList.length === 0) {
-      const _ck2 = (SESSION && SESSION.version === 'individuel') ? STORE_KEY_IND : 'immogest_data';
-      const _ld2 = JSON.parse(localStorage.getItem(_ck2) || '{}');
-      const _localPay = (_ld2.paiements || []).filter(function(p){ return p && p.montant; });
-      if (_localPay.length > 0) {
-        console.log('Paiements manquants dans Supabase — migration:', _localPay.length, 'pay');
-        showToast('Synchronisation des paiements...', 'blue');
-        await Promise.all(_localPay.map(function(p){ return savePaiementToSupabase(p); }));
-        const _repay = await sbLoad('paiements');
-        if (_repay && _repay.length > 0) _payList = _repay;
-        else _payList = _localPay;
-      }
-    }
     DATA.paiements = _payList.map(_mapPaiement);
 
     // Calculer nextIds

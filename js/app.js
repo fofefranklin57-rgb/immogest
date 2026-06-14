@@ -5207,6 +5207,17 @@ function changerNomAdmin() {
   showToast('Nom mis à jour : ' + SESSION.nom, 'green');
 }
 
+async function _forcerSync() {
+  if (typeof syncAllToSupabase !== 'function') return;
+  showToast('Synchronisation en cours...', 'blue');
+  const ok = await syncAllToSupabase();
+  if (ok) {
+    showToast('Synchronisation réussie ✓', 'green');
+  } else {
+    showToast('Échec — vérifiez votre connexion', 'red');
+  }
+}
+
 function logout() {
   // Avertir si des données ne sont pas encore synchronisées avec Supabase
   if (SESSION && typeof _lastSyncFail !== 'undefined' && _lastSyncFail) {
@@ -5303,7 +5314,7 @@ function renderUserChip() {
     <div class="avatar" style="background:${col};">${initials}</div>
     <span style="font-weight:500;">${SESSION.nom}</span>
     <span class="role-badge role-${SESSION.role}">${roleLabels[SESSION.role]}</span>
-    <button onclick="logout()" title="${t('Se déconnecter')}" style="margin-left:4px;padding:4px 10px;border-radius:5px;border:1px solid #C0392B;background:#FDF0F0;color:#C0392B;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">⏻ ${t('Déconnexion')}</button>
+<button onclick="logout()" title="${t('Se déconnecter')}" style="margin-left:4px;padding:4px 10px;border-radius:5px;border:1px solid #C0392B;background:#FDF0F0;color:#C0392B;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">⏻ ${t('Déconnexion')}</button>
   `;
   const topbarActions = document.querySelector('.topbar-actions');
   if (topbarActions) topbarActions.prepend(chip);
@@ -7530,7 +7541,10 @@ function _saveDataNow() {
       clearTimeout(_syncSupabaseTimer);
       _syncSupabaseTimer = setTimeout(function() {
         syncAllToSupabase().then(function(ok) {
-          if (!ok) showToast('⚠️ Non synchronisé — vos données sont en local uniquement', 'orange');
+          if (!ok) {
+            showToast('⚠️ Non synchronisé — nouvelle tentative dans 30s', 'orange');
+            _scheduleSyncRetry();
+          }
         });
       }, 3000);
     }
@@ -7546,6 +7560,20 @@ window.addEventListener('online', function() {
     else    showToast('⚠️ Synchronisation partielle — réessayez', 'orange');
   });
 });
+
+// Retry automatique si sync échouée — toutes les 30s jusqu'à succès
+var _syncRetryTimer = null;
+function _scheduleSyncRetry() {
+  clearTimeout(_syncRetryTimer);
+  _syncRetryTimer = setTimeout(function() {
+    if (!SESSION || !navigator.onLine) { _scheduleSyncRetry(); return; }
+    // Réinitialiser le circuit breaker au cas où
+    if (typeof resetSbAuth === 'function') resetSbAuth();
+    syncAllToSupabase().then(function(ok) {
+      if (!ok) _scheduleSyncRetry();
+    });
+  }, 30000);
+}
 
 // ── Wrapper saveData + Supabase pour locataires ──
 async function saveLocataireAndSupabase(l) {
@@ -10502,9 +10530,7 @@ function saveImmeuble() {
     if (idx >= 0) {
       DATA.immeubles[idx] = { ...DATA.immeubles[idx], nom, nomImmeuble, nomProprio, telProprio, ville, quartier, col, commission, apparts, studios, chambres, duplex, ...(payConfig !== null ? { payConfig } : {}) };
     }
-    // Édition : créer les locaux manquants si la composition a augmenté
-    const nbCrees = _autoCreerLocaux(existId, apparts, studios, chambres, duplex);
-    showToast('Immeuble modifié ✓' + (nbCrees > 0 ? ' · ' + nbCrees + ' nouveau(x) local(aux) créé(s)' : ''), 'green');
+    showToast('Immeuble modifié ✓', 'green');
   } else {
     const newId = Math.max(0, ...DATA.immeubles.map(i => i.id)) + 1;
     DATA.immeubles.push({ id: newId, nom, nomImmeuble, nomProprio, telProprio, ville, quartier, col, commission, apparts, studios, chambres, duplex, ...(payConfig !== null ? { payConfig } : {}) });
