@@ -669,8 +669,9 @@ function jsonResponse(data, status, request) {
 // ══════════════════════════════════════════════════════════════
 async function handleNotchPayInit(request, env) {
   try {
-    const sk = env.NOTCHPAY_SK || env.notchpay;
-    if (!sk) return jsonResponse({ ok: false, error: 'NOTCHPAY_SK non configuré' }, 500, request);
+    // pk. pour initialize (sk. pour refunds/captures — non utilisé ici)
+    const sk = env.NOTCHPAY_PK || env.NOTCHPAY_SK || env.notchpay;
+    if (!sk) return jsonResponse({ ok: false, error: 'NOTCHPAY_PK non configuré' }, 500, request);
 
     const body = await request.json();
     const { plan, duree, total, userId, email } = body;
@@ -682,7 +683,7 @@ async function handleNotchPayInit(request, env) {
     const resp = await fetch('https://api.notchpay.co/payments/initialize', {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer ' + sk,
+        'Authorization': sk,
         'Content-Type':  'application/json',
         'Accept':        'application/json'
       },
@@ -700,7 +701,7 @@ async function handleNotchPayInit(request, env) {
     console.log('[NotchPay] init →', JSON.stringify(data));
 
     if (!resp.ok) {
-      return jsonResponse({ ok: false, error: data.message || 'Erreur NotchPay' }, 502, request);
+      return jsonResponse({ ok: false, error: data.message || 'Erreur NotchPay', status: resp.status, raw: data }, 502, request);
     }
 
     const authUrl = data.authorization_url
@@ -728,8 +729,9 @@ async function handleNotchPayCheck(request, env) {
     const ref = url.searchParams.get('ref');
     if (!ref) return jsonResponse({ ok: false, error: 'ref manquant' }, 400, request);
 
+    const pk = env.NOTCHPAY_PK || env.NOTCHPAY_SK || env.notchpay;
     const resp = await fetch('https://api.notchpay.co/payments/' + ref, {
-      headers: { 'Authorization': 'Bearer ' + sk, 'Accept': 'application/json' }
+      headers: { 'Authorization': pk, 'Accept': 'application/json' }
     });
 
     const data = await resp.json();
