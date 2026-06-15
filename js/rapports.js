@@ -171,8 +171,172 @@ window.IG.rapports = (function() {
     }
   }
 
+  // ── Rapport annuel ───────────────────────────────────────────
+  function afficherRapportAnnuel() {
+    var now = new Date();
+    var annee = now.getFullYear();
+    var imm = window.IG.immeubles ? window.IG.immeubles.getCache() : [];
+    var loc = window.IG.locataires ? window.IG.locataires.getCache() : [];
+    var pay = window.IG.paiements ? window.IG.paiements.getCache() : [];
+
+    var MOIS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+    var totalAnnuel = 0;
+    var rows = '';
+    var actifs = loc.filter(function(l) { return l.statut !== 'libre'; });
+    var loyerMensuel = actifs.reduce(function(s, l) { return s + (parseFloat(l.loyer) || 0); }, 0);
+
+    for (var m = 1; m <= 12; m++) {
+      var recette = pay.filter(function(p) { return parseInt(p.mois) === m && parseInt(p.annee) === annee; })
+        .reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
+      totalAnnuel += recette;
+      var taux = loyerMensuel > 0 ? Math.round(recette / loyerMensuel * 100) : 0;
+      var color = taux >= 80 ? 'var(--green)' : taux >= 40 ? 'var(--yellow)' : 'var(--red)';
+      rows += '<tr style="border-bottom:1px solid var(--border2)">' +
+        '<td style="padding:8px 12px;font-weight:600">' + MOIS[m-1] + ' ' + annee + '</td>' +
+        '<td style="padding:8px 12px;text-align:right">' + fmt(loyerMensuel) + '</td>' +
+        '<td style="padding:8px 12px;text-align:right;font-weight:700;color:' + color + '">' + fmt(recette) + '</td>' +
+        '<td style="padding:8px 12px;text-align:center"><span style="color:' + color + ';font-weight:700">' + taux + '%</span></td>' +
+        '</tr>';
+    }
+
+    var html = '<h3 style="font-size:16px;margin-bottom:16px">📆 Rapport annuel ' + annee + '</h3>' +
+      '<div class="metrics-grid" style="margin-bottom:16px">' +
+      '<div class="metric-card"><div class="metric-label">💰 Total encaissé</div><div class="metric-value" style="color:var(--green)">' + fmt(totalAnnuel) + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">🏢 Potentiel annuel</div><div class="metric-value">' + fmt(loyerMensuel * 12) + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">📈 Taux annuel</div><div class="metric-value">' + (loyerMensuel * 12 > 0 ? Math.round(totalAnnuel / (loyerMensuel * 12) * 100) : 0) + '%</div></div>' +
+      '</div>' +
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
+      '<thead><tr style="background:var(--bg3);font-size:11px;text-transform:uppercase;color:var(--text3)">' +
+      '<th style="padding:8px 12px;text-align:left">Mois</th>' +
+      '<th style="padding:8px 12px;text-align:right">Loyer théorique</th>' +
+      '<th style="padding:8px 12px;text-align:right">Encaissé</th>' +
+      '<th style="padding:8px 12px;text-align:center">Taux</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">' +
+      '<button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Fermer</button>' +
+      '</div>';
+
+    window.IG.utils.showModal(html, { width: '640px' });
+  }
+
+  // ── Rapport relances ─────────────────────────────────────────
+  function afficherRapportRelances() {
+    var loc = window.IG.locataires ? window.IG.locataires.getCache() : [];
+    var pay = window.IG.paiements ? window.IG.paiements.getCache() : [];
+
+    var alertes = loc
+      .filter(function(l) { return l.statut !== 'libre'; })
+      .map(function(l) {
+        var pays = pay.filter(function(p) { return p.locataire_id == l.id; });
+        var retard = window.IG.relances ? window.IG.relances.calculerRetard(l, pays) : 0;
+        var du = window.IG.relances ? window.IG.relances.montantDu(l, pays) : 0;
+        return { loc: l, retard: retard, du: du };
+      })
+      .filter(function(a) { return a.retard > 0; })
+      .sort(function(a, b) { return b.retard - a.retard; });
+
+    var totalDu = alertes.reduce(function(s, a) { return s + a.du; }, 0);
+    var rows = alertes.map(function(a) {
+      var imm = window.IG.immeubles ? window.IG.immeubles.getById(a.loc.immeuble_id) : null;
+      var color = a.retard >= 3 ? 'var(--red)' : a.retard === 2 ? '#E05A00' : 'var(--yellow)';
+      return '<tr style="border-bottom:1px solid var(--border2)">' +
+        '<td style="padding:8px 12px;font-weight:600">' + esc(a.loc.nom) + '</td>' +
+        '<td style="padding:8px 12px;color:var(--text3);font-size:12px">' + esc(imm ? (imm.nom_immeuble || imm.nom) : '—') + '</td>' +
+        '<td style="padding:8px 12px;color:var(--text3)">' + esc(a.loc.appt || '—') + '</td>' +
+        '<td style="padding:8px 12px;text-align:center;font-weight:700;color:' + color + '">' + a.retard + ' mois</td>' +
+        '<td style="padding:8px 12px;text-align:right;font-weight:700;color:' + color + '">' + fmt(a.du) + '</td>' +
+        '</tr>';
+    }).join('');
+
+    var html = '<h3 style="font-size:16px;margin-bottom:16px">⚠️ Rapport relances — ' + alertes.length + ' locataire(s)</h3>' +
+      '<div class="metrics-grid" style="margin-bottom:16px">' +
+      '<div class="metric-card"><div class="metric-label">⚠️ En retard</div><div class="metric-value" style="color:var(--red)">' + alertes.length + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">💸 Total dû</div><div class="metric-value" style="color:var(--red)">' + fmt(totalDu) + '</div></div>' +
+      '</div>' +
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
+      '<thead><tr style="background:var(--bg3);font-size:11px;text-transform:uppercase;color:var(--text3)">' +
+      '<th style="padding:8px 12px;text-align:left">Locataire</th>' +
+      '<th style="padding:8px 12px;text-align:left">Immeuble</th>' +
+      '<th style="padding:8px 12px;text-align:left">Local</th>' +
+      '<th style="padding:8px 12px;text-align:center">Retard</th>' +
+      '<th style="padding:8px 12px;text-align:right">Montant dû</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      (alertes.length === 0 ? '<p style="text-align:center;padding:20px;color:var(--text3)">🎉 Aucun impayé !</p>' : '') +
+      '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">' +
+      '<button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Fermer</button>' +
+      '<button onclick="window.IG.rapports._exportRelancesDocx()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">📥 DOCX</button>' +
+      '</div>';
+
+    window.IG.utils.showModal(html, { width: '700px' });
+  }
+
+  // ── État des lieux ────────────────────────────────────────────
+  function afficherEtatLieux() {
+    var imms = window.IG.immeubles ? window.IG.immeubles.getCache() : [];
+    var locs = window.IG.locataires ? window.IG.locataires.getCache() : [];
+
+    var rows = imms.map(function(imm) {
+      var locsImm = locs.filter(function(l) { return l.immeuble_id == imm.id; });
+      var occupes = locsImm.filter(function(l) { return l.statut !== 'libre'; }).length;
+      var total = (imm.apparts || 0) + (imm.studios || 0) + (imm.chambres || 0) + (imm.duplex || 0);
+      var taux = total > 0 ? Math.round(occupes / total * 100) : 0;
+      var color = taux >= 80 ? 'var(--green)' : taux >= 50 ? 'var(--yellow)' : 'var(--red)';
+      var loyerTotal = locsImm.filter(function(l) { return l.statut !== 'libre'; }).reduce(function(s, l) { return s + (parseFloat(l.loyer) || 0); }, 0);
+      return '<tr style="border-bottom:1px solid var(--border2)">' +
+        '<td style="padding:10px 14px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + esc(imm.couleur || '#0E6AAF') + ';margin-right:8px"></span><strong>' + esc(imm.nom_immeuble || imm.nom) + '</strong></td>' +
+        '<td style="padding:10px 14px;text-align:center">' + total + '</td>' +
+        '<td style="padding:10px 14px;text-align:center;color:var(--green);font-weight:700">' + occupes + '</td>' +
+        '<td style="padding:10px 14px;text-align:center;color:var(--text3)">' + (total - occupes) + '</td>' +
+        '<td style="padding:10px 14px;text-align:center;font-weight:700;color:' + color + '">' + taux + '%</td>' +
+        '<td style="padding:10px 14px;text-align:right">' + fmt(loyerTotal) + '/mois</td>' +
+        '</tr>';
+    }).join('');
+
+    var html = '<h3 style="font-size:16px;margin-bottom:16px">🏢 État des lieux — ' + imms.length + ' immeuble(s)</h3>' +
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
+      '<thead><tr style="background:var(--bg3);font-size:11px;text-transform:uppercase;color:var(--text3)">' +
+      '<th style="padding:8px 12px;text-align:left">Immeuble</th>' +
+      '<th style="padding:8px 12px;text-align:center">Total locaux</th>' +
+      '<th style="padding:8px 12px;text-align:center">Occupés</th>' +
+      '<th style="padding:8px 12px;text-align:center">Vacants</th>' +
+      '<th style="padding:8px 12px;text-align:center">Taux</th>' +
+      '<th style="padding:8px 12px;text-align:right">Loyers/mois</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">' +
+      '<button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Fermer</button>' +
+      '</div>';
+
+    window.IG.utils.showModal(html, { width: '680px' });
+  }
+
+  function _exportRelancesDocx() {
+    try {
+      if (typeof docx === 'undefined') { window.IG.utils.showToast('Bibliothèque DOCX non chargée', 'red'); return; }
+      var loc = window.IG.locataires ? window.IG.locataires.getCache() : [];
+      var pay = window.IG.paiements ? window.IG.paiements.getCache() : [];
+      var alertes = loc.filter(function(l) { return l.statut !== 'libre'; }).map(function(l) {
+        var pays = pay.filter(function(p) { return p.locataire_id == l.id; });
+        var retard = window.IG.relances ? window.IG.relances.calculerRetard(l, pays) : 0;
+        var du = window.IG.relances ? window.IG.relances.montantDu(l, pays) : 0;
+        return { loc: l, retard: retard, du: du };
+      }).filter(function(a) { return a.retard > 0; }).sort(function(a, b) { return b.retard - a.retard; });
+
+      var children = [new docx.Paragraph({ text: 'RAPPORT RELANCES — ImmoGest', heading: docx.HeadingLevel.HEADING_1 }),
+        new docx.Paragraph({ text: 'Généré le ' + new Date().toLocaleDateString('fr-FR') })];
+      alertes.forEach(function(a) {
+        children.push(new docx.Paragraph({ text: a.loc.nom + ' — ' + a.retard + ' mois — ' + fmt(a.du) + ' dû' }));
+      });
+      var doc2 = new docx.Document({ sections: [{ children: children }] });
+      docx.Packer.toBlob(doc2).then(function(blob) {
+        var link = document.createElement('a'); link.href = URL.createObjectURL(blob);
+        link.download = 'rapport-relances-' + Date.now() + '.docx'; link.click();
+      });
+    } catch(e) { window.IG.utils.showToast('Erreur DOCX: ' + e.message, 'red'); }
+  }
+
   return {
-    genererRapportMensuelHTML, afficherRapportMensuel, exporterDocx
+    genererRapportMensuelHTML, afficherRapportMensuel, exporterDocx,
+    afficherRapportAnnuel, afficherRapportRelances, afficherEtatLieux, _exportRelancesDocx
   };
 
 })();

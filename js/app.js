@@ -35,10 +35,17 @@ window.IG.app = (function() {
     var app = document.getElementById('app');
     if (!app) return;
     var session = window.IG.auth.getSession();
+    var now = new Date();
+    var mois = now.getMonth() + 1;
+    var annee = now.getFullYear();
 
     app.innerHTML = '<div class="app-shell">' +
       // Sidebar
       '<nav class="sidebar" id="sidebar">' +
+      // Bouton collapse
+      '<button class="sidebar-collapse-btn" onclick="window.IG.app.toggleSidebar()" title="Réduire">' +
+      '<span>☰</span><span class="sidebar-collapse-label">ImmoGest</span>' +
+      '</button>' +
       '<div class="sidebar-logo">' +
       '<div class="logo-text">🏢 ImmoGest</div>' +
       '<div class="logo-sub">' + esc(session.nomCabinet || session.nom || '') + '</div>' +
@@ -46,51 +53,145 @@ window.IG.app = (function() {
       '<div class="sidebar-nav" id="sidebar-nav">' +
       _navSection(t('Principal')) +
       _navItem('dashboard', '📊', t('Tableau de bord')) +
-      _navItem('immeubles', '🏢', t('Immeubles')) +
-      _navItem('locataires', '👥', t('Locataires')) +
-      _navItem('paiements', '💰', t('Paiements')) +
+      _navSection(t('Immeubles')) +
+      _navItem('immeubles', '🏢', t('Tous les immeubles')) +
+      '<div id="sidebar-immeubles-list"></div>' +
       _navSection(t('Gestion')) +
+      _navItem('locataires', '👥', t('Locataires')) +
+      _navItem('paiements', '💰', t('Encaissements')) +
+      _navItem('relances', '⚠️', t('Relances'), true) +
       _navItem('rapports', '📄', t('Rapports')) +
-      _navItem('relances', '⚠️', t('Relances')) +
       _navItem('juridique', '⚖️', t('Juridique')) +
       _navSection(t('Réseau')) +
       _navItem('marketplace', '🌍', t('Marketplace')) +
       (session.role === 'locataire' ? _navItem('portail', '🏠', t('Mon espace')) : '') +
-      _navSection(t('Administration')) +
-      _navItem('parametres', '⚙️', t('Paramètres')) +
       '</div>' +
       '<div class="sidebar-footer">' +
-      '<div id="sync-indicator" style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:6px">● Sync...</div>' +
-      '<div style="font-size:11px;color:rgba(255,255,255,0.5)">ImmoGest v2.0</div>' +
+      '<div id="sidebar-user-info" style="font-weight:600;color:rgba(255,255,255,0.9);margin-bottom:3px;font-size:12px">' + esc(session.nom || '') + '</div>' +
+      '<div id="sync-indicator" style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:8px">● Sync...</div>' +
+      '<div onclick="window.IG.app.showPage(\'archives\')" style="margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:7px;cursor:pointer;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.8);font-size:12px"><span>🗄️ Archives</span></div>' +
+      '<div onclick="window.IG.app.showPage(\'corbeille\')" style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:7px;cursor:pointer;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.8);font-size:12px"><span>🗑️ Corbeille</span></div>' +
+      '<button onclick="window.IG.auth.logout()" style="width:100%;padding:8px;border-radius:7px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px">⏻ Se déconnecter</button>' +
       '</div></nav>' +
+      // Overlay mobile
+      '<div id="sidebar-overlay" onclick="window.IG.app.closeSidebar()" style="display:none;position:fixed;inset:0;z-index:199;background:rgba(0,0,0,0.4)"></div>' +
       // Main
       '<div class="main">' +
       '<div class="topbar">' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+      '<button id="btn-hamburger" onclick="window.IG.app.toggleSidebar()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:16px;color:var(--text2)">☰</button>' +
       '<div><div class="topbar-title" id="topbar-title">' + t('Tableau de bord') + '</div>' +
       '<div class="topbar-sub" id="topbar-sub"></div></div>' +
+      '</div>' +
       '<div class="topbar-actions">' +
-      '<button onclick="window.IG.app.refresh()" title="' + t('Actualiser') + '" style="padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:14px">↻</button>' +
-      '<button onclick="window.IG.auth.logout()" title="' + t('Déconnexion') + '" style="padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:14px">🚪</button>' +
+      '<select id="sel-mois" onchange="window.IG.app.refresh()" style="background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:6px 10px;font-family:var(--font);">' +
+      Array.from({length:12}, function(_,i) { return '<option value="' + (i+1) + '"' + ((i+1) === mois ? ' selected' : '') + '>' + ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'][i] + '</option>'; }).join('') +
+      '</select>' +
+      '<select id="sel-annee" onchange="window.IG.app.refresh()" style="background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:6px 10px;font-family:var(--font);">' +
+      [2024,2025,2026,2027].map(function(y) { return '<option value="' + y + '"' + (y === annee ? ' selected' : '') + '>' + y + '</option>'; }).join('') +
+      '</select>' +
+      '<button class="btn btn-primary btn-sm" id="topbar-main-btn" onclick="window.IG.app.topbarAction()">＋ Nouveau</button>' +
       '</div></div>' +
-      '<div id="page-content"></div>' +
+      // Bottom nav mobile
+      '<nav id="mobile-bottom-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;background:var(--bg2);border-top:1.5px solid var(--border);box-shadow:0 -2px 12px rgba(0,0,0,.08);">' +
+      '<div style="display:flex;justify-content:space-around;align-items:center;padding:6px 0 8px;">' +
+      _mbnBtn('dashboard','⊞','Accueil') + _mbnBtn('paiements','💰','Caisse') +
+      _mbnBtn('locataires','👤','Locataires') + _mbnBtn('rapports','📊','Rapports') +
+      '<button onclick="window.IG.app.toggleSidebar()" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;font-family:var(--font);color:var(--text3);font-size:10px;font-weight:600;"><span style="font-size:20px">☰</span><span>Menu</span></button>' +
+      '</div></nav>' +
+      '<div id="page-content" style="padding-bottom:72px"></div>' +
       '</div></div>';
 
     // Lier navigation
     document.querySelectorAll('.nav-item[data-page]').forEach(function(el) {
       el.addEventListener('click', function() {
         showPage(el.dataset.page);
+        // Fermer sidebar sur mobile
+        if (window.innerWidth <= 768) closeSidebar();
       });
     });
+
+    // Bottom nav mobile
+    _showMobileNav();
+    window.addEventListener('resize', _showMobileNav);
+  }
+
+  function _mbnBtn(page, icon, label) {
+    return '<button id="mbn-' + page + '" onclick="window.IG.app.showPage(\'' + page + '\')" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;font-family:var(--font);color:var(--text3);font-size:10px;font-weight:600;"><span style="font-size:20px">' + icon + '</span><span>' + label + '</span></button>';
+  }
+
+  function topbarAction() {
+    var p = _currentPage;
+    if (p === 'locataires') { if (window.IG.locataires) window.IG.locataires.afficherFormulaire(); }
+    else if (p === 'paiements') { if (window.IG.paiements) window.IG.paiements.afficherFormulaire(); }
+    else if (p === 'immeubles') { if (window.IG.immeubles) window.IG.immeubles.afficherFormulaire(); }
+    else if (p === 'rapport-annuel') { if (window.IG.rapports) window.IG.rapports.afficherRapportAnnuel(); }
+    else { showPage('locataires'); }
+  }
+
+  // Afficher / masquer la bottom nav selon la largeur
+  function _showMobileNav() {
+    var nav = document.getElementById('mobile-bottom-nav');
+    if (nav) nav.style.display = window.innerWidth <= 768 ? 'block' : 'none';
+  }
+
+  function toggleSidebar() {
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebar-overlay');
+    if (!sidebar) return;
+    if (window.innerWidth <= 768) {
+      var isOpen = sidebar.classList.contains('open');
+      sidebar.classList.toggle('open', !isOpen);
+      if (overlay) overlay.style.display = isOpen ? 'none' : 'block';
+    } else {
+      sidebar.classList.toggle('collapsed');
+    }
+  }
+
+  function closeSidebar() {
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebar-overlay');
+    if (sidebar) sidebar.classList.remove('open');
+    if (overlay) overlay.style.display = 'none';
+  }
+
+  function _updateSidebarImmeubles() {
+    var container = document.getElementById('sidebar-immeubles-list');
+    if (!container || !_data.immeubles.length) return;
+    var html = '';
+    _data.immeubles.slice(0, 8).forEach(function(imm) {
+      var actifs = _data.locataires.filter(function(l) { return l.immeuble_id == imm.id && l.statut !== 'libre'; }).length;
+      html += '<div class="nav-item nav-imm-item" style="padding-left:24px;font-size:12px" onclick="window.IG.app.showPage(\'locataires\',{immeubleId:' + imm.id + '})">' +
+        '<span class="imm-dot" style="background:' + esc(imm.couleur || '#0E6AAF') + '"></span>' +
+        '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(imm.nom_immeuble || imm.nom) + '</span>' +
+        '<span style="font-size:10px;color:rgba(255,255,255,0.5)">' + actifs + '</span>' +
+        '</div>';
+    });
+    container.innerHTML = html;
+  }
+
+  function _updateRelancesBadge() {
+    var badge = document.getElementById('relances-badge');
+    if (!badge) return;
+    var nb = 0;
+    _data.locataires.filter(function(l) { return l.statut !== 'libre'; }).forEach(function(loc) {
+      var pays = _data.paiements.filter(function(p) { return p.locataire_id == loc.id; });
+      var ret = window.IG.relances ? window.IG.relances.calculerRetard(loc, pays) : 0;
+      if (ret > 0) nb++;
+    });
+    badge.textContent = nb > 0 ? nb : '';
+    badge.style.display = nb > 0 ? 'inline-block' : 'none';
   }
 
   function _navSection(label) {
     return '<div class="nav-section">' + label + '</div>';
   }
 
-  function _navItem(page, icon, label) {
+  function _navItem(page, icon, label, hasBadge) {
     return '<div class="nav-item" data-page="' + page + '">' +
       '<span class="nav-icon">' + icon + '</span>' +
       '<span>' + label + '</span>' +
+      (hasBadge ? '<span class="nav-badge" id="relances-badge" style="display:none">0</span>' : '') +
       '</div>';
   }
 
@@ -103,6 +204,8 @@ window.IG.app = (function() {
       _data.locataires = result.locataires || [];
       _data.paiements  = result.paiements  || [];
       _setSyncStatus('ok');
+      _updateSidebarImmeubles();
+      _updateRelancesBadge();
     } catch(e) {
       _setSyncStatus('error');
       // Fallback localStorage
@@ -198,7 +301,28 @@ window.IG.app = (function() {
         if (title) title.textContent = t('Paramètres');
         if (sub) sub.textContent = '';
         _renderParametres(); break;
+      case 'statistiques':
+        if (title) title.textContent = t('Statistiques');
+        if (sub) sub.textContent = '';
+        _renderStatistiques(); break;
+      case 'rapport-annuel':
+        if (title) title.textContent = t('Rapport annuel');
+        if (sub) sub.textContent = '';
+        if (window.IG.rapports) window.IG.rapports.afficherRapportAnnuel();
+        break;
+      case 'archives':
+        if (title) title.textContent = t('Archives');
+        if (sub) sub.textContent = '';
+        _renderArchives(); break;
+      case 'corbeille':
+        if (title) title.textContent = t('Corbeille');
+        if (sub) sub.textContent = '';
+        _renderCorbeille(); break;
     }
+    // Mettre à jour bottom nav
+    document.querySelectorAll('[id^="mbn-"]').forEach(function(b) {
+      b.style.color = b.id === 'mbn-' + page ? 'var(--accent)' : 'var(--text3)';
+    });
   }
 
   function renderCurrentPage() { showPage(_currentPage); }
@@ -221,78 +345,24 @@ window.IG.app = (function() {
 
   // ── Dashboard ─────────────────────────────────────────────────
   function _renderDashboard() {
-    var content = document.getElementById('page-content');
-    if (!content) return;
-    var stats = window.IG.paiements
-      ? window.IG.paiements.calculerStats(_data.locataires, _data.paiements)
-      : { actifs: 0, aJour: 0, impayes: 0, recetteMois: 0 };
-    var session = window.IG.auth.getSession();
-    var fmt = window.IG.utils.formatMontant;
-
-    var html = '<div class="content">' +
-      '<div style="margin-bottom:20px">' +
-      '<h2 style="font-size:18px;font-weight:700;margin-bottom:4px">' + t('Bonjour') + ' ' + esc(session.nom || '') + ' 👋</h2>' +
-      '<p style="color:var(--text3);font-size:13px">' + new Date().toLocaleDateString('fr-FR', { weekday:'long', year:'numeric', month:'long', day:'numeric' }) + '</p></div>' +
-      '<div class="metrics-grid">' +
-      _metric('🏢', _data.immeubles.length, t('Immeubles')) +
-      _metric('👥', stats.actifs, t('Locataires actifs')) +
-      _metric('✓', stats.aJour, t('À jour'), 'green') +
-      _metric('⚠', stats.impayes, t('Impayés'), 'red') +
-      _metric('💰', fmt(stats.recetteMois), t('Recettes mois'), 'blue') +
-      '</div>' +
-      '<div class="card" style="margin-bottom:20px">' +
-      '<div class="card-header"><div class="card-title">⚡ ' + t('Actions rapides') + '</div></div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:10px">' +
-      _qbtn('🏢', t('Immeuble'), 'window.IG.immeubles.afficherFormulaire()') +
-      _qbtn('👤', t('Locataire'), 'window.IG.locataires.afficherFormulaire()') +
-      _qbtn('💵', t('Paiement'), 'window.IG.app.showPage(\'locataires\')') +
-      _qbtn('📊', t('Rapport'), 'window.IG.rapports.afficherRapportMensuel()') +
-      '</div></div>' +
-      (stats.impayes > 0 ? _renderAlertesImpayes() : '') +
-      '<div class="card">' +
-      '<div class="card-header"><div class="card-title">🏢 ' + t('Immeubles') + '</div>' +
-      '<button onclick="window.IG.app.showPage(\'immeubles\')" style="font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer">' + t('Voir tout') + ' →</button></div>' +
-      _renderImmeublesMini() + '</div></div>';
-    content.innerHTML = html;
-  }
-
-  function _metric(icon, val, label, color) {
-    var c = { green:'var(--green)', red:'var(--red)', blue:'var(--accent)' }[color] || 'var(--text)';
-    return '<div class="metric-card"><div class="metric-label">' + icon + ' ' + label + '</div>' +
-      '<div class="metric-value" style="color:' + c + '">' + val + '</div></div>';
-  }
-
-  function _qbtn(icon, label, onclick) {
-    return '<button onclick="' + onclick + '" style="padding:10px 16px;border-radius:10px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px">' +
-      icon + ' ' + label + '</button>';
-  }
-
-  function _renderAlertesImpayes() {
-    var now = new Date();
-    var mois = now.getMonth() + 1;
-    var annee = now.getFullYear();
-    var impayes = _data.locataires.filter(function(loc) {
-      if (loc.statut === 'libre') return false;
-      var tot = _data.paiements
-        .filter(function(p) { return p.locataire_id == loc.id && parseInt(p.mois) === mois && parseInt(p.annee) === annee; })
-        .reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
-      return tot < (parseFloat(loc.loyer) || 0);
-    }).slice(0, 6);
-    if (!impayes.length) return '';
-    var html = '<div class="card" style="border-left:4px solid var(--red);margin-bottom:20px">' +
-      '<div class="card-header"><div class="card-title" style="color:var(--red)">⚠️ ' + t('Impayés ce mois') + '</div></div>' +
-      '<div style="display:flex;flex-direction:column;gap:8px">';
-    impayes.forEach(function(loc) {
-      var wa = window.IG.locataires ? window.IG.locataires.lienWA(loc, 'Bonjour ' + loc.nom + ', votre loyer est attendu ce mois. Merci. ImmoGest') : null;
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--red-bg);border-radius:8px">' +
-        '<span style="font-size:13px;font-weight:600">' + esc(loc.nom) + (loc.appt ? ' — ' + esc(loc.appt) : '') + '</span>' +
-        '<div style="display:flex;gap:6px;align-items:center">' +
-        (wa ? '<a href="' + wa + '" target="_blank" style="padding:4px 10px;border-radius:6px;background:#25D366;color:#fff;font-size:11px;font-weight:700;text-decoration:none">WhatsApp</a>' : '') +
-        '<span style="font-size:12px;font-weight:700;color:var(--red)">' + window.IG.utils.formatMontant(loc.loyer) + '</span>' +
+    // Déléguer au module dashboard.js (KPIs avancés + graphe mensuel)
+    if (window.IG.dashboard) {
+      _syncCaches();
+      window.IG.dashboard.render(_data);
+    } else {
+      // Fallback minimal si module non chargé
+      var content = document.getElementById('page-content');
+      if (!content) return;
+      var stats = window.IG.paiements
+        ? window.IG.paiements.calculerStats(_data.locataires, _data.paiements)
+        : { actifs: 0, aJour: 0, impayes: 0, recetteMois: 0 };
+      content.innerHTML = '<div class="content"><div class="metrics-grid">' +
+        '<div class="metric-card"><div class="metric-label">🏢 Immeubles</div><div class="metric-value">' + _data.immeubles.length + '</div></div>' +
+        '<div class="metric-card"><div class="metric-label">👥 Locataires actifs</div><div class="metric-value">' + stats.actifs + '</div></div>' +
+        '<div class="metric-card"><div class="metric-label">✓ À jour</div><div class="metric-value" style="color:var(--green)">' + stats.aJour + '</div></div>' +
+        '<div class="metric-card"><div class="metric-label">⚠ Impayés</div><div class="metric-value" style="color:var(--red)">' + stats.impayes + '</div></div>' +
         '</div></div>';
-    });
-    html += '</div></div>';
-    return html;
+    }
   }
 
   function _renderImmeublesMini() {
@@ -349,38 +419,99 @@ window.IG.app = (function() {
     var now = new Date();
     var mois = now.getMonth() + 1;
     var annee = now.getFullYear();
-    var paysMois = _data.paiements.filter(function(p) {
-      return parseInt(p.mois) === mois && parseInt(p.annee) === annee;
-    });
-    var total = paysMois.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
+    var fmt = window.IG.utils.formatMontant;
+
+    // Sélecteur mois/année/immeuble
+    var immOptions = '<option value="">Tous les immeubles</option>' +
+      _data.immeubles.map(function(i) {
+        return '<option value="' + i.id + '">' + esc(i.nom_immeuble || i.nom) + '</option>';
+      }).join('');
+
     var html = '<div class="content">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
-      '<h2 style="font-size:17px;font-weight:700">💰 ' + t('Paiements') + ' — ' + window.IG.utils.nomMois(mois) + ' ' + annee + '</h2>' +
-      '<div style="font-size:16px;font-weight:700;color:var(--green)">' + window.IG.utils.formatMontant(total) + '</div></div>' +
-      '<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">' +
+      '<h2 style="font-size:17px;font-weight:700">💰 ' + t('Encaissements') + '</h2>' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+      '<select id="pay-mois" onchange="window.IG.app._refreshPaiements()" style="padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
+      Array.from({length:12}, function(_,i) {
+        var m = i+1;
+        return '<option value="' + m + '"' + (m === mois ? ' selected' : '') + '>' + window.IG.utils.nomMois(m) + '</option>';
+      }).join('') +
+      '</select>' +
+      '<input id="pay-annee" type="number" value="' + annee + '" min="2020" max="2035" onchange="window.IG.app._refreshPaiements()" ' +
+        'style="width:80px;padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
+      '<select id="pay-imm" onchange="window.IG.app._refreshPaiements()" style="padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
+      immOptions + '</select>' +
+      '<input id="pay-search" type="text" placeholder="Rechercher..." oninput="window.IG.app._refreshPaiements()" ' +
+        'style="padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);width:160px">' +
+      '</div></div>' +
+      '<div id="pay-total-bar" style="margin-bottom:12px"></div>' +
+      '<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table id="pay-table" style="width:100%;border-collapse:collapse;font-size:13px">' +
       '<thead><tr style="background:var(--bg3);font-size:11px;text-transform:uppercase;color:var(--text3)">' +
       '<th style="padding:10px 14px;text-align:left">' + t('Locataire') + '</th>' +
+      '<th style="padding:10px 14px;text-align:left">Immeuble</th>' +
+      '<th style="padding:10px 14px;text-align:left">Local</th>' +
       '<th style="padding:10px 14px;text-align:right">' + t('Montant') + '</th>' +
       '<th style="padding:10px 14px;text-align:left">' + t('Mode') + '</th>' +
       '<th style="padding:10px 14px;text-align:left">' + t('Date') + '</th>' +
+      '<th style="padding:10px 14px;text-align:left">Type</th>' +
       '<th style="padding:10px 14px;text-align:center">✕</th>' +
-      '</tr></thead><tbody>';
-    if (!paysMois.length) {
-      html += '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text3)">' + t('Aucun paiement ce mois') + '</td></tr>';
-    } else {
-      paysMois.slice().reverse().forEach(function(p) {
-        var loc = _data.locataires.find(function(l) { return l.id == p.locataire_id; });
-        html += '<tr style="border-bottom:1px solid var(--border2)">' +
-          '<td style="padding:10px 14px;font-weight:600">' + esc(loc ? loc.nom : '?') + '</td>' +
-          '<td style="padding:10px 14px;text-align:right;font-weight:700;color:var(--green)">' + window.IG.utils.formatMontant(p.montant) + '</td>' +
-          '<td style="padding:10px 14px;color:var(--text3)">' + esc(p.mode_paiement || 'espèces') + '</td>' +
-          '<td style="padding:10px 14px;color:var(--text3)">' + window.IG.utils.formatDate(p.date_paiement) + '</td>' +
-          '<td style="padding:10px 14px;text-align:center">' +
-          '<button onclick="window.IG.paiements.annuler(' + p.id + ')" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:18px;font-weight:700">×</button></td></tr>';
-      });
-    }
-    html += '</tbody></table></div></div></div>';
+      '</tr></thead><tbody id="pay-tbody"></tbody></table></div></div></div>';
+
     content.innerHTML = html;
+    _refreshPaiements();
+  }
+
+  function _refreshPaiements() {
+    var mois   = parseInt((document.getElementById('pay-mois')   || {}).value  || (new Date().getMonth()+1));
+    var annee  = parseInt((document.getElementById('pay-annee')  || {}).value  || new Date().getFullYear());
+    var immId  = (document.getElementById('pay-imm')    || {}).value  || '';
+    var q      = ((document.getElementById('pay-search') || {}).value || '').toLowerCase();
+    var fmt    = window.IG.utils.formatMontant;
+
+    var liste = _data.paiements.filter(function(p) {
+      if (parseInt(p.mois) !== mois || parseInt(p.annee) !== annee) return false;
+      if (immId) {
+        var loc = _data.locataires.find(function(l) { return l.id == p.locataire_id; });
+        if (!loc || String(loc.immeuble_id) !== String(immId)) return false;
+      }
+      if (q) {
+        var loc2 = _data.locataires.find(function(l) { return l.id == p.locataire_id; });
+        var nom = loc2 ? (loc2.nom || '').toLowerCase() : '';
+        if (!nom.includes(q)) return false;
+      }
+      return true;
+    }).slice().reverse();
+
+    var total = liste.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
+
+    var totalBar = document.getElementById('pay-total-bar');
+    if (totalBar) {
+      totalBar.innerHTML = '<div class="card" style="padding:12px 18px;display:flex;justify-content:space-between;align-items:center">' +
+        '<span style="font-size:13px;color:var(--text2)">' + liste.length + ' paiement(s) — ' + window.IG.utils.nomMois(mois) + ' ' + annee + '</span>' +
+        '<span style="font-size:18px;font-weight:700;color:var(--green)">' + fmt(total) + '</span>' +
+        '</div>';
+    }
+
+    var tbody = document.getElementById('pay-tbody');
+    if (!tbody) return;
+    if (!liste.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text3)">Aucun paiement pour cette période</td></tr>';
+      return;
+    }
+    tbody.innerHTML = liste.map(function(p) {
+      var loc = _data.locataires.find(function(l) { return l.id == p.locataire_id; });
+      var imm = loc ? (window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null) : null;
+      return '<tr style="border-bottom:1px solid var(--border2)">' +
+        '<td style="padding:10px 14px;font-weight:600">' + esc(loc ? loc.nom : '?') + '</td>' +
+        '<td style="padding:10px 14px;color:var(--text3);font-size:12px">' + esc(imm ? (imm.nom_immeuble || imm.nom) : '—') + '</td>' +
+        '<td style="padding:10px 14px;color:var(--text3);font-size:12px">' + esc(loc ? (loc.appt || '—') : '—') + '</td>' +
+        '<td style="padding:10px 14px;text-align:right;font-weight:700;color:var(--green)">' + fmt(p.montant) + '</td>' +
+        '<td style="padding:10px 14px;color:var(--text3)">' + esc(p.mode_paiement || 'espèces') + '</td>' +
+        '<td style="padding:10px 14px;color:var(--text3)">' + window.IG.utils.formatDate(p.date_paiement) + '</td>' +
+        '<td style="padding:10px 14px;color:var(--text3);font-size:11px">' + esc(p.type || 'loyer') + '</td>' +
+        '<td style="padding:10px 14px;text-align:center">' +
+        '<button onclick="window.IG.paiements.annuler(' + p.id + ')" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:18px;font-weight:700">×</button></td></tr>';
+    }).join('');
   }
 
   // ── Rapports ──────────────────────────────────────────────────
@@ -390,15 +521,19 @@ window.IG.app = (function() {
     content.innerHTML = '<div class="content">' +
       '<h2 style="font-size:17px;font-weight:700;margin-bottom:20px">📊 ' + t('Rapports') + '</h2>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px">' +
-      _rcard('📅', t('Rapport mensuel'), t('Encaissements et impayés du mois en cours'), 'window.IG.rapports.afficherRapportMensuel()') +
+      _rcard('📅', t('Rapport mensuel'), t('Encaissements et impayés du mois — export DOCX'), 'window.IG.rapports.afficherRapportMensuel()') +
+      _rcard('📆', t('Rapport annuel'), t('Synthèse de l\'année en cours par immeuble'), 'window.IG.rapports.afficherRapportAnnuel()') +
+      _rcard('⚠️', t('Rapport relances'), t('Liste complète des impayés et retards'), 'window.IG.rapports.afficherRapportRelances()') +
+      _rcard('🏢', t('État des lieux'), t('Occupation et vacance par immeuble'), 'window.IG.rapports.afficherEtatLieux()') +
       '</div></div>';
   }
 
   function _rcard(icon, titre, desc, onclick) {
-    return '<div class="card" style="cursor:pointer" onclick="' + onclick + '">' +
+    return '<div class="card" style="cursor:pointer;transition:transform .15s" onmouseenter="this.style.transform=\'translateY(-2px)\'" onmouseleave="this.style.transform=\'\'" onclick="' + onclick + '">' +
       '<div style="font-size:32px;margin-bottom:12px">' + icon + '</div>' +
       '<h3 style="font-size:14px;font-weight:700;margin-bottom:6px">' + titre + '</h3>' +
-      '<p style="font-size:12px;color:var(--text3)">' + desc + '</p></div>';
+      '<p style="font-size:12px;color:var(--text3)">' + desc + '</p>' +
+      '<div style="margin-top:14px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--accent);font-weight:600">Générer →</div></div>';
   }
 
   // ── Paramètres ────────────────────────────────────────────────
@@ -426,6 +561,108 @@ window.IG.app = (function() {
       '<button onclick="window.IG.auth.logout()" style="padding:10px 20px;border-radius:10px;border:1px solid var(--red);color:var(--red);background:transparent;cursor:pointer;font-weight:600;font-size:13px">🚪 ' + t('Se déconnecter') + '</button>' +
       '</div>';
     if (window.IG.plans) window.IG.plans.renderBlocPlan('plans-bloc');
+  }
+
+  // ── Statistiques ─────────────────────────────────────────────
+  function _renderStatistiques() {
+    var content = document.getElementById('page-content');
+    if (!content) return;
+    if (window.IG.dashboard) {
+      // Réutiliser les KPIs du dashboard avec graphes étendus
+      window.IG.dashboard.render(_data);
+    }
+    var kpis = window.IG.dashboard ? window.IG.dashboard.calculerKPIs(_data.locataires, _data.paiements) : {};
+    var fmt = window.IG.utils.formatMontant;
+    var html = '<div class="content">' +
+      '<h2 style="font-size:17px;font-weight:700;margin-bottom:20px">📈 ' + t('Statistiques') + '</h2>' +
+      '<div class="metrics-grid" style="margin-bottom:20px">' +
+      '<div class="metric-card"><div class="metric-label">👥 Locataires actifs</div><div class="metric-value">' + (kpis.actifs||0) + '</div><div class="metric-sub">' + (kpis.libres||0) + ' locaux libres</div></div>' +
+      '<div class="metric-card"><div class="metric-label">💰 Loyer théorique/mois</div><div class="metric-value accent" style="font-size:17px">' + fmt(kpis.loyerTheorique||0) + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">✅ Encaissé ce mois</div><div class="metric-value green" style="font-size:17px">' + fmt(kpis.recetteMois||0) + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">⚠️ Total impayés cumulés</div><div class="metric-value red" style="font-size:17px">' + fmt(kpis.totalDu||0) + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">📈 Taux recouvrement</div><div class="metric-value" style="color:' + ((kpis.txRecouvrement||0)>=80?'var(--green)':'var(--red)') + '">' + (kpis.txRecouvrement||0) + '%</div></div>' +
+      '<div class="metric-card"><div class="metric-label">📅 Recette annuelle</div><div class="metric-value accent" style="font-size:16px">' + fmt(kpis.recetteAnnuelle||0) + '</div></div>' +
+      '</div>' +
+      '<div class="card"><div class="card-header"><div class="card-title">📊 Recettes mensuelles</div></div>' +
+      '<div style="padding-top:8px">' + (window.IG.dashboard ? window.IG.dashboard.renderGrapheMensuel(kpis.recettesParMois||{}, kpis.loyerTheorique||0) : '') + '</div></div>' +
+      '</div>';
+    content.innerHTML = html;
+  }
+
+  // ── Archives ─────────────────────────────────────────────────
+  function _renderArchives() {
+    var content = document.getElementById('page-content');
+    if (!content) return;
+    var fmt = window.IG.utils.formatMontant;
+    var html = '<div class="content"><h2 style="font-size:17px;font-weight:700;margin-bottom:20px">🗄️ Archives</h2>';
+    // Charger archives depuis DB
+    if (window.IG.db) {
+      window.IG.db.select('archives').then(function(archives) {
+        if (!archives || !archives.length) {
+          document.getElementById('archives-body').innerHTML = '<div class="card" style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:36px;margin-bottom:10px">🗄️</div><p>Aucune archive</p></div>';
+          return;
+        }
+        var rows = archives.map(function(a) {
+          return '<tr style="border-bottom:1px solid var(--border2)">' +
+            '<td style="padding:9px 12px">' + esc(a.nom || '—') + '</td>' +
+            '<td style="padding:9px 12px;color:var(--text3)">' + esc(a.immeuble_nom || '—') + '</td>' +
+            '<td style="padding:9px 12px;color:var(--text3)">' + esc(a.local_num || '—') + '</td>' +
+            '<td style="padding:9px 12px">' + fmt(a.loyer || 0) + '</td>' +
+            '<td style="padding:9px 12px;color:var(--text3)">' + esc(a.date_sortie || '—') + '</td>' +
+            '<td style="padding:9px 12px;font-size:11px;color:var(--text3)">' + esc(a.motif || '—') + '</td>' +
+            '</tr>';
+        }).join('');
+        document.getElementById('archives-body').innerHTML = '<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:var(--bg3);font-size:11px;text-transform:uppercase;color:var(--text3)"><th style="padding:9px 12px;text-align:left">Nom</th><th style="padding:9px 12px;text-align:left">Immeuble</th><th style="padding:9px 12px;text-align:left">Local</th><th style="padding:9px 12px;text-align:left">Loyer</th><th style="padding:9px 12px;text-align:left">Sortie</th><th style="padding:9px 12px;text-align:left">Motif</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+      }).catch(function() {
+        document.getElementById('archives-body').innerHTML = '<div class="alert alert-yellow">Impossible de charger les archives hors connexion.</div>';
+      });
+    }
+    html += '<div id="archives-body"><div class="card" style="text-align:center;padding:40px"><div class="spinner" style="margin:0 auto"></div></div></div></div>';
+    content.innerHTML = html;
+  }
+
+  // ── Corbeille ─────────────────────────────────────────────────
+  function _renderCorbeille() {
+    var content = document.getElementById('page-content');
+    if (!content) return;
+    var html = '<div class="content"><h2 style="font-size:17px;font-weight:700;margin-bottom:20px">🗑️ Corbeille</h2>';
+    if (window.IG.db) {
+      window.IG.db.select('corbeille').then(function(items) {
+        if (!items || !items.length) {
+          document.getElementById('corbeille-body').innerHTML = '<div class="card" style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:36px;margin-bottom:10px">🗑️</div><p>La corbeille est vide</p></div>';
+          return;
+        }
+        var rows = items.map(function(item) {
+          var d = item.locataire_data || {};
+          return '<div class="card" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">' +
+            '<div><strong>' + esc(d.nom || '—') + '</strong>' +
+            '<div style="font-size:12px;color:var(--text3)">' + esc(d.appt || '') + ' — ' + window.IG.utils.formatMontant(d.loyer || 0) + '</div></div>' +
+            '<button onclick="window.IG.app._restaurer(' + item.id + ')" style="padding:6px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:12px">Restaurer</button>' +
+            '</div>';
+        }).join('');
+        document.getElementById('corbeille-body').innerHTML = rows;
+      }).catch(function() {
+        document.getElementById('corbeille-body').innerHTML = '<div class="alert alert-yellow">Corbeille non disponible hors connexion.</div>';
+      });
+    }
+    html += '<div id="corbeille-body"><div class="card" style="text-align:center;padding:40px"><div class="spinner" style="margin:0 auto"></div></div></div></div>';
+    content.innerHTML = html;
+  }
+
+  async function _restaurer(corbeilleId) {
+    try {
+      var items = await window.IG.db.select('corbeille', { id: corbeilleId });
+      if (!items || !items.length) return;
+      var item = items[0];
+      if (item.locataire_data) {
+        await window.IG.db.insert('locataires', [item.locataire_data]);
+      }
+      await window.IG.db.remove('corbeille', corbeilleId);
+      window.IG.utils.showToast('Locataire restauré ✓', 'green');
+      showPage('corbeille');
+    } catch(e) {
+      window.IG.utils.showToast('Erreur restauration : ' + e.message, 'red');
+    }
   }
 
   // ── Auth V1 — Multi-step wizard (design fidèle V1) ───────────
@@ -831,7 +1068,10 @@ window.IG.app = (function() {
     _loginMode, _renderLogin,
     authGoStep, loginAdminV2, loginEntrepriseV2, loginLocataireV2, registerV2,
     _onRoleChange,
-    getData: function() { return _data; }
+    toggleSidebar, closeSidebar,
+    _refreshPaiements, _restaurer,
+    getData: function() { return _data; },
+    topbarAction, _showMobileNav
   };
 
 })();
