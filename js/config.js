@@ -29,6 +29,14 @@ window.IG.config = {
   }
 };
 
+// Configuration centrale — toutes les URLs passent par ici
+// Migration future : changer ces 3 valeurs suffit pour basculer sur domaine custom
+window.APP_CONFIG = {
+  APP_URL:         'https://immogest-34w.pages.dev',
+  API_URL:         'https://immogest1.fofefranklin57.workers.dev',
+  MARKETPLACE_URL: 'https://immogest1.fofefranklin57.workers.dev'
+};
+
 // Alias global pour compatibilité v1
-var WORKER_URL = window.IG.config.workerUrl;
-var APP_CONFIG = { appName: 'ImmoGest', modules: window.IG.config.modules };
+var WORKER_URL = window.APP_CONFIG.API_URL;
+window.IG.config.workerUrl = window.APP_CONFIG.API_URL;

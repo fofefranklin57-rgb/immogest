@@ -532,7 +532,7 @@
 </div>
 
 <script>
-  var WORKER = 'https://immogest1.fofefranklin57.workers.dev';
+  var WORKER = (window.APP_CONFIG && window.APP_CONFIG.MARKETPLACE_URL) || 'https://immogest1.fofefranklin57.workers.dev';
   var DEVISES = { XAF:'FCFA', XOF:'FCFA', MAD:'MAD', TND:'TND', EUR:'€', USD:'$' };
   var CATS = {
     location_residentielle:'🏠 Location résidentielle',

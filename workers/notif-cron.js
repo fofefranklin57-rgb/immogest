@@ -632,22 +632,58 @@ ${_footer()}</body></html>`;
         return json({ success: true, code: inv, tenantNom: tenant.nom_cabinet || tenant.nom || '' });
       }
 
+      // ── /robots.txt ───────────────────────────────────────────────
+      if (path === '/robots.txt') {
+        const txt = `User-agent: *\nAllow: /\n\nSitemap: ${BASE_URL}/sitemap.xml\n`;
+        return new Response(txt, { headers: { ...cors, 'Content-Type': 'text/plain; charset=utf-8' } });
+      }
+
       // ── /sitemap.xml ─────────────────────────────────────────────
       if (path === '/sitemap.xml') {
-        const r = await sbFetch('marketplace_annonces', '?statut=eq.active&select=id,titre,ville,pays,categorie,updated_at&order=updated_at.desc&limit=5000');
-        const annonces = r.ok ? await r.json() : [];
-        const BASE = 'https://immogest1.fofefranklin57.workers.dev';
-        function slug(s) {
-          return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-        }
-        const urls = annonces.map(function(a) {
-          const p = slug(a.pays||'cm');
-          const v = slug(a.ville||'ville');
-          const t = slug(a.titre||'annonce');
-          return `  <url>\n    <loc>${BASE}/annonce/${p}/${v}/${t}-${a.id}</loc>\n    <lastmod>${(a.updated_at||new Date().toISOString()).split('T')[0]}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>`;
-        }).join('\n');
-        const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>${BASE}/marketplace-public</loc><changefreq>daily</changefreq><priority>1.0</priority></url>\n${urls}\n</urlset>`;
-        return new Response(xml, { headers: { ...cors, 'Content-Type': 'application/xml; charset=utf-8' } });
+        const [aRes, tRes] = await Promise.all([
+          sbFetch('marketplace_annonces', '?statut=eq.active&select=id,titre,ville,pays,updated_at&order=updated_at.desc&limit=5000'),
+          sbFetch('tenants', '?select=id,nom,nom_cabinet&limit=1000')
+        ]);
+        const annonces = aRes.ok ? await aRes.json() : [];
+        const tenants  = tRes.ok ? await tRes.json() : [];
+
+        const today = new Date().toISOString().split('T')[0];
+
+        // Annonces
+        const urlsAnnonces = annonces.map(a => {
+          const loc = `${BASE_URL}/annonce/${_slug(a.pays||'cm')}/${_slug(a.ville||'ville')}/${_slug(a.titre||'annonce')}-${a.id}`;
+          return `  <url><loc>${loc}</loc><lastmod>${(a.updated_at||today).split('T')[0]}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
+        });
+
+        // Agences (tenants actifs = ceux ayant au moins 1 annonce)
+        const tenantsActifs = new Set(annonces.map(a => a.tenant_id).filter(Boolean));
+        const urlsAgences = tenants
+          .filter(t => tenantsActifs.has(t.id))
+          .map(t => `  <url><loc>${BASE_URL}/agence/${_slug(t.nom_cabinet||t.nom)}</loc><lastmod>${today}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`);
+
+        // Villes distinctes
+        const villes = [...new Set(annonces.map(a => a.ville).filter(Boolean))];
+        const urlsVilles = villes.map(v =>
+          `  <url><loc>${BASE_URL}/ville/${_slug(v)}</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>`
+        );
+
+        // Pays distincts
+        const pays = [...new Set(annonces.map(a => a.pays).filter(Boolean))];
+        const urlsPays = pays.map(p =>
+          `  <url><loc>${BASE_URL}/pays/${_slug(PAYS_LABELS[p]||p)}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`
+        );
+
+        const xml = [
+          '<?xml version="1.0" encoding="UTF-8"?>',
+          '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+          `  <url><loc>${BASE_URL}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`,
+          ...urlsPays,
+          ...urlsVilles,
+          ...urlsAgences,
+          ...urlsAnnonces,
+          '</urlset>'
+        ].join('\n');
+        return new Response(xml, { headers: { ...cors, 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' } });
       }
 
       // ── /annonce/:pays/:ville/:slug-{id} — SEO 100% HTML, zéro JS ──
