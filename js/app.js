@@ -993,10 +993,10 @@ window.IG.app = (function() {
       '</div>' +
       '<div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg,rgba(5,15,30,0.85) 0%,rgba(8,20,45,0.80) 50%,rgba(5,15,30,0.85) 100%);"></div>' +
 
-      '<div id="auth-main-layout" style="position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;justify-content:space-between;padding:40px 6%;">' +
+      '<div id="auth-main-layout" style="position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;justify-content:center;gap:60px;padding:40px 6%;">' +
 
       // ── Panneau gauche branding ──
-      '<div id="auth-branding" style="flex:1;max-width:520px;color:white;padding-right:60px;">' +
+      '<div id="auth-branding" style="flex:1;max-width:480px;color:white;">' +
       '<div style="font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:18px;">Gestion Immobilière Professionnelle</div>' +
       '<h1 style="font-size:54px;font-weight:900;line-height:1.05;margin:0 0 18px;letter-spacing:-2px;">ImmoGest</h1>' +
       '<p style="font-size:16px;line-height:1.7;color:rgba(255,255,255,0.65);margin-bottom:30px;max-width:380px;">La plateforme complète de gestion immobilière.<br>Locataires, encaissements, rapports et bien plus.</p>' +
@@ -1030,7 +1030,6 @@ window.IG.app = (function() {
       '<span style="font-size:22px;flex-shrink:0;">🏠</span>' +
       '<div style="text-align:left;">' +
       '<div style="font-size:14px;font-weight:700;color:#fff;">Créer mon espace</div>' +
-      '<div style="font-size:11px;color:rgba(255,255,255,0.65);margin-top:2px;">Seul ou en famille</div>' +
       '</div></button>' +
       // Bouton 2 — Rejoindre
       '<button onclick="window.IG.app.authGoStep(\'join\')" style="width:100%;display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:16px 18px;cursor:pointer;margin-bottom:10px;transition:background .15s;" onmouseover="this.style.background=\'rgba(255,255,255,0.09)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.05)\'">' +
@@ -1047,7 +1046,7 @@ window.IG.app = (function() {
       '</div></button>' +
       // Lien marketplace
       '<div style="text-align:center;">' +
-      '<button onclick="window.IG.app.showPage(\'marketplace\')" style="background:none;border:none;color:#4f8ef7;font-size:12px;cursor:pointer;font-family:inherit;">🏪 Parcourir la marketplace →</button>' +
+      '<button onclick="window.IG.app.browseMarketplace()" style="background:none;border:none;color:#4f8ef7;font-size:12px;cursor:pointer;font-family:inherit;">🏪 Parcourir la marketplace →</button>' +
       '</div></div>' +
 
       // ─── CONNEXION ───
@@ -1126,6 +1125,12 @@ window.IG.app = (function() {
     if (target) target.classList.add('active');
   }
 
+  async function browseMarketplace() {
+    _showAppShell();
+    await _loadData();
+    showPage('marketplace');
+  }
+
   async function doLogin() {
     var tel = (document.getElementById('login-tel') || {}).value || '';
     var pwd = (document.getElementById('login-pwd') || {}).value || '';
@@ -1190,7 +1195,7 @@ window.IG.app = (function() {
   return {
     init, showPage, refresh, renderCurrentPage,
     _renderLogin,
-    authGoStep, doLogin, joinV2, registerV2,
+    authGoStep, doLogin, joinV2, registerV2, browseMarketplace,
     toggleSidebar, closeSidebar,
     _refreshPaiements, _restaurer,
     _genererInvitation, _toggleUser, _appliquerPromo,
