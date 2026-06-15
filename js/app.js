@@ -984,35 +984,79 @@ window.IG.app = (function() {
     if (!app) return;
     app.innerHTML =
       '<div id="auth-screen" style="position:fixed;inset:0;z-index:9999;min-height:100vh;font-family:\'Segoe UI\',system-ui,sans-serif;overflow:hidden;">' +
-      // Slideshow
+
+      // Slideshow background
       '<div id="auth-slides" style="position:absolute;inset:0;z-index:0;">' +
       '<div class="aslide" style="position:absolute;inset:0;opacity:1;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1400&q=80\') center/cover no-repeat;"></div>' +
       '<div class="aslide" style="position:absolute;inset:0;opacity:0;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1400&q=80\') center/cover no-repeat;"></div>' +
       '<div class="aslide" style="position:absolute;inset:0;opacity:0;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1460317442991-0ec209397118?w=1400&q=80\') center/cover no-repeat;"></div>' +
       '</div>' +
-      '<div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg,rgba(5,15,30,0.88) 0%,rgba(10,25,50,0.78) 50%,rgba(5,15,30,0.88) 100%);"></div>' +
+      '<div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg,rgba(5,15,30,0.85) 0%,rgba(8,20,45,0.80) 50%,rgba(5,15,30,0.85) 100%);"></div>' +
+
       '<div id="auth-main-layout" style="position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;justify-content:space-between;padding:40px 6%;">' +
 
-      // Panneau gauche — branding
-      '<div id="auth-branding" style="flex:1;max-width:500px;color:white;padding-right:60px;">' +
-      '<div style="font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:20px;">Gestion Immobilière Professionnelle</div>' +
-      '<h1 style="font-size:52px;font-weight:900;line-height:1.05;margin:0 0 20px;letter-spacing:-2px;">ImmoGest</h1>' +
-      '<p style="font-size:16px;line-height:1.8;color:rgba(255,255,255,0.7);margin-bottom:40px;max-width:380px;">La plateforme complète de gestion immobilière.<br>Locataires, encaissements, rapports et bien plus.</p>' +
-      '<div style="display:flex;gap:32px;">' +
-      '<div><div style="font-size:26px;font-weight:800;color:#4f8ef7;">100%</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">Intégré</div></div>' +
-      '<div><div style="font-size:26px;font-weight:800;color:#4f8ef7;">100%</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">Collaboratif</div></div>' +
-      '<div><div style="font-size:26px;font-weight:800;color:#4f8ef7;">100%</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">Intuitif</div></div>' +
+      // ── Panneau gauche branding ──
+      '<div id="auth-branding" style="flex:1;max-width:520px;color:white;padding-right:60px;">' +
+      '<div style="font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:18px;">Gestion Immobilière Professionnelle</div>' +
+      '<h1 style="font-size:54px;font-weight:900;line-height:1.05;margin:0 0 18px;letter-spacing:-2px;">ImmoGest</h1>' +
+      '<p style="font-size:16px;line-height:1.7;color:rgba(255,255,255,0.65);margin-bottom:30px;max-width:380px;">La plateforme complète de gestion immobilière.<br>Locataires, encaissements, rapports et bien plus.</p>' +
+      // Badges fonctionnalités
+      '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:36px;">' +
+      '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">✅ Droit local</span>' +
+      '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">📊 Hors-ligne</span>' +
+      '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">💳 Mobile Money</span>' +
+      '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">✍️ Signature électronique</span>' +
+      '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">🤖 Assistant IA</span>' +
+      '</div>' +
+      // Stats
+      '<div style="display:flex;gap:36px;">' +
+      '<div><div style="font-size:28px;font-weight:900;color:#4f8ef7;">100%</div><div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-top:2px;">Intégré</div></div>' +
+      '<div><div style="font-size:28px;font-weight:900;color:#4f8ef7;">100%</div><div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-top:2px;">Collaboratif</div></div>' +
+      '<div><div style="font-size:28px;font-weight:900;color:#4f8ef7;">100%</div><div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-top:2px;">Offline</div></div>' +
       '</div></div>' +
 
-      // Panneau droit — formulaire unique
-      '<div class="auth-form-box">' +
+      // ── Panneau droit — carte auth ──
+      '<div class="auth-form-box" style="width:400px;min-width:360px;">' +
 
-      // ── CONNEXION ──
-      '<div id="auth-step-login" class="auth-step active">' +
-      '<div style="text-align:center;margin-bottom:28px;">' +
-      '<div style="margin-bottom:10px;display:flex;justify-content:center;"><svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="8" width="28" height="24" rx="2" fill="rgba(79,142,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="8" y="4" width="20" height="6" rx="1" fill="rgba(79,142,247,0.2)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="9" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="16" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/></svg></div>' +
-      '<div style="font-size:20px;font-weight:800;color:#e8f0fe;letter-spacing:-.5px;">ImmoGest</div>' +
-      '<div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:5px;letter-spacing:1px;text-transform:uppercase;">Gestion Immobilière</div>' +
+      // ─── ÉCRAN ACCUEIL : 3 boutons d'action ───
+      '<div id="auth-step-home" class="auth-step active">' +
+      '<div style="text-align:center;margin-bottom:24px;">' +
+      '<div style="font-size:40px;margin-bottom:12px;">🏢</div>' +
+      '<div style="font-size:19px;font-weight:800;color:#e8f0fe;">Bienvenue sur ImmoGest</div>' +
+      '<div style="font-size:12px;color:rgba(232,240,254,0.45);margin-top:6px;">Comment allez-vous utiliser l\'application ?</div>' +
+      '</div>' +
+      // Bouton 1 — Créer (bleu, primaire)
+      '<button onclick="window.IG.app.authGoStep(\'register\')" style="width:100%;display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;border-radius:12px;padding:16px 18px;cursor:pointer;margin-bottom:10px;transition:opacity .15s;" onmouseover="this.style.opacity=\'.9\'" onmouseout="this.style.opacity=\'1\'">' +
+      '<span style="font-size:22px;flex-shrink:0;">🏠</span>' +
+      '<div style="text-align:left;">' +
+      '<div style="font-size:14px;font-weight:700;color:#fff;">Créer mon espace</div>' +
+      '<div style="font-size:11px;color:rgba(255,255,255,0.65);margin-top:2px;">Seul ou en famille</div>' +
+      '</div></button>' +
+      // Bouton 2 — Rejoindre
+      '<button onclick="window.IG.app.authGoStep(\'join\')" style="width:100%;display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:16px 18px;cursor:pointer;margin-bottom:10px;transition:background .15s;" onmouseover="this.style.background=\'rgba(255,255,255,0.09)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.05)\'">' +
+      '<span style="font-size:22px;flex-shrink:0;">🔗</span>' +
+      '<div style="text-align:left;">' +
+      '<div style="font-size:14px;font-weight:700;color:#e8f0fe;">Rejoindre un espace</div>' +
+      '<div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:2px;">Locataire ou employé — code d\'invitation</div>' +
+      '</div></button>' +
+      // Bouton 3 — Se connecter
+      '<button onclick="window.IG.app.authGoStep(\'login\')" style="width:100%;display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:16px 18px;cursor:pointer;margin-bottom:20px;transition:background .15s;" onmouseover="this.style.background=\'rgba(255,255,255,0.09)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.05)\'">' +
+      '<span style="font-size:22px;flex-shrink:0;">🔑</span>' +
+      '<div style="text-align:left;">' +
+      '<div style="font-size:14px;font-weight:700;color:#e8f0fe;">Se connecter à un espace existant</div>' +
+      '</div></button>' +
+      // Lien marketplace
+      '<div style="text-align:center;">' +
+      '<button onclick="window.IG.app.showPage(\'marketplace\')" style="background:none;border:none;color:#4f8ef7;font-size:12px;cursor:pointer;font-family:inherit;">🏪 Parcourir la marketplace →</button>' +
+      '</div></div>' +
+
+      // ─── CONNEXION ───
+      '<div id="auth-step-login" class="auth-step">' +
+      '<button class="auth-back-btn" onclick="window.IG.app.authGoStep(\'home\')">&#8592; Retour</button>' +
+      '<div style="text-align:center;margin-bottom:22px;">' +
+      '<div style="font-size:32px;margin-bottom:8px;">🔑</div>' +
+      '<div style="font-size:17px;font-weight:800;color:#e8f0fe;">Se connecter</div>' +
+      '<div style="font-size:11px;color:rgba(232,240,254,0.4);margin-top:4px;">Téléphone + mot de passe</div>' +
       '</div>' +
       '<label class="auth-label">NUMÉRO DE TÉLÉPHONE</label>' +
       '<input type="tel" id="login-tel" class="auth-input" placeholder="Ex: 699 00 00 00" autocomplete="tel" style="margin-bottom:14px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'login-pwd\').focus()">' +
@@ -1020,23 +1064,19 @@ window.IG.app = (function() {
       '<input type="password" id="login-pwd" class="auth-input" placeholder="Mot de passe" autocomplete="current-password" style="margin-bottom:20px;" onkeydown="if(event.key===\'Enter\')window.IG.app.doLogin()">' +
       '<button class="auth-btn-primary" onclick="window.IG.app.doLogin()">🔐 Se connecter</button>' +
       '<div id="err-login" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08);">' +
-      '<button onclick="window.IG.app.authGoStep(\'register\')" style="background:none;border:none;color:rgba(232,240,254,0.45);font-size:12px;cursor:pointer;font-family:inherit;">+ Créer un espace</button>' +
-      '<button onclick="window.IG.app.authGoStep(\'join\')" style="background:none;border:none;color:rgba(232,240,254,0.45);font-size:12px;cursor:pointer;font-family:inherit;">🔗 Rejoindre un cabinet</button>' +
-      '</div>' +
-      '<div style="text-align:center;margin-top:12px;font-size:10px;color:rgba(232,240,254,0.15);letter-spacing:1px;">ImmoGest v2.0</div>' +
       '</div>' +
 
-      // ── CRÉER UN ESPACE ──
+      // ─── CRÉER UN ESPACE ───
       '<div id="auth-step-register" class="auth-step">' +
-      '<button class="auth-back-btn" onclick="window.IG.app.authGoStep(\'login\')">&#8592; Retour</button>' +
+      '<button class="auth-back-btn" onclick="window.IG.app.authGoStep(\'home\')">&#8592; Retour</button>' +
       '<div style="text-align:center;margin-bottom:20px;">' +
+      '<div style="font-size:32px;margin-bottom:8px;">🏠</div>' +
       '<div style="font-size:17px;font-weight:800;color:#e8f4ff;">Créer mon espace</div>' +
-      '<div style="font-size:11px;color:rgba(200,223,248,0.4);margin-top:3px;letter-spacing:.5px;">Nouvel espace ImmoGest</div>' +
+      '<div style="font-size:11px;color:rgba(200,223,248,0.4);margin-top:3px;">Nouvel espace ImmoGest</div>' +
       '</div>' +
       '<label class="auth-label">VOTRE NOM</label>' +
       '<input type="text" id="reg-nom" class="auth-input" placeholder="Nom complet" style="margin-bottom:12px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'reg-cabinet\').focus()">' +
-      '<label class="auth-label">NOM DU CABINET <span style="opacity:.5">(optionnel)</span></label>' +
+      '<label class="auth-label">NOM DU CABINET <span style="opacity:.5;font-weight:400;">(optionnel)</span></label>' +
       '<input type="text" id="reg-cabinet" class="auth-input" placeholder="Mon Cabinet Immobilier" style="margin-bottom:12px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'reg-tel\').focus()">' +
       '<label class="auth-label">TÉLÉPHONE</label>' +
       '<input type="tel" id="reg-tel" class="auth-input" placeholder="6XXXXXXXX" style="margin-bottom:12px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'reg-pwd\').focus()">' +
@@ -1046,15 +1086,16 @@ window.IG.app = (function() {
       '<div id="err-register" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>' +
       '</div>' +
 
-      // ── REJOINDRE UN CABINET ──
+      // ─── REJOINDRE ───
       '<div id="auth-step-join" class="auth-step">' +
-      '<button class="auth-back-btn" onclick="window.IG.app.authGoStep(\'login\')">&#8592; Retour</button>' +
+      '<button class="auth-back-btn" onclick="window.IG.app.authGoStep(\'home\')">&#8592; Retour</button>' +
       '<div style="text-align:center;margin-bottom:20px;">' +
-      '<div style="font-size:17px;font-weight:800;color:#e8f4ff;">Rejoindre un cabinet</div>' +
-      '<div style="font-size:11px;color:rgba(200,223,248,0.4);margin-top:3px;letter-spacing:.5px;">Code d\'invitation requis</div>' +
+      '<div style="font-size:32px;margin-bottom:8px;">🔗</div>' +
+      '<div style="font-size:17px;font-weight:800;color:#e8f4ff;">Rejoindre un espace</div>' +
+      '<div style="font-size:11px;color:rgba(200,223,248,0.4);margin-top:3px;">Code d\'invitation requis</div>' +
       '</div>' +
       '<label class="auth-label">CODE D\'INVITATION</label>' +
-      '<input type="text" id="join-code" class="auth-input" placeholder="Ex: AB3F1234" style="margin-bottom:12px;text-transform:uppercase;letter-spacing:2px;" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key===\'Enter\')document.getElementById(\'join-nom\').focus()">' +
+      '<input type="text" id="join-code" class="auth-input" placeholder="Ex: AB3F1234" style="margin-bottom:12px;text-transform:uppercase;letter-spacing:3px;font-weight:700;" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key===\'Enter\')document.getElementById(\'join-nom\').focus()">' +
       '<label class="auth-label">VOTRE NOM</label>' +
       '<input type="text" id="join-nom" class="auth-input" placeholder="Nom complet" style="margin-bottom:12px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'join-pwd\').focus()">' +
       '<label class="auth-label">MOT DE PASSE</label>' +
