@@ -633,7 +633,8 @@ window.IG.app = (function() {
 
   return {
     init, showPage, refresh, renderCurrentPage,
-    _swTab, _doLogin, _doRegister,
+    _swTab, _doLogin, _doRegister, _doJoin,
+    _loginMode, _renderLogin,
     getData: function() { return _data; }
   };
 

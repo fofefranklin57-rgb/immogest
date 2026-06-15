@@ -145,10 +145,11 @@ window.IG.auth = (function() {
 
 })();
 
-// Alias globaux v1
-var SESSION = null;
-Object.defineProperty(window, 'SESSION', {
-  get: function() { return window.IG.auth.getSession(); },
-  set: function(v) { /* ignoré, géré par auth */ },
-  configurable: true
-});
+// Alias globaux v1 (guard contre redéfinition au rechargement)
+if (!Object.getOwnPropertyDescriptor(window, 'SESSION') || !Object.getOwnPropertyDescriptor(window, 'SESSION').get) {
+  Object.defineProperty(window, 'SESSION', {
+    get: function() { return window.IG.auth.getSession(); },
+    set: function(v) { /* ignoré, géré par auth */ },
+    configurable: true
+  });
+}
