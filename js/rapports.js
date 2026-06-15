@@ -171,52 +171,159 @@ window.IG.rapports = (function() {
     }
   }
 
-  // ── Rapport annuel ───────────────────────────────────────────
-  function afficherRapportAnnuel() {
+  // ── Rapport annuel (pleine page) ────────────────────────────
+  function afficherRapportAnnuel(anneeParam) {
+    var content = document.getElementById('page-content');
+    if (!content) return;
+
     var now = new Date();
-    var annee = now.getFullYear();
+    var annee = anneeParam || now.getFullYear();
     var imm = window.IG.immeubles ? window.IG.immeubles.getCache() : [];
     var loc = window.IG.locataires ? window.IG.locataires.getCache() : [];
     var pay = window.IG.paiements ? window.IG.paiements.getCache() : [];
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
 
-    var MOIS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+    var MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    var MOIS_COURT = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
     var totalAnnuel = 0;
     var rows = '';
     var actifs = loc.filter(function(l) { return l.statut !== 'libre'; });
     var loyerMensuel = actifs.reduce(function(s, l) { return s + (parseFloat(l.loyer) || 0); }, 0);
+    var recettesParMois = {};
 
     for (var m = 1; m <= 12; m++) {
       var recette = pay.filter(function(p) { return parseInt(p.mois) === m && parseInt(p.annee) === annee; })
         .reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
+      recettesParMois[m] = recette;
       totalAnnuel += recette;
       var taux = loyerMensuel > 0 ? Math.round(recette / loyerMensuel * 100) : 0;
-      var color = taux >= 80 ? 'var(--green)' : taux >= 40 ? 'var(--yellow)' : 'var(--red)';
+      var color = taux >= 80 ? 'var(--green)' : taux >= 40 ? '#E0A040' : (recette > 0 ? 'var(--red)' : 'var(--text3)');
+      var bar = taux > 0 ? '<div style="display:inline-block;width:' + Math.min(taux, 100) + 'px;height:6px;background:' + color + ';border-radius:3px;vertical-align:middle;margin-right:6px"></div>' : '';
       rows += '<tr style="border-bottom:1px solid var(--border2)">' +
-        '<td style="padding:8px 12px;font-weight:600">' + MOIS[m-1] + ' ' + annee + '</td>' +
-        '<td style="padding:8px 12px;text-align:right">' + fmt(loyerMensuel) + '</td>' +
-        '<td style="padding:8px 12px;text-align:right;font-weight:700;color:' + color + '">' + fmt(recette) + '</td>' +
-        '<td style="padding:8px 12px;text-align:center"><span style="color:' + color + ';font-weight:700">' + taux + '%</span></td>' +
+        '<td style="padding:9px 14px;font-weight:600;color:var(--text)">' + MOIS[m-1] + '</td>' +
+        '<td style="padding:9px 14px;text-align:right;color:var(--text3);font-size:12px">' + fmt(loyerMensuel) + '</td>' +
+        '<td style="padding:9px 14px;text-align:right;font-weight:700;color:' + color + '">' + fmt(recette) + '</td>' +
+        '<td style="padding:9px 14px"><div style="display:flex;align-items:center">' + bar + '<span style="color:' + color + ';font-weight:700;font-size:12px">' + taux + '%</span></div></td>' +
         '</tr>';
     }
 
-    var html = '<h3 style="font-size:16px;margin-bottom:16px">📆 Rapport annuel ' + annee + '</h3>' +
-      '<div class="metrics-grid" style="margin-bottom:16px">' +
-      '<div class="metric-card"><div class="metric-label">💰 Total encaissé</div><div class="metric-value" style="color:var(--green)">' + fmt(totalAnnuel) + '</div></div>' +
-      '<div class="metric-card"><div class="metric-label">🏢 Potentiel annuel</div><div class="metric-value">' + fmt(loyerMensuel * 12) + '</div></div>' +
-      '<div class="metric-card"><div class="metric-label">📈 Taux annuel</div><div class="metric-value">' + (loyerMensuel * 12 > 0 ? Math.round(totalAnnuel / (loyerMensuel * 12) * 100) : 0) + '%</div></div>' +
+    var txAnnuel = loyerMensuel * 12 > 0 ? Math.round(totalAnnuel / (loyerMensuel * 12) * 100) : 0;
+    var graphe = window.IG.dashboard ? window.IG.dashboard.renderGrapheMensuel(recettesParMois, loyerMensuel) : '';
+
+    // Sélecteur d'année (5 ans)
+    var anneeSel = '<select id="ra-annee" onchange="window.IG.rapports.afficherRapportAnnuel(parseInt(this.value))" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">';
+    for (var y = now.getFullYear() - 2; y <= now.getFullYear() + 1; y++) {
+      anneeSel += '<option value="' + y + '"' + (y === annee ? ' selected' : '') + '>' + y + '</option>';
+    }
+    anneeSel += '</select>';
+
+    var html = '<div class="content" id="rapport-annuel-page">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">' +
+      '<h2 style="font-size:17px;font-weight:700">📆 Rapport annuel ' + annee + '</h2>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+      anneeSel +
+      '<button onclick="window.IG.rapports.exporterRapportAnnuelDocx(' + annee + ')" style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">📥 DOCX</button>' +
+      '<button onclick="window.print()" style="padding:7px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">🖨️ Imprimer</button>' +
+      '</div></div>' +
+
+      // En-tête cabinet
+      '<div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;padding:18px 20px">' +
+      '<div style="font-size:14px;font-weight:700;margin-bottom:2px">' + esc(session.nomCabinet || session.nom || 'ImmoGest') + '</div>' +
+      '<div style="font-size:12px;opacity:.8">Rapport de gestion locative — Exercice ' + annee + '</div>' +
       '</div>' +
+
+      // KPIs
+      '<div class="metrics-grid" style="margin-bottom:20px">' +
+      '<div class="metric-card"><div class="metric-label">💰 Total encaissé</div><div class="metric-value green" style="font-size:18px">' + fmt(totalAnnuel) + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">🏢 Potentiel annuel</div><div class="metric-value" style="font-size:16px">' + fmt(loyerMensuel * 12) + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">📈 Taux recouvrement</div><div class="metric-value" style="color:' + (txAnnuel >= 80 ? 'var(--green)' : 'var(--red)') + '">' + txAnnuel + '%</div></div>' +
+      '<div class="metric-card"><div class="metric-label">👥 Locataires actifs</div><div class="metric-value">' + actifs.length + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">🏠 Immeubles</div><div class="metric-value">' + imm.length + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">📉 Non encaissé</div><div class="metric-value red" style="font-size:16px">' + fmt(loyerMensuel * 12 - totalAnnuel) + '</div></div>' +
+      '</div>' +
+
+      // Graphe
+      '<div class="card" style="margin-bottom:20px"><div class="card-header"><div class="card-title">📊 Recettes mensuelles ' + annee + '</div></div>' +
+      '<div style="padding-top:8px">' + graphe + '</div></div>' +
+
+      // Tableau mensuel
+      '<div class="card"><div class="card-header"><div class="card-title">📋 Détail mensuel</div></div>' +
       '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
       '<thead><tr style="background:var(--bg3);font-size:11px;text-transform:uppercase;color:var(--text3)">' +
-      '<th style="padding:8px 12px;text-align:left">Mois</th>' +
-      '<th style="padding:8px 12px;text-align:right">Loyer théorique</th>' +
-      '<th style="padding:8px 12px;text-align:right">Encaissé</th>' +
-      '<th style="padding:8px 12px;text-align:center">Taux</th>' +
-      '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
-      '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">' +
-      '<button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Fermer</button>' +
+      '<th style="padding:9px 14px;text-align:left">Mois</th>' +
+      '<th style="padding:9px 14px;text-align:right">Loyer théorique</th>' +
+      '<th style="padding:9px 14px;text-align:right">Encaissé</th>' +
+      '<th style="padding:9px 14px;text-align:left;min-width:140px">Taux</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody>' +
+      '<tfoot><tr style="background:var(--bg3);font-weight:700">' +
+      '<td style="padding:9px 14px">TOTAL ' + annee + '</td>' +
+      '<td style="padding:9px 14px;text-align:right">' + fmt(loyerMensuel * 12) + '</td>' +
+      '<td style="padding:9px 14px;text-align:right;color:var(--green)">' + fmt(totalAnnuel) + '</td>' +
+      '<td style="padding:9px 14px">' + txAnnuel + '%</td>' +
+      '</tr></tfoot>' +
+      '</table></div></div>' +
       '</div>';
 
-    window.IG.utils.showModal(html, { width: '640px' });
+    content.innerHTML = html;
+  }
+
+  // ── Export DOCX rapport annuel ────────────────────────────────
+  function exporterRapportAnnuelDocx(annee) {
+    try {
+      if (typeof docx === 'undefined') { window.IG.utils.showToast('Bibliothèque DOCX non chargée', 'red'); return; }
+      var now = new Date();
+      var loc = window.IG.locataires ? window.IG.locataires.getCache() : [];
+      var pay = window.IG.paiements ? window.IG.paiements.getCache() : [];
+      var session = window.IG.auth ? window.IG.auth.getSession() : {};
+      var MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+      var actifs = loc.filter(function(l) { return l.statut !== 'libre'; });
+      var loyerMensuel = actifs.reduce(function(s, l) { return s + (parseFloat(l.loyer) || 0); }, 0);
+      var totalAnnuel = 0;
+
+      var rows = [];
+      for (var m = 1; m <= 12; m++) {
+        var recette = pay.filter(function(p) { return parseInt(p.mois) === m && parseInt(p.annee) === annee; })
+          .reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
+        totalAnnuel += recette;
+        var taux = loyerMensuel > 0 ? Math.round(recette / loyerMensuel * 100) : 0;
+        rows.push(new docx.TableRow({ children: [
+          new docx.TableCell({ children: [new docx.Paragraph({ text: MOIS[m-1] + ' ' + annee })] }),
+          new docx.TableCell({ children: [new docx.Paragraph({ text: fmt(loyerMensuel), alignment: docx.AlignmentType.RIGHT })] }),
+          new docx.TableCell({ children: [new docx.Paragraph({ text: fmt(recette), alignment: docx.AlignmentType.RIGHT })] }),
+          new docx.TableCell({ children: [new docx.Paragraph({ text: taux + '%', alignment: docx.AlignmentType.CENTER })] }),
+        ]}));
+      }
+
+      var doc2 = new docx.Document({ sections: [{ children: [
+        new docx.Paragraph({ text: (session.nomCabinet || 'ImmoGest') + ' — Rapport annuel ' + annee, heading: docx.HeadingLevel.HEADING_1 }),
+        new docx.Paragraph({ text: 'Généré le ' + now.toLocaleDateString('fr-FR') }),
+        new docx.Paragraph({ text: '' }),
+        new docx.Paragraph({ text: 'Synthèse', heading: docx.HeadingLevel.HEADING_2 }),
+        new docx.Paragraph({ text: 'Locataires actifs : ' + actifs.length }),
+        new docx.Paragraph({ text: 'Loyer mensuel théorique : ' + fmt(loyerMensuel) }),
+        new docx.Paragraph({ text: 'Total encaissé ' + annee + ' : ' + fmt(totalAnnuel) }),
+        new docx.Paragraph({ text: 'Potentiel annuel : ' + fmt(loyerMensuel * 12) }),
+        new docx.Paragraph({ text: 'Taux de recouvrement : ' + (loyerMensuel * 12 > 0 ? Math.round(totalAnnuel / (loyerMensuel * 12) * 100) : 0) + '%' }),
+        new docx.Paragraph({ text: '' }),
+        new docx.Paragraph({ text: 'Détail mensuel', heading: docx.HeadingLevel.HEADING_2 }),
+        new docx.Table({ rows: [
+          new docx.TableRow({ children: [
+            new docx.TableCell({ children: [new docx.Paragraph({ text: 'Mois', bold: true })] }),
+            new docx.TableCell({ children: [new docx.Paragraph({ text: 'Loyer théorique', bold: true })] }),
+            new docx.TableCell({ children: [new docx.Paragraph({ text: 'Encaissé', bold: true })] }),
+            new docx.TableCell({ children: [new docx.Paragraph({ text: 'Taux', bold: true })] }),
+          ], tableHeader: true })
+        ].concat(rows) })
+      ]}] });
+
+      docx.Packer.toBlob(doc2).then(function(blob) {
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'rapport-annuel-' + annee + '.docx';
+        link.click();
+        window.IG.utils.showToast('Rapport DOCX téléchargé ✓', 'green');
+      });
+    } catch(e) { window.IG.utils.showToast('Erreur DOCX: ' + e.message, 'red'); }
   }
 
   // ── Rapport relances ─────────────────────────────────────────
@@ -336,7 +443,8 @@ window.IG.rapports = (function() {
 
   return {
     genererRapportMensuelHTML, afficherRapportMensuel, exporterDocx,
-    afficherRapportAnnuel, afficherRapportRelances, afficherEtatLieux, _exportRelancesDocx
+    afficherRapportAnnuel, exporterRapportAnnuelDocx,
+    afficherRapportRelances, afficherEtatLieux, _exportRelancesDocx
   };
 
 })();
