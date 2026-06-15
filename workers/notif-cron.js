@@ -318,15 +318,48 @@ export default {
         if (ownerToken !== OWNER_TOKEN) return json({ error: 'Accès refusé' }, 403);
 
         if (action === 'stats') {
-          const [tRes, uRes] = await Promise.all([
-            sbFetch('tenants', '?select=id,nom,nom_cabinet,created_at,mode'),
+          const [tRes, uRes, logRes] = await Promise.all([
+            sbFetch('tenants', '?select=id,nom,nom_cabinet,telephone,created_at,mode,plan,plan_expire'),
             sbFetch('users_app', '?select=id,tenant_id,role,actif&limit=500'),
+            sbFetch('owner_logs', '?select=*&order=created_at.desc&limit=20'),
           ]);
+          const tenants = tRes.ok ? await tRes.json() : [];
+          // Comptage par plan
+          const plans = { gratuit: 0, starter: 0, pro: 0, cabinet: 0 };
+          tenants.forEach(t => { const p = t.plan || 'gratuit'; if (plans[p] !== undefined) plans[p]++; });
           return json({
-            tenants: tRes.ok ? await tRes.json() : [],
+            tenants,
             users: uRes.ok ? await uRes.json() : [],
+            logs: logRes.ok ? await logRes.json() : [],
+            plans,
           });
         }
+
+        if (action === 'upgrade_plan') {
+          const { tenantId: targetTenantId, plan, plan_expire } = body;
+          if (!targetTenantId || !plan) return json({ error: 'tenantId + plan requis' }, 400);
+          const r = await fetch(sbBase + '/rest/v1/tenants?id=eq.' + targetTenantId, {
+            method: 'PATCH',
+            headers: { ...sbHdrs(), 'Prefer': 'return=representation' },
+            body: JSON.stringify({ plan, plan_expire: plan_expire || null })
+          });
+          if (!r.ok) return json({ error: 'Mise à jour plan échouée' }, 500);
+          await logEvent(targetTenantId, 'info', 'plan.upgrade', 'Plan changé: ' + plan, { plan });
+          return json({ success: true, plan });
+        }
+
+        if (action === 'disable_tenant') {
+          const targetId = body.tenantId;
+          if (!targetId) return json({ error: 'tenantId requis' }, 400);
+          await fetch(sbBase + '/rest/v1/users_app?tenant_id=eq.' + targetId, {
+            method: 'PATCH',
+            headers: { ...sbHdrs(), 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ actif: false })
+          });
+          await logEvent(targetId, 'warn', 'tenant.disabled', 'Tenant désactivé', {});
+          return json({ success: true });
+        }
+
         return json({ error: 'Action inconnue' }, 400);
       }
 

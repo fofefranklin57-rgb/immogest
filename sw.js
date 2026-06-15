@@ -4,7 +4,7 @@
 //  Stratégie : Cache-first pour assets, Network-first pour API
 // ════════════════════════════════════════════════════════════════
 
-var CACHE_NAME = 'immogest-v2-cache-v1';
+var CACHE_NAME = 'immogest-v2-cache-v2';
 var SYNC_TAG   = 'immogest-sync';
 
 var ASSETS_CACHE = [
@@ -30,6 +30,9 @@ var ASSETS_CACHE = [
   '/js/juridique.js',
   '/js/marketplace.js',
   '/js/portail.js',
+  '/js/plans.js',
+  '/js/ads.js',
+  '/js/owner.js',
   '/js/app.js'
 ];
 

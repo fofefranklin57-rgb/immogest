@@ -15,6 +15,9 @@ window.IG.app = (function() {
 
   // ── Init ──────────────────────────────────────────────────────
   async function init() {
+    // Panneau owner si URL ?owner=1
+    if (window.IG.owner && window.IG.owner.checkAutoOpen()) return;
+
     var session = window.IG.auth.init();
     if (!session) {
       _renderLogin();
@@ -23,6 +26,9 @@ window.IG.app = (function() {
     _showAppShell();
     await _loadData();
     showPage('dashboard');
+
+    // Publicités plan gratuit
+    if (window.IG.ads) window.IG.ads.init();
   }
 
   function _showAppShell() {
@@ -402,6 +408,7 @@ window.IG.app = (function() {
     var session = window.IG.auth.getSession();
     content.innerHTML = '<div class="content">' +
       '<h2 style="font-size:17px;font-weight:700;margin-bottom:20px">⚙️ ' + t('Paramètres') + '</h2>' +
+      '<div id="plans-bloc"></div>' +
       '<div class="card" style="margin-bottom:14px">' +
       '<div class="card-title" style="margin-bottom:14px">👤 ' + t('Mon compte') + '</div>' +
       '<div style="font-size:13px;display:flex;flex-direction:column;gap:10px">' +
@@ -418,6 +425,7 @@ window.IG.app = (function() {
       }).join('') + '</select></div>' +
       '<button onclick="window.IG.auth.logout()" style="padding:10px 20px;border-radius:10px;border:1px solid var(--red);color:var(--red);background:transparent;cursor:pointer;font-weight:600;font-size:13px">🚪 ' + t('Se déconnecter') + '</button>' +
       '</div>';
+    if (window.IG.plans) window.IG.plans.renderBlocPlan('plans-bloc');
   }
 
   // ── Login ─────────────────────────────────────────────────────
