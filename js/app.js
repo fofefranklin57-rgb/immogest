@@ -674,7 +674,7 @@ window.IG.app = (function() {
 
   async function _toggleUser(userId, currentlyActive) {
     try {
-      await window.IG.db.update('users_app', { actif: !currentlyActive }, { id: userId });
+      await window.IG.db.update('users_app', userId, { actif: !currentlyActive });
       window.IG.utils.showToast('Utilisateur ' + (currentlyActive ? 'désactivé' : 'réactivé') + ' ✓', 'green');
       _chargerEquipe();
     } catch(e) { window.IG.utils.showToast('Erreur: ' + e.message, 'red'); }
@@ -857,7 +857,7 @@ window.IG.app = (function() {
   async function _validerDeclaration(id, statut) {
     try {
       // Mettre à jour le statut de la déclaration
-      await window.IG.db.update('declarations', { statut: statut }, { id: id });
+      await window.IG.db.update('declarations', id, { statut: statut });
 
       if (statut === 'validated') {
         // Récupérer la déclaration pour créer le paiement
