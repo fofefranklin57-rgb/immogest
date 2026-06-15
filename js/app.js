@@ -541,26 +541,153 @@ window.IG.app = (function() {
     var content = document.getElementById('page-content');
     if (!content) return;
     var session = window.IG.auth.getSession();
-    content.innerHTML = '<div class="content">' +
+    var planColor = { gratuit: '#888', starter: '#0E6AAF', pro: '#0E7A45', cabinet: '#7B2FBE' }[session.plan || 'gratuit'] || '#888';
+
+    var html = '<div class="content">' +
       '<h2 style="font-size:17px;font-weight:700;margin-bottom:20px">⚙️ ' + t('Paramètres') + '</h2>' +
-      '<div id="plans-bloc"></div>' +
+
+      // Bloc plan
+      '<div id="plans-bloc" style="margin-bottom:14px"></div>' +
+
+      // Mon compte
       '<div class="card" style="margin-bottom:14px">' +
-      '<div class="card-title" style="margin-bottom:14px">👤 ' + t('Mon compte') + '</div>' +
-      '<div style="font-size:13px;display:flex;flex-direction:column;gap:10px">' +
-      '<div><span style="color:var(--text3)">' + t('Nom') + ' :</span> <strong>' + esc(session.nom) + '</strong></div>' +
-      '<div><span style="color:var(--text3)">' + t('Téléphone') + ' :</span> <strong>' + esc(session.telephone || '') + '</strong></div>' +
-      '<div><span style="color:var(--text3)">' + t('Cabinet') + ' :</span> <strong>' + esc(session.nomCabinet || '—') + '</strong></div>' +
-      '<div><span style="color:var(--text3)">' + t('Plan') + ' :</span> <span style="background:var(--accent);color:#fff;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">' + (session.plan || 'gratuit').toUpperCase() + '</span></div>' +
+      '<div class="card-header"><div class="card-title">👤 Mon compte</div></div>' +
+      '<div style="font-size:13px;display:flex;flex-direction:column;gap:12px;padding-top:4px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+      '<span style="color:var(--text3)">Nom</span><strong>' + esc(session.nom) + '</strong></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+      '<span style="color:var(--text3)">Téléphone</span><strong>' + esc(session.telephone || '—') + '</strong></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+      '<span style="color:var(--text3)">Cabinet</span><strong>' + esc(session.nomCabinet || '—') + '</strong></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+      '<span style="color:var(--text3)">Plan</span>' +
+      '<span style="background:' + planColor + ';color:#fff;padding:3px 12px;border-radius:99px;font-size:11px;font-weight:700">' + (session.plan || 'GRATUIT').toUpperCase() + '</span></div>' +
+      (session.planExpire ? '<div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">Expire</span><span>' + new Date(session.planExpire).toLocaleDateString('fr-FR') + '</span></div>' : '') +
       '</div></div>' +
+
+      // Équipe / Invitations
+      (session.role === 'admin' ? (
+        '<div class="card" style="margin-bottom:14px">' +
+        '<div class="card-header"><div class="card-title">👥 Équipe & Invitations</div>' +
+        '<button onclick="window.IG.app._genererInvitation()" style="padding:6px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:12px;font-weight:600">＋ Inviter</button>' +
+        '</div>' +
+        '<div id="equipe-body"><div style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto"></div></div></div>' +
+        '</div>'
+      ) : '') +
+
+      // Code promo
       '<div class="card" style="margin-bottom:14px">' +
-      '<div class="card-title" style="margin-bottom:10px">🌐 ' + t('Langue') + '</div>' +
+      '<div class="card-header"><div class="card-title">🎟️ Code promotionnel</div></div>' +
+      '<div style="display:flex;gap:8px;margin-top:4px">' +
+      '<input id="promo-input" type="text" placeholder="Entrer votre code promo" style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px">' +
+      '<button onclick="window.IG.app._appliquerPromo()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Appliquer</button>' +
+      '</div><div id="promo-msg" style="margin-top:8px;font-size:12px"></div></div>' +
+
+      // Langue
+      '<div class="card" style="margin-bottom:14px">' +
+      '<div class="card-header"><div class="card-title">🌐 Langue</div></div>' +
       '<select onchange="window.IG.i18n.setLang(this.value);location.reload()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
       [['fr','Français'],['en','English'],['pt','Português'],['es','Español'],['ha','Hausa'],['ar','العربية']].map(function(l) {
-        return '<option value="' + l[0] + '"' + (window.IG.i18n.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>';
+        return '<option value="' + l[0] + '"' + (window.IG.i18n && window.IG.i18n.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>';
       }).join('') + '</select></div>' +
-      '<button onclick="window.IG.auth.logout()" style="padding:10px 20px;border-radius:10px;border:1px solid var(--red);color:var(--red);background:transparent;cursor:pointer;font-weight:600;font-size:13px">🚪 ' + t('Se déconnecter') + '</button>' +
+
+      // Déconnexion
+      '<button onclick="window.IG.auth.logout()" style="padding:10px 20px;border-radius:10px;border:1px solid var(--red);color:var(--red);background:transparent;cursor:pointer;font-weight:600;font-size:13px;display:block;margin-bottom:30px">🚪 Se déconnecter</button>' +
       '</div>';
+
+    content.innerHTML = html;
     if (window.IG.plans) window.IG.plans.renderBlocPlan('plans-bloc');
+    if (session.role === 'admin') _chargerEquipe();
+  }
+
+  async function _chargerEquipe() {
+    var el = document.getElementById('equipe-body');
+    if (!el) return;
+    try {
+      var users = await window.IG.db.select('users_app');
+      if (!users || !users.length) { el.innerHTML = '<p style="color:var(--text3);font-size:13px;text-align:center;padding:16px">Aucun collaborateur</p>'; return; }
+      var ROLE_ICONS = { admin:'👑', gestionnaire:'🏘️', comptable:'📊', agent:'🤝', locataire:'🔑' };
+      var rows = users.map(function(u) {
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border2)">' +
+          '<div><div style="font-weight:600;font-size:13px">' + (ROLE_ICONS[u.role] || '👤') + ' ' + esc(u.nom || u.id) + '</div>' +
+          '<div style="font-size:11px;color:var(--text3)">' + esc(u.role || '') + (u.actif === false ? ' · <span style="color:var(--red)">Désactivé</span>' : '') + '</div></div>' +
+          (u.role !== 'admin' ? '<button onclick="window.IG.app._toggleUser(\'' + u.id + '\',' + (u.actif !== false) + ')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:11px">' + (u.actif !== false ? 'Désactiver' : 'Réactiver') + '</button>' : '') +
+          '</div>';
+      }).join('');
+      el.innerHTML = '<div style="padding:4px 0">' + rows + '</div>';
+    } catch(e) {
+      el.innerHTML = '<p style="color:var(--text3);font-size:13px;padding:16px">' + e.message + '</p>';
+    }
+  }
+
+  async function _genererInvitation() {
+    var session = window.IG.auth.getSession();
+    var ROLES = ['gestionnaire','comptable','agent','locataire'];
+    var html = '<h3 style="font-size:16px;margin-bottom:16px">👥 Inviter un collaborateur</h3>' +
+      '<label style="font-size:12px;color:var(--text3);display:block;margin-bottom:6px">RÔLE</label>' +
+      '<select id="inv-role" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);margin-bottom:16px">' +
+      ROLES.map(function(r) { return '<option value="' + r + '">' + r.charAt(0).toUpperCase() + r.slice(1) + '</option>'; }).join('') + '</select>' +
+      '<button id="btn-gen-inv" style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Générer le code</button>' +
+      '<div id="inv-result" style="margin-top:16px"></div>' +
+      '<div style="text-align:right;margin-top:16px"><button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Fermer</button></div>';
+
+    var modal = window.IG.utils.showModal(html, { width: '400px' });
+    modal.box.querySelector('#btn-gen-inv').addEventListener('click', async function() {
+      var btn = this;
+      var role = modal.box.querySelector('#inv-role').value;
+      btn.textContent = '⏳...'; btn.disabled = true;
+      try {
+        var workerUrl = (window.IG.config && window.IG.config.workerUrl) || 'https://immogest1.fofefranklin57.workers.dev';
+        var res = await fetch(workerUrl + '/generate-invite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tenantId: session.tenantId, role: role })
+        });
+        var data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Erreur');
+        modal.box.querySelector('#inv-result').innerHTML =
+          '<div style="background:var(--bg3);border-radius:10px;padding:16px;text-align:center">' +
+          '<div style="font-size:11px;color:var(--text3);margin-bottom:8px">CODE D\'INVITATION</div>' +
+          '<div style="font-size:28px;font-weight:900;letter-spacing:4px;color:var(--accent)">' + esc(data.code) + '</div>' +
+          '<div style="font-size:11px;color:var(--text3);margin-top:8px">Rôle : ' + role + ' · Valable 48h</div>' +
+          '<button onclick="navigator.clipboard.writeText(\'' + esc(data.code) + '\');window.IG.utils.showToast(\'Code copié ✓\',\'green\')" style="margin-top:10px;padding:6px 16px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:12px">📋 Copier</button>' +
+          '</div>';
+        btn.textContent = '✓ Généré'; btn.disabled = false;
+      } catch(ex) {
+        modal.box.querySelector('#inv-result').innerHTML = '<div style="color:var(--red);font-size:13px">' + ex.message + '</div>';
+        btn.textContent = 'Générer le code'; btn.disabled = false;
+      }
+    });
+  }
+
+  async function _toggleUser(userId, currentlyActive) {
+    try {
+      await window.IG.db.update('users_app', { actif: !currentlyActive }, { id: userId });
+      window.IG.utils.showToast('Utilisateur ' + (currentlyActive ? 'désactivé' : 'réactivé') + ' ✓', 'green');
+      _chargerEquipe();
+    } catch(e) { window.IG.utils.showToast('Erreur: ' + e.message, 'red'); }
+  }
+
+  async function _appliquerPromo() {
+    var input = document.getElementById('promo-input');
+    var msg = document.getElementById('promo-msg');
+    if (!input || !input.value.trim()) { if (msg) msg.textContent = 'Entrez un code'; return; }
+    var session = window.IG.auth.getSession();
+    try {
+      var workerUrl = (window.IG.config && window.IG.config.workerUrl) || 'https://immogest1.fofefranklin57.workers.dev';
+      var res = await fetch(workerUrl + '/apply-promo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: input.value.trim(), tenantId: session.tenantId })
+      });
+      var data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Code invalide');
+      if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '✓ Plan ' + data.plan + ' activé pour ' + data.duree_jours + ' jours !'; }
+      window.IG.utils.showToast('Code promo appliqué ✓', 'green');
+      if (input) input.value = '';
+    } catch(e) {
+      if (msg) { msg.style.color = 'var(--red)'; msg.textContent = e.message; }
+    }
   }
 
   // ── Statistiques ─────────────────────────────────────────────
@@ -1070,6 +1197,7 @@ window.IG.app = (function() {
     _onRoleChange,
     toggleSidebar, closeSidebar,
     _refreshPaiements, _restaurer,
+    _genererInvitation, _toggleUser, _appliquerPromo,
     getData: function() { return _data; },
     topbarAction, _showMobileNav
   };
