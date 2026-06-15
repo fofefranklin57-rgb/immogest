@@ -3,7 +3,7 @@
 // Routes : /health /register /login-tenant /login-user
 //          /generate-invite /join /db /ai /translate
 //          /payment-init /payment-check /wa-impayes /owner
-// Secrets : SUPABASE_SERVICE_KEY, SUPABASE_URL,
+// Secrets : SUPABASE_SERVICE_KEY, SUPABASE_URL, SUPABASE_PAT,
 //            NOTCHPAY_PK, ONESIGNAL_APP_ID, ONESIGNAL_REST_KEY,
 //            ANTHROPIC_API_KEY, MANAGER_WHATSAPP, OWNER_TOKEN
 // ═══════════════════════════════════════════════════════════════
@@ -13,9 +13,10 @@ const SUPABASE_URL_DEFAULT = 'https://uggxfmwpttfsfcirmeqx.supabase.co';
 const ALLOWED_TABLES = [
   'immeubles','locataires','paiements','users_app','parametres',
   'locale_profiles','archives','corbeille','declarations','abonnements',
-  'charges','messages','messages_internes','marketplace_annonces','annonces',
-  'invite_codes','signatures','contrats','etats_lieux','maintenances',
-  'subscriptions','utilisateurs','agents','contact_messages'
+  'messages_internes','marketplace_annonces','invite_codes',
+  'dossiers_juridiques','timeline_juridique','templates_docs',
+  'workflow_recouvrement','feature_flags','events_log','scores_locataires',
+  'user_organisations','promo_codes','owner_logs','prestataires'
 ];
 
 export default {
@@ -309,6 +310,25 @@ export default {
           '<h1>ImmoGest — Relances impayés</h1>' +
           '<p>Ouvrez ImmoGest pour générer les liens WhatsApp de relance.</p></body></html>';
         return new Response(html, { headers: { ...cors, 'Content-Type': 'text/html' } });
+      }
+
+      // ── /migrate — DDL via Supabase Management API ────────────
+      if (path === '/migrate' && request.method === 'POST') {
+        const { ownerToken, sql } = await request.json();
+        const OWNER_TOKEN = env.OWNER_TOKEN || '8237a8d86b7038877840cd600b135f4edc8966be05cf3ba12727535f2670c058';
+        if (ownerToken !== OWNER_TOKEN) return json({ error: 'Accès refusé' }, 403);
+        const pat = env.SUPABASE_PAT;
+        if (!pat) return json({ error: 'SUPABASE_PAT non configuré' }, 500);
+        const sbRef = (env.SUPABASE_URL || SUPABASE_URL_DEFAULT).match(/\/\/([^.]+)/)?.[1];
+        const res = await fetch('https://api.supabase.com/v1/projects/' + sbRef + '/database/query', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + pat, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: sql })
+        });
+        const d = await res.json();
+        if (!res.ok || d.message) return json({ error: d.message || 'Erreur migration' }, 500);
+        await logEvent(null, 'info', 'migrate.run', 'Migration DDL exécutée', { sql: sql.substring(0, 100) });
+        return json({ success: true, result: d });
       }
 
       // ── /apply-promo ──────────────────────────────────────────
