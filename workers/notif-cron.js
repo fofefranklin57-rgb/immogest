@@ -438,6 +438,67 @@ export default {
         return json({ error: 'Action inconnue' }, 400);
       }
 
+      // ── /push-subscribe ───────────────────────────────────────
+      if (path === '/push-subscribe' && request.method === 'POST') {
+        const { subscription, tenantId, userId } = await request.json();
+        if (!subscription || !tenantId) return json({ error: 'subscription + tenantId requis' }, 400);
+        // Stocker la subscription dans events_log pour usage par le cron
+        await sbFetch('events_log', '', 'POST', {
+          tenant_id: tenantId,
+          event: 'push.subscribe',
+          level: 'info',
+          message: 'Push subscription enregistrée',
+          payload: { subscription, userId: userId || null }
+        });
+        return json({ success: true });
+      }
+
+      // ── /push-notify ──────────────────────────────────────────
+      if (path === '/push-notify' && request.method === 'POST') {
+        const { tenantId, title, body: notifBody, url: notifUrl, ownerToken } = await request.json();
+        const OWNER_TOKEN = env.OWNER_TOKEN || '8237a8d86b7038877840cd600b135f4edc8966be05cf3ba12727535f2670c058';
+        // Peut être appelé par l'owner ou par un tenant authentifié
+        if (ownerToken && ownerToken !== OWNER_TOKEN) return json({ error: 'Accès refusé' }, 403);
+
+        const appId = env.ONESIGNAL_APP_ID;
+        const restKey = env.ONESIGNAL_REST_KEY;
+        if (!appId || !restKey) return json({ error: 'OneSignal non configuré' }, 500);
+
+        const payload = {
+          app_id: appId,
+          headings: { fr: title || 'ImmoGest', en: title || 'ImmoGest' },
+          contents: { fr: notifBody || 'Nouvelle notification', en: notifBody || 'New notification' },
+          url: notifUrl || 'https://immogest-34w.pages.dev/',
+          filters: tenantId ? [{ field: 'tag', key: 'tenant_id', relation: '=', value: tenantId }] : undefined,
+          included_segments: tenantId ? undefined : ['All']
+        };
+
+        const osRes = await fetch('https://onesignal.com/api/v1/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + restKey },
+          body: JSON.stringify(payload)
+        });
+        const osData = await osRes.json();
+        if (osData.errors && osData.errors.length) return json({ error: osData.errors[0] }, 500);
+        await logEvent(tenantId || 'owner', 'info', 'push.sent', title || 'Notification', { recipients: osData.recipients });
+        return json({ success: true, id: osData.id, recipients: osData.recipients });
+      }
+
+      // ── /invite-info ──────────────────────────────────────────
+      if (path === '/invite-info' && request.method === 'GET') {
+        const code = url.searchParams.get('code');
+        if (!code) return json({ error: 'code requis' }, 400);
+        const res = await sbFetch('invite_codes', '?code=eq.' + code + '&select=*');
+        const codes = res.ok ? await res.json() : [];
+        if (!codes.length) return json({ error: 'Code introuvable' }, 404);
+        const inv = codes[0];
+        // Charger nom du tenant
+        const tRes = await sbFetch('tenants', '?id=eq.' + inv.tenant_id + '&select=nom,nom_cabinet');
+        const tenants = tRes.ok ? await tRes.json() : [];
+        const tenant = tenants[0] || {};
+        return json({ success: true, code: inv, tenantNom: tenant.nom_cabinet || tenant.nom || '' });
+      }
+
       return json({ error: 'Route introuvable' }, 404);
 
     } catch (err) {
@@ -447,7 +508,73 @@ export default {
   },
 
   async scheduled(event, env) {
-    // Phase 3 — crons OneSignal + WhatsApp
     console.log('Cron:', event.cron);
+    const sbBase = env.SUPABASE_URL || SUPABASE_URL_DEFAULT;
+
+    function sbHdrs() {
+      return {
+        'apikey': env.SUPABASE_SERVICE_KEY,
+        'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_KEY,
+        'Content-Type': 'application/json'
+      };
+    }
+
+    const appId = env.ONESIGNAL_APP_ID;
+    const restKey = env.ONESIGNAL_REST_KEY;
+
+    // ── Cron quotidien (0 7 * * *) : relances impayés ──────────
+    if (event.cron === '0 7 * * *' && appId && restKey) {
+      // Charger tous les tenants actifs
+      const tRes = await fetch(sbBase + '/rest/v1/tenants?select=id,nom,plan', { headers: sbHdrs() });
+      const tenants = tRes.ok ? await tRes.json() : [];
+
+      for (const tenant of tenants) {
+        // Compter locataires en retard (données via DB)
+        const lRes = await fetch(sbBase + '/rest/v1/locataires?tenant_id=eq.' + tenant.id + '&select=id,nom,statut', { headers: sbHdrs() });
+        const locs = lRes.ok ? await lRes.json() : [];
+        const actifs = locs.filter(l => l.statut !== 'libre');
+
+        if (!actifs.length) continue;
+
+        const now = new Date();
+        const moisCourant = now.getMonth() + 1;
+        const anneeCourante = now.getFullYear();
+
+        // Compter paiements manquants ce mois
+        const pRes = await fetch(sbBase + '/rest/v1/paiements?tenant_id=eq.' + tenant.id + '&mois=eq.' + moisCourant + '&annee=eq.' + anneeCourante + '&select=locataire_id', { headers: sbHdrs() });
+        const payes = pRes.ok ? await pRes.json() : [];
+        const payesIds = new Set(payes.map(p => p.locataire_id));
+        const nbImpayes = actifs.filter(l => !payesIds.has(l.id)).length;
+
+        if (nbImpayes > 0) {
+          await fetch('https://onesignal.com/api/v1/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + restKey },
+            body: JSON.stringify({
+              app_id: appId,
+              headings: { fr: '⚠️ Relances impayés' },
+              contents: { fr: nbImpayes + ' locataire(s) n\'ont pas encore payé ce mois-ci.' },
+              url: 'https://immogest-34w.pages.dev/',
+              filters: [{ field: 'tag', key: 'tenant_id', relation: '=', value: tenant.id }]
+            })
+          }).catch(() => {});
+        }
+      }
+    }
+
+    // ── Cron mensuel (0 7 1 * *) : rappel loyer ────────────────
+    if (event.cron === '0 7 1 * *' && appId && restKey) {
+      await fetch('https://onesignal.com/api/v1/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + restKey },
+        body: JSON.stringify({
+          app_id: appId,
+          headings: { fr: '📅 Rappel loyers' },
+          contents: { fr: 'C\'est le 1er du mois — pensez à encaisser les loyers dans ImmoGest.' },
+          url: 'https://immogest-34w.pages.dev/',
+          included_segments: ['All']
+        })
+      }).catch(() => {});
+    }
   }
 };
