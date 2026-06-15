@@ -16,7 +16,7 @@ const ALLOWED_TABLES = [
   'messages_internes','marketplace_annonces','invite_codes',
   'dossiers_juridiques','timeline_juridique','templates_docs',
   'workflow_recouvrement','feature_flags','events_log','scores_locataires',
-  'user_organisations','promo_codes','owner_logs','prestataires'
+  'user_organisations','promo_codes','owner_logs','prestataires','signatures'
 ];
 
 export default {

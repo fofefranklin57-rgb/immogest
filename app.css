@@ -1206,3 +1206,28 @@ body.dark .ctx-item {
 @media(max-width:480px){
   #ai-chat-panel{width:calc(100vw - 20px);right:10px;bottom:82px;height:70vh;}
 }
+
+/* ── Impression / PDF ─────────────────────────────────────────── */
+@media print {
+  body { background:#fff !important; color:#000 !important; font-family:Arial,sans-serif; }
+  .sidebar, .topbar, .mobile-bottom-nav, #mobile-bottom-nav,
+  .btn, button, [data-modal-close], .action-menu, .fab,
+  #ai-chat-btn, #ai-chat-panel, .sidebar-overlay { display:none !important; }
+  .main { margin:0 !important; padding:0 !important; }
+  .content { padding:0 !important; max-width:100% !important; }
+  .card { border:1px solid #ddd !important; box-shadow:none !important; break-inside:avoid; }
+  .metric-card { border:1px solid #ddd !important; background:#f9f9f9 !important; }
+  .metric-value { color:#000 !important; }
+  .metric-label { color:#555 !important; }
+  table { border-collapse:collapse !important; width:100% !important; }
+  th, td { border:1px solid #ddd !important; padding:6px 10px !important; color:#000 !important; font-size:11px !important; }
+  thead tr { background:#f0f0f0 !important; }
+  tfoot tr { background:#e8e8e8 !important; font-weight:bold; }
+  h2 { font-size:16px !important; color:#000 !important; border-bottom:2px solid #0E6AAF; padding-bottom:6px; margin-bottom:16px; }
+  .green, [style*="--green"] { color:#166534 !important; }
+  .red, [style*="--red"] { color:#991b1b !important; }
+  @page { margin:15mm; size:A4; }
+}
+
+/* ── Signature canvas ─────────────────────────────────────────── */
+#sig-canvas { touch-action:none; user-select:none; }

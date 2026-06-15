@@ -68,6 +68,7 @@ window.IG.app = (function() {
       _navSection(t('Gestion interne')) +
       (session.role === 'admin' || session.role === 'gestionnaire' ? _navItem('declarations', '📨', t('Déclarations')) : '') +
       _navItem('messages', '💬', t('Messages')) +
+      _navItem('signatures', '✍️', t('Signatures')) +
       _navItem('statistiques', '📈', t('Statistiques')) +
       '</div>' +
       '<div class="sidebar-footer">' +
@@ -330,6 +331,11 @@ window.IG.app = (function() {
         if (title) title.textContent = t('Messages internes');
         if (sub) sub.textContent = '';
         _renderMessages(); break;
+      case 'signatures':
+        if (title) title.textContent = t('Vérifier un document');
+        if (sub) sub.textContent = '';
+        if (window.IG.signature) window.IG.signature.renderVerification();
+        break;
     }
     // Mettre à jour bottom nav
     document.querySelectorAll('[id^="mbn-"]').forEach(function(b) {
