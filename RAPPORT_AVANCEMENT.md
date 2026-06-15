@@ -79,27 +79,54 @@ Dans Cloudflare Dashboard → immogest1 → Settings → Variables :
 
 ---
 
-## 🔄 PHASE 2 — VALEUR AJOUTÉE (à venir)
+## ✅ PHASE 2 — VALEUR AJOUTÉE (COMPLÈTE — 15 juin 2026)
 
-- [ ] Dashboard KPIs + graphiques Chart.js
-- [ ] Module relances 3 niveaux (rouge/orange/jaune)
-- [ ] Rapport annuel + rapport périodique DOCX complet
-- [ ] Portail locataire (js/portail.js)
-- [ ] Dashboard bailleur
+### Modules écrits et validés
+
+| Fichier | Statut | Description |
+|---------|--------|-------------|
+| `js/dashboard.js` | ✅ | KPIs financiers, graphe SVG mensuel, alertes impayés |
+| `js/relances.js` | ✅ | Relances 3 niveaux (🟡🟠🔴), messages WhatsApp contextuel |
+| `js/legal.js` | ✅ | LegalOS — dossiers, timeline, templates OHADA, score locataire, IA |
+| `js/juridique.js` | ✅ | Génération MED + commandement payer + plainte depuis templates |
+| `js/marketplace.js` | ✅ | Marketplace multi-pays (8 pays, 8 catégories, annonces premium) |
+| `js/portail.js` | ✅ | Portail locataire — solde, fiche, déclarations paiement |
+| `sw.js` | ✅ | Service Worker offline-first (Cache-First + Network-First + BackgroundSync) |
+| `migrations/V000–V004` | ✅ | Migrations versionnées : CDC base, marketplace, LegalOS, archi future-proof |
+
+### 3 Prompts stratégiques intégrés
+- **Prompt 1** — Vision Mondiale : marketplace multi-pays, publicité native, réseau prestataires (architecture V002)
+- **Prompt 2** — LegalOS : couche juridique indépendante, templates OHADA CM/fr, workflow recouvrement (V003 + js/legal.js + js/juridique.js)
+- **Prompt 3** — Architecture Future-Proof : offline-first, feature_flags par tenant, events_log, multi-organisation (V004 + sw.js)
+
+### Règle DB ajoutée (décision Franklin)
+> **Toutes les modifications de base de données via migrations versionnées** — traçables, réversibles, documentées.  
+> Application : `migrations/` avec table `schema_migrations` (V000).
+
+### Actions manuelles requises — Supabase SQL Editor
+Appliquer dans l'ordre sur https://supabase.com/dashboard/project/uggxfmwpttfsfcirmeqx/sql/new :
+1. `migrations/V000__schema_migrations_tracker.sql`
+2. `migrations/V001__tables_cdc_base.sql`
+3. `migrations/V002__marketplace_multicanal.sql`
+4. `migrations/V003__legalos.sql`
+5. `migrations/V004__architecture_future_proof.sql`
+
+---
 
 ## 🔄 PHASE 3 — MONÉTISATION (à venir)
 
-- [ ] Plans tarifaires + restrictions par plan
-- [ ] NotchPay intégration complète
-- [ ] Module juridique + IA contextuelle
-- [ ] Marketplace annonces
-- [ ] Panneau Owner Franklin (js/owner.js)
+- [ ] Plans tarifaires + restrictions par plan (feature_flags ready)
+- [ ] NotchPay intégration complète (`/payment-init` + `/payment-check` Worker déjà prêts)
+- [ ] Panneau Owner Franklin (`js/owner.js`) + logs admin
 - [ ] Monetag pub plan gratuit
+- [ ] Prestataires réseau (table `prestataires` V002 ready)
+- [ ] Enchères annonces marketplace
 
 ## 🔄 PHASE 4 — MOBILE (à venir)
 
-- [ ] APK Android WebView
-- [ ] i18n Tier 2/3 (langues africaines + IA)
+- [ ] APK Android WebView (Capacitor ou TWA)
+- [ ] i18n Tier 2/3 (langues africaines + IA traduction)
+- [ ] Notifications push OneSignal (Worker `/wa-impayes` ready)
 
 ---
 
