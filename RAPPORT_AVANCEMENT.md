@@ -110,23 +110,50 @@ Appliquer dans l'ordre sur https://supabase.com/dashboard/project/uggxfmwpttfsfc
 3. `migrations/V002__marketplace_multicanal.sql`
 4. `migrations/V003__legalos.sql`
 5. `migrations/V004__architecture_future_proof.sql`
+6. `migrations/V005__promo_codes_declarations.sql`
 
 ---
 
-## 🔄 PHASE 3 — MONÉTISATION (à venir)
+## ✅ PHASE 3 — MONÉTISATION (COMPLÈTE — 15 juin 2026)
 
-- [ ] Plans tarifaires + restrictions par plan (feature_flags ready)
-- [ ] NotchPay intégration complète (`/payment-init` + `/payment-check` Worker déjà prêts)
-- [ ] Panneau Owner Franklin (`js/owner.js`) + logs admin
-- [ ] Monetag pub plan gratuit
-- [ ] Prestataires réseau (table `prestataires` V002 ready)
-- [ ] Enchères annonces marketplace
+| Fichier | Statut | Description |
+|---------|--------|-------------|
+| `js/owner.js` | ✅ | Panneau admin `?owner=1` — stats globales, upgrade plan, codes promo, logs |
+| `js/plans.js` | ✅ | Restrictions par plan, jauges, modal upgrade NotchPay, code promo `/apply-promo` |
+| `js/ads.js` | ✅ | Bandeau Monetag plan gratuit, caché sur plans payants |
+| `js/immeubles.js` | ✅ | Blocage formulaire si limite plan atteinte + redirect upgrade |
+| `js/locataires.js` | ✅ | Blocage formulaire si limite plan atteinte + redirect upgrade |
+| `migrations/V005` | ✅ | Table promo_codes + declarations + colonnes plan sur tenants |
+| `workers/notif-cron.js` | ✅ | `/apply-promo`, `/owner create_promo`, `/owner list_promos`, `/owner disable_tenant` |
 
-## 🔄 PHASE 4 — MOBILE (à venir)
+### Flux complet monétisation
+1. **Plan gratuit** → bandeau bas + limite 2 imm / 20 loc → modal upgrade
+2. **NotchPay** → `/payment-init` → lien paiement → `/payment-check` → plan activé
+3. **Code promo** → `/apply-promo` → plan activé pour X jours
+4. **Owner panel** (`?owner=1`) → créer/lister promos → upgrader plan manuellement
 
-- [ ] APK Android WebView (Capacitor ou TWA)
-- [ ] i18n Tier 2/3 (langues africaines + IA traduction)
-- [ ] Notifications push OneSignal (Worker `/wa-impayes` ready)
+---
+
+## ✅ PHASE 4 — MOBILE (FONDATIONS — 15 juin 2026)
+
+| Fichier | Statut | Description |
+|---------|--------|-------------|
+| `manifest.json` | ✅ | PWA complète — shortcuts, screenshots, TWA package name |
+| `capacitor.config.json` | ✅ | Config Capacitor — `cm.cabinetcraa.immogest` |
+| `.well-known/assetlinks.json` | ✅ | Digital Asset Links pour TWA (fingerprint à remplir) |
+| `GUIDE_APK.md` | ✅ | Guide build APK : TWA (Bubblewrap), Capacitor, PWABuilder |
+
+### Pour générer l'APK
+1. `npm install -g @bubblewrap/cli`
+2. `bubblewrap init --manifest https://immogest-34w.pages.dev/manifest.json`
+3. `bubblewrap build` → `app-release-signed.apk`
+4. Remplir `.well-known/assetlinks.json` avec le fingerprint keystore
+5. Déposer sur Play Store
+
+### Reste Phase 4
+- [ ] i18n Tier 2/3 (Hausa, Wolof + IA traduction Worker `/translate`)
+- [ ] Notifications push OneSignal — cron Worker déjà prêt
+- [ ] Screenshots Play Store (playstore/ dossier)
 
 ---
 

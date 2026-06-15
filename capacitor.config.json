@@ -1,0 +1,24 @@
+{
+  "appId": "cm.cabinetcraa.immogest",
+  "appName": "ImmoGest",
+  "webDir": ".",
+  "server": {
+    "url": "https://immogest-34w.pages.dev",
+    "cleartext": false
+  },
+  "android": {
+    "minWebViewVersion": 90,
+    "backgroundColor": "#0E6AAF"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#0E6AAF",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}
