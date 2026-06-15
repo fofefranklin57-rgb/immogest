@@ -311,6 +311,36 @@ export default {
         return new Response(html, { headers: { ...cors, 'Content-Type': 'text/html' } });
       }
 
+      // ── /apply-promo ──────────────────────────────────────────
+      if (path === '/apply-promo' && request.method === 'POST') {
+        const { code, tenantId } = await request.json();
+        if (!code || !tenantId) return json({ error: 'code + tenantId requis' }, 400);
+
+        const pRes = await sbFetch('promo_codes', '?code=eq.' + encodeURIComponent(code.toUpperCase()) + '&actif=eq.true&select=*');
+        const promos = pRes.ok ? await pRes.json() : [];
+        if (!promos.length) return json({ error: 'Code invalide ou expiré' }, 404);
+        const promo = promos[0];
+
+        if (promo.expire_at && new Date(promo.expire_at) < new Date()) return json({ error: 'Code expiré' }, 410);
+        if (promo.uses >= promo.max_uses) return json({ error: 'Code déjà utilisé au maximum' }, 409);
+
+        const planExpire = new Date(Date.now() + promo.duree_jours * 86400000).toISOString();
+        await Promise.all([
+          fetch(sbBase + '/rest/v1/tenants?id=eq.' + tenantId, {
+            method: 'PATCH',
+            headers: { ...sbHdrs(), 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ plan: promo.plan, plan_expire: planExpire, promo_code: code.toUpperCase() })
+          }),
+          fetch(sbBase + '/rest/v1/promo_codes?id=eq.' + promo.id, {
+            method: 'PATCH',
+            headers: { ...sbHdrs(), 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ uses: promo.uses + 1 })
+          })
+        ]);
+        await logEvent(tenantId, 'info', 'promo.applied', 'Code promo appliqué: ' + code, { plan: promo.plan });
+        return json({ success: true, plan: promo.plan, plan_expire: planExpire, duree_jours: promo.duree_jours });
+      }
+
       // ── /owner ────────────────────────────────────────────────
       if (path.startsWith('/owner') && request.method === 'POST') {
         const { ownerToken, action } = await request.json();
@@ -358,6 +388,31 @@ export default {
           });
           await logEvent(targetId, 'warn', 'tenant.disabled', 'Tenant désactivé', {});
           return json({ success: true });
+        }
+
+        if (action === 'create_promo') {
+          const { code, plan, duree_jours, max_uses } = body;
+          if (!code || !plan) return json({ error: 'code + plan requis' }, 400);
+          const r = await fetch(sbBase + '/rest/v1/promo_codes', {
+            method: 'POST',
+            headers: { ...sbHdrs(), 'Prefer': 'return=representation' },
+            body: JSON.stringify({
+              code: code.toUpperCase(),
+              plan: plan,
+              duree_jours: duree_jours || 30,
+              max_uses: max_uses || 1,
+              expire_at: new Date(Date.now() + 90 * 86400000).toISOString()
+            })
+          });
+          if (!r.ok) return json({ error: 'Erreur création code promo' }, 500);
+          const promo = (await r.json())[0];
+          await logEvent(null, 'info', 'promo.created', 'Code promo créé: ' + code, { code, plan });
+          return json({ success: true, promo });
+        }
+
+        if (action === 'list_promos') {
+          const r = await sbFetch('promo_codes', '?select=*&order=created_at.desc&limit=50');
+          return json({ success: true, promos: r.ok ? await r.json() : [] });
         }
 
         return json({ error: 'Action inconnue' }, 400);

@@ -77,11 +77,14 @@ window.IG.plans = (function() {
       _jauge('🏢 Immeubles', nbImm, lim.immeubles) +
       _jauge('👥 Locataires actifs', nbLoc, lim.locataires) +
       '</div>' +
+      '<div style="display:flex;gap:8px">' +
       (plan !== 'cabinet' ?
         '<button onclick="window.IG.plans.afficherUpgrade()" ' +
-        'style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#0E6AAF,#7C3AED);color:#fff;cursor:pointer;font-size:13px;font-weight:700">' +
-        '⬆️ Passer au plan supérieur</button>' : '') +
-      '</div>';
+        'style="flex:1;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#0E6AAF,#7C3AED);color:#fff;cursor:pointer;font-size:13px;font-weight:700">' +
+        '⬆️ Plan supérieur</button>' : '') +
+      '<button onclick="window.IG.plans.afficherSaisiePromo()" ' +
+      'style="padding:11px 14px;border-radius:10px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">🎁 Code promo</button>' +
+      '</div></div>';
   }
 
   function _jauge(label, val, max) {
@@ -203,11 +206,51 @@ window.IG.plans = (function() {
     });
   }
 
+  // ── Code promo ────────────────────────────────────────────────
+  function afficherSaisiePromo() {
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var modal = window.IG.utils.showModal(
+      '<h3 style="font-size:15px;font-weight:700;margin-bottom:16px">🎁 Code promotionnel</h3>' +
+      '<p style="font-size:13px;color:var(--text3);margin-bottom:16px">Entrez un code promo pour activer un plan gratuitement.</p>' +
+      '<input id="promo-input" placeholder="Ex: IMMOGEST30" style="width:100%;padding:11px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:14px;text-transform:uppercase;margin-bottom:16px">' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+      '<button data-modal-close style="padding:9px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Annuler</button>' +
+      '<button id="promo-apply-btn" style="padding:9px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Appliquer</button>' +
+      '</div>',
+      { width: '380px' }
+    );
+
+    var inp = modal.box.querySelector('#promo-input');
+    inp.addEventListener('input', function() { this.value = this.value.toUpperCase(); });
+
+    modal.box.querySelector('#promo-apply-btn').addEventListener('click', async function() {
+      var code = inp.value.trim();
+      if (!code) return;
+      this.textContent = '⏳...'; this.disabled = true;
+      try {
+        var res = await fetch(window.IG.config.workerUrl + '/apply-promo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, tenantId: session.tenantId })
+        });
+        var d = await res.json();
+        if (!res.ok || d.error) throw new Error(d.error || 'Code invalide');
+        modal.close();
+        window.IG.utils.showToast('🎉 Code appliqué ! Plan ' + d.plan.toUpperCase() + ' activé pour ' + d.duree_jours + ' jours', 'green');
+        if (window.IG.ads) window.IG.ads.surUpgrade();
+        setTimeout(function() { location.reload(); }, 2000);
+      } catch(e) {
+        window.IG.utils.showToast('Erreur: ' + e.message, 'red');
+        this.textContent = 'Appliquer'; this.disabled = false;
+      }
+    });
+  }
+
   return {
     getPlan, getLimites,
     peutAjouterImmeuble, peutAjouterLocataire,
     verifierImmeuble, verifierLocataire,
-    renderBlocPlan, afficherUpgrade,
+    renderBlocPlan, afficherUpgrade, afficherSaisiePromo,
     _initierPaiement
   };
 

@@ -80,6 +80,7 @@ window.IG.owner = (function() {
       '<h1 style="font-size:22px;font-weight:700">🏢 ImmoGest v2</h1></div>' +
       '<div style="display:flex;gap:10px">' +
       '<button onclick="window.IG.owner._refreshStats()" style="padding:8px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:#fff;cursor:pointer;font-size:13px">↻ Refresh</button>' +
+      '<button onclick="window.IG.owner.afficherPromos()" style="padding:8px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;cursor:pointer;font-size:13px">🎁 Promos</button>' +
       '<button onclick="window.location.href=\'/\'" style="padding:8px 14px;border-radius:8px;border:none;background:rgba(255,255,255,0.1);color:#fff;cursor:pointer;font-size:13px">← App</button>' +
       '</div></div>' +
       '<div id="owner-content"><div style="text-align:center;padding:60px;color:rgba(255,255,255,0.4)">⏳ Chargement...</div></div>' +
@@ -221,6 +222,86 @@ window.IG.owner = (function() {
     });
   }
 
+  // ── Gestion codes promo ───────────────────────────────────────
+  function afficherPromos() {
+    var modal = window.IG.utils.showModal(
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
+      '<h3 style="font-size:15px;font-weight:700">🎁 Codes promotionnels</h3>' +
+      '<button data-modal-close style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3)">✕</button>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">' +
+      '<div><label style="font-size:11px;color:var(--text2);font-weight:600">Code *</label>' +
+      '<input id="promo-code" placeholder="EX: LAUNCH50" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;text-transform:uppercase;margin-top:4px"></div>' +
+      '<div><label style="font-size:11px;color:var(--text2);font-weight:600">Plan offert</label>' +
+      '<select id="promo-plan" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px">' +
+      '<option value="starter">Starter</option><option value="pro">Pro</option><option value="cabinet">Cabinet</option>' +
+      '</select></div>' +
+      '<div><label style="font-size:11px;color:var(--text2);font-weight:600">Durée (jours)</label>' +
+      '<input id="promo-duree" type="number" value="30" min="1" max="365" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px"></div>' +
+      '<div><label style="font-size:11px;color:var(--text2);font-weight:600">Utilisations max</label>' +
+      '<input id="promo-maxuses" type="number" value="1" min="1" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:16px">' +
+      '<button id="promo-gen-btn" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:12px">🎲 Générer code</button>' +
+      '<button id="promo-create-btn" style="flex:1;padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">+ Créer</button>' +
+      '</div>' +
+      '<div id="promo-liste" style="font-size:12px;color:var(--text3)">Chargement...</div>',
+      { width: '560px' }
+    );
+
+    // Générer code aléatoire
+    modal.box.querySelector('#promo-gen-btn').addEventListener('click', function() {
+      var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      var code = 'IMMO';
+      for (var i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+      modal.box.querySelector('#promo-code').value = code;
+    });
+
+    // Charger liste existante
+    _call('list_promos').then(function(d) {
+      var zone = modal.box.querySelector('#promo-liste');
+      var promos = d.promos || [];
+      if (!promos.length) { zone.innerHTML = '<p>Aucun code créé.</p>'; return; }
+      zone.innerHTML = '<table style="width:100%;border-collapse:collapse">' +
+        '<thead><tr style="background:var(--bg4);font-size:11px;color:var(--text3)">' +
+        '<th style="padding:6px 10px;text-align:left">Code</th><th style="padding:6px 10px">Plan</th>' +
+        '<th style="padding:6px 10px">Durée</th><th style="padding:6px 10px">Utilisations</th>' +
+        '</tr></thead><tbody>' +
+        promos.map(function(p) {
+          return '<tr style="border-bottom:1px solid var(--border2)">' +
+            '<td style="padding:7px 10px;font-weight:700;font-family:monospace">' + esc(p.code) + '</td>' +
+            '<td style="padding:7px 10px;text-align:center">' + esc(p.plan) + '</td>' +
+            '<td style="padding:7px 10px;text-align:center">' + p.duree_jours + 'j</td>' +
+            '<td style="padding:7px 10px;text-align:center">' + p.uses + '/' + p.max_uses + '</td>' +
+            '</tr>';
+        }).join('') + '</tbody></table>';
+    }).catch(function() {
+      modal.box.querySelector('#promo-liste').textContent = 'Erreur chargement';
+    });
+
+    // Créer code
+    modal.box.querySelector('#promo-create-btn').addEventListener('click', async function() {
+      var code = modal.box.querySelector('#promo-code').value.trim().toUpperCase();
+      var plan = modal.box.querySelector('#promo-plan').value;
+      var duree = parseInt(modal.box.querySelector('#promo-duree').value) || 30;
+      var maxUses = parseInt(modal.box.querySelector('#promo-maxuses').value) || 1;
+      if (!code) { window.IG.utils.showToast('Code requis', 'red'); return; }
+      try {
+        await _call('create_promo', { code, plan, duree_jours: duree, max_uses: maxUses });
+        window.IG.utils.showToast('Code créé : ' + code, 'green');
+        modal.close();
+      } catch(e) {
+        window.IG.utils.showToast('Erreur: ' + e.message, 'red');
+      }
+    });
+  }
+
+  // ── Injection bouton promos dans le dashboard owner ───────────
+  function _btnPromos() {
+    return '<button onclick="window.IG.owner.afficherPromos()" ' +
+      'style="padding:8px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;cursor:pointer;font-size:13px">🎁 Promos</button>';
+  }
+
   // ── Point d'entrée externe (URL ?owner=1) ─────────────────────
   function checkAutoOpen() {
     if (window.location.search.includes('owner=1')) {
@@ -230,6 +311,6 @@ window.IG.owner = (function() {
     return false;
   }
 
-  return { renderLogin, renderDashboard, upgraderPlan, _refreshStats, checkAutoOpen };
+  return { renderLogin, renderDashboard, upgraderPlan, afficherPromos, _refreshStats, checkAutoOpen };
 
 })();

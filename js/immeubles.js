@@ -121,6 +121,16 @@ window.IG.immeubles = (function() {
       '<button type="submit" class="btn-primary" style="padding:10px 20px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:600">' + t('Sauvegarder') + '</button>' +
       '</div></form>';
 
+    // Vérification limite plan avant d'ouvrir (création seulement)
+    if (!id && window.IG.plans) {
+      var errPlan = window.IG.plans.verifierImmeuble();
+      if (errPlan) {
+        window.IG.utils.showToast(errPlan, 'red');
+        setTimeout(function() { window.IG.plans.afficherUpgrade(); }, 800);
+        return;
+      }
+    }
+
     var modal = window.IG.utils.showModal(html, { width: '520px' });
 
     modal.box.querySelector('#form-immeuble').addEventListener('submit', async function(e) {
