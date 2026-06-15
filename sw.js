@@ -1,133 +1,122 @@
-// ImmoGest Service Worker — DEPLOY28
-const CACHE_NAME = 'immogest-v28';
-const ASSETS = [
+// ════════════════════════════════════════════════════════════════
+//  ImmoGest v2 — Service Worker Offline-First
+//  Prompt 3 : Offline First — fonctionne en zone rurale africaine
+//  Stratégie : Cache-first pour assets, Network-first pour API
+// ════════════════════════════════════════════════════════════════
+
+var CACHE_NAME = 'immogest-v2-cache-v1';
+var SYNC_TAG   = 'immogest-sync';
+
+var ASSETS_CACHE = [
   '/',
   '/index.html',
   '/app.css',
-  '/docx.bundle.js',
-  '/js/app.js',
-  '/js/supabase.js',
-  '/js/i18n.js',
-  '/js/pay-config.js',
-  '/js/signature.js',
-  '/js/marketplace.js',
-  '/js/monetisation.js',
-  '/js/onesignal.js',
-  '/js/portail-locataire.js',
-  '/js/push-module.js',
-  '/js/ads.js',
-  '/js/ai-service.js',
+  '/manifest.json',
   '/icon-192.png',
-  '/icon-512.png'
+  '/icon-512.png',
+  '/docx.bundle.js',
+  '/js/config.js',
+  '/js/i18n.js',
+  '/js/utils.js',
+  '/js/supabase.js',
+  '/js/auth.js',
+  '/js/immeubles.js',
+  '/js/locataires.js',
+  '/js/paiements.js',
+  '/js/rapports.js',
+  '/js/relances.js',
+  '/js/dashboard.js',
+  '/js/legal.js',
+  '/js/juridique.js',
+  '/js/marketplace.js',
+  '/js/portail.js',
+  '/js/app.js'
 ];
 
-// ── Installation — mise en cache des assets ──────────────────
-self.addEventListener('install', event => {
+self.addEventListener('install', function(event) {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.addAll(ASSETS_CACHE.map(function(url) {
+        return new Request(url, { cache: 'reload' });
+      })).catch(function(e) {
+        console.warn('SW: certains assets non cachés', e.message);
+      });
+    }).then(function() { return self.skipWaiting(); })
   );
-  self.skipWaiting();
 });
 
-// ── Activation — nettoyage anciens caches ────────────────────
-self.addEventListener('activate', event => {
+self.addEventListener('activate', function(event) {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+    caches.keys().then(function(keys) {
+      return Promise.all(
+        keys.filter(function(k) { return k !== CACHE_NAME; })
+            .map(function(k) { return caches.delete(k); })
+      );
+    }).then(function() { return self.clients.claim(); })
   );
-  self.clients.claim();
 });
 
-// ── Fetch — Network first, cache fallback (Offline Support) ──
-self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
-  // Ne pas intercepter les API externes
-  const url = event.request.url;
-  if (url.includes('api.anthropic.com')) return;
-  if (url.includes('unsplash.com')) return;
-  if (url.includes('supabase.co')) return;
-  if (url.includes('workers.dev')) return;
-  if (url.includes('onesignal.com')) return;
+self.addEventListener('fetch', function(event) {
+  var url = new URL(event.request.url);
 
-  event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        // Mettre en cache la réponse fraîche pour usage hors ligne
-        if (response && response.status === 200 && response.type === 'basic') {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      })
-      .catch(() => {
-        // Hors ligne : servir depuis le cache
-        return caches.match(event.request).then(cached => {
-          if (cached) return cached;
-          // Fallback vers index.html pour les navigations
-          if (event.request.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
-          return new Response('Hors ligne', { status: 503 });
+  // Toujours réseau pour APIs externes
+  if (url.hostname.includes('workers.dev') ||
+      url.hostname.includes('supabase.co') ||
+      url.hostname.includes('notchpay.co') ||
+      url.hostname.includes('anthropic.com') ||
+      url.hostname.includes('onesignal.com')) {
+    event.respondWith(
+      fetch(event.request).catch(function() {
+        return new Response(JSON.stringify({ error: 'Hors ligne', offline: true }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
         });
       })
-  );
+    );
+    return;
+  }
+
+  // Cache-first pour assets statiques
+  if (event.request.method === 'GET') {
+    event.respondWith(
+      caches.match(event.request).then(function(cached) {
+        if (cached) {
+          // Rafraîchir en arrière-plan
+          fetch(event.request).then(function(res) {
+            if (res && res.status === 200) {
+              caches.open(CACHE_NAME).then(function(c) { c.put(event.request, res); });
+            }
+          }).catch(function() {});
+          return cached;
+        }
+        return fetch(event.request).then(function(res) {
+          if (res && res.status === 200 && event.request.url.startsWith(self.location.origin)) {
+            var clone = res.clone();
+            caches.open(CACHE_NAME).then(function(c) { c.put(event.request, clone); });
+          }
+          return res;
+        }).catch(function() {
+          if (event.request.headers.get('accept') &&
+              event.request.headers.get('accept').includes('text/html')) {
+            return caches.match('/index.html');
+          }
+        });
+      })
+    );
+  }
 });
 
-// ── Push Notifications ───────────────────────────────────────
-self.addEventListener('push', event => {
-  if (!event.data) return;
-  let data = {};
-  try { data = event.data.json(); } catch(e) { data = { title: 'ImmoGest', body: event.data.text() }; }
-
-  const title   = data.title   || 'ImmoGest';
-  const options = {
-    body:    data.body    || data.message || '',
-    icon:    data.icon    || '/icon-192.png',
-    badge:   '/icon-192.png',
-    data:    data.url ? { url: data.url } : {},
-    vibrate: [200, 100, 200]
-  };
-  event.waitUntil(self.registration.showNotification(title, options));
+// Background sync — réseau revenu
+self.addEventListener('sync', function(event) {
+  if (event.tag === SYNC_TAG) {
+    event.waitUntil(
+      self.clients.matchAll().then(function(clients) {
+        clients.forEach(function(c) { c.postMessage({ type: 'SYNC_REQUESTED' }); });
+      })
+    );
+  }
 });
 
-self.addEventListener('notificationclick', event => {
-  event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || '/';
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      for (const client of list) {
-        if (client.url === url && 'focus' in client) return client.focus();
-      }
-      if (clients.openWindow) return clients.openWindow(url);
-    })
-  );
-});
-
-// ── Message (doit être enregistré à l'évaluation initiale) ───
-self.addEventListener('message', event => {
+self.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
-});
-
-// ── Background Sync ──────────────────────────────────────────
-self.addEventListener('sync', event => {
-  if (event.tag === 'immogest-sync') {
-    event.waitUntil(
-      // Tenter de synchroniser les données en attente
-      self.clients.matchAll().then(clients => {
-        clients.forEach(client => client.postMessage({ type: 'SYNC_READY' }));
-      })
-    );
-  }
-});
-
-// ── Periodic Sync ────────────────────────────────────────────
-self.addEventListener('periodicsync', event => {
-  if (event.tag === 'immogest-daily') {
-    event.waitUntil(
-      self.clients.matchAll().then(clients => {
-        clients.forEach(client => client.postMessage({ type: 'PERIODIC_SYNC' }));
-      })
-    );
-  }
 });

@@ -45,6 +45,11 @@ window.IG.app = (function() {
       _navItem('paiements', '💰', t('Paiements')) +
       _navSection(t('Gestion')) +
       _navItem('rapports', '📄', t('Rapports')) +
+      _navItem('relances', '⚠️', t('Relances')) +
+      _navItem('juridique', '⚖️', t('Juridique')) +
+      _navSection(t('Réseau')) +
+      _navItem('marketplace', '🌍', t('Marketplace')) +
+      (session.role === 'locataire' ? _navItem('portail', '🏠', t('Mon espace')) : '') +
       _navSection(t('Administration')) +
       _navItem('parametres', '⚙️', t('Paramètres')) +
       '</div>' +
@@ -159,6 +164,30 @@ window.IG.app = (function() {
         if (title) title.textContent = t('Rapports');
         if (sub) sub.textContent = '';
         _renderRapports(); break;
+      case 'relances':
+        if (title) title.textContent = t('Relances');
+        if (sub) sub.textContent = '';
+        if (window.IG.relances) window.IG.relances.renderPage(_data.locataires, _data.paiements);
+        else content.innerHTML = '<div class="content"><p style="color:var(--text3);padding:20px">Module relances non chargé.</p></div>';
+        break;
+      case 'juridique':
+        if (title) title.textContent = t('Dossiers juridiques');
+        if (sub) sub.textContent = '';
+        if (window.IG.legal) window.IG.legal.renderPage();
+        else content.innerHTML = '<div class="content"><p style="color:var(--text3);padding:20px">Module juridique non chargé.</p></div>';
+        break;
+      case 'marketplace':
+        if (title) title.textContent = t('Marketplace');
+        if (sub) sub.textContent = '';
+        if (window.IG.marketplace) window.IG.marketplace.renderPage();
+        else content.innerHTML = '<div class="content"><p style="color:var(--text3);padding:20px">Module marketplace non chargé.</p></div>';
+        break;
+      case 'portail':
+        if (title) title.textContent = t('Mon espace');
+        if (sub) sub.textContent = '';
+        if (window.IG.portail) window.IG.portail.renderPage();
+        else content.innerHTML = '<div class="content"><p style="color:var(--text3);padding:20px">Module portail non chargé.</p></div>';
+        break;
       case 'parametres':
         if (title) title.textContent = t('Paramètres');
         if (sub) sub.textContent = '';
