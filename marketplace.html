@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- ── SEO ── -->
+<title>ImmoGest Marketplace — Annonces immobilières en Afrique</title>
+<meta name="description" content="Trouvez votre logement, bureau ou local commercial en Afrique. Location, vente, colocation — annonces vérifiées par des gestionnaires professionnels ImmoGest.">
+<meta name="keywords" content="immobilier Afrique, location appartement Douala, location Abidjan, location Dakar, local commercial, immobilier Cameroun, Côte d'Ivoire, Sénégal, Gabon, annonces immobilières">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://immogest.pages.dev/marketplace.html">
+
+<!-- ── Open Graph (Facebook, WhatsApp, LinkedIn) ── -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://immogest.pages.dev/marketplace.html">
+<meta property="og:title" content="ImmoGest — Annonces immobilières en Afrique">
+<meta property="og:description" content="Location, vente, colocation, bureaux — trouvez le bien idéal en Afrique. Annonces publiées par des gestionnaires certifiés.">
+<meta property="og:image" content="https://immogest.pages.dev/og-marketplace.jpg">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:site_name" content="ImmoGest">
+
+<!-- ── Twitter Card ── -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ImmoGest Marketplace — Immobilier en Afrique">
+<meta name="twitter:description" content="Location, vente, colocation — annonces vérifiées en Afrique.">
+<meta name="twitter:image" content="https://immogest.pages.dev/og-marketplace.jpg">
+
+<!-- ── Schema.org JSON-LD (Google Rich Results) ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "RealEstateAgent",
+  "name": "ImmoGest Marketplace",
+  "description": "Plateforme d'annonces immobilières pour l'Afrique — location, vente, colocation, bureaux.",
+  "url": "https://immogest.pages.dev/marketplace.html",
+  "areaServed": ["Cameroun","Sénégal","Côte d'Ivoire","Gabon","Maroc","Tunisie","France","Belgique"],
+  "availableLanguage": "fr"
+}
+</script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:     #0a1628;
+    --bg2:    #0f1f3d;
+    --bg3:    #152342;
+    --bg4:    #1a2a4a;
+    --border: rgba(255,255,255,0.08);
+    --text:   #e8f0fe;
+    --text2:  rgba(232,240,254,0.65);
+    --text3:  rgba(232,240,254,0.35);
+    --accent: #2563eb;
+    --accent2:#3b82f6;
+    --gold:   #f59e0b;
+    --radius: 14px;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: linear-gradient(135deg, #050f1e 0%, #0d1f3c 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 0 5%;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    gap: 16px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+  }
+  .logo span { color: var(--accent2); }
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+  .btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity .15s;
+  }
+  .btn:hover { opacity: .85; }
+  .btn-outline {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--text);
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+
+  /* ── Hero ── */
+  .hero {
+    background: linear-gradient(135deg, #050f1e 0%, #0d1f3c 60%, #091830 100%);
+    padding: 52px 5% 44px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero h1 {
+    font-size: clamp(24px, 4vw, 40px);
+    font-weight: 900;
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+  }
+  .hero h1 em { color: var(--accent2); font-style: normal; }
+  .hero p {
+    font-size: 15px;
+    color: var(--text2);
+    max-width: 520px;
+    margin: 0 auto 28px;
+    line-height: 1.6;
+  }
+
+  /* ── Search bar ── */
+  .search-bar {
+    max-width: 640px;
+    margin: 0 auto;
+    display: flex;
+    gap: 8px;
+  }
+  .search-bar input {
+    flex: 1;
+    padding: 13px 18px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    font-family: inherit;
+  }
+  .search-bar input::placeholder { color: var(--text3); }
+  .search-bar input:focus { border-color: var(--accent2); }
+  .search-bar button {
+    padding: 13px 22px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  /* ── Stats hero ── */
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 36px;
+    margin-top: 32px;
+  }
+  .hero-stats div { text-align: center; }
+  .hero-stats strong { display: block; font-size: 22px; font-weight: 900; color: var(--accent2); }
+  .hero-stats small { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ── Main layout ── */
+  .main-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 5% 60px;
+  }
+
+  /* ── Filtres ── */
+  .filtres {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    margin-bottom: 28px;
+    scrollbar-width: none;
+  }
+  .filtres::-webkit-scrollbar { display: none; }
+  .filtre-btn {
+    padding: 7px 16px;
+    border-radius: 99px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text2);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s, color .15s, border-color .15s;
+    font-family: inherit;
+  }
+  .filtre-btn:hover, .filtre-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  /* ── Grille annonces ── */
+  .section-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform .18s, box-shadow .18s;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(37,99,235,.18);
+  }
+  .card.premium {
+    border-color: var(--gold);
+    box-shadow: 0 4px 16px rgba(245,158,11,.12);
+  }
+  .card-img {
+    height: 148px;
+    background: linear-gradient(135deg, var(--bg3), var(--bg4));
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    padding: 8px;
+    background-size: cover;
+    background-position: center;
+  }
+  .card-img-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    opacity: .3;
+  }
+  .card-badge {
+    position: relative;
+    z-index: 1;
+    background: rgba(0,0,0,.55);
+    color: #fff;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 99px;
+    backdrop-filter: blur(4px);
+  }
+  .premium-tag {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 99px;
+    z-index: 1;
+  }
+  .card-body { padding: 14px; }
+  .card-title {
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-location { font-size: 12px; color: var(--text3); margin-bottom: 10px; }
+  .card-footer { display: flex; justify-content: space-between; align-items: center; }
+  .card-price { font-size: 17px; font-weight: 800; color: var(--accent2); }
+  .card-views { font-size: 11px; color: var(--text3); }
+
+  /* ── Empty state ── */
+  .empty {
+    text-align: center;
+    padding: 70px 20px;
+    color: var(--text3);
+  }
+  .empty .emoji { font-size: 52px; margin-bottom: 16px; }
+  .empty h3 { font-size: 17px; font-weight: 700; color: var(--text2); margin-bottom: 8px; }
+  .empty p { font-size: 13px; margin-bottom: 24px; }
+
+  /* ── Modal détail annonce ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.7);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 24px;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    gap: 12px;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text3);
+    font-size: 22px;
+    cursor: pointer;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .modal-price { font-size: 28px; font-weight: 900; color: var(--accent2); margin-bottom: 14px; }
+  .modal-desc { font-size: 13px; color: var(--text2); line-height: 1.7; margin-bottom: 20px; }
+  .modal-actions { display: flex; gap: 10px; }
+  .btn-whatsapp {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    background: #25D366;
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    text-align: center;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-login-cta {
+    padding: 12px 18px;
+    border-radius: 10px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    font-size: 12px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  /* ── CTA bande ── */
+  .cta-bande {
+    background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    border-radius: 16px;
+    padding: 36px 32px;
+    text-align: center;
+    margin-top: 48px;
+  }
+  .cta-bande h2 { font-size: 20px; font-weight: 800; margin-bottom: 10px; }
+  .cta-bande p { color: rgba(255,255,255,.7); font-size: 14px; margin-bottom: 22px; }
+  .cta-bande .actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 5%;
+    text-align: center;
+    color: var(--text3);
+    font-size: 12px;
+  }
+  footer a { color: var(--accent2); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ── Skeleton loader ── */
+  .skeleton {
+    background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4) 50%, var(--bg3) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 8px;
+  }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .hero { padding: 36px 5% 32px; }
+    .hero-stats { gap: 20px; }
+    .header-inner { height: 56px; }
+    #btn-publier { display: none; }
+    .cta-bande { padding: 28px 20px; }
+  }
+</style>
+</head>
+
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="header-inner">
+    <a href="index.html" class="logo">🏢 Immo<span>Gest</span></a>
+    <div class="header-actions">
+      <a href="index.html" class="btn btn-outline">Se connecter</a>
+      <a href="index.html#register" id="btn-publier" class="btn btn-primary">+ Publier une annonce</a>
+    </div>
+  </div>
+</header>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <h1>Trouvez votre bien <em>en Afrique</em></h1>
+  <p>Location, vente, colocation, bureaux — annonces publiées par des gestionnaires professionnels ImmoGest.</p>
+
+  <div class="search-bar">
+    <input type="text" id="search-input" placeholder="🔍  Ville, quartier, type de bien..." autocomplete="off">
+    <button onclick="rechercherAnnonces()">Rechercher</button>
+  </div>
+
+  <div class="hero-stats" id="hero-stats">
+    <div><strong id="stat-annonces">—</strong><small>Annonces</small></div>
+    <div><strong id="stat-villes">—</strong><small>Villes</small></div>
+    <div><strong id="stat-pays">—</strong><small>Pays</small></div>
+  </div>
+</section>
+
+<!-- ── Main ── -->
+<main class="main-wrapper">
+
+  <!-- Filtres catégories -->
+  <div class="filtres" id="filtres-cat">
+    <button class="filtre-btn active" onclick="filtrer('tous',this)">🌍 Tout</button>
+    <button class="filtre-btn" onclick="filtrer('location_residentielle',this)">🏠 Location résidentielle</button>
+    <button class="filtre-btn" onclick="filtrer('location_commerciale',this)">🏪 Local commercial</button>
+    <button class="filtre-btn" onclick="filtrer('bureau',this)">🏢 Bureau</button>
+    <button class="filtre-btn" onclick="filtrer('colocation',this)">👥 Colocation</button>
+    <button class="filtre-btn" onclick="filtrer('location_saisonniere',this)">🌴 Saisonnier</button>
+    <button class="filtre-btn" onclick="filtrer('vente',this)">🔑 Vente</button>
+    <button class="filtre-btn" onclick="filtrer('luxe',this)">💎 Prestige & Luxe</button>
+  </div>
+
+  <!-- Annonces premium -->
+  <div id="section-premium" style="display:none;">
+    <div class="section-title">⭐ Annonces Premium</div>
+    <div class="grid" id="grid-premium"></div>
+  </div>
+
+  <!-- Annonces standard -->
+  <div id="section-standard">
+    <div class="grid" id="grid-standard">
+      <!-- Skeletons -->
+      <div style="border-radius:14px;overflow:hidden;background:var(--bg2);border:1px solid var(--border);">
+        <div class="skeleton" style="height:148px;"></div>
+        <div style="padding:14px;">
+          <div class="skeleton" style="height:14px;margin-bottom:8px;width:80%;"></div>
+          <div class="skeleton" style="height:11px;width:50%;margin-bottom:12px;"></div>
+          <div class="skeleton" style="height:18px;width:40%;"></div>
+        </div>
+      </div>
+      <div style="border-radius:14px;overflow:hidden;background:var(--bg2);border:1px solid var(--border);">
+        <div class="skeleton" style="height:148px;"></div>
+        <div style="padding:14px;">
+          <div class="skeleton" style="height:14px;margin-bottom:8px;width:70%;"></div>
+          <div class="skeleton" style="height:11px;width:55%;margin-bottom:12px;"></div>
+          <div class="skeleton" style="height:18px;width:35%;"></div>
+        </div>
+      </div>
+      <div style="border-radius:14px;overflow:hidden;background:var(--bg2);border:1px solid var(--border);">
+        <div class="skeleton" style="height:148px;"></div>
+        <div style="padding:14px;">
+          <div class="skeleton" style="height:14px;margin-bottom:8px;width:75%;"></div>
+          <div class="skeleton" style="height:11px;width:45%;margin-bottom:12px;"></div>
+          <div class="skeleton" style="height:18px;width:38%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA bande -->
+  <div class="cta-bande">
+    <h2>Vous gérez des biens immobiliers ?</h2>
+    <p>Rejoignez ImmoGest — publiez vos annonces, gérez vos locataires et encaissez en ligne.</p>
+    <div class="actions">
+      <a href="index.html" class="btn btn-primary" style="font-size:14px;padding:12px 24px;">🚀 Créer mon espace gratuit</a>
+      <a href="index.html" class="btn btn-outline" style="font-size:14px;padding:12px 24px;">Se connecter</a>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── Footer ── -->
+<footer>
+  <p>© 2026 ImmoGest · <a href="index.html">Application complète</a> · <a href="index.html#marketplace">Publier une annonce</a></p>
+  <p style="margin-top:6px;">Plateforme de gestion immobilière pour l'Afrique</p>
+</footer>
+
+<!-- ── Modal détail ── -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)fermerModal()">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<script>
+  var WORKER = 'https://immogest1.fofefranklin57.workers.dev';
+  var DEVISES = { XAF:'FCFA', XOF:'FCFA', MAD:'MAD', TND:'TND', EUR:'€', USD:'$' };
+  var CATS = {
+    location_residentielle:'🏠 Location résidentielle',
+    location_commerciale:'🏪 Local commercial',
+    bureau:'🏢 Bureau',
+    colocation:'👥 Colocation',
+    location_saisonniere:'🌴 Saisonnier',
+    vente:'🔑 Vente',
+    luxe:'💎 Prestige & Luxe',
+    professionnel:'🏭 Professionnel'
+  };
+  var PAYS_LABELS = { CM:'Cameroun',SN:'Sénégal',CI:"Côte d'Ivoire",GA:'Gabon',MR:'Maroc',TN:'Tunisie',FR:'France',BE:'Belgique' };
+
+  var _annonces = [];
+  var _categorieCourante = 'tous';
+
+  function fmt(n, devise) {
+    if (!n) return '—';
+    var sym = DEVISES[devise] || 'FCFA';
+    return Number(n).toLocaleString('fr-FR') + ' ' + sym;
+  }
+
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  async function chargerAnnonces(cat, q) {
+    try {
+      var qs = '';
+      if (cat && cat !== 'tous') qs += '?categorie=' + encodeURIComponent(cat);
+      if (q) qs += (qs ? '&' : '?') + 'q=' + encodeURIComponent(q);
+      var r = await fetch(WORKER + '/marketplace-public' + qs);
+      if (!r.ok) throw new Error('API error');
+      return await r.json();
+    } catch(e) {
+      return [];
+    }
+  }
+
+  function carteHTML(a, isPremium) {
+    var cat = CATS[a.categorie] || '🏠 Location';
+    var photo = a.photos && a.photos[0] ? a.photos[0] : null;
+    var pays = PAYS_LABELS[a.pays] || (a.pays || '');
+    return '<div class="card' + (isPremium ? ' premium' : '') + '" onclick="voirAnnonce(' + a.id + ')" role="button" aria-label="' + esc(a.titre) + '">' +
+      '<div class="card-img" style="' + (photo ? 'background-image:url(' + esc(photo) + ')' : '') + '">' +
+      (!photo ? '<div class="card-img-placeholder">🏠</div>' : '') +
+      (isPremium ? '<span class="premium-tag">⭐ PREMIUM</span>' : '') +
+      '<span class="card-badge">' + cat + '</span>' +
+      '</div>' +
+      '<div class="card-body">' +
+      '<div class="card-title">' + esc(a.titre) + '</div>' +
+      '<div class="card-location">' + esc(a.ville||'') + (a.quartier ? ' — ' + esc(a.quartier) : '') + ' · ' + pays + '</div>' +
+      '<div class="card-footer">' +
+      '<span class="card-price">' + fmt(a.loyer, a.devise) + '</span>' +
+      '<span class="card-views">' + (a.vues||0) + ' vues</span>' +
+      '</div></div></div>';
+  }
+
+  function afficherAnnonces(annonces) {
+    var premium  = annonces.filter(function(a) { return a.premium || a.premium_niveau > 0; });
+    var standard = annonces.filter(function(a) { return !a.premium && !(a.premium_niveau > 0); });
+
+    var secPremium = document.getElementById('section-premium');
+    var gridPremium = document.getElementById('grid-premium');
+    var gridStd = document.getElementById('grid-standard');
+
+    if (premium.length) {
+      secPremium.style.display = 'block';
+      gridPremium.innerHTML = premium.map(function(a) { return carteHTML(a, true); }).join('');
+    } else {
+      secPremium.style.display = 'none';
+    }
+
+    if (!standard.length && !premium.length) {
+      gridStd.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="emoji">🏠</div><h3>Aucune annonce disponible</h3><p>Soyez le premier à publier une annonce !</p><a href="index.html" class="btn btn-primary">+ Publier une annonce</a></div>';
+    } else {
+      gridStd.innerHTML = standard.map(function(a) { return carteHTML(a, false); }).join('');
+    }
+
+    // Mise à jour stats
+    var villes = new Set(annonces.map(function(a) { return a.ville; }).filter(Boolean));
+    var pays   = new Set(annonces.map(function(a) { return a.pays;  }).filter(Boolean));
+    document.getElementById('stat-annonces').textContent = annonces.length;
+    document.getElementById('stat-villes').textContent   = villes.size;
+    document.getElementById('stat-pays').textContent     = pays.size;
+  }
+
+  async function filtrer(cat, btn) {
+    _categorieCourante = cat;
+    document.querySelectorAll('.filtre-btn').forEach(function(b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    var annonces = await chargerAnnonces(cat, '');
+    _annonces = annonces;
+    afficherAnnonces(annonces);
+  }
+
+  async function rechercherAnnonces() {
+    var q = document.getElementById('search-input').value.trim();
+    var annonces = await chargerAnnonces(_categorieCourante, q);
+    _annonces = annonces;
+    afficherAnnonces(annonces);
+  }
+
+  document.getElementById('search-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') rechercherAnnonces();
+  });
+
+  function voirAnnonce(id) {
+    var a = _annonces.find(function(x) { return x.id == id; });
+    if (!a) return;
+    var cat = CATS[a.categorie] || '🏠';
+    var pays = PAYS_LABELS[a.pays] || (a.pays || '');
+    var waMsg = encodeURIComponent('Bonjour, je suis intéressé(e) par votre annonce : ' + (a.titre||'') + ' — ' + fmt(a.loyer, a.devise) + '/mois. Disponible ?');
+
+    document.getElementById('modal-box').innerHTML =
+      '<div class="modal-header">' +
+      '<h3 style="font-size:15px;font-weight:700;flex:1;line-height:1.4">' + esc(a.titre) + '</h3>' +
+      '<button class="modal-close" onclick="fermerModal()">✕</button>' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--text3);margin-bottom:14px">' + cat + ' · ' + esc(a.ville||'') + (a.quartier?' — '+esc(a.quartier):'') + ' · ' + pays + '</div>' +
+      '<div class="modal-price">' + fmt(a.loyer, a.devise) + '<span style="font-size:14px;font-weight:400;color:var(--text3)">/mois</span></div>' +
+      (a.description ? '<p class="modal-desc">' + esc(a.description) + '</p>' : '') +
+      '<div class="modal-actions">' +
+      '<a href="https://wa.me/?text=' + waMsg + '" target="_blank" rel="noopener" class="btn-whatsapp">📱 Contacter sur WhatsApp</a>' +
+      '<a href="index.html" class="btn-login-cta">Gérer →</a>' +
+      '</div>' +
+      '<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);text-align:center">' +
+      'Annonce vérifiée par ImmoGest · ' + (a.vues||0) + ' vues' +
+      '</div>';
+
+    document.getElementById('modal-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function fermerModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  // Fermer modal avec Echap
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') fermerModal();
+  });
+
+  // Chargement initial
+  (async function() {
+    _annonces = await chargerAnnonces('tous', '');
+    afficherAnnonces(_annonces);
+  })();
+</script>
+
+</body>
+</html>

@@ -70,6 +70,28 @@ export default {
         return json({ ok: true, version: '2.0', ts: Date.now() });
       }
 
+      // ── /marketplace-public — endpoint public sans auth ───────
+      if (path === '/marketplace-public' && request.method === 'GET') {
+        const categorie = url.searchParams.get('categorie');
+        const pays = url.searchParams.get('pays');
+        const q = url.searchParams.get('q');
+        let qs = '?statut=eq.active&order=created_at.desc&limit=100';
+        if (categorie && categorie !== 'tous') qs += '&categorie=eq.' + encodeURIComponent(categorie);
+        if (pays) qs += '&pays=eq.' + encodeURIComponent(pays);
+        const r = await sbFetch('marketplace_annonces', qs);
+        let annonces = await r.json();
+        if (q) {
+          const lq = q.toLowerCase();
+          annonces = annonces.filter(function(a) {
+            return (a.titre||'').toLowerCase().includes(lq) ||
+                   (a.ville||'').toLowerCase().includes(lq) ||
+                   (a.quartier||'').toLowerCase().includes(lq) ||
+                   (a.description||'').toLowerCase().includes(lq);
+          });
+        }
+        return json(annonces);
+      }
+
       // ── /register ────────────────────────────────────────────
       if (path === '/register' && request.method === 'POST') {
         const { nom, telephone, passwordHash, nomCabinet } = await request.json();
