@@ -472,7 +472,7 @@ window.IG.app = (function() {
       '<div style="text-align:center">' +
       '<button onclick="window.IG.app._loginMode(\'marketplace\')" style="background:none;border:none;color:rgba(100,160,230,0.7);font-size:12px;cursor:pointer;padding:4px">🌍 Parcourir la marketplace →</button>' +
       '</div>' +
-      '<p style="text-align:center;font-size:10px;color:rgba(100,130,170,0.5);margin-top:24px">ImmoGest v2.0 — Cabinet CRAA · Yaoundé</p>' +
+      '<p style="text-align:center;font-size:10px;color:rgba(100,130,170,0.5);margin-top:24px">ImmoGest v2.0 — Gestion immobilière intelligente</p>' +
       '</div></div></div>' +
       // ── CSS responsive ──
       '<style>' +

@@ -35,7 +35,7 @@ window.IG.owner = (function() {
       '<div style="text-align:center;margin-bottom:28px">' +
       '<div style="font-size:48px;margin-bottom:10px">🔑</div>' +
       '<h1 style="color:#fff;font-size:22px;font-weight:700;margin-bottom:4px">Owner Panel</h1>' +
-      '<p style="color:rgba(255,255,255,0.45);font-size:12px">ImmoGest v2 — Cabinet CRAA</p></div>' +
+      '<p style="color:rgba(255,255,255,0.45);font-size:12px">ImmoGest v2 — Administration</p></div>' +
       '<input id="owner-token-input" type="password" placeholder="Owner token..." ' +
         'style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);' +
         'background:rgba(255,255,255,0.08);color:#fff;font-size:14px;margin-bottom:14px">' +
