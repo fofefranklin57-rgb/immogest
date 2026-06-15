@@ -106,39 +106,50 @@ window.IG.locataires = (function() {
              (l.telephone || '').includes(q);
     });
 
-    var html = '<table class="table-locataires" style="width:100%;border-collapse:collapse">' +
-      '<thead><tr style="background:var(--bg3);font-size:11px;text-transform:uppercase;color:var(--text3)">' +
-      '<th style="padding:10px 14px;text-align:left">' + t('Locataire') + '</th>' +
-      '<th style="padding:10px 14px;text-align:left">' + t('Local') + '</th>' +
-      '<th style="padding:10px 14px;text-align:right">' + t('Loyer') + '</th>' +
-      '<th style="padding:10px 14px;text-align:left">' + t('Statut') + '</th>' +
-      '<th style="padding:10px 14px;text-align:center">' + t('Actions') + '</th>' +
+    var html = '<div class="table-wrap"><table class="tbl">' +
+      '<thead><tr>' +
+      '<th>Local</th><th>Nom</th><th>Tél</th><th>Loyer</th>' +
+      '<th>Observations</th><th>Statut</th><th>Reste dû</th><th>Actions</th>' +
       '</tr></thead><tbody>';
 
     liste.forEach(function(loc) {
       var statut = _statutBadge(loc, paiements);
-      html += '<tr style="border-bottom:1px solid var(--border2);transition:background .15s" ' +
-        'onmouseover="this.style.background=\'var(--bg3)\'" onmouseout="this.style.background=\'\'">' +
-        '<td style="padding:12px 14px">' +
-        '<div style="font-weight:600;font-size:13px">' + esc(loc.nom) + '</div>' +
-        '<div style="font-size:11px;color:var(--text3)">' + esc(loc.telephone || '') + '</div></td>' +
-        '<td style="padding:12px 14px">' +
-        '<div style="font-size:13px">' + esc(loc.appt || '—') + '</div>' +
-        '<div style="font-size:11px;color:var(--text3)">' + esc(_nomImmeuble(loc.immeuble_id)) + '</div></td>' +
-        '<td style="padding:12px 14px;text-align:right;font-weight:600;font-size:13px">' + fmt(loc.loyer) + '</td>' +
-        '<td style="padding:12px 14px">' + statut + '</td>' +
-        '<td style="padding:12px 14px;text-align:center">' +
-        '<div style="display:flex;gap:6px;justify-content:center">' +
-        '<button onclick="window.IG.locataires.afficherFiche(' + loc.id + ')" title="' + t('Fiche') + '" ' +
-          'style="padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:12px">📋</button>' +
-        '<button onclick="window.IG.locataires.afficherFormulaire(' + loc.id + ')" title="' + t('Modifier') + '" ' +
-          'style="padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:12px">✏️</button>' +
-        '<button onclick="window.IG.paiements.afficherFormulaire(' + loc.id + ')" title="' + t('Encaisser') + '" ' +
-          'style="padding:5px 10px;border-radius:6px;border:none;background:var(--green);color:#fff;cursor:pointer;font-size:12px;font-weight:600">+</button>' +
-        '</div></td>' +
-        '</tr>';
+      var reste = _resteCalc(loc, paiements);
+      var resteHtml = reste > 0
+        ? '<span class="td-amount red">' + fmt(reste) + '</span>'
+        : reste < 0
+          ? '<span class="td-amount" style="color:var(--green)">+' + fmt(Math.abs(reste)) + '</span>'
+          : '–';
+      var obs = esc(loc.observations || '');
+      var alerte = _alerteLabel(loc, paiements);
+      var obsHtml = obs ? '<span style="color:var(--text3);font-size:11px">' + obs + '</span>' : '';
+      if (alerte) obsHtml += (obsHtml ? '<br>' : '') + alerte;
+      if (reste > 0 && loc.loyer > 0) obsHtml += '<br><span style="font-size:10px;color:var(--red)">' + (reste/loc.loyer).toFixed(1) + ' mois dus</span>';
+
+      var isFree = loc.statut === 'libre';
+      html += '<tr id="loc-row-' + loc.id + '" class="' + (isFree ? 'row-libre' : '') + '">' +
+        '<td>' + _localBadge(loc.appt) + '</td>' +
+        '<td class="td-name">' + esc(loc.nom) + '</td>' +
+        '<td style="font-size:12px">' + esc(loc.telephone || '–') + '</td>' +
+        '<td class="td-amount">' + fmt(loc.loyer) + '</td>' +
+        '<td style="font-size:11px;max-width:180px">' + obsHtml + '</td>' +
+        '<td>' + statut + '</td>' +
+        '<td>' + resteHtml + '</td>' +
+        '<td style="white-space:nowrap">' +
+        '<div class="action-menu">' +
+        '<button class="action-menu-btn" onclick="window.IG.locataires._toggleMenu(this)">···</button>' +
+        '<div class="action-dropdown">' +
+        '<div class="action-dropdown-item" onclick="window.IG.paiements.afficherFormulaire(' + loc.id + ');window.IG.locataires._closeMenus()">💳 Paiement</div>' +
+        '<div class="action-dropdown-item" onclick="window.IG.locataires.afficherFormulaire(' + loc.id + ');window.IG.locataires._closeMenus()">📝 Modifier</div>' +
+        '<div class="action-dropdown-item" onclick="window.IG.locataires.afficherFiche(' + loc.id + ');window.IG.locataires._closeMenus()">📊 Fiche de suivi</div>' +
+        (loc.telephone ? '<div class="action-dropdown-item" onclick="window.IG.locataires.envoyerAccesWA(' + loc.id + ');window.IG.locataires._closeMenus()">📲 Envoyer accès WhatsApp</div>' : '') +
+        '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.genererDocument(' + loc.id + ');window.IG.locataires._closeMenus()">📄 Documents</div>' +
+        '<div class="action-dropdown-sep"></div>' +
+        '<div class="action-dropdown-item danger" onclick="window.IG.locataires.liberer(' + loc.id + ');window.IG.locataires._closeMenus()">🔓 Libérer</div>' +
+        '<div class="action-dropdown-item danger" onclick="window.IG.locataires.supprimer(' + loc.id + ');window.IG.locataires._closeMenus()">🗑️ Supprimer</div>' +
+        '</div></div></td></tr>';
     });
-    html += '</tbody></table>';
+    html += '</tbody></table></div>';
     container.innerHTML = html;
   }
 
@@ -270,10 +281,62 @@ window.IG.locataires = (function() {
       ' style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>';
   }
 
+  function _localBadge(appt) {
+    if (!appt) return '–';
+    return '<span class="local-A">' + esc(appt) + '</span>';
+  }
+
+  function _resteCalc(loc, paiements) {
+    if (loc.statut === 'libre') return 0;
+    var pays = (paiements || []).filter(function(p) { return p.locataire_id == loc.id; });
+    var now = new Date();
+    var mois = now.getMonth() + 1;
+    var annee = now.getFullYear();
+    var totalPaye = pays.filter(function(p) {
+      return parseInt(p.annee) === annee && parseInt(p.mois) === mois;
+    }).reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
+    return (loc.loyer || 0) - totalPaye;
+  }
+
+  function _alerteLabel(loc, paiements) {
+    if (loc.statut === 'libre' || loc.statut === 'inactif') return '';
+    var reste = _resteCalc(loc, paiements);
+    if (reste <= 0) return '';
+    var moisDus = Math.round(reste / (loc.loyer || 1));
+    if (moisDus >= 3) return '<span style="font-size:10px;font-weight:700;color:var(--red)">🔴 Cas critique</span>';
+    if (moisDus >= 2) return '<span style="font-size:10px;font-weight:700;color:#E07800">🟠 À surveiller</span>';
+    return '<span style="font-size:10px;font-weight:700;color:#CA8A04">🟡 À surveiller</span>';
+  }
+
+  function _toggleMenu(btn) {
+    var dd = btn.nextElementSibling;
+    var wasOpen = dd.classList.contains('open');
+    _closeMenus();
+    if (!wasOpen) dd.classList.add('open');
+  }
+
+  function _closeMenus() {
+    document.querySelectorAll('.action-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+  }
+
+  function envoyerAccesWA(locId) {
+    var loc = getById(locId);
+    if (!loc) return;
+    var tel = (loc.whatsapp || loc.telephone || '').replace(/\D/g,'');
+    if (!tel) { window.IG.utils.showToast('Pas de numéro WhatsApp', 'red'); return; }
+    if (tel.startsWith('0')) tel = '237' + tel.substring(1);
+    var msg = 'Bonjour ' + loc.nom + ', voici votre accès au portail locataire ImmoGest : https://immogest-34w.pages.dev';
+    window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(msg), '_blank');
+  }
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.action-menu')) _closeMenus();
+  });
+
   return {
     charger, getCache, getById, getByImmeuble, sauvegarder,
     liberer, supprimer, renderListe, afficherFormulaire, afficherFiche,
-    lienWA, _libererConfirm
+    lienWA, _libererConfirm, _toggleMenu, _closeMenus, envoyerAccesWA
   };
 
 })();

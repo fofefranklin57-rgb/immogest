@@ -191,6 +191,17 @@ tr.row-new td { background: rgba(46,204,138,.04); }
 .td-amount { font-family: var(--mono); font-size: 12px; }
 .td-amount.red { color: var(--red); }
 .td-amount.green { color: var(--green); }
+/* ACTION MENU (⋯ dropdown) */
+.action-menu { position: relative; display: inline-block; }
+.action-menu-btn { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 16px; color: var(--text2); transition: all .15s; font-family: inherit; line-height: 1; letter-spacing: 2px; }
+.action-menu-btn:hover { background: var(--bg3); border-color: var(--accent); color: var(--accent); }
+.action-dropdown { position: absolute; right: 0; top: calc(100% + 4px); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 999; min-width: 200px; padding: 4px 0; display: none; flex-direction: column; }
+.action-dropdown.open { display: flex; }
+.action-dropdown-item { padding: 9px 14px; cursor: pointer; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 8px; transition: background .1s; white-space: nowrap; }
+.action-dropdown-item:hover { background: var(--bg3); }
+.action-dropdown-item.danger { color: var(--red); }
+.action-dropdown-item.danger:hover { background: var(--red-bg); }
+.action-dropdown-sep { height: 1px; background: var(--border); margin: 3px 0; }
 /* BUTTONS */
 .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: transparent; color: var(--text); font-size: 12.5px; font-family: var(--font); cursor: pointer; transition: all .16s; white-space: nowrap; font-weight: 500; }
 .btn:hover { background: var(--bg4); border-color: var(--border2); }

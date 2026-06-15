@@ -1,1 +1,8 @@
-[{"relation":["delegate_permission/common.handle_all_urls"],"target":{"namespace":"android_app","package_name":"cm.cabinetcraa.immogest","sha256_cert_fingerprints":["REMPLACER_PAR_VOTRE_FINGERPRINT_SHA256"]}}]
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "dev.pages.immogest_34w.twa",
+    "sha256_cert_fingerprints": ["E7:91:95:C6:E1:DD:95:C0:EF:5D:05:BF:99:53:68:82:F8:66:DE:2B:A7:C7:BF:C3:54:6C:4E:64:29:2E:C8:C4"]
+  }
+}]
