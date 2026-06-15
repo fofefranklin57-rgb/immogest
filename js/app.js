@@ -428,57 +428,172 @@ window.IG.app = (function() {
     if (window.IG.plans) window.IG.plans.renderBlocPlan('plans-bloc');
   }
 
-  // ── Login ─────────────────────────────────────────────────────
+  // ── Login V2 — Dark Navy (style V1) ──────────────────────────
   function _renderLogin() {
     var app = document.getElementById('app');
     if (!app) return;
-    app.innerHTML = '<div style="min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:20px;' +
-      'background:#C8DFF5;background-image:radial-gradient(ellipse 80% 60% at 10% 0%,rgba(99,179,247,0.45) 0%,transparent 60%),' +
-      'radial-gradient(ellipse 60% 50% at 90% 10%,rgba(139,92,246,0.22) 0%,transparent 55%)">' +
-      '<div style="background:rgba(255,255,255,0.82);border-radius:20px;padding:36px 32px;width:100%;max-width:400px;' +
-      'box-shadow:0 20px 60px rgba(14,106,175,0.18);backdrop-filter:blur(16px)">' +
+    // Écran d'accueil : choix du mode (split desktop / stack mobile)
+    app.innerHTML =
+      '<div id="login-root" style="min-height:100dvh;display:flex;background:#0A1628;font-family:var(--font,system-ui)">' +
+      // ── Panneau gauche marketing ──
+      '<div class="login-left" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:60px 64px;' +
+      'background:linear-gradient(135deg,#0A1628 0%,#0D1F3C 60%,#0A2240 100%);position:relative;overflow:hidden">' +
+      '<div style="position:absolute;top:-120px;left:-80px;width:400px;height:400px;border-radius:50%;' +
+      'background:radial-gradient(circle,rgba(37,99,235,0.18) 0%,transparent 70%);pointer-events:none"></div>' +
+      '<div style="position:absolute;bottom:-80px;right:-60px;width:300px;height:300px;border-radius:50%;' +
+      'background:radial-gradient(circle,rgba(14,106,175,0.14) 0%,transparent 70%);pointer-events:none"></div>' +
+      '<div style="position:relative;z-index:1">' +
+      '<p style="color:rgba(100,160,230,0.7);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:20px">GESTION IMMOBILIÈRE PROFESSIONNELLE</p>' +
+      '<h1 style="font-size:52px;font-weight:800;color:#fff;margin-bottom:16px;line-height:1.1">ImmoGest</h1>' +
+      '<p style="color:rgba(200,220,245,0.75);font-size:16px;line-height:1.6;margin-bottom:36px;max-width:420px">' +
+      'La plateforme complète de gestion immobilière.<br>Locataires, encaissements, rapports et bien plus.</p>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:40px">' +
+      _badge('✅','Droit local') + _badge('📊','Hors-ligne') + _badge('📱','Mobile Money') +
+      _badge('🤖','Assistant IA') + _badge('📋','LegalOS') +
+      '</div>' +
+      '<div style="display:flex;gap:40px">' +
+      _stat('100%','INTÉGRÉ') + _stat('100%','COLLABORATIF') + _stat('100%','OFFLINE') +
+      '</div></div></div>' +
+      // ── Panneau droit : carte choix ──
+      '<div class="login-right" style="width:440px;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:32px;' +
+      'background:rgba(6,12,24,0.6);backdrop-filter:blur(20px);border-left:1px solid rgba(255,255,255,0.06)">' +
+      '<div style="width:100%;max-width:380px">' +
+      '<div style="text-align:center;margin-bottom:32px">' +
+      '<div style="width:56px;height:56px;background:rgba(37,99,235,0.2);border:1px solid rgba(37,99,235,0.4);border-radius:16px;' +
+      'display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px">🏢</div>' +
+      '<h2 style="color:#fff;font-size:20px;font-weight:700;margin-bottom:6px">Bienvenue sur ImmoGest</h2>' +
+      '<p style="color:rgba(150,180,220,0.7);font-size:13px">Comment allez-vous utiliser l\'application ?</p>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">' +
+      _modeBtn('🏠','Créer mon espace','Seul ou en famille','window.IG.app._loginMode(\'register\')',true) +
+      _modeBtn('🔗','Rejoindre un espace','Locataire ou employé — code d\'invitation','window.IG.app._loginMode(\'join\')',false) +
+      _modeBtn('🔑','Se connecter à un espace existant','','window.IG.app._loginMode(\'login\')',false) +
+      '</div>' +
+      '<div style="text-align:center">' +
+      '<button onclick="window.IG.app._loginMode(\'marketplace\')" style="background:none;border:none;color:rgba(100,160,230,0.7);font-size:12px;cursor:pointer;padding:4px">🌍 Parcourir la marketplace →</button>' +
+      '</div>' +
+      '<p style="text-align:center;font-size:10px;color:rgba(100,130,170,0.5);margin-top:24px">ImmoGest v2.0 — Cabinet CRAA · Yaoundé</p>' +
+      '</div></div></div>' +
+      // ── CSS responsive ──
+      '<style>' +
+      '@media(max-width:768px){.login-left{display:none!important}.login-right{width:100%!important;border-left:none!important}}' +
+      '</style>';
+  }
+
+  function _badge(icon, label) {
+    return '<span style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:99px;' +
+      'background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.25);color:rgba(180,210,250,0.9);font-size:12px;font-weight:600">' +
+      icon + ' ' + label + '</span>';
+  }
+
+  function _stat(val, label) {
+    return '<div style="text-align:center"><div style="font-size:28px;font-weight:800;color:#2563EB">' + val + '</div>' +
+      '<div style="font-size:10px;color:rgba(100,140,190,0.7);font-weight:600;letter-spacing:1px">' + label + '</div></div>';
+  }
+
+  function _modeBtn(icon, title, sub, onclick, primary) {
+    var bg = primary
+      ? 'background:linear-gradient(135deg,#1D4ED8,#2563EB);border:1px solid rgba(59,130,246,0.5);color:#fff'
+      : 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);color:rgba(220,235,255,0.9)';
+    return '<button onclick="' + onclick + '" style="width:100%;padding:16px 18px;border-radius:14px;cursor:pointer;' +
+      'display:flex;align-items:center;gap:14px;text-align:left;transition:opacity .15s;' + bg + '">' +
+      '<span style="font-size:20px">' + icon + '</span>' +
+      '<div><div style="font-size:14px;font-weight:700">' + title + '</div>' +
+      (sub ? '<div style="font-size:11px;opacity:.65;margin-top:2px">' + sub + '</div>' : '') +
+      '</div></button>';
+  }
+
+  function _loginMode(mode) {
+    if (mode === 'marketplace') { if(window.IG.app) window.IG.app.showPage('marketplace'); return; }
+    var app = document.getElementById('app');
+    if (!app) return;
+    var isRegister = mode === 'register';
+    var isJoin = mode === 'join';
+    var titre = isRegister ? 'Créer mon espace' : isJoin ? 'Rejoindre un espace' : 'Accès Professionnel';
+    var sous = isRegister ? 'MODE PERSONNEL' : isJoin ? 'CODE D\'INVITATION' : 'MODE ENTREPRISE';
+    var formHtml = isRegister ? _registerForm() : isJoin ? _joinForm() : _loginForm();
+    app.innerHTML =
+      '<div style="min-height:100dvh;display:flex;align-items:center;justify-content:center;' +
+      'background:linear-gradient(135deg,#0A1628 0%,#0D1F3C 60%,#091830 100%);padding:20px">' +
+      '<div style="width:100%;max-width:400px">' +
+      '<button onclick="window.IG.app._renderLogin()" style="background:none;border:none;color:rgba(100,160,230,0.7);' +
+      'font-size:13px;cursor:pointer;margin-bottom:28px;display:flex;align-items:center;gap:6px">← RETOUR</button>' +
       '<div style="text-align:center;margin-bottom:28px">' +
-      '<div style="font-size:42px;margin-bottom:8px">🏢</div>' +
-      '<h1 style="font-size:22px;font-weight:700;color:#0E6AAF;margin-bottom:4px">ImmoGest</h1>' +
-      '<p style="color:#3D5270;font-size:13px">Gestion immobilière intelligente</p></div>' +
-      '<div style="display:flex;background:rgba(14,106,175,0.08);border-radius:10px;padding:4px;margin-bottom:24px">' +
-      '<button id="tab-login" onclick="window.IG.app._swTab(\'login\',this)" style="flex:1;padding:8px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:#fff;color:#0E6AAF;box-shadow:0 2px 8px rgba(0,0,0,.08)">' + t('Connexion') + '</button>' +
-      '<button id="tab-reg" onclick="window.IG.app._swTab(\'register\',this)" style="flex:1;padding:8px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:#3D5270">' + t('Créer un compte') + '</button>' +
-      '</div><div id="auth-form">' + _loginForm() + '</div>' +
-      '<p style="text-align:center;font-size:11px;color:#7A90A8;margin-top:20px">ImmoGest v2.0 — Cabinet CRAA</p>' +
+      '<div style="width:52px;height:52px;background:rgba(37,99,235,0.2);border:1px solid rgba(37,99,235,0.35);border-radius:14px;' +
+      'display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px">🏢</div>' +
+      '<h2 style="color:#fff;font-size:19px;font-weight:700;margin-bottom:4px">' + titre + '</h2>' +
+      '<p style="color:rgba(100,160,230,0.6);font-size:11px;font-weight:700;letter-spacing:1.5px">' + sous + '</p>' +
+      '</div>' +
+      '<div>' + formHtml + '</div>' +
       '</div></div>';
   }
 
   function _loginForm() {
-    return '<form onsubmit="window.IG.app._doLogin(event)">' +
-      _ainput('telephone', t('Téléphone'), 'tel', '6XXXXXXXX', true) +
-      _ainput('password', t('Mot de passe'), 'password', '••••••••', true) +
-      '<button type="submit" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#0E6AAF,#0D7FC4);color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px">🔐 ' + t('Se connecter') + '</button>' +
-      '<p class="auth-err" style="color:#B93020;font-size:12px;text-align:center;margin-top:10px;display:none"></p></form>';
+    return '<form onsubmit="window.IG.app._doLogin(event)" style="display:flex;flex-direction:column;gap:0">' +
+      _dinput('telephone', 'IDENTIFIANT', 'tel', 'Nom d\'utilisateur', true) +
+      _dinput('password', 'MOT DE PASSE', 'password', 'Mot de passe', true) +
+      '<button type="submit" style="width:100%;padding:14px;border-radius:12px;border:none;' +
+      'background:linear-gradient(135deg,#1D4ED8,#2563EB);color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">' +
+      t('Se connecter') + '</button>' +
+      '<button type="button" onclick="window.IG.app._loginMode(\'join\')" style="width:100%;padding:10px;border:none;background:none;' +
+      'color:rgba(100,160,230,0.65);font-size:12px;cursor:pointer;margin-top:8px">🔑 Je suis locataire</button>' +
+      '<p class="auth-err" style="color:#F87171;font-size:12px;text-align:center;margin-top:10px;display:none"></p></form>';
   }
 
   function _registerForm() {
-    return '<form onsubmit="window.IG.app._doRegister(event)">' +
-      _ainput('nom', t('Votre nom complet'), 'text', 'Jean Dupont', true) +
-      _ainput('nomCabinet', t('Nom du cabinet (optionnel)'), 'text', 'Cabinet Immobilier...', false) +
-      _ainput('telephone', t('Téléphone'), 'tel', '6XXXXXXXX', true) +
-      _ainput('password', t('Mot de passe'), 'password', 'Min. 6 caractères', true) +
-      '<button type="submit" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#0E7A45,#0A5A35);color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px">🚀 ' + t('Créer mon compte') + '</button>' +
-      '<p class="auth-err" style="color:#B93020;font-size:12px;text-align:center;margin-top:10px;display:none"></p></form>';
+    return '<form onsubmit="window.IG.app._doRegister(event)" style="display:flex;flex-direction:column;gap:0">' +
+      _dinput('nom', 'VOTRE NOM', 'text', 'Nom complet', true) +
+      _dinput('nomCabinet', 'NOM DU CABINET', 'text', 'Cabinet Immobilier (optionnel)', false) +
+      _dinput('telephone', 'TÉLÉPHONE', 'tel', '6XXXXXXXX', true) +
+      _dinput('password', 'MOT DE PASSE', 'password', 'Min. 6 caractères', true) +
+      '<button type="submit" style="width:100%;padding:14px;border-radius:12px;border:none;' +
+      'background:linear-gradient(135deg,#1D4ED8,#2563EB);color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">' +
+      '🚀 ' + t('Créer mon espace') + '</button>' +
+      '<p class="auth-err" style="color:#F87171;font-size:12px;text-align:center;margin-top:10px;display:none"></p></form>';
+  }
+
+  function _joinForm() {
+    return '<form onsubmit="window.IG.app._doJoin(event)" style="display:flex;flex-direction:column;gap:0">' +
+      _dinput('code', 'CODE D\'INVITATION', 'text', 'Ex: ABC123', true) +
+      _dinput('nom', 'VOTRE NOM', 'text', 'Nom complet', true) +
+      _dinput('password', 'MOT DE PASSE', 'password', 'Choisissez un mot de passe', true) +
+      '<button type="submit" style="width:100%;padding:14px;border-radius:12px;border:none;' +
+      'background:linear-gradient(135deg,#1D4ED8,#2563EB);color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">' +
+      '🔗 ' + t('Rejoindre') + '</button>' +
+      '<p class="auth-err" style="color:#F87171;font-size:12px;text-align:center;margin-top:10px;display:none"></p></form>';
+  }
+
+  function _dinput(name, label, type, ph, req) {
+    return '<div style="margin-bottom:18px">' +
+      '<label style="font-size:10px;font-weight:700;color:rgba(100,150,210,0.7);letter-spacing:1.2px;display:block;margin-bottom:8px">' + label + '</label>' +
+      '<input name="' + name + '" type="' + type + '" placeholder="' + ph + '"' + (req ? ' required' : '') +
+      ' style="width:100%;padding:13px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.10);' +
+      'background:rgba(255,255,255,0.06);font-size:14px;color:#fff;outline:none"' +
+      ' onfocus="this.style.borderColor=\'rgba(37,99,235,0.6)\'" onfblur="this.style.borderColor=\'rgba(255,255,255,0.10)\'"></div>';
   }
 
   function _ainput(name, label, type, ph, req) {
-    return '<div style="margin-bottom:14px"><label style="font-size:12px;font-weight:600;color:#3D5270;display:block;margin-bottom:5px">' + label + '</label>' +
-      '<input name="' + name + '" type="' + type + '" placeholder="' + ph + '"' + (req ? ' required' : '') +
-      ' style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid rgba(79,142,247,0.25);background:rgba(232,240,252,0.75);font-size:14px;color:#0F172A"></div>';
+    return _dinput(name, label, type, ph, req);
   }
 
   function _swTab(tab, btn) {
-    var other = tab === 'login' ? document.getElementById('tab-reg') : document.getElementById('tab-login');
-    btn.style.cssText = 'flex:1;padding:8px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:#fff;color:#0E6AAF;box-shadow:0 2px 8px rgba(0,0,0,.08)';
-    if (other) other.style.cssText = 'flex:1;padding:8px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:#3D5270';
     var f = document.getElementById('auth-form');
     if (f) f.innerHTML = tab === 'login' ? _loginForm() : _registerForm();
+  }
+
+  async function _doJoin(e) {
+    e.preventDefault();
+    var fd = new FormData(e.target);
+    var btn = e.target.querySelector('button[type=submit]');
+    var err = e.target.querySelector('.auth-err');
+    if (btn) { btn.textContent = '⏳...'; btn.disabled = true; }
+    try {
+      await window.IG.auth.join(fd.get('code'), fd.get('nom'), fd.get('password'));
+      _showAppShell(); await _loadData(); showPage('dashboard');
+    } catch(ex) {
+      if (err) { err.textContent = ex.message; err.style.display = 'block'; }
+      if (btn) { btn.textContent = '🔗 ' + t('Rejoindre'); btn.disabled = false; }
+    }
   }
 
   async function _doLogin(e) {
