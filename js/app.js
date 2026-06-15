@@ -428,158 +428,352 @@ window.IG.app = (function() {
     if (window.IG.plans) window.IG.plans.renderBlocPlan('plans-bloc');
   }
 
-  // ── Login V2 — Dark Navy (style V1) ──────────────────────────
+  // ── Auth V1 — Multi-step wizard (design fidèle V1) ───────────
   function _renderLogin() {
     var app = document.getElementById('app');
     if (!app) return;
-    // Écran d'accueil : choix du mode (split desktop / stack mobile)
     app.innerHTML =
-      '<div id="login-root" style="min-height:100dvh;display:flex;background:#0A1628;font-family:var(--font,system-ui)">' +
-      // ── Panneau gauche marketing ──
-      '<div class="login-left" style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:60px 64px;' +
-      'background:linear-gradient(135deg,#0A1628 0%,#0D1F3C 60%,#0A2240 100%);position:relative;overflow:hidden">' +
-      '<div style="position:absolute;top:-120px;left:-80px;width:400px;height:400px;border-radius:50%;' +
-      'background:radial-gradient(circle,rgba(37,99,235,0.18) 0%,transparent 70%);pointer-events:none"></div>' +
-      '<div style="position:absolute;bottom:-80px;right:-60px;width:300px;height:300px;border-radius:50%;' +
-      'background:radial-gradient(circle,rgba(14,106,175,0.14) 0%,transparent 70%);pointer-events:none"></div>' +
-      '<div style="position:relative;z-index:1">' +
-      '<p style="color:rgba(100,160,230,0.7);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:20px">GESTION IMMOBILIÈRE PROFESSIONNELLE</p>' +
-      '<h1 style="font-size:52px;font-weight:800;color:#fff;margin-bottom:16px;line-height:1.1">ImmoGest</h1>' +
-      '<p style="color:rgba(200,220,245,0.75);font-size:16px;line-height:1.6;margin-bottom:36px;max-width:420px">' +
-      'La plateforme complète de gestion immobilière.<br>Locataires, encaissements, rapports et bien plus.</p>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:40px">' +
-      _badge('✅','Droit local') + _badge('📊','Hors-ligne') + _badge('📱','Mobile Money') +
-      _badge('🤖','Assistant IA') + _badge('📋','LegalOS') +
+      '<div id="auth-screen" style="position:fixed;inset:0;z-index:9999;min-height:100vh;font-family:\'Segoe UI\',system-ui,sans-serif;overflow:hidden;">' +
+      // Slideshow background
+      '<div id="auth-slides" style="position:absolute;inset:0;z-index:0;">' +
+      '<div class="aslide" style="position:absolute;inset:0;opacity:1;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1400&q=80\') center/cover no-repeat;"></div>' +
+      '<div class="aslide" style="position:absolute;inset:0;opacity:0;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1400&q=80\') center/cover no-repeat;"></div>' +
+      '<div class="aslide" style="position:absolute;inset:0;opacity:0;transition:opacity 1.5s ease;background:url(\'https://images.unsplash.com/photo-1460317442991-0ec209397118?w=1400&q=80\') center/cover no-repeat;"></div>' +
       '</div>' +
-      '<div style="display:flex;gap:40px">' +
-      _stat('100%','INTÉGRÉ') + _stat('100%','COLLABORATIF') + _stat('100%','OFFLINE') +
-      '</div></div></div>' +
-      // ── Panneau droit : carte choix ──
-      '<div class="login-right" style="width:440px;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:32px;' +
-      'background:rgba(6,12,24,0.6);backdrop-filter:blur(20px);border-left:1px solid rgba(255,255,255,0.06)">' +
-      '<div style="width:100%;max-width:380px">' +
-      '<div style="text-align:center;margin-bottom:32px">' +
-      '<div style="width:56px;height:56px;background:rgba(37,99,235,0.2);border:1px solid rgba(37,99,235,0.4);border-radius:16px;' +
-      'display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px">🏢</div>' +
-      '<h2 style="color:#fff;font-size:20px;font-weight:700;margin-bottom:6px">Bienvenue sur ImmoGest</h2>' +
-      '<p style="color:rgba(150,180,220,0.7);font-size:13px">Comment allez-vous utiliser l\'application ?</p>' +
+      // Overlay sombre
+      '<div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg,rgba(5,15,30,0.88) 0%,rgba(10,25,50,0.78) 50%,rgba(5,15,30,0.88) 100%);"></div>' +
+      // Layout principal
+      '<div id="auth-main-layout" style="position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;justify-content:space-between;padding:40px 6%;">' +
+      // Panneau gauche — branding
+      '<div id="auth-branding" style="flex:1;max-width:500px;color:white;padding-right:60px;">' +
+      '<div style="font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:20px;">Gestion Immobilière Professionnelle</div>' +
+      '<h1 style="font-size:52px;font-weight:900;line-height:1.05;margin:0 0 20px;letter-spacing:-2px;">ImmoGest</h1>' +
+      '<p style="font-size:16px;line-height:1.8;color:rgba(255,255,255,0.7);margin-bottom:40px;max-width:380px;">La plateforme complète de gestion immobilière.<br>Locataires, encaissements, rapports et bien plus.</p>' +
+      '<div style="display:flex;gap:32px;">' +
+      '<div><div style="font-size:26px;font-weight:800;color:#4f8ef7;">100%</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">Intégré</div></div>' +
+      '<div><div style="font-size:26px;font-weight:800;color:#4f8ef7;">100%</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">Collaboratif</div></div>' +
+      '<div><div style="font-size:26px;font-weight:800;color:#4f8ef7;">100%</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">Intuitif</div></div>' +
+      '</div></div>' +
+      // Panneau droit — auth-form-box (design V1)
+      '<div class="auth-form-box">' +
+
+      // ── ÉTAPE 1 : Choix du mode ──
+      '<div id="auth-step-1" class="auth-step active">' +
+      '<div style="text-align:center;margin-bottom:28px;">' +
+      '<div style="margin-bottom:10px;display:flex;justify-content:center;"><svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="8" width="28" height="24" rx="2" fill="rgba(79,142,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="8" y="4" width="20" height="6" rx="1" fill="rgba(79,142,247,0.2)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="9" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="16" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="9" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="16" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="14" y="27" width="8" height="5" rx="1" fill="#4f8ef7" opacity=".9"/></svg></div>' +
+      '<div style="font-size:20px;font-weight:800;color:#e8f0fe;letter-spacing:-.5px;">ImmoGest</div>' +
+      '<div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:5px;letter-spacing:1px;text-transform:uppercase;">Gestion Immobilière</div>' +
       '</div>' +
-      '<div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">' +
-      _modeBtn('🏠','Créer mon espace','Seul ou en famille','window.IG.app._loginMode(\'register\')',true) +
-      _modeBtn('🔗','Rejoindre un espace','Locataire ou employé — code d\'invitation','window.IG.app._loginMode(\'join\')',false) +
-      _modeBtn('🔑','Se connecter à un espace existant','','window.IG.app._loginMode(\'login\')',false) +
+      '<div style="display:flex;gap:12px;margin-bottom:12px;">' +
+      '<div class="auth-card-btn" style="border-radius:12px;" onclick="window.IG.app.authGoStep(\'2-perso\')">' +
+      '<div style="margin-bottom:10px;display:flex;justify-content:center;"><svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="18" cy="11" r="6" fill="rgba(79,142,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><path d="M6 30c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="#4f8ef7" stroke-width="1.5" stroke-linecap="round" fill="rgba(79,142,247,0.1)"/></svg></div>' +
+      '<div style="font-weight:700;font-size:13px;color:#e8f0fe;">Mode Personnel</div>' +
+      '<div style="font-size:11px;color:rgba(232,240,254,0.5);margin-top:4px;line-height:1.4;">Propriétaires &amp; Locataires</div>' +
       '</div>' +
-      '<div style="text-align:center">' +
-      '<button onclick="window.IG.app._loginMode(\'marketplace\')" style="background:none;border:none;color:rgba(100,160,230,0.7);font-size:12px;cursor:pointer;padding:4px">🌍 Parcourir la marketplace →</button>' +
+      '<div class="auth-card-btn" style="border-radius:12px;" onclick="window.IG.app.authGoStep(\'2-ent\')">' +
+      '<div style="margin-bottom:10px;display:flex;justify-content:center;"><svg width="26" height="26" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="8" width="28" height="24" rx="2" fill="rgba(79,142,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="8" y="4" width="20" height="6" rx="1" fill="rgba(79,142,247,0.2)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="9" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="16" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="9" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="21" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="14" y="27" width="8" height="5" rx="1" fill="#4f8ef7" opacity=".9"/></svg></div>' +
+      '<div style="font-weight:700;font-size:13px;color:#e8f0fe;">Mode Entreprise</div>' +
+      '<div style="font-size:11px;color:rgba(232,240,254,0.5);margin-top:4px;line-height:1.4;">Équipe &amp; Cabinet</div>' +
+      '</div></div>' +
+      '<div style="text-align:center;margin-top:16px;">' +
+      '<button onclick="window.IG.app.authGoStep(\'register\')" style="background:none;border:none;color:rgba(232,240,254,0.35);font-size:11px;cursor:pointer;font-family:inherit;letter-spacing:.5px;">+ Créer un nouvel espace</button>' +
       '</div>' +
-      '<p style="text-align:center;font-size:10px;color:rgba(100,130,170,0.5);margin-top:24px">ImmoGest v2.0 — Gestion immobilière intelligente</p>' +
-      '</div></div></div>' +
-      // ── CSS responsive ──
-      '<style>' +
-      '@media(max-width:768px){.login-left{display:none!important}.login-right{width:100%!important;border-left:none!important}}' +
-      '</style>';
+      '<div style="text-align:center;margin-top:10px;font-size:10px;color:rgba(232,240,254,0.2);letter-spacing:1px;">ImmoGest v2.0</div>' +
+      '</div>' +
+
+      // ── ÉTAPE 2A : Mode Personnel — choix rôle ──
+      '<div id="auth-step-2-perso" class="auth-step">' +
+      '<button class="auth-back-btn" onclick="window.IG.app.authGoStep(\'1\')">&#8592; Retour</button>' +
+      '<div style="text-align:center;margin-bottom:20px;">' +
+      '<div style="font-size:11px;font-weight:700;color:#4fa2f7;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Mode Personnel</div>' +
+      '<div style="font-size:12px;color:rgba(200,223,248,0.45);">Vous êtes...</div>' +
+      '</div>' +
+      '<div style="margin-bottom:10px;">' +
+      '<div class="auth-card-btn" style="display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px;" onclick="window.IG.app.authGoStep(\'3-admin\')">' +
+      '<svg width="32" height="32" viewBox="0 0 32 32" fill="none" style="flex-shrink:0;"><circle cx="16" cy="10" r="5" fill="rgba(79,162,247,0.2)" stroke="#4fa2f7" stroke-width="1.5"/><path d="M16 6 L17.5 9.5 L21 10 L18.5 12.5 L19 16 L16 14.5 L13 16 L13.5 12.5 L11 10 L14.5 9.5 Z" fill="#4fa2f7" opacity=".7"/><path d="M6 28 C6 22 10 18 16 18 C22 18 26 22 26 28" stroke="#4fa2f7" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>' +
+      '<div><div style="font-weight:700;font-size:13px;color:#e8f4ff;">Administrateur</div><div style="font-size:11px;color:rgba(200,223,248,0.45);margin-top:2px;">Accès complet — gestion de tout</div></div>' +
+      '</div></div>' +
+      '<div style="display:flex;gap:10px;">' +
+      '<div class="auth-card-btn" style="border-radius:10px;" onclick="window.IG.app.authGoStep(\'3-proprio\')">' +
+      '<div style="margin-bottom:8px;display:flex;justify-content:center;"><svg width="30" height="30" viewBox="0 0 32 32" fill="none"><path d="M4 14L16 4l12 10v14a2 2 0 01-2 2H6a2 2 0 01-2-2V14z" fill="rgba(79,162,247,0.15)" stroke="#4fa2f7" stroke-width="1.5"/><rect x="12" y="20" width="8" height="10" rx="1" fill="#4fa2f7" opacity=".6"/></svg></div>' +
+      '<div style="font-weight:700;font-size:12px;color:#e8f4ff;">Propriétaire</div>' +
+      '<div style="font-size:10px;color:rgba(200,223,248,0.45);margin-top:3px;">Gérez vos biens</div>' +
+      '</div>' +
+      '<div class="auth-card-btn" style="border-radius:10px;" onclick="window.IG.app.authGoStep(\'3-locataire\')">' +
+      '<div style="margin-bottom:8px;display:flex;justify-content:center;"><svg width="30" height="30" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="10" r="6" fill="rgba(79,162,247,0.15)" stroke="#4fa2f7" stroke-width="1.5"/><path d="M4 30c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="#4fa2f7" stroke-width="1.5" fill="none"/></svg></div>' +
+      '<div style="font-weight:700;font-size:12px;color:#e8f4ff;">Locataire</div>' +
+      '<div style="font-size:10px;color:rgba(200,223,248,0.45);margin-top:3px;">Votre espace</div>' +
+      '</div></div>' +
+      '</div>' +
+
+      // ── ÉTAPE 3 : Admin / Propriétaire ──
+      '<div id="auth-step-3-admin" class="auth-step">' +
+      '<button class="auth-back-btn" onclick="window.IG.app.authGoStep(\'2-perso\')">&#8592; Retour</button>' +
+      '<div style="text-align:center;margin-bottom:22px;">' +
+      '<svg width="40" height="40" viewBox="0 0 32 32" fill="none" style="display:block;margin:0 auto 10px;"><circle cx="16" cy="10" r="5" fill="rgba(79,162,247,0.2)" stroke="#4fa2f7" stroke-width="1.5"/><path d="M16 6 L17.5 9.5 L21 10 L18.5 12.5 L19 16 L16 14.5 L13 16 L13.5 12.5 L11 10 L14.5 9.5 Z" fill="#4fa2f7" opacity=".8"/><path d="M6 28 C6 22 10 18 16 18 C22 18 26 22 26 28" stroke="#4fa2f7" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>' +
+      '<div style="font-size:16px;font-weight:800;color:#e8f4ff;">Administrateur</div>' +
+      '<div style="font-size:11px;color:rgba(200,223,248,0.4);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;">Mode Personnel</div>' +
+      '</div>' +
+      '<label class="auth-label">NUMÉRO DE TÉLÉPHONE</label>' +
+      '<input type="tel" id="admin-tel" class="auth-input" placeholder="Ex: 699 00 00 00" style="margin-bottom:12px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'admin-pwd\').focus()">' +
+      '<label class="auth-label">MOT DE PASSE</label>' +
+      '<input type="password" id="admin-pwd" class="auth-input" placeholder="Mot de passe" style="margin-bottom:16px;" onkeydown="if(event.key===\'Enter\')window.IG.app.loginAdminV2()">' +
+      '<button class="auth-btn-primary" onclick="window.IG.app.loginAdminV2()">Accéder</button>' +
+      '<div id="err-admin" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>' +
+      '<div style="text-align:center;margin-top:10px;font-size:11px;color:rgba(200,223,248,0.35);">Mot de passe par défaut : <strong style="color:rgba(200,223,248,0.6);">immo2024</strong></div>' +
+      '</div>' +
+
+      // ── ÉTAPE 3B : Propriétaire ──
+      '<div id="auth-step-3-proprio" class="auth-step">' +
+      '<button class="auth-back-btn" onclick="window.IG.app.authGoStep(\'2-perso\')">&#8592; Retour</button>' +
+      '<div style="text-align:center;margin-bottom:22px;">' +
+      '<div style="margin-bottom:8px;display:flex;justify-content:center;"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M4 14L16 4l12 10v14a2 2 0 01-2 2H6a2 2 0 01-2-2V14z" fill="rgba(79,162,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="12" y="20" width="8" height="10" rx="1" fill="#4f8ef7" opacity=".6"/></svg></div>' +
+      '<div style="font-size:16px;font-weight:800;color:#e8f0fe;">Espace Propriétaire</div>' +
+      '<div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:4px;letter-spacing:.5px;">MODE PERSONNEL</div>' +
+      '</div>' +
+      '<label class="auth-label">NUMÉRO DE TÉLÉPHONE</label>' +
+      '<input type="tel" id="proprio-tel" class="auth-input" placeholder="Ex: 699 00 00 00" style="margin-bottom:12px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'proprio-pwd\').focus()">' +
+      '<label class="auth-label">MOT DE PASSE</label>' +
+      '<input type="password" id="proprio-pwd" class="auth-input" placeholder="Mot de passe" style="margin-bottom:16px;" onkeydown="if(event.key===\'Enter\')window.IG.app.loginAdminV2(\'proprio\')">' +
+      '<button class="auth-btn-primary" onclick="window.IG.app.loginAdminV2(\'proprio\')">Accéder à mon espace</button>' +
+      '<div id="err-proprio" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>' +
+      '</div>' +
+
+      // ── ÉTAPE 3C : Locataire ──
+      '<div id="auth-step-3-locataire" class="auth-step">' +
+      '<button class="auth-back-btn" onclick="window.IG.app.authGoStep(\'2-perso\')">&#8592; Retour</button>' +
+      '<div style="text-align:center;margin-bottom:22px;">' +
+      '<div style="margin-bottom:8px;display:flex;justify-content:center;"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M4 14L16 4l12 10v14a2 2 0 01-2 2H6a2 2 0 01-2-2V14z" fill="rgba(79,162,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="12" y="20" width="8" height="10" rx="1" fill="#4f8ef7" opacity=".6"/><rect x="8" y="16" width="5" height="5" rx="1" fill="#4f8ef7" opacity=".5"/><rect x="19" y="16" width="5" height="5" rx="1" fill="#4f8ef7" opacity=".5"/></svg></div>' +
+      '<div style="font-size:16px;font-weight:800;color:#e8f0fe;">Espace Locataire</div>' +
+      '<div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:4px;letter-spacing:.5px;">NUMÉRO + CODE PIN</div>' +
+      '</div>' +
+      '<label class="auth-label">NUMÉRO DE TÉLÉPHONE</label>' +
+      '<input type="tel" id="loc-tel-login" class="auth-input" placeholder="Ex: 699 00 00 00" style="margin-bottom:16px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'loc-pin1\').focus()">' +
+      '<label class="auth-label">CODE PIN</label>' +
+      '<div class="pin-row">' +
+      '<input type="password" id="loc-pin1" class="pin-box" maxlength="1" oninput="if(this.value)document.getElementById(\'loc-pin2\').focus()">' +
+      '<input type="password" id="loc-pin2" class="pin-box" maxlength="1" oninput="if(this.value)document.getElementById(\'loc-pin3\').focus()">' +
+      '<input type="password" id="loc-pin3" class="pin-box" maxlength="1" oninput="if(this.value)document.getElementById(\'loc-pin4\').focus()">' +
+      '<input type="password" id="loc-pin4" class="pin-box" maxlength="1" onkeydown="if(event.key===\'Enter\')window.IG.app.loginLocataireV2()">' +
+      '</div>' +
+      '<button class="auth-btn-primary" onclick="window.IG.app.loginLocataireV2()">Accéder à mon espace</button>' +
+      '<div id="err-locataire" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>' +
+      '<div style="text-align:center;margin-top:10px;font-size:11px;color:rgba(200,223,248,0.35);">PIN par défaut : <strong style="color:rgba(200,223,248,0.6);">1234</strong></div>' +
+      '</div>' +
+
+      // ── ÉTAPE 2B : Mode Entreprise ──
+      '<div id="auth-step-2-ent" class="auth-step">' +
+      '<button class="auth-back-btn" onclick="window.IG.app.authGoStep(\'1\')">&#8592; Retour</button>' +
+      '<div style="text-align:center;margin-bottom:22px;">' +
+      '<div style="margin-bottom:8px;display:flex;justify-content:center;"><svg width="26" height="26" viewBox="0 0 36 36" fill="none"><rect x="4" y="8" width="28" height="24" rx="2" fill="rgba(79,142,247,0.15)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="8" y="4" width="20" height="6" rx="1" fill="rgba(79,142,247,0.2)" stroke="#4f8ef7" stroke-width="1.5"/><rect x="9" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="16" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/><rect x="23" y="14" width="4" height="4" rx="1" fill="#4f8ef7" opacity=".7"/></svg></div>' +
+      '<div style="font-size:16px;font-weight:800;color:#e8f0fe;">Mode Entreprise</div>' +
+      '<div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:4px;letter-spacing:.5px;">ACCÈS PROFESSIONNEL</div>' +
+      '</div>' +
+      '<label class="auth-label">RÔLE</label>' +
+      '<select id="role-selector" class="auth-input" style="margin-bottom:12px;cursor:pointer;" onchange="window.IG.app._onRoleChange(this.value)">' +
+      '<option value="admin">👑 Administrateur</option>' +
+      '<option value="gestionnaire">🏘️ Gestionnaire</option>' +
+      '<option value="comptable">📊 Comptable</option>' +
+      '<option value="agent">🤝 Agent</option>' +
+      '<option value="locataire">🔑 Locataire</option>' +
+      '</select>' +
+      '<div id="creds-section-new">' +
+      '<label class="auth-label">TÉLÉPHONE / IDENTIFIANT</label>' +
+      '<input type="text" id="ent-username" class="auth-input" placeholder="Ex: 699 00 00 00" style="margin-bottom:12px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'ent-password\').focus()">' +
+      '<label class="auth-label">MOT DE PASSE</label>' +
+      '<input type="password" id="ent-password" class="auth-input" placeholder="Mot de passe" style="margin-bottom:16px;" onkeydown="if(event.key===\'Enter\')window.IG.app.loginEntrepriseV2()">' +
+      '</div>' +
+      '<div id="pin-section-new" style="display:none;">' +
+      '<label class="auth-label">NUMÉRO DE TÉLÉPHONE</label>' +
+      '<input type="tel" id="loc-tel-login-ent" class="auth-input" placeholder="Ex: 699 00 00 00" style="margin-bottom:12px;">' +
+      '<label class="auth-label">CODE PIN</label>' +
+      '<div class="pin-row">' +
+      '<input type="password" id="pin1" class="pin-box" maxlength="1" oninput="if(this.value)document.getElementById(\'pin2\').focus()">' +
+      '<input type="password" id="pin2" class="pin-box" maxlength="1" oninput="if(this.value)document.getElementById(\'pin3\').focus()">' +
+      '<input type="password" id="pin3" class="pin-box" maxlength="1" oninput="if(this.value)document.getElementById(\'pin4\').focus()">' +
+      '<input type="password" id="pin4" class="pin-box" maxlength="1" onkeydown="if(event.key===\'Enter\')window.IG.app.loginEntrepriseV2()">' +
+      '</div></div>' +
+      '<button class="auth-btn-primary" onclick="window.IG.app.loginEntrepriseV2()">Se connecter</button>' +
+      '<div id="err-entreprise" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>' +
+      '</div>' +
+
+      // ── ÉTAPE : Créer un espace ──
+      '<div id="auth-step-register" class="auth-step">' +
+      '<button class="auth-back-btn" onclick="window.IG.app.authGoStep(\'1\')">&#8592; Retour</button>' +
+      '<div style="text-align:center;margin-bottom:22px;">' +
+      '<div style="font-size:16px;font-weight:800;color:#e8f4ff;">Créer mon espace</div>' +
+      '<div style="font-size:11px;color:rgba(200,223,248,0.4);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;">Nouvel espace ImmoGest</div>' +
+      '</div>' +
+      '<label class="auth-label">VOTRE NOM</label>' +
+      '<input type="text" id="reg-nom" class="auth-input" placeholder="Nom complet" style="margin-bottom:12px;">' +
+      '<label class="auth-label">NOM DU CABINET (optionnel)</label>' +
+      '<input type="text" id="reg-cabinet" class="auth-input" placeholder="Mon Cabinet Immobilier" style="margin-bottom:12px;">' +
+      '<label class="auth-label">TÉLÉPHONE</label>' +
+      '<input type="tel" id="reg-tel" class="auth-input" placeholder="6XXXXXXXX" style="margin-bottom:12px;">' +
+      '<label class="auth-label">MOT DE PASSE</label>' +
+      '<input type="password" id="reg-pwd" class="auth-input" placeholder="Min. 6 caractères" style="margin-bottom:16px;">' +
+      '<button class="auth-btn-primary" onclick="window.IG.app.registerV2()">🚀 Créer mon espace</button>' +
+      '<div id="err-register" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>' +
+      '</div>' +
+
+      '</div>' + // fin auth-form-box
+      '</div>' + // fin auth-main-layout
+      '</div>';  // fin auth-screen
+
+    // Démarrer le slideshow
+    var slides = document.querySelectorAll('.aslide');
+    if (slides.length > 1) {
+      var idx = 0;
+      setInterval(function() {
+        slides[idx].style.opacity = '0';
+        idx = (idx + 1) % slides.length;
+        slides[idx].style.opacity = '1';
+      }, 4000);
+    }
   }
 
-  function _badge(icon, label) {
-    return '<span style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:99px;' +
-      'background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.25);color:rgba(180,210,250,0.9);font-size:12px;font-weight:600">' +
-      icon + ' ' + label + '</span>';
+  // Navigation entre étapes
+  function authGoStep(step) {
+    document.querySelectorAll('.auth-step').forEach(function(el) {
+      el.classList.remove('active');
+    });
+    var target = document.getElementById('auth-step-' + step);
+    if (target) target.classList.add('active');
+    if (step === '2-ent') {
+      var pinSec = document.getElementById('pin-section-new');
+      var credSec = document.getElementById('creds-section-new');
+      if (pinSec) pinSec.style.display = 'none';
+      if (credSec) credSec.style.display = 'block';
+    }
   }
 
-  function _stat(val, label) {
-    return '<div style="text-align:center"><div style="font-size:28px;font-weight:800;color:#2563EB">' + val + '</div>' +
-      '<div style="font-size:10px;color:rgba(100,140,190,0.7);font-weight:600;letter-spacing:1px">' + label + '</div></div>';
+  // Bascule PIN/credentials selon rôle sélectionné
+  function _onRoleChange(role) {
+    var pinSec = document.getElementById('pin-section-new');
+    var credSec = document.getElementById('creds-section-new');
+    if (!pinSec || !credSec) return;
+    if (role === 'locataire') {
+      pinSec.style.display = 'block';
+      credSec.style.display = 'none';
+    } else {
+      pinSec.style.display = 'none';
+      credSec.style.display = 'block';
+    }
   }
 
-  function _modeBtn(icon, title, sub, onclick, primary) {
-    var bg = primary
-      ? 'background:linear-gradient(135deg,#1D4ED8,#2563EB);border:1px solid rgba(59,130,246,0.5);color:#fff'
-      : 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);color:rgba(220,235,255,0.9)';
-    return '<button onclick="' + onclick + '" style="width:100%;padding:16px 18px;border-radius:14px;cursor:pointer;' +
-      'display:flex;align-items:center;gap:14px;text-align:left;transition:opacity .15s;' + bg + '">' +
-      '<span style="font-size:20px">' + icon + '</span>' +
-      '<div><div style="font-size:14px;font-weight:700">' + title + '</div>' +
-      (sub ? '<div style="font-size:11px;opacity:.65;margin-top:2px">' + sub + '</div>' : '') +
-      '</div></button>';
+  // Login admin / propriétaire (mode personnel)
+  async function loginAdminV2(type) {
+    var telId = type === 'proprio' ? 'proprio-tel' : 'admin-tel';
+    var pwdId = type === 'proprio' ? 'proprio-pwd' : 'admin-pwd';
+    var errId = type === 'proprio' ? 'err-proprio' : 'err-admin';
+    var telEl = document.getElementById(telId);
+    var pwdEl = document.getElementById(pwdId);
+    var errEl = document.getElementById(errId);
+    if (!telEl || !pwdEl) return;
+    var btn = document.querySelector('#auth-step-3-' + (type||'admin') + ' .auth-btn-primary');
+    var orig = btn ? btn.textContent : 'Accéder';
+    if (btn) { btn.textContent = '⏳...'; btn.disabled = true; }
+    if (errEl) errEl.style.display = 'none';
+    try {
+      await window.IG.auth.login(telEl.value.trim(), pwdEl.value);
+      _showAppShell(); await _loadData(); showPage('dashboard');
+    } catch(ex) {
+      if (errEl) { errEl.textContent = ex.message; errEl.style.display = 'block'; }
+      if (btn) { btn.textContent = orig; btn.disabled = false; }
+    }
+  }
+
+  // Login mode Entreprise
+  async function loginEntrepriseV2() {
+    var role = (document.getElementById('role-selector') || {}).value || 'admin';
+    var errEl = document.getElementById('err-entreprise');
+    var btn = document.querySelector('#auth-step-2-ent .auth-btn-primary');
+    var orig = btn ? btn.textContent : 'Se connecter';
+    if (btn) { btn.textContent = '⏳...'; btn.disabled = true; }
+    if (errEl) errEl.style.display = 'none';
+    try {
+      if (role === 'locataire') {
+        // PIN login
+        var tel = (document.getElementById('loc-tel-login-ent') || {}).value || '';
+        var pin = ['pin1','pin2','pin3','pin4'].map(function(id) {
+          return (document.getElementById(id) || {}).value || '';
+        }).join('');
+        await window.IG.auth.login(tel.trim(), pin);
+      } else {
+        var username = (document.getElementById('ent-username') || {}).value || '';
+        var pwd = (document.getElementById('ent-password') || {}).value || '';
+        await window.IG.auth.login(username.trim(), pwd);
+      }
+      _showAppShell(); await _loadData(); showPage('dashboard');
+    } catch(ex) {
+      if (errEl) { errEl.textContent = ex.message; errEl.style.display = 'block'; }
+      if (btn) { btn.textContent = orig; btn.disabled = false; }
+    }
+  }
+
+  // Login locataire (PIN)
+  async function loginLocataireV2() {
+    var tel = (document.getElementById('loc-tel-login') || {}).value || '';
+    var pin = ['loc-pin1','loc-pin2','loc-pin3','loc-pin4'].map(function(id) {
+      return (document.getElementById(id) || {}).value || '';
+    }).join('');
+    var errEl = document.getElementById('err-locataire');
+    var btn = document.querySelector('#auth-step-3-locataire .auth-btn-primary');
+    var orig = btn ? btn.textContent : 'Accéder à mon espace';
+    if (btn) { btn.textContent = '⏳...'; btn.disabled = true; }
+    if (errEl) errEl.style.display = 'none';
+    if (!tel.trim()) {
+      if (errEl) { errEl.textContent = 'Veuillez entrer votre numéro de téléphone'; errEl.style.display = 'block'; }
+      if (btn) { btn.textContent = orig; btn.disabled = false; }
+      return;
+    }
+    if (pin.length < 4) {
+      if (errEl) { errEl.textContent = 'Veuillez entrer votre code PIN (4 chiffres)'; errEl.style.display = 'block'; }
+      if (btn) { btn.textContent = orig; btn.disabled = false; }
+      return;
+    }
+    try {
+      await window.IG.auth.login(tel.trim(), pin);
+      _showAppShell(); await _loadData(); showPage('dashboard');
+    } catch(ex) {
+      if (errEl) { errEl.textContent = ex.message || 'Numéro ou PIN incorrect'; errEl.style.display = 'block'; }
+      if (btn) { btn.textContent = orig; btn.disabled = false; }
+      ['loc-pin1','loc-pin2','loc-pin3','loc-pin4'].forEach(function(id) {
+        var el = document.getElementById(id); if (el) el.value = '';
+      });
+    }
+  }
+
+  // Création d'un espace
+  async function registerV2() {
+    var nom = (document.getElementById('reg-nom') || {}).value || '';
+    var cabinet = (document.getElementById('reg-cabinet') || {}).value || '';
+    var tel = (document.getElementById('reg-tel') || {}).value || '';
+    var pwd = (document.getElementById('reg-pwd') || {}).value || '';
+    var errEl = document.getElementById('err-register');
+    var btn = document.querySelector('#auth-step-register .auth-btn-primary');
+    var orig = btn ? btn.textContent : 'Créer mon espace';
+    if (btn) { btn.textContent = '⏳...'; btn.disabled = true; }
+    if (errEl) errEl.style.display = 'none';
+    try {
+      await window.IG.auth.register(nom, tel.trim(), pwd, cabinet);
+      await window.IG.auth.login(tel.trim(), pwd);
+      _showAppShell(); await _loadData(); showPage('dashboard');
+    } catch(ex) {
+      if (errEl) { errEl.textContent = ex.message; errEl.style.display = 'block'; }
+      if (btn) { btn.textContent = orig; btn.disabled = false; }
+    }
   }
 
   function _loginMode(mode) {
     if (mode === 'marketplace') { if(window.IG.app) window.IG.app.showPage('marketplace'); return; }
-    var app = document.getElementById('app');
-    if (!app) return;
-    var isRegister = mode === 'register';
-    var isJoin = mode === 'join';
-    var titre = isRegister ? 'Créer mon espace' : isJoin ? 'Rejoindre un espace' : 'Accès Professionnel';
-    var sous = isRegister ? 'MODE PERSONNEL' : isJoin ? 'CODE D\'INVITATION' : 'MODE ENTREPRISE';
-    var formHtml = isRegister ? _registerForm() : isJoin ? _joinForm() : _loginForm();
-    app.innerHTML =
-      '<div style="min-height:100dvh;display:flex;align-items:center;justify-content:center;' +
-      'background:linear-gradient(135deg,#0A1628 0%,#0D1F3C 60%,#091830 100%);padding:20px">' +
-      '<div style="width:100%;max-width:400px">' +
-      '<button onclick="window.IG.app._renderLogin()" style="background:none;border:none;color:rgba(100,160,230,0.7);' +
-      'font-size:13px;cursor:pointer;margin-bottom:28px;display:flex;align-items:center;gap:6px">← RETOUR</button>' +
-      '<div style="text-align:center;margin-bottom:28px">' +
-      '<div style="width:52px;height:52px;background:rgba(37,99,235,0.2);border:1px solid rgba(37,99,235,0.35);border-radius:14px;' +
-      'display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px">🏢</div>' +
-      '<h2 style="color:#fff;font-size:19px;font-weight:700;margin-bottom:4px">' + titre + '</h2>' +
-      '<p style="color:rgba(100,160,230,0.6);font-size:11px;font-weight:700;letter-spacing:1.5px">' + sous + '</p>' +
-      '</div>' +
-      '<div>' + formHtml + '</div>' +
-      '</div></div>';
+    authGoStep(mode === 'register' ? 'register' : mode === 'join' ? '2-ent' : '2-ent');
   }
 
-  function _loginForm() {
-    return '<form onsubmit="window.IG.app._doLogin(event)" style="display:flex;flex-direction:column;gap:0">' +
-      _dinput('telephone', 'IDENTIFIANT', 'tel', 'Nom d\'utilisateur', true) +
-      _dinput('password', 'MOT DE PASSE', 'password', 'Mot de passe', true) +
-      '<button type="submit" style="width:100%;padding:14px;border-radius:12px;border:none;' +
-      'background:linear-gradient(135deg,#1D4ED8,#2563EB);color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">' +
-      t('Se connecter') + '</button>' +
-      '<button type="button" onclick="window.IG.app._loginMode(\'join\')" style="width:100%;padding:10px;border:none;background:none;' +
-      'color:rgba(100,160,230,0.65);font-size:12px;cursor:pointer;margin-top:8px">🔑 Je suis locataire</button>' +
-      '<p class="auth-err" style="color:#F87171;font-size:12px;text-align:center;margin-top:10px;display:none"></p></form>';
-  }
+  function _swTab(tab, btn) {}
 
-  function _registerForm() {
-    return '<form onsubmit="window.IG.app._doRegister(event)" style="display:flex;flex-direction:column;gap:0">' +
-      _dinput('nom', 'VOTRE NOM', 'text', 'Nom complet', true) +
-      _dinput('nomCabinet', 'NOM DU CABINET', 'text', 'Cabinet Immobilier (optionnel)', false) +
-      _dinput('telephone', 'TÉLÉPHONE', 'tel', '6XXXXXXXX', true) +
-      _dinput('password', 'MOT DE PASSE', 'password', 'Min. 6 caractères', true) +
-      '<button type="submit" style="width:100%;padding:14px;border-radius:12px;border:none;' +
-      'background:linear-gradient(135deg,#1D4ED8,#2563EB);color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">' +
-      '🚀 ' + t('Créer mon espace') + '</button>' +
-      '<p class="auth-err" style="color:#F87171;font-size:12px;text-align:center;margin-top:10px;display:none"></p></form>';
-  }
-
-  function _joinForm() {
-    return '<form onsubmit="window.IG.app._doJoin(event)" style="display:flex;flex-direction:column;gap:0">' +
-      _dinput('code', 'CODE D\'INVITATION', 'text', 'Ex: ABC123', true) +
-      _dinput('nom', 'VOTRE NOM', 'text', 'Nom complet', true) +
-      _dinput('password', 'MOT DE PASSE', 'password', 'Choisissez un mot de passe', true) +
-      '<button type="submit" style="width:100%;padding:14px;border-radius:12px;border:none;' +
-      'background:linear-gradient(135deg,#1D4ED8,#2563EB);color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">' +
-      '🔗 ' + t('Rejoindre') + '</button>' +
-      '<p class="auth-err" style="color:#F87171;font-size:12px;text-align:center;margin-top:10px;display:none"></p></form>';
-  }
-
-  function _dinput(name, label, type, ph, req) {
-    return '<div style="margin-bottom:18px">' +
-      '<label style="font-size:10px;font-weight:700;color:rgba(100,150,210,0.7);letter-spacing:1.2px;display:block;margin-bottom:8px">' + label + '</label>' +
-      '<input name="' + name + '" type="' + type + '" placeholder="' + ph + '"' + (req ? ' required' : '') +
-      ' style="width:100%;padding:13px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.10);' +
-      'background:rgba(255,255,255,0.06);font-size:14px;color:#fff;outline:none"' +
-      ' onfocus="this.style.borderColor=\'rgba(37,99,235,0.6)\'" onfblur="this.style.borderColor=\'rgba(255,255,255,0.10)\'"></div>';
-  }
-
-  function _ainput(name, label, type, ph, req) {
-    return _dinput(name, label, type, ph, req);
-  }
-
-  function _swTab(tab, btn) {
-    var f = document.getElementById('auth-form');
-    if (f) f.innerHTML = tab === 'login' ? _loginForm() : _registerForm();
-  }
+  function _dinput() { return ''; }
+  function _ainput() { return ''; }
 
   async function _doJoin(e) {
     e.preventDefault();
@@ -635,6 +829,8 @@ window.IG.app = (function() {
     init, showPage, refresh, renderCurrentPage,
     _swTab, _doLogin, _doRegister, _doJoin,
     _loginMode, _renderLogin,
+    authGoStep, loginAdminV2, loginEntrepriseV2, loginLocataireV2, registerV2,
+    _onRoleChange,
     getData: function() { return _data; }
   };
 
