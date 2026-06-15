@@ -63,10 +63,10 @@ export default {
       } catch(_) {}
     }
 
-    const BASE_URL  = 'https://immogest1.fofefranklin57.workers.dev';
-    const MKT_URL   = 'https://immogest-34w.pages.dev/marketplace.html';
+    const BASE_URL  = 'https://marketplace.immogest.com';
+    const MKT_URL   = 'https://marketplace.immogest.com/';
     const APP_URL   = 'https://immogest-34w.pages.dev/';
-    const OG_IMG_DEFAULT = 'https://immogest-34w.pages.dev/og-marketplace.jpg';
+    const OG_IMG_DEFAULT = 'https://marketplace.immogest.com/og-marketplace.jpg';
     const DEVISES_MAP = { XAF:'FCFA', XOF:'FCFA', MAD:'MAD', TND:'TND', EUR:'€', USD:'$' };
     const PAYS_LABELS = { CM:'Cameroun',SN:'Sénégal',CI:"Côte d'Ivoire",GA:'Gabon',MR:'Maroc',TN:'Tunisie',FR:'France',BE:'Belgique' };
     const CAT_LABELS = {
