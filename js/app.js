@@ -65,6 +65,10 @@ window.IG.app = (function() {
       _navSection(t('Réseau')) +
       _navItem('marketplace', '🌍', t('Marketplace')) +
       (session.role === 'locataire' ? _navItem('portail', '🏠', t('Mon espace')) : '') +
+      _navSection(t('Gestion interne')) +
+      (session.role === 'admin' || session.role === 'gestionnaire' ? _navItem('declarations', '📨', t('Déclarations')) : '') +
+      _navItem('messages', '💬', t('Messages')) +
+      _navItem('statistiques', '📈', t('Statistiques')) +
       '</div>' +
       '<div class="sidebar-footer">' +
       '<div id="sidebar-user-info" style="font-weight:600;color:rgba(255,255,255,0.9);margin-bottom:3px;font-size:12px">' + esc(session.nom || '') + '</div>' +
@@ -318,6 +322,14 @@ window.IG.app = (function() {
         if (title) title.textContent = t('Corbeille');
         if (sub) sub.textContent = '';
         _renderCorbeille(); break;
+      case 'declarations':
+        if (title) title.textContent = t('Déclarations');
+        if (sub) sub.textContent = '';
+        _renderDeclarations(); break;
+      case 'messages':
+        if (title) title.textContent = t('Messages internes');
+        if (sub) sub.textContent = '';
+        _renderMessages(); break;
     }
     // Mettre à jour bottom nav
     document.querySelectorAll('[id^="mbn-"]').forEach(function(b) {
@@ -776,6 +788,174 @@ window.IG.app = (function() {
     content.innerHTML = html;
   }
 
+  // ── Déclarations (gestionnaire valide les paiements locataires) ──
+  function _renderDeclarations() {
+    var content = document.getElementById('page-content');
+    if (!content) return;
+    var html = '<div class="content"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
+      '<h2 style="font-size:17px;font-weight:700">📨 Déclarations de paiement</h2>' +
+      '<button onclick="window.IG.app._loadDeclarations()" style="padding:7px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:12px">↻ Actualiser</button>' +
+      '</div><div id="decl-body"><div class="card" style="text-align:center;padding:40px"><div class="spinner" style="margin:0 auto"></div></div></div></div>';
+    content.innerHTML = html;
+    _loadDeclarations();
+  }
+
+  async function _loadDeclarations() {
+    var el = document.getElementById('decl-body');
+    if (!el) return;
+    try {
+      var decls = await window.IG.db.select('declarations');
+      var locs = _data.locataires || [];
+
+      if (!decls || !decls.length) {
+        el.innerHTML = '<div class="card" style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:36px;margin-bottom:10px">📭</div><p>Aucune déclaration en attente</p></div>';
+        return;
+      }
+
+      var pending = decls.filter(function(d) { return d.statut === 'pending'; });
+      var autres = decls.filter(function(d) { return d.statut !== 'pending'; });
+
+      var html = '';
+      if (pending.length) {
+        html += '<h3 style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--yellow)">⏳ En attente de validation (' + pending.length + ')</h3>';
+        html += pending.map(function(d) {
+          var loc = locs.find(function(l) { return l.id == d.locataire_id; }) || {};
+          return '<div class="card" style="margin-bottom:10px;border-left:4px solid var(--yellow)">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">' +
+            '<div>' +
+            '<div style="font-weight:700;font-size:14px">' + esc(loc.nom || 'Locataire #' + d.locataire_id) + '</div>' +
+            '<div style="font-size:12px;color:var(--text3)">' + esc(loc.appt || '') + ' — ' + window.IG.utils.nomMois(d.mois_c) + ' ' + d.annee_c + '</div>' +
+            '<div style="font-size:13px;margin-top:4px"><strong>' + window.IG.utils.formatMontant(d.montant) + '</strong> · ' + esc(d.mode || '') + (d.reference ? ' · Réf: ' + esc(d.reference) : '') + '</div>' +
+            '<div style="font-size:11px;color:var(--text3);margin-top:2px">' + window.IG.utils.formatDate(d.date_declaration) + '</div>' +
+            '</div>' +
+            '<div style="display:flex;gap:8px">' +
+            '<button onclick="window.IG.app._validerDeclaration(' + d.id + ',\'validated\')" style="padding:7px 14px;border-radius:8px;border:none;background:var(--green);color:#fff;cursor:pointer;font-size:12px;font-weight:600">✓ Valider</button>' +
+            '<button onclick="window.IG.app._validerDeclaration(' + d.id + ',\'rejected\')" style="padding:7px 14px;border-radius:8px;border:none;background:var(--red);color:#fff;cursor:pointer;font-size:12px;font-weight:600">✗ Rejeter</button>' +
+            '</div></div></div>';
+        }).join('');
+      }
+
+      if (autres.length) {
+        html += '<h3 style="font-size:14px;font-weight:700;margin:16px 0 10px;color:var(--text3)">Historique (' + autres.length + ')</h3>';
+        html += autres.slice(0, 20).map(function(d) {
+          var loc = locs.find(function(l) { return l.id == d.locataire_id; }) || {};
+          var c = d.statut === 'validated' ? 'var(--green)' : 'var(--red)';
+          var label = d.statut === 'validated' ? '✓ Validé' : '✗ Rejeté';
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-radius:8px;background:var(--bg3);margin-bottom:6px">' +
+            '<div><div style="font-size:13px;font-weight:600">' + esc(loc.nom || '#' + d.locataire_id) + ' — ' + window.IG.utils.formatMontant(d.montant) + '</div>' +
+            '<div style="font-size:11px;color:var(--text3)">' + window.IG.utils.nomMois(d.mois_c) + ' ' + d.annee_c + '</div></div>' +
+            '<span style="font-size:11px;font-weight:700;color:' + c + '">' + label + '</span></div>';
+        }).join('');
+      }
+
+      el.innerHTML = html;
+    } catch(e) {
+      el.innerHTML = '<div class="alert alert-yellow">Erreur chargement: ' + esc(e.message) + '</div>';
+    }
+  }
+
+  async function _validerDeclaration(id, statut) {
+    try {
+      // Mettre à jour le statut de la déclaration
+      await window.IG.db.update('declarations', { statut: statut }, { id: id });
+
+      if (statut === 'validated') {
+        // Récupérer la déclaration pour créer le paiement
+        var decls = await window.IG.db.select('declarations', { id: id });
+        var d = decls && decls[0];
+        if (d) {
+          await window.IG.db.insert('paiements', [{
+            locataire_id: d.locataire_id,
+            immeuble_id: d.immeuble_id,
+            mois: d.mois_c,
+            annee: d.annee_c,
+            montant: d.montant,
+            mode: d.mode || 'especes',
+            reference: d.reference || '',
+            note: 'Déclaration validée'
+          }]);
+        }
+        window.IG.utils.showToast('Déclaration validée, paiement créé ✓', 'green');
+      } else {
+        window.IG.utils.showToast('Déclaration rejetée', 'red');
+      }
+      _loadDeclarations();
+      await _loadData();
+    } catch(e) { window.IG.utils.showToast('Erreur: ' + e.message, 'red'); }
+  }
+
+  // ── Messages internes ─────────────────────────────────────────
+  function _renderMessages() {
+    var content = document.getElementById('page-content');
+    if (!content) return;
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var html = '<div class="content">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
+      '<h2 style="font-size:17px;font-weight:700">💬 Messages internes</h2>' +
+      '<button onclick="window.IG.app._nouveauMessage()" style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:12px;font-weight:600">✉️ Nouveau</button>' +
+      '</div><div id="messages-body"><div class="card" style="text-align:center;padding:40px"><div class="spinner" style="margin:0 auto"></div></div></div></div>';
+    content.innerHTML = html;
+    _loadMessages();
+  }
+
+  async function _loadMessages() {
+    var el = document.getElementById('messages-body');
+    if (!el) return;
+    try {
+      var msgs = await window.IG.db.select('messages_internes');
+      if (!msgs || !msgs.length) {
+        el.innerHTML = '<div class="card" style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:36px;margin-bottom:10px">💬</div><p>Aucun message</p></div>';
+        return;
+      }
+      msgs.sort(function(a,b) { return new Date(b.created_at) - new Date(a.created_at); });
+      el.innerHTML = msgs.map(function(m) {
+        var lu = m.lu_par && m.lu_par.includes(window.IG.auth ? window.IG.auth.getSession().userId : '');
+        return '<div class="card" style="margin-bottom:10px;' + (!lu ? 'border-left:3px solid var(--accent)' : '') + '">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+          '<div>' +
+          '<div style="font-weight:700;font-size:13px' + (!lu ? ';color:var(--accent)' : '') + '">' + esc(m.sujet || 'Message') + '</div>' +
+          '<div style="font-size:12px;color:var(--text3);margin-top:2px">' + esc(m.de_nom || 'Système') + ' · ' + window.IG.utils.formatDate(m.created_at) + '</div>' +
+          '<div style="font-size:13px;margin-top:6px">' + esc(m.contenu || '') + '</div>' +
+          '</div>' +
+          (!lu ? '<span style="font-size:10px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:99px;white-space:nowrap">Nouveau</span>' : '') +
+          '</div></div>';
+      }).join('');
+    } catch(e) {
+      el.innerHTML = '<div class="alert alert-yellow">Erreur: ' + esc(e.message) + '</div>';
+    }
+  }
+
+  function _nouveauMessage() {
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var html = '<h3 style="font-size:15px;font-weight:700;margin-bottom:14px">✉️ Nouveau message interne</h3>' +
+      '<label style="font-size:12px;color:var(--text3)">SUJET</label>' +
+      '<input id="msg-sujet" placeholder="Sujet du message" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin:4px 0 12px;box-sizing:border-box">' +
+      '<label style="font-size:12px;color:var(--text3)">MESSAGE</label>' +
+      '<textarea id="msg-contenu" rows="4" placeholder="Contenu du message..." style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin:4px 0 14px;box-sizing:border-box;resize:vertical"></textarea>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+      '<button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Annuler</button>' +
+      '<button id="msg-send" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Envoyer</button>' +
+      '</div>';
+    var modal = window.IG.utils.showModal(html, { width: '480px' });
+    modal.box.querySelector('#msg-send').addEventListener('click', async function() {
+      var sujet = modal.box.querySelector('#msg-sujet').value.trim();
+      var contenu = modal.box.querySelector('#msg-contenu').value.trim();
+      if (!contenu) { window.IG.utils.showToast('Message vide', 'red'); return; }
+      try {
+        await window.IG.db.insert('messages_internes', [{
+          sujet: sujet || 'Sans sujet',
+          contenu: contenu,
+          de_user_id: session.userId || '',
+          de_nom: session.nom || '',
+          lu_par: []
+        }]);
+        window.IG.utils.showToast('Message envoyé ✓', 'green');
+        modal.close();
+        _loadMessages();
+      } catch(e) { window.IG.utils.showToast('Erreur: ' + e.message, 'red'); }
+    });
+  }
+
   async function _restaurer(corbeilleId) {
     try {
       var items = await window.IG.db.select('corbeille', { id: corbeilleId });
@@ -1198,6 +1378,8 @@ window.IG.app = (function() {
     toggleSidebar, closeSidebar,
     _refreshPaiements, _restaurer,
     _genererInvitation, _toggleUser, _appliquerPromo,
+    _loadDeclarations, _validerDeclaration,
+    _loadMessages, _nouveauMessage,
     getData: function() { return _data; },
     topbarAction, _showMobileNav
   };
