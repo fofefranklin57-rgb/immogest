@@ -1172,10 +1172,9 @@ window.IG.app = (function() {
     if (target) target.classList.add('active');
   }
 
-  async function browseMarketplace() {
-    _showAppShell();
-    await _loadData();
-    showPage('marketplace');
+  function browseMarketplace() {
+    var base = (window.APP_CONFIG && window.APP_CONFIG.APP_URL) || '';
+    window.open(base + '/marketplace.html', '_blank');
   }
 
   async function doLogin() {
