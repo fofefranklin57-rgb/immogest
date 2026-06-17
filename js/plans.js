@@ -104,6 +104,9 @@ window.IG.plans = (function() {
 
   // ── Modal upgrade ─────────────────────────────────────────────
   function afficherUpgrade() {
+    // Fermer toute modal upgrade déjà ouverte avant d'en ouvrir une nouvelle
+    var existing = document.getElementById('ig-upgrade-modal');
+    if (existing) existing.remove();
     var planActuel = getPlan();
     var fmt = window.IG.utils.formatMontant;
 
@@ -204,7 +207,8 @@ window.IG.plans = (function() {
 
     html += '</div><button data-modal-close style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px;color:var(--text3)">Pas maintenant</button>';
 
-    window.IG.utils.showModal(html, { width: '600px' });
+    var m = window.IG.utils.showModal(html, { width: '600px' });
+    m.overlay.id = 'ig-upgrade-modal';
   }
 
   async function _initierPaiement(planId, prix) {
@@ -212,7 +216,8 @@ window.IG.plans = (function() {
     var ref = 'IMMOGEST-' + (session.tenantId || '').substring(0,8).toUpperCase() + '-' + planId.toUpperCase() + '-' + Date.now();
 
     // Fermer modal upgrade
-    document.querySelector('.ig-modal-overlay')?.click();
+    var upg = document.getElementById('ig-upgrade-modal');
+    if (upg) upg.remove();
 
     window.IG.utils.showToast('Redirection vers le paiement...', 'blue');
 
