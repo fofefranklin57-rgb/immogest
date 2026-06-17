@@ -83,6 +83,7 @@ window.IG.app = (function() {
       '<div id="sidebar-user-info" style="font-weight:600;color:rgba(255,255,255,0.9);margin-bottom:3px;font-size:12px">' + esc(session.nom || '') + '</div>' +
       '<div id="sync-indicator" style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:8px">● Sync...</div>' +
       (session.role !== 'locataire' ? '<div onclick="window.IG.app.showPage(\'portail\')" class="sidebar-footer-btn sidebar-footer-btn-green"><span>🏢</span><span>' + t('Portail Propriétaire') + '</span></div>' : '') +
+      '<div onclick="window.IG.app.openGuide()" class="sidebar-footer-btn"><span>📄 ' + t('Guide d\'utilisation') + '</span><span style="font-size:9px;background:#e74c3c;color:#fff;padding:1px 5px;border-radius:4px;font-weight:700;letter-spacing:.03em">PDF</span></div>' +
       '<div onclick="window.IG.app.showPage(\'archives\')" class="sidebar-footer-btn"><span>🗄️ ' + t('Archives') + '</span></div>' +
       '<div onclick="window.IG.app.showPage(\'corbeille\')" class="sidebar-footer-btn" style="margin-bottom:8px"><span>🗑️ ' + t('Corbeille') + '</span><span id="badge-corbeille" class="nav-badge" style="display:none">0</span></div>' +
       '<div style="display:flex;gap:6px;margin-bottom:6px">' +
@@ -161,6 +162,10 @@ window.IG.app = (function() {
       var btn = document.getElementById('btn-dark-mode');
       if (btn) btn.textContent = '☀️';
     }
+  }
+
+  function openGuide() {
+    window.open('https://immogest-34w.pages.dev/guide.pdf', '_blank');
   }
 
   function lockScreen() {
@@ -1349,7 +1354,7 @@ window.IG.app = (function() {
     init, showPage, refresh, renderCurrentPage,
     _renderLogin,
     authGoStep, doLogin, joinV2, registerV2, browseMarketplace,
-    toggleSidebar, closeSidebar, toggleSidebarSection, toggleDarkMode, lockScreen,
+    toggleSidebar, closeSidebar, toggleSidebarSection, toggleDarkMode, lockScreen, openGuide,
     _refreshPaiements, _restaurer,
     _genererInvitation, _toggleUser, _appliquerPromo,
     _loadDeclarations, _validerDeclaration,
