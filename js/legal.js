@@ -249,7 +249,7 @@ window.IG.legal = (function() {
         '<div style="font-size:48px;margin-bottom:16px">⚖️</div>' +
         '<h3 style="margin-bottom:8px">LegalOS</h3>' +
         '<p style="color:var(--text3);margin-bottom:20px">Module juridique disponible à partir du plan Pro</p>' +
-        '<button onclick="window.IG.app.showPage(\'abonnement\')" class="btn-primary" style="padding:10px 24px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:600">Passer au plan Pro</button>' +
+        '<button onclick="window.IG.plans.afficherUpgrade()" class="btn-primary" style="padding:10px 24px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:600">🚀 Passer au plan Pro</button>' +
         '</div></div>';
       return;
     }
