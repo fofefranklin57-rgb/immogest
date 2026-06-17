@@ -27,8 +27,39 @@ window.IG.ads = (function() {
     } else {
       _injecterScript();
     }
-    // Bannière CPM dans le panel IA — tous plans
-    _injecterBanniereIA();
+    // Bannière Adsterra fixe en bas — tous plans, toutes pages
+    _injecterBanniereFixe();
+  }
+
+  function _injecterBanniereFixe() {
+    if (document.getElementById('ig-fixed-ad')) return;
+
+    var wrap = document.createElement('div');
+    wrap.id = 'ig-fixed-ad';
+    wrap.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:990;' +
+      'background:var(--bg2);border-top:1px solid var(--border2);' +
+      'display:flex;align-items:center;justify-content:center;' +
+      'min-height:90px;padding:4px 80px 4px 4px;overflow:hidden;';
+
+    // Étiquette "Pub"
+    var lbl = document.createElement('span');
+    lbl.style.cssText = 'position:absolute;top:3px;left:6px;font-size:9px;' +
+      'color:var(--text3);text-transform:uppercase;letter-spacing:.05em;font-weight:600;opacity:.5;';
+    lbl.textContent = 'Pub';
+    wrap.appendChild(lbl);
+
+    // Slot Adsterra zone 1 — ID exact requis par le script invoke.js
+    var slot = document.createElement('div');
+    slot.id = 'container-' + AD1_KEY;
+    wrap.appendChild(slot);
+
+    document.body.appendChild(wrap);
+
+    // Décaler le contenu principal pour ne pas masquer
+    document.body.style.paddingBottom = '96px';
+
+    // Script Adsterra zone 1 (chargé une seule fois)
+    _chargerScriptAD1();
   }
 
   // Zone In-Page Push Monetag — CPM, impression seule, tous plans
@@ -218,8 +249,18 @@ window.IG.ads = (function() {
   var AD2_KEY = 'eca414bf7ac681267ea5cd09ff57482a';
   var AD2_SRC = 'https://www.highperformanceformat.com/' + AD2_KEY + '/invoke.js';
 
+  var _ad1ScriptLoaded = false;
   var _ad1Loaded = false;
   var _ad2Loaded = false;
+
+  function _chargerScriptAD1() {
+    if (_ad1ScriptLoaded) return;
+    _ad1ScriptLoaded = true;
+    var s = document.createElement('script');
+    s.async = true; s.setAttribute('data-cfasync', 'false');
+    s.src = AD1_SRC;
+    document.head.appendChild(s);
+  }
 
   function _injecterAdsterra(containerId) {
     var container = document.getElementById(containerId);
@@ -228,13 +269,13 @@ window.IG.ads = (function() {
 
     if (isIA && !_ad1Loaded) {
       _ad1Loaded = true;
-      var slot = document.createElement('div');
-      slot.id = 'container-' + AD1_KEY;
-      container.appendChild(slot);
-      var s = document.createElement('script');
-      s.async = true; s.setAttribute('data-cfasync', 'false');
-      s.src = AD1_SRC;
-      document.head.appendChild(s);
+      // Si la bannière fixe a déjà l'ID exact, le script AD1 est déjà chargé — rien à faire
+      if (!document.getElementById('container-' + AD1_KEY)) {
+        var slot = document.createElement('div');
+        slot.id = 'container-' + AD1_KEY;
+        container.appendChild(slot);
+        _chargerScriptAD1();
+      }
     }
 
     if (!isIA && !_ad2Loaded) {
