@@ -32,38 +32,36 @@ window.IG.ads = (function() {
     _injecterBanniereIA();
   }
 
-  // ID de la zone Banner dans Monetag (créer une zone "Display Banner 300x60" dans le dashboard)
-  // https://monetag.com/ → Sites → Add Zone → Display Banners → format 300x60 ou "Responsive"
-  var BANNER_ZONE_ID = window.IG.config ? (window.IG.config.monetagBannerZone || '') : '';
+  // Zone In-Page Push Monetag — CPM, impression seule, tous plans
+  var IPP_ZONE_ID = '11087888';
 
   function _injecterBanniereIA() {
+    // Injecte le script In-Page Push une seule fois (peut déjà être chargé par portail)
+    if (document.getElementById('monetag-ipp-app')) return;
+    var s = document.createElement('script');
+    s.id = 'monetag-ipp-app';
+    s.setAttribute('data-cfasync', 'false');
+    s.dataset.zone = IPP_ZONE_ID;
+    s.src = 'https://nap5k.com/tag.min.js';
+    s.async = true;
+    document.head.appendChild(s);
+
+    // Remplacer le bloc #ai-ad-banner par une bannière promo maison discrète
+    // (le In-Page Push Monetag s'affiche lui en bas de page globalement)
     var _tries = 0;
     var _check = setInterval(function() {
       var banner = document.getElementById('ai-ad-banner');
       if (banner || ++_tries > 40) {
         clearInterval(_check);
         if (!banner) return;
-        if (BANNER_ZONE_ID) {
-          // Zone Banner Monetag dédiée
-          var wrap = document.createElement('div');
-          wrap.id = 'monetag-banner-slot';
-          banner.appendChild(wrap);
-          var s = document.createElement('script');
-          s.setAttribute('data-cfasync', 'false');
-          s.src = '//thubanoa.com/1?z=' + BANNER_ZONE_ID;
-          s.async = true;
-          banner.appendChild(s);
-        } else {
-          // Fallback maison — bannière promo ImmoGest jusqu'à config Monetag
-          banner.innerHTML +=
-            '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:10px;cursor:pointer" onclick="window.IG.plans.afficherUpgrade()">' +
-            '<div style="font-size:11px;color:var(--text2);line-height:1.4">' +
-              '<strong style="color:var(--accent)">ImmoGest Pro</strong> — Rapports Word, IA illimitée, export.<br>' +
-              '<span style="color:var(--text3)">Dès 9 999 FCFA/mois · Annulation libre</span>' +
-            '</div>' +
-            '<div style="flex-shrink:0;padding:6px 12px;border-radius:8px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;white-space:nowrap">Voir →</div>' +
-            '</div>';
-        }
+        banner.innerHTML +=
+          '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:10px;cursor:pointer;border-top:1px solid var(--border)" onclick="window.IG.plans.afficherUpgrade()">' +
+          '<div style="font-size:11px;color:var(--text2);line-height:1.4">' +
+            '<strong style="color:var(--accent)">ImmoGest Pro</strong> — IA illimitée, rapports Word, export données.<br>' +
+            '<span style="color:var(--text3)">Dès 9 999 FCFA/mois · 2 mois offerts en annuel</span>' +
+          '</div>' +
+          '<div style="flex-shrink:0;padding:6px 12px;border-radius:8px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;white-space:nowrap">Voir →</div>' +
+          '</div>';
       }
     }, 250);
   }
