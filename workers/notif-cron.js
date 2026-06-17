@@ -633,7 +633,7 @@ ${_footer()}</body></html>`;
       }
 
       // ── GET /leads-gestionnaire — leads du tenant authentifié ────
-      if (path === '/leads-gestionnaire' && method === 'GET') {
+      if (path === '/leads-gestionnaire' && request.method === 'GET') {
         const authHeader = request.headers.get('Authorization') || '';
         const token = authHeader.replace('Bearer ', '').trim();
         if (!token) return json({ error: 'Non autorisé' }, 401);
@@ -652,7 +652,7 @@ ${_footer()}</body></html>`;
       }
 
       // ── POST /lead — enregistrement lead public (no auth) ─────────
-      if (path === '/lead' && method === 'POST') {
+      if (path === '/lead' && request.method === 'POST') {
         let body = {};
         try { body = await request.json(); } catch(_) {}
         const { annonce_id, type, nom, telephone, email, message, source } = body;
