@@ -303,12 +303,13 @@ window.IG.locataires = (function() {
 
   async function _publierAnnonce(annonce_id, btn) {
     var WORKER = window.APP_CONFIG ? window.APP_CONFIG.API_URL : 'https://immogest1.fofefranklin57.workers.dev';
-    var tok = window.IG.auth && window.IG.auth.getToken ? window.IG.auth.getToken() : '';
+    var tenantId = window.IG.auth && window.IG.auth.getTenantId ? window.IG.auth.getTenantId() : null;
     if (btn) btn.disabled = true;
     try {
       var r = await fetch(WORKER + '/annonce-publier/' + annonce_id, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant_id: tenantId })
       });
       var res = r.ok ? await r.json() : null;
       if (res && res.success) {

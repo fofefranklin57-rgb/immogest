@@ -665,12 +665,13 @@ ${_footer()}</body></html>`;
         const ann = ar.ok ? await ar.json() : [];
         const tenant_id = ann[0]?.tenant_id || null;
 
-        // Incrémenter vues si type = whatsapp ou visite
-        if (type === 'whatsapp' || type === 'visite') {
-          await sbFetch('marketplace_annonces', '?id=eq.' + annonce_id, 'PATCH',
-            { vues: null }, // géré via RPC ci-dessous
-            false
-          );
+        // Incrémenter vues si type = information/whatsapp/visite
+        if (type === 'information' || type === 'whatsapp' || type === 'visite') {
+          await fetch(sbBase + '/rest/v1/rpc/increment_vues', {
+            method: 'POST',
+            headers: { ...sbHdrs(), 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ annonce_id: parseInt(annonce_id) })
+          }).catch(() => {});
         }
 
         const leadBody = JSON.stringify({ annonce_id, tenant_id, type, statut: 'nouveau', nom: nom||null, telephone: telephone||null, email: email||null, message: message||null, source: source||null, ip: request.headers.get('CF-Connecting-IP')||null, user_agent: request.headers.get('User-Agent')||null });
@@ -771,11 +772,12 @@ ${_footer()}</body></html>`;
         const annonce_id = parseInt(path.split('/')[2]);
         if (!annonce_id) return json({ error: 'id invalide' }, 400);
 
-        // Vérifier auth basique via header Authorization
-        const authHdr = request.headers.get('Authorization') || '';
-        if (!authHdr.startsWith('Bearer ')) return json({ error: 'Auth requise' }, 401);
+        let pubBody = {};
+        try { pubBody = await request.json(); } catch(_) {}
+        const { tenant_id: pubTenantId } = pubBody;
+        if (!pubTenantId) return json({ error: 'tenant_id requis' }, 400);
 
-        const r = await sbFetch('marketplace_annonces', '?id=eq.' + annonce_id + '&select=*&limit=1');
+        const r = await sbFetch('marketplace_annonces', '?id=eq.' + annonce_id + '&tenant_id=eq.' + pubTenantId + '&select=*&limit=1');
         const anns = r.ok ? await r.json() : [];
         if (!anns.length) return json({ error: 'Annonce introuvable' }, 404);
 

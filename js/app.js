@@ -61,22 +61,25 @@ window.IG.app = (function() {
       _navItem('paiements', '💰', t('Encaissements')) +
       _navItem('relances', '⚠️', t('Relances'), true) +
       _navItem('rapports', '📄', t('Rapports')) +
+      _navItem('rapport-annuel', '📅', t('Rapport annuel')) +
+      _navItem('statistiques', '📈', t('Statistiques')) +
       _navItem('juridique', '⚖️', t('Juridique')) +
       _navSection(t('Réseau')) +
       _navItem('marketplace', '🌍', t('Marketplace')) +
       (session.role !== 'locataire' ? _navItem('leads', '📬', t('Leads')) : '') +
       (session.role === 'locataire' ? _navItem('portail', '🏠', t('Mon espace')) : '') +
-      _navSection(t('Gestion interne')) +
+      _navSection(t('Interne')) +
       (session.role === 'admin' || session.role === 'gestionnaire' ? _navItem('declarations', '📨', t('Déclarations')) : '') +
       _navItem('messages', '💬', t('Messages')) +
       _navItem('signatures', '✍️', t('Signatures')) +
-      _navItem('statistiques', '📈', t('Statistiques')) +
+      _navItem('parametres', '⚙️', t('Paramètres')) +
       '</div>' +
       '<div class="sidebar-footer">' +
       '<div id="sidebar-user-info" style="font-weight:600;color:rgba(255,255,255,0.9);margin-bottom:3px;font-size:12px">' + esc(session.nom || '') + '</div>' +
       '<div id="sync-indicator" style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:8px">● Sync...</div>' +
-      '<div onclick="window.IG.app.showPage(\'archives\')" style="margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:7px;cursor:pointer;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.8);font-size:12px"><span>🗄️ Archives</span></div>' +
-      '<div onclick="window.IG.app.showPage(\'corbeille\')" style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:7px;cursor:pointer;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.8);font-size:12px"><span>🗑️ Corbeille</span></div>' +
+      (session.role !== 'locataire' ? '<div onclick="window.IG.app.showPage(\'portail\')" class="sidebar-footer-btn sidebar-footer-btn-green"><span>🏢</span><span>' + t('Portail Propriétaire') + '</span></div>' : '') +
+      '<div onclick="window.IG.app.showPage(\'archives\')" class="sidebar-footer-btn"><span>🗄️ ' + t('Archives') + '</span></div>' +
+      '<div onclick="window.IG.app.showPage(\'corbeille\')" class="sidebar-footer-btn" style="margin-bottom:8px"><span>🗑️ ' + t('Corbeille') + '</span><span id="badge-corbeille" class="nav-badge" style="display:none">0</span></div>' +
       '<button onclick="window.IG.auth.logout()" style="width:100%;padding:8px;border-radius:7px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px">⏻ Se déconnecter</button>' +
       '</div></nav>' +
       // Overlay mobile
@@ -189,6 +192,17 @@ window.IG.app = (function() {
     badge.style.display = nb > 0 ? 'inline-block' : 'none';
   }
 
+  async function _updateCorbeilleBadge() {
+    try {
+      var items = await window.IG.db.select('corbeille');
+      var badge = document.getElementById('badge-corbeille');
+      if (!badge) return;
+      var nb = (items || []).length;
+      badge.textContent = nb;
+      badge.style.display = nb > 0 ? 'inline-block' : 'none';
+    } catch(_) {}
+  }
+
   function _navSection(label) {
     return '<div class="nav-section">' + label + '</div>';
   }
@@ -212,6 +226,7 @@ window.IG.app = (function() {
       _setSyncStatus('ok');
       _updateSidebarImmeubles();
       _updateRelancesBadge();
+      _updateCorbeilleBadge();
     } catch(e) {
       _setSyncStatus('error');
       // Fallback localStorage
@@ -1290,6 +1305,7 @@ window.IG.app = (function() {
     _genererInvitation, _toggleUser, _appliquerPromo,
     _loadDeclarations, _validerDeclaration,
     _loadMessages, _nouveauMessage,
+    _sauvegarderModePublication, _chargerModePublication,
     getData: function() { return _data; },
     topbarAction, _showMobileNav
   };
