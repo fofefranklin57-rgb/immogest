@@ -92,6 +92,36 @@ window.IG.app = (function() {
       '</div>' +
       '<button onclick="window.IG.auth.logout()" style="width:100%;padding:8px;border-radius:7px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px">⏻ Se déconnecter</button>' +
       '</div></nav>' +
+      // Bouton IA flottant
+      '<button id="ai-float-btn" onclick="window.IG.app.toggleAIChat()" title="Assistant IA ImmoGest">' +
+      '<svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6L17 21H7l1.3-6A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/><circle cx="9" cy="9" r="1" fill="#fff" stroke="none"/><circle cx="15" cy="9" r="1" fill="#fff" stroke="none"/><path d="M9 13s1 2 3 2 3-2 3-2"/></svg>' +
+      '</button>' +
+      // Panel chat IA
+      '<div id="ai-chat-panel">' +
+      '<div style="padding:13px 16px;background:linear-gradient(135deg,#0e6aaf,#6b46c1);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">' +
+      '<div style="display:flex;align-items:center;gap:10px;">' +
+      '<div style="width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6L17 21H7l1.3-6A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/><circle cx="9" cy="9" r="1" fill="#fff" stroke="none"/><circle cx="15" cy="9" r="1" fill="#fff" stroke="none"/></svg></div>' +
+      '<div><div style="font-size:13px;font-weight:700;">Assistant ImmoGest</div>' +
+      '<div style="font-size:10px;opacity:.85;display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#4ade80;display:inline-block;"></span>En ligne · IA connectée</div></div>' +
+      '</div>' +
+      '<button onclick="window.IG.app.toggleAIChat()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>' +
+      '</div>' +
+      '<div id="ai-chat-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--bg3);">' +
+      '<div class="ai-msg-bot"><div class="ai-avatar"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6L17 21H7l1.3-6A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/><circle cx="9" cy="9" r="1" fill="#fff" stroke="none"/><circle cx="15" cy="9" r="1" fill="#fff" stroke="none"/></svg></div>' +
+      '<div class="ai-bubble-bot">Bonjour ! Je suis votre assistant ImmoGest.<br>Je connais vos immeubles, locataires et paiements en temps réel. Posez-moi n\'importe quelle question ⬇️</div></div>' +
+      '</div>' +
+      '<div style="padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;background:var(--bg2);flex-shrink:0;">' +
+      '<button class="ai-chip" onclick="window.IG.app.aiQuickAction(\'impayés\')" style="background:var(--red-bg);color:var(--red);border-color:var(--red);">⚠️ Impayés</button>' +
+      '<button class="ai-chip" onclick="window.IG.app.aiQuickAction(\'anomalies\')" style="background:rgba(107,70,193,.1);color:#6b46c1;border-color:#6b46c1;">📊 Anomalies</button>' +
+      '<button class="ai-chip" onclick="window.IG.app.aiQuickAction(\'performance\')" style="background:var(--green-bg);color:var(--green);border-color:var(--green);">📈 Performance</button>' +
+      '<button class="ai-chip" onclick="window.IG.app.aiQuickAction(\'relances\')" style="background:var(--yellow-bg);color:var(--yellow);border-color:var(--yellow);">📩 Relances</button>' +
+      '</div>' +
+      '<div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--bg2);flex-shrink:0;">' +
+      '<input type="text" id="ai-input" placeholder="Posez votre question…" style="flex:1;padding:9px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;font-family:var(--font);background:var(--bg);color:var(--text);outline:none;transition:border .15s;" onfocus="this.style.borderColor=\'#0e6aaf\'" onblur="this.style.borderColor=\'\'" onkeydown="if(event.key===\'Enter\')window.IG.app.sendAIMessage()">' +
+      '<button onclick="window.IG.app.sendAIMessage()" id="ai-send-btn" style="width:38px;height:38px;background:linear-gradient(135deg,#0e6aaf,#6b46c1);color:#fff;border:none;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>' +
+      '</div>' +
+      '</div>' +
       // Overlay mobile
       '<div id="sidebar-overlay" onclick="window.IG.app.closeSidebar()" style="display:none;position:fixed;inset:0;z-index:199;background:rgba(0,0,0,0.4)"></div>' +
       // Main
@@ -162,6 +192,87 @@ window.IG.app = (function() {
       var btn = document.getElementById('btn-dark-mode');
       if (btn) btn.textContent = '☀️';
     }
+  }
+
+  // ── Assistant IA ──────────────────────────────────────────
+  var _aiHistory = [];
+
+  function toggleAIChat() {
+    var panel = document.getElementById('ai-chat-panel');
+    if (!panel) return;
+    var open = panel.style.display === 'flex';
+    panel.style.display = open ? 'none' : 'flex';
+    if (!open) document.getElementById('ai-input').focus();
+  }
+
+  async function sendAIMessage() {
+    var input = document.getElementById('ai-input');
+    var msgs = document.getElementById('ai-chat-messages');
+    if (!input || !msgs) return;
+    var text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+
+    // Bulle utilisateur
+    var userBubble = document.createElement('div');
+    userBubble.style.cssText = 'display:flex;justify-content:flex-end;';
+    userBubble.innerHTML = '<div class="ai-bubble-user">' + esc(text) + '</div>';
+    msgs.appendChild(userBubble);
+
+    // Typing indicator
+    var typing = document.createElement('div');
+    typing.className = 'ai-msg-bot';
+    typing.innerHTML = '<div class="ai-avatar"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6L17 21H7l1.3-6A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/><circle cx="9" cy="9" r="1" fill="#fff" stroke="none"/><circle cx="15" cy="9" r="1" fill="#fff" stroke="none"/></svg></div>' +
+      '<div class="ai-bubble-bot"><div class="ai-typing"><span></span><span></span><span></span></div></div>';
+    msgs.appendChild(typing);
+    msgs.scrollTop = msgs.scrollHeight;
+
+    _aiHistory.push({ role: 'user', content: text });
+
+    // Contexte données
+    var d = _data;
+    var systemPrompt = 'Tu es l\'assistant IA d\'ImmoGest, un logiciel de gestion immobilière. ' +
+      'Réponds en français, de façon concise et pratique. ' +
+      'Données actuelles: ' + d.immeubles.length + ' immeuble(s), ' + d.locataires.length + ' locataire(s), ' +
+      d.paiements.length + ' paiement(s) enregistrés. ' +
+      'Impayés: ' + d.locataires.filter(function(l){ return l.statut === 'actif'; }).length + ' locataires actifs.';
+
+    try {
+      var workerUrl = (window.IG.config && window.IG.config.WORKER_URL) || 'https://immogest1.fofefranklin57.workers.dev';
+      var res = await fetch(workerUrl + '/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: _aiHistory, system: systemPrompt })
+      });
+      var data = await res.json();
+      var reply = data.text || 'Désolé, je n\'ai pas pu répondre.';
+      _aiHistory.push({ role: 'assistant', content: reply });
+
+      typing.remove();
+      var botBubble = document.createElement('div');
+      botBubble.className = 'ai-msg-bot';
+      botBubble.innerHTML = '<div class="ai-avatar"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6L17 21H7l1.3-6A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/><circle cx="9" cy="9" r="1" fill="#fff" stroke="none"/><circle cx="15" cy="9" r="1" fill="#fff" stroke="none"/></svg></div>' +
+        '<div class="ai-bubble-bot">' + reply.replace(/\n/g, '<br>') + '</div>';
+      msgs.appendChild(botBubble);
+    } catch(e) {
+      typing.remove();
+      var errBubble = document.createElement('div');
+      errBubble.className = 'ai-msg-bot';
+      errBubble.innerHTML = '<div class="ai-avatar"></div><div class="ai-bubble-bot" style="color:var(--red)">Erreur de connexion. Réessayez.</div>';
+      msgs.appendChild(errBubble);
+    }
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function aiQuickAction(type) {
+    var questions = {
+      'impayés': 'Quels locataires ont des impayés ? Donne-moi un résumé.',
+      'anomalies': 'Détecte les anomalies dans mes données immobilières.',
+      'performance': 'Donne-moi un résumé de la performance de mon portefeuille.',
+      'relances': 'Quels locataires dois-je relancer en priorité ?'
+    };
+    var input = document.getElementById('ai-input');
+    if (input) { input.value = questions[type] || type; sendAIMessage(); }
   }
 
   function openGuide() {
@@ -1355,6 +1466,7 @@ window.IG.app = (function() {
     _renderLogin,
     authGoStep, doLogin, joinV2, registerV2, browseMarketplace,
     toggleSidebar, closeSidebar, toggleSidebarSection, toggleDarkMode, lockScreen, openGuide,
+    toggleAIChat, sendAIMessage, aiQuickAction,
     _refreshPaiements, _restaurer,
     _genererInvitation, _toggleUser, _appliquerPromo,
     _loadDeclarations, _validerDeclaration,
