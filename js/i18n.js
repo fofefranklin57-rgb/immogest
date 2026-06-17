@@ -16,6 +16,15 @@ window.IG.i18n = (function() {
 
   var MOIS_FR = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 
+  var MOIS_COURT = {
+    fr: ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'],
+    en: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    pt: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
+    es: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+    ha: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Ago','Sep','Oct','Nov','Des'],
+    ar: ['يان','فبر','مار','أبر','ماي','يون','يول','أغس','سبت','أكت','نوف','ديس'],
+  };
+
   var T = {
     en: {
       // Navigation
@@ -168,6 +177,34 @@ window.IG.i18n = (function() {
 
       // Statut juridique
       'normal': 'normal', 'retard': 'late', 'misEnDemeure': 'formal notice',
+
+      // Sidebar / navigation
+      'Réseau': 'Network',
+      'Interne': 'Internal',
+      'Tous les immeubles': 'All buildings',
+      'Encaissements': 'Collections',
+      'Relances': 'Follow-ups',
+      'Statistiques': 'Statistics',
+      'Juridique': 'Legal',
+      'Leads': 'Leads',
+      'Mon espace': 'My space',
+      'Déclarations': 'Declarations',
+      'Messages': 'Messages',
+      'Signatures': 'Signatures',
+      'Portail Propriétaire': 'Owner Portal',
+      "Guide d'utilisation": 'User Guide',
+      'Archives': 'Archives',
+      'Corbeille': 'Trash',
+
+      // Dashboard
+      'Recouvrement': 'Collection rate',
+      'En retard': 'Late',
+      'Locaux libres': 'Vacant units',
+      'Recettes': 'Revenue',
+      'Total impayés': 'Total unpaid',
+      'Voir relances': 'View follow-ups',
+      'Loyer théorique': 'Theoretical rent',
+      'occupés': 'occupied',
     },
 
     pt: {
@@ -321,6 +358,34 @@ window.IG.i18n = (function() {
 
       // Statut juridique
       'normal': 'normal', 'retard': 'atraso', 'misEnDemeure': 'notificação formal',
+
+      // Sidebar / navigation
+      'Réseau': 'Rede',
+      'Interne': 'Interno',
+      'Tous les immeubles': 'Todos os edifícios',
+      'Encaissements': 'Recebimentos',
+      'Relances': 'Acompanhamentos',
+      'Statistiques': 'Estatísticas',
+      'Juridique': 'Jurídico',
+      'Leads': 'Leads',
+      'Mon espace': 'Meu espaço',
+      'Déclarations': 'Declarações',
+      'Messages': 'Mensagens',
+      'Signatures': 'Assinaturas',
+      'Portail Propriétaire': 'Portal do Proprietário',
+      "Guide d'utilisation": 'Guia do utilizador',
+      'Archives': 'Arquivos',
+      'Corbeille': 'Lixo',
+
+      // Dashboard
+      'Recouvrement': 'Taxa de recuperação',
+      'En retard': 'Atrasado',
+      'Locaux libres': 'Unidades livres',
+      'Recettes': 'Receitas',
+      'Total impayés': 'Total inadimplente',
+      'Voir relances': 'Ver acompanhamentos',
+      'Loyer théorique': 'Aluguel teórico',
+      'occupés': 'ocupados',
     },
 
     es: {
@@ -474,6 +539,34 @@ window.IG.i18n = (function() {
 
       // Statut juridique
       'normal': 'normal', 'retard': 'retraso', 'misEnDemeure': 'notificación formal',
+
+      // Sidebar / navigation
+      'Réseau': 'Red',
+      'Interne': 'Interno',
+      'Tous les immeubles': 'Todos los edificios',
+      'Encaissements': 'Cobros',
+      'Relances': 'Seguimientos',
+      'Statistiques': 'Estadísticas',
+      'Juridique': 'Jurídico',
+      'Leads': 'Leads',
+      'Mon espace': 'Mi espacio',
+      'Déclarations': 'Declaraciones',
+      'Messages': 'Mensajes',
+      'Signatures': 'Firmas',
+      'Portail Propriétaire': 'Portal del Propietario',
+      "Guide d'utilisation": 'Guía de uso',
+      'Archives': 'Archivos',
+      'Corbeille': 'Papelera',
+
+      // Dashboard
+      'Recouvrement': 'Tasa de recuperación',
+      'En retard': 'Atrasado',
+      'Locaux libres': 'Unidades libres',
+      'Recettes': 'Ingresos',
+      'Total impayés': 'Total impagos',
+      'Voir relances': 'Ver seguimientos',
+      'Loyer théorique': 'Renta teórica',
+      'occupés': 'ocupados',
     },
 
     ha: {
@@ -627,6 +720,34 @@ window.IG.i18n = (function() {
 
       // Statut juridique
       'normal': 'al\'ada', 'retard': 'jinkiri', 'misEnDemeure': 'gargadi na hukuma',
+
+      // Sidebar / navigation
+      'Réseau': 'Hanyar sadarwa',
+      'Interne': 'Na ciki',
+      'Tous les immeubles': 'Dukan gidaje',
+      'Encaissements': 'Karbar kudi',
+      'Relances': 'Tunatar biya',
+      'Statistiques': 'Kididdiga',
+      'Juridique': 'Shari\'a',
+      'Leads': 'Yan sha\'awa',
+      'Mon espace': 'Wurina',
+      'Déclarations': 'Sanarwa',
+      'Messages': 'Sakonni',
+      'Signatures': 'Rattaba hannu',
+      'Portail Propriétaire': 'Shafin mai gida',
+      "Guide d'utilisation": 'Jagorar amfani',
+      'Archives': 'Kayan tarihi',
+      'Corbeille': 'Kwandon shara',
+
+      // Dashboard
+      'Recouvrement': 'Kididdigar biya',
+      'En retard': 'Jinkiri',
+      'Locaux libres': 'Dakunan koshe',
+      'Recettes': 'Kudaden shiga',
+      'Total impayés': 'Jimillar basussuka',
+      'Voir relances': 'Duba tunatar',
+      'Loyer théorique': 'Kudin haya na ka\'ida',
+      'occupés': 'masu mazauni',
     },
 
     ar: {
@@ -780,6 +901,34 @@ window.IG.i18n = (function() {
 
       // Statut juridique
       'normal': 'عادي', 'retard': 'متأخر', 'misEnDemeure': 'إنذار رسمي',
+
+      // Sidebar / navigation
+      'Réseau': 'الشبكة',
+      'Interne': 'داخلي',
+      'Tous les immeubles': 'جميع المباني',
+      'Encaissements': 'التحصيلات',
+      'Relances': 'المتابعات',
+      'Statistiques': 'الإحصاءات',
+      'Juridique': 'قانوني',
+      'Leads': 'العملاء المحتملون',
+      'Mon espace': 'مساحتي',
+      'Déclarations': 'الإشعارات',
+      'Messages': 'الرسائل',
+      'Signatures': 'التوقيعات',
+      'Portail Propriétaire': 'بوابة المالك',
+      "Guide d'utilisation": 'دليل الاستخدام',
+      'Archives': 'الأرشيف',
+      'Corbeille': 'سلة المحذوفات',
+
+      // Dashboard
+      'Recouvrement': 'معدل التحصيل',
+      'En retard': 'متأخر',
+      'Locaux libres': 'وحدات شاغرة',
+      'Recettes': 'الإيرادات',
+      'Total impayés': 'إجمالي المتأخرات',
+      'Voir relances': 'عرض المتابعات',
+      'Loyer théorique': 'الإيجار النظري',
+      'occupés': 'مشغولة',
     }
   };
 
@@ -802,10 +951,16 @@ window.IG.i18n = (function() {
 
   function nomMois(idx) { return MOIS_FR[parseInt(idx)] || ''; }
 
+  function nomMoisCourt(idx) {
+    var m = MOIS_COURT[lang] || MOIS_COURT.fr;
+    return m[parseInt(idx) - 1] || '';
+  }
+
   return {
     t: translate,
     setLang,
     nomMois,
+    nomMoisCourt,
     get lang() { return lang; }
   };
 

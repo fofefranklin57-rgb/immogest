@@ -9,6 +9,8 @@ window.IG.dashboard = (function() {
   function t(k)   { return window.IG.i18n ? window.IG.i18n.t(k) : k; }
   function fmt(n) { return window.IG.utils.formatMontant(n); }
   function esc(s) { return window.IG.utils.esc(s); }
+  var LOCALE_DATE = { fr:'fr-FR', en:'en-GB', pt:'pt-BR', es:'es-ES', ha:'ha', ar:'ar-SA' };
+  function _dateLocale() { return LOCALE_DATE[(window.IG.i18n && window.IG.i18n.lang) || 'fr'] || 'fr-FR'; }
 
   // ── KPIs annuels ─────────────────────────────────────────────
   function calculerKPIs(locataires, paiements) {
@@ -56,7 +58,6 @@ window.IG.dashboard = (function() {
 
   // ── Graphique barres mensuel (SVG) ────────────────────────────
   function renderGrapheMensuel(recettesParMois, loyer) {
-    var MOIS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
     var max = Math.max(loyer, ...Object.values(recettesParMois), 1);
     var W = 560, H = 160, barW = 36, gap = 10;
     var now = new Date();
@@ -67,7 +68,7 @@ window.IG.dashboard = (function() {
     // Ligne loyer théorique
     var yLoyer = H - Math.round(loyer / max * H);
     svg += '<line x1="20" y1="' + yLoyer + '" x2="' + (W-10) + '" y2="' + yLoyer + '" stroke="rgba(14,106,175,0.2)" stroke-dasharray="4,4" stroke-width="1"/>';
-    svg += '<text x="' + (W-8) + '" y="' + (yLoyer-3) + '" fill="rgba(14,106,175,0.5)" font-size="9" text-anchor="end">Loyer théorique</text>';
+    svg += '<text x="' + (W-8) + '" y="' + (yLoyer-3) + '" fill="rgba(14,106,175,0.5)" font-size="9" text-anchor="end">' + t('Loyer théorique') + '</text>';
 
     // Barres
     for (var m = 1; m <= 12; m++) {
@@ -81,7 +82,7 @@ window.IG.dashboard = (function() {
 
       svg += '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + h + '" rx="4" fill="' + color + '" opacity="' + (isCurrent ? '1' : '0.7') + '"/>';
       if (val > 0) svg += '<text x="' + (x + barW/2) + '" y="' + (y-4) + '" fill="' + color + '" font-size="8" text-anchor="middle" font-weight="600">' + Math.round(val/1000) + 'k</text>';
-      svg += '<text x="' + (x + barW/2) + '" y="' + (H+16) + '" fill="#7A90A8" font-size="9" text-anchor="middle">' + MOIS[m-1] + '</text>';
+      svg += '<text x="' + (x + barW/2) + '" y="' + (H+16) + '" fill="#7A90A8" font-size="9" text-anchor="middle">' + (window.IG.i18n ? window.IG.i18n.nomMoisCourt(m) : m) + '</text>';
     }
 
     svg += '</svg>';
@@ -111,10 +112,10 @@ window.IG.dashboard = (function() {
       // En-tête
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;flex-wrap:wrap;gap:10px">' +
       '<div>' +
-      '<h2 style="font-size:19px;font-weight:700;margin-bottom:3px">Bonjour ' + esc(session.nom || '') + ' 👋</h2>' +
-      '<p style="color:var(--text3);font-size:13px">' + now.toLocaleDateString('fr-FR', { weekday:'long', year:'numeric', month:'long', day:'numeric' }) + '</p>' +
+      '<h2 style="font-size:19px;font-weight:700;margin-bottom:3px">' + t('Bonjour') + ' ' + esc(session.nom || '') + ' 👋</h2>' +
+      '<p style="color:var(--text3);font-size:13px">' + now.toLocaleDateString(_dateLocale(), { weekday:'long', year:'numeric', month:'long', day:'numeric' }) + '</p>' +
       '</div>' +
-      '<button onclick="window.IG.app.refresh()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:12px;color:var(--text2)">↻ Actualiser</button>' +
+      '<button onclick="window.IG.app.refresh()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:12px;color:var(--text2)">↻ ' + t('Actualiser') + '</button>' +
       '</div>' +
 
       // KPIs principaux
@@ -130,7 +131,7 @@ window.IG.dashboard = (function() {
       // Graphique + actions rapides
       '<div style="display:grid;grid-template-columns:1fr auto;gap:16px;margin-bottom:20px;align-items:start">' +
       '<div class="card">' +
-      '<div class="card-header"><div class="card-title">📊 Recettes ' + now.getFullYear() + ' — ' + fmt(kpis.recetteAnnuelle) + '</div></div>' +
+      '<div class="card-header"><div class="card-title">📊 ' + t('Recettes') + ' ' + now.getFullYear() + ' — ' + fmt(kpis.recetteAnnuelle) + '</div></div>' +
       '<div style="padding-top:8px">' + renderGrapheMensuel(kpis.recettesParMois, kpis.loyerTheorique) + '</div>' +
       '</div>' +
       '<div style="display:flex;flex-direction:column;gap:10px;min-width:200px">' +
@@ -180,8 +181,8 @@ window.IG.dashboard = (function() {
       .slice(0, 5);
 
     var html = '<div class="card" style="border-left:4px solid var(--red);margin-bottom:20px">' +
-      '<div class="card-header"><div class="card-title" style="color:var(--red)">⚠️ Total impayés : ' + fmt(totalDu) + '</div>' +
-      '<button onclick="window.IG.app.showPage(\'relances\')" style="font-size:12px;color:var(--red);background:none;border:none;cursor:pointer">Voir relances →</button></div>' +
+      '<div class="card-header"><div class="card-title" style="color:var(--red)">⚠️ ' + t('Total impayés') + ' : ' + fmt(totalDu) + '</div>' +
+      '<button onclick="window.IG.app.showPage(\'relances\')" style="font-size:12px;color:var(--red);background:none;border:none;cursor:pointer">' + t('Voir relances') + ' →</button></div>' +
       '<div style="display:flex;flex-direction:column;gap:6px">';
     topImpayes.forEach(function(x) {
       var wa = window.IG.locataires ? window.IG.locataires.lienWA(x.loc, 'Bonjour ' + x.loc.nom + ', votre loyer de ' + fmt(x.du) + ' est attendu. ImmoGest') : null;
@@ -197,7 +198,7 @@ window.IG.dashboard = (function() {
   }
 
   function _immeublesMini(data) {
-    if (!data.immeubles.length) return '<p style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Aucun immeuble</p>';
+    if (!data.immeubles.length) return '<p style="color:var(--text3);font-size:13px;text-align:center;padding:20px">' + t('Aucun immeuble') + '</p>';
     var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">';
     data.immeubles.forEach(function(imm) {
       var actifs = data.locataires.filter(function(l) { return l.immeuble_id == imm.id && l.statut !== 'libre'; }).length;
@@ -205,7 +206,7 @@ window.IG.dashboard = (function() {
       html += '<div style="background:var(--bg3);border-radius:10px;padding:12px;cursor:pointer;border-left:3px solid ' + esc(imm.couleur || '#0E6AAF') + '" ' +
         'onclick="window.IG.app.showPage(\'locataires\',{immeubleId:' + imm.id + '})">' +
         '<div style="font-weight:700;font-size:13px;margin-bottom:4px">' + esc(imm.nom_immeuble || imm.nom) + '</div>' +
-        '<div style="font-size:11px;color:var(--text3)">' + actifs + '/' + total + ' occupés</div>' +
+        '<div style="font-size:11px;color:var(--text3)">' + actifs + '/' + total + ' ' + t('occupés') + '</div>' +
         '</div>';
     });
     html += '</div>';
