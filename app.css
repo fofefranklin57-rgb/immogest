@@ -501,6 +501,9 @@ tr.row-new td { background: rgba(46,204,138,.04); }
     scrollbar-width: none;
   }
   .topbar-actions::-webkit-scrollbar { display: none; }
+  .topbar-user-chip { display: none !important; }
+  .topbar-deconnexion { display: none !important; }
+  #topbar-lang-plan { display: none !important; }
   #topbar-main-btn {
     font-size: 12px;
     padding: 6px 10px;

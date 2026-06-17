@@ -25,6 +25,7 @@ window.IG.app = (function() {
     }
     _showAppShell();
     _applyDarkMode();
+    _renderLangPlan();
     await _loadData();
     showPage('dashboard');
 
@@ -90,7 +91,6 @@ window.IG.app = (function() {
       '<button id="btn-dark-mode" onclick="window.IG.app.toggleDarkMode()" title="Mode sombre" style="flex:1;padding:7px;border-radius:7px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85);font-size:16px;cursor:pointer;font-family:var(--font);">🌙</button>' +
       '<button onclick="window.IG.app.lockScreen()" title="Verrouiller" style="flex:1;padding:7px;border-radius:7px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85);font-size:16px;cursor:pointer;font-family:var(--font);">🔒</button>' +
       '</div>' +
-      '<button onclick="window.IG.auth.logout()" style="width:100%;padding:8px;border-radius:7px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px">⏻ Se déconnecter</button>' +
       '</div></nav>' +
       // Bouton IA flottant
       '<button id="ai-float-btn" onclick="window.IG.app.toggleAIChat()" title="Assistant IA ImmoGest">' +
@@ -134,12 +134,12 @@ window.IG.app = (function() {
       '</div>' +
       '<div class="topbar-actions">' +
       // Chip utilisateur + rôle
-      '<div style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;background:var(--bg4);border:1px solid var(--border2);cursor:pointer;" onclick="window.IG.app.showPage(\'parametres\')">' +
+      '<div class="topbar-user-chip" style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;background:var(--bg4);border:1px solid var(--border2);cursor:pointer;" onclick="window.IG.app.showPage(\'parametres\')">' +
       '<div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#0e6aaf,#6b46c1);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' + esc((session.nom || 'U').charAt(0).toUpperCase()) + '</div>' +
       '<span style="font-size:12px;font-weight:600;color:var(--text);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(session.nom || '') + '</span>' +
       '<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;background:rgba(14,106,175,0.12);color:var(--accent);text-transform:capitalize;">' + esc(session.role || 'user') + '</span>' +
       '</div>' +
-      '<button onclick="window.IG.auth.logout()" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(185,48,32,0.3);background:var(--red-bg);color:var(--red);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:5px;white-space:nowrap;">⏻ ' + t('Déconnexion') + '</button>' +
+      '<button class="topbar-deconnexion" onclick="window.IG.auth.logout()" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(185,48,32,0.3);background:var(--red-bg);color:var(--red);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:5px;white-space:nowrap;">⏻ ' + t('Déconnexion') + '</button>' +
       // Langue + plan
       '<div id="topbar-lang-plan" style="display:flex;align-items:center;gap:4px;"></div>' +
       // Sélecteurs mois/année
@@ -202,6 +202,28 @@ window.IG.app = (function() {
       var btn = document.getElementById('btn-dark-mode');
       if (btn) btn.textContent = '☀️';
     }
+  }
+
+  function _renderLangPlan() {
+    var el = document.getElementById('topbar-lang-plan');
+    if (!el) return;
+    var session = window.IG.auth.getSession ? window.IG.auth.getSession() : {};
+    var plan = (session.plan || 'gratuit').toLowerCase();
+    var planColors = { starter: '#0E6AAF', pro: '#0E7A45', cabinet: '#7B2FBE', gratuit: '#888' };
+    var color = planColors[plan] || '#888';
+    var html = '<span style="padding:2px 9px;border-radius:99px;background:' + color + ';color:#fff;font-size:10px;font-weight:700;letter-spacing:.04em;white-space:nowrap;">' + plan.toUpperCase() + '</span>';
+    if (window.IG.i18n && window.IG.i18n.langs) {
+      var currentLang = window.IG.i18n.lang || 'fr';
+      var langs = window.IG.i18n.langs;
+      html += '<select onchange="window.IG.i18n.setLang(this.value);location.reload();" style="background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;padding:4px 6px;font-family:var(--font);cursor:pointer;">';
+      langs.forEach(function(l) {
+        var code = Array.isArray(l) ? l[0] : l;
+        var label = Array.isArray(l) ? l[1] : l;
+        html += '<option value="' + code + '"' + (code === currentLang ? ' selected' : '') + '>' + label + '</option>';
+      });
+      html += '</select>';
+    }
+    el.innerHTML = html;
   }
 
   // ── Assistant IA ──────────────────────────────────────────
@@ -286,7 +308,7 @@ window.IG.app = (function() {
   }
 
   function openGuide() {
-    window.open('https://immogest-34w.pages.dev/guide.pdf', '_blank');
+    window.open('guide.html', '_blank');
   }
 
   function lockScreen() {
@@ -531,6 +553,21 @@ window.IG.app = (function() {
         if (sub) sub.textContent = '';
         if (window.IG.signature) window.IG.signature.renderVerification();
         break;
+    }
+    // Auto-ouvrir la section collapsible parente
+    var sectionMap = {
+      immeubles: 'immeubles',
+      locataires: 'gestion', paiements: 'gestion', relances: 'gestion',
+      rapports: 'gestion', 'rapport-annuel': 'gestion', statistiques: 'gestion', juridique: 'gestion'
+    };
+    var sectionId = sectionMap[page];
+    if (sectionId) {
+      var body = document.getElementById('sb-body-' + sectionId);
+      var icon = document.getElementById('sb-icon-' + sectionId);
+      if (body && !body.classList.contains('open')) {
+        body.classList.add('open');
+        if (icon) icon.textContent = '▾';
+      }
     }
     // Mettre à jour bottom nav
     document.querySelectorAll('[id^="mbn-"]').forEach(function(b) {
