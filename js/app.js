@@ -211,18 +211,19 @@ window.IG.app = (function() {
     var plan = (session.plan || 'gratuit').toLowerCase();
     var planColors = { starter: '#0E6AAF', pro: '#0E7A45', cabinet: '#7B2FBE', gratuit: '#888' };
     var color = planColors[plan] || '#888';
-    var html = '<span style="padding:2px 9px;border-radius:99px;background:' + color + ';color:#fff;font-size:10px;font-weight:700;letter-spacing:.04em;white-space:nowrap;">' + plan.toUpperCase() + '</span>';
-    if (window.IG.i18n && window.IG.i18n.langs) {
-      var currentLang = window.IG.i18n.lang || 'fr';
-      var langs = window.IG.i18n.langs;
-      html += '<select onchange="window.IG.i18n.setLang(this.value);location.reload();" style="background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;padding:4px 6px;font-family:var(--font);cursor:pointer;">';
-      langs.forEach(function(l) {
-        var code = Array.isArray(l) ? l[0] : l;
-        var label = Array.isArray(l) ? l[1] : l;
-        html += '<option value="' + code + '"' + (code === currentLang ? ' selected' : '') + '>' + label + '</option>';
-      });
-      html += '</select>';
-    }
+    // Badge cliquable : gratuit → afficherUpgrade, sinon → paramètres
+    var badgeClick = plan === 'gratuit'
+      ? 'if(window.IG.plans)window.IG.plans.afficherUpgrade();else window.IG.app.showPage(\'parametres\')'
+      : 'window.IG.app.showPage(\'parametres\')';
+    var html = '<span onclick="' + badgeClick + '" title="' + (plan === 'gratuit' ? 'Upgrader votre plan' : 'Mon plan') + '" style="padding:3px 10px;border-radius:99px;background:' + color + ';color:#fff;font-size:10px;font-weight:700;letter-spacing:.04em;white-space:nowrap;cursor:pointer;transition:opacity .15s;" onmouseenter="this.style.opacity=\'0.8\'" onmouseleave="this.style.opacity=\'1\'">' + plan.toUpperCase() + (plan === 'gratuit' ? ' ↑' : '') + '</span>';
+    // Sélecteur langue — hardcodé car window.IG.i18n n'expose pas langs
+    var LANGS = [['fr','🇫🇷 FR'],['en','🇬🇧 EN'],['pt','🇧🇷 PT'],['es','🇪🇸 ES'],['ha','🌍 HA'],['ar','🇸🇦 AR']];
+    var currentLang = (window.IG.i18n && window.IG.i18n.lang) ? window.IG.i18n.lang : (localStorage.getItem('ig_lang') || 'fr');
+    html += '<select onchange="window.IG.i18n.setLang(this.value);location.reload();" style="background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;padding:4px 8px;font-family:var(--font);cursor:pointer;">';
+    LANGS.forEach(function(l) {
+      html += '<option value="' + l[0] + '"' + (l[0] === currentLang ? ' selected' : '') + '>' + l[1] + '</option>';
+    });
+    html += '</select>';
     el.innerHTML = html;
   }
 
