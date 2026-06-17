@@ -119,12 +119,13 @@ window.IG.dashboard = (function() {
       '</div>' +
 
       // Bannière pub CPM — tous plans
-      '<div onclick="window.IG.plans.afficherUpgrade()" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;margin-bottom:18px;border-radius:12px;border:1px solid var(--border2);background:var(--bg3);cursor:pointer;">' +
-      '<div style="font-size:12px;color:var(--text2);line-height:1.5">' +
-        '<strong style="color:var(--accent)">ImmoGest Pro</strong> — IA illimitée, rapports Word, export données.<br>' +
-        '<span style="font-size:11px;color:var(--text3)">Dès 9 999 FCFA/mois · 2 mois offerts en annuel</span>' +
+      '<div onclick="window.IG.plans.afficherUpgrade()" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;margin-bottom:20px;border-radius:14px;background:linear-gradient(135deg,#0E6AAF22,#7C3AED22);border:1.5px solid #0E6AAF44;cursor:pointer;">' +
+      '<div>' +
+        '<div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:2px">🚀 Passez à ImmoGest Pro</div>' +
+        '<div style="font-size:12px;color:var(--text2)">IA illimitée · Rapports Word · Export données · Sans pub</div>' +
+        '<div style="font-size:11px;color:var(--text3);margin-top:2px">Dès 9 999 FCFA/mois · 2 mois offerts en annuel</div>' +
       '</div>' +
-      '<div style="flex-shrink:0;padding:7px 14px;border-radius:8px;background:var(--accent);color:#fff;font-size:12px;font-weight:700;white-space:nowrap">Voir →</div>' +
+      '<div style="flex-shrink:0;padding:9px 18px;border-radius:10px;background:linear-gradient(135deg,#0E6AAF,#7C3AED);color:#fff;font-size:13px;font-weight:700;white-space:nowrap">Voir les plans →</div>' +
       '</div>' +
 
       // KPIs principaux

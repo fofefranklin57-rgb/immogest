@@ -26,7 +26,6 @@ window.IG.ads = (function() {
       _cacherToutesLesPubs();
     } else {
       _injecterScript();
-      _afficherBandeauUpgrade();
     }
     // Bannière CPM dans le panel IA — tous plans
     _injecterBanniereIA();
@@ -100,9 +99,6 @@ window.IG.ads = (function() {
 
   function surUpgrade() {
     _cacherToutesLesPubs();
-    var pb = document.getElementById('ig-upgrade-bandeau');
-    if (pb) pb.remove();
-    document.body.style.paddingBottom = '';
     var w = document.getElementById('ig-usage-widget');
     if (w) w.remove();
     var eb = document.getElementById('ig-expiry-banner');
