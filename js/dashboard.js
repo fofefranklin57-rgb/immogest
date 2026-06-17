@@ -118,6 +118,15 @@ window.IG.dashboard = (function() {
       '<button onclick="window.IG.app.refresh()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:12px;color:var(--text2)">↻ ' + t('Actualiser') + '</button>' +
       '</div>' +
 
+      // Bannière pub CPM — tous plans
+      '<div onclick="window.IG.plans.afficherUpgrade()" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;margin-bottom:18px;border-radius:12px;border:1px solid var(--border2);background:var(--bg3);cursor:pointer;">' +
+      '<div style="font-size:12px;color:var(--text2);line-height:1.5">' +
+        '<strong style="color:var(--accent)">ImmoGest Pro</strong> — IA illimitée, rapports Word, export données.<br>' +
+        '<span style="font-size:11px;color:var(--text3)">Dès 9 999 FCFA/mois · 2 mois offerts en annuel</span>' +
+      '</div>' +
+      '<div style="flex-shrink:0;padding:7px 14px;border-radius:8px;background:var(--accent);color:#fff;font-size:12px;font-weight:700;white-space:nowrap">Voir →</div>' +
+      '</div>' +
+
       // KPIs principaux
       '<div class="metrics-grid" style="margin-bottom:20px">' +
       _kpi('🏢', data.immeubles.length, t('Immeubles'), '') +
@@ -154,9 +163,6 @@ window.IG.dashboard = (function() {
       '</div>';
 
     content.innerHTML = html;
-
-    // Bannière pub CPM — tous plans
-    if (window.IG.ads) window.IG.ads.rendreBannierePromo('page-content');
   }
 
   function _kpi(icon, val, label, color) {
