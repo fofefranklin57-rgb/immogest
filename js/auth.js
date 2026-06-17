@@ -85,7 +85,6 @@ window.IG.auth = (function() {
       nomCabinet:  data.tenant.nom_cabinet,
       plan:        data.tenant.plan || 'gratuit',
       telephone:   data.tenant.telephone,
-      _pwdHash:    passwordHash,
       loginAt:     Date.now(),
       locale:      data.tenant.locale || null
     };
@@ -109,7 +108,6 @@ window.IG.auth = (function() {
     SESSION.userId = data.user.id;
     SESSION.role   = data.user.role;
     SESSION.nom    = data.user.nom;
-    SESSION._pwdHash = hash;
     _saveSession(SESSION);
     return SESSION;
   }

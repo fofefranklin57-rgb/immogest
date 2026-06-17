@@ -9,8 +9,6 @@ window.IG.config = {
   appTagline:  'Gestion immobilière intelligente',
   version:     '2.0.0',
   workerUrl:   'https://immogest1.fofefranklin57.workers.dev',
-  supabaseUrl: 'https://uggxfmwpttfsfcirmeqx.supabase.co',
-  supabaseAnon:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZ3hmbXdwdHRmc2ZjaXJtZXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNTA4MjIsImV4cCI6MjA5NDYyNjgyMn0.l8iYlJHOt6evNlBQ3zRskZasn_J2BjAUs1l2vKOZNvY',
   oneSignalAppId: '8a3857ab-64cc-4a62-9916-ce46b4768dac',
   monetagMeta: 'd9b7d2935fbcb3e568288a4ff0852e32',
   primaryColor:'#0E6AAF',

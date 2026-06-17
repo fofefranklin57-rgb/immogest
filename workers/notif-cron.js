@@ -10,6 +10,36 @@
 
 const SUPABASE_URL_DEFAULT = 'https://uggxfmwpttfsfcirmeqx.supabase.co';
 
+// ── Rate limiting (mémoire Worker, reset à chaque cold start) ──
+const _rl = new Map();
+function _rateLimit(ip, route, max = 10, windowMs = 900000) {
+  const key = ip + ':' + route;
+  const now = Date.now();
+  let e = _rl.get(key);
+  if (!e || now > e.r) { e = { c: 0, r: now + windowMs }; }
+  e.c++;
+  _rl.set(key, e);
+  return e.c > max; // true = bloqué
+}
+
+// ── CORS restrictif ────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  'https://immogest-34w.pages.dev',
+  'http://localhost:5500',
+  'http://127.0.0.1:5500',
+  'http://localhost:3000',
+];
+function _corsHeaders(request) {
+  const origin = request.headers.get('Origin') || '';
+  const allow = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allow,
+    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS,PATCH,DELETE',
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization,apikey',
+    'Vary': 'Origin',
+  };
+}
+
 const ALLOWED_TABLES = [
   'immeubles','locataires','paiements','users_app','parametres',
   'locale_profiles','archives','corbeille','declarations','abonnements',
@@ -24,12 +54,10 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    const cors = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS,PATCH,DELETE',
-      'Access-Control-Allow-Headers': 'Content-Type,Authorization,apikey',
-    };
+    const cors = _corsHeaders(request);
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
+
+    const clientIp = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Real-IP') || 'unknown';
 
     const json = (data, status = 200) =>
       new Response(JSON.stringify(data), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
@@ -205,6 +233,8 @@ ${_footer()}</body></html>`;
 
       // ── /register ────────────────────────────────────────────
       if (path === '/register' && request.method === 'POST') {
+        if (_rateLimit(clientIp, 'register', 5, 3600000))
+          return json({ error: 'Trop de tentatives. Réessayez dans 1 heure.' }, 429);
         const { nom, telephone, passwordHash, nomCabinet } = await request.json();
         if (!nom || !telephone || !passwordHash) return json({ error: 'Champs manquants' }, 400);
 
@@ -236,7 +266,10 @@ ${_footer()}</body></html>`;
 
       // ── /login-tenant ─────────────────────────────────────────
       if (path === '/login-tenant' && request.method === 'POST') {
+        if (_rateLimit(clientIp, 'login', 8, 900000))
+          return json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' }, 429);
         const { telephone, passwordHash } = await request.json();
+        if (!telephone || !passwordHash) return json({ error: 'Champs manquants' }, 400);
         const res = await sbFetch('tenants', '?telephone=eq.' + encodeURIComponent(telephone) + '&select=*');
         const tenants = res.ok ? await res.json() : [];
         if (!tenants.length) return json({ error: 'Compte introuvable' }, 404);

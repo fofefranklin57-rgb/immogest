@@ -7,14 +7,14 @@ window.IG = window.IG || {};
 
 window.IG.owner = (function() {
 
-  var OWNER_TOKEN = '8237a8d86b7038877840cd600b135f4edc8966be05cf3ba12727535f2670c058';
   var _token = null;
 
   function esc(s) { return window.IG.utils.esc(String(s || '')); }
   function fmt(n) { return window.IG.utils.formatMontant(n); }
 
   async function _call(action, extra) {
-    var payload = Object.assign({ ownerToken: _token || OWNER_TOKEN, action }, extra || {});
+    if (!_token) throw new Error('Token requis');
+    var payload = Object.assign({ ownerToken: _token, action }, extra || {});
     var res = await fetch(window.IG.config.workerUrl + '/owner', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
