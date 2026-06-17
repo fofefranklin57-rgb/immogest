@@ -162,6 +162,7 @@ window.IG.paiements = (function() {
       html += '</div></details>';
     }
 
+    html += '<div id="ig-ad-fiche" style="margin-top:16px;text-align:center"></div>';
     html += '</div>';
     return html;
   }
@@ -201,12 +202,14 @@ window.IG.paiements = (function() {
       '<option value="charge">Charge</option>' +
       '</select></div>' +
       _field('note', t('Note (optionnel)'), '') +
+      '<div id="ig-ad-pay-form" style="margin:14px 0 10px;text-align:center"></div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">' +
       '<button type="button" data-modal-close style="padding:10px 18px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer">' + t('Annuler') + '</button>' +
       '<button type="submit" style="padding:10px 20px;border-radius:8px;border:none;background:var(--green);color:#fff;cursor:pointer;font-weight:600">💵 ' + t('Enregistrer') + '</button>' +
       '</div></form>';
 
     var modal = window.IG.utils.showModal(html, { width: '480px' });
+    setTimeout(function() { if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-pay-form', 'ad1'); }, 80);
     modal.box.querySelector('#form-paiement').addEventListener('submit', async function(e) {
       e.preventDefault();
       var fd = new FormData(e.target);

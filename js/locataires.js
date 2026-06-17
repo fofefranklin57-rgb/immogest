@@ -202,6 +202,7 @@ window.IG.locataires = (function() {
       _field('entree', t('Date entrée'), loc ? (loc.entree || '') : '', false, 'date') +
       '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Observations') + '</label>' +
       '<textarea name="observations" rows="2" style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);resize:vertical">' + esc(loc ? (loc.observations || '') : '') + '</textarea></div>' +
+      '<div id="ig-ad-loc-form" style="margin:14px 0 10px;text-align:center"></div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">' +
       (loc ? '<button type="button" onclick="window.IG.locataires._libererConfirm(' + (loc.id) + ')" data-modal-close style="padding:10px 16px;border-radius:8px;border:1px solid #B93020;color:#B93020;background:transparent;cursor:pointer;font-size:12px">' + t('Libérer') + '</button>' : '') +
       '<button type="button" data-modal-close class="btn-secondary" style="padding:10px 18px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer">' + t('Annuler') + '</button>' +
@@ -219,6 +220,7 @@ window.IG.locataires = (function() {
     }
 
     var modal = window.IG.utils.showModal(html, { width: '540px' });
+    setTimeout(function() { if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-loc-form', 'ad1'); }, 80);
     modal.box.querySelector('#form-locataire').addEventListener('submit', async function(e) {
       e.preventDefault();
       var fd = new FormData(e.target);
@@ -331,6 +333,7 @@ window.IG.locataires = (function() {
     var pays = window.IG.paiements ? window.IG.paiements.getByLocataire(id) : [];
     var html = window.IG.paiements ? window.IG.paiements.renderFiche(loc, pays) : '<p>Chargement...</p>';
     window.IG.utils.showModal(html, { width: '680px' });
+    setTimeout(function() { if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-fiche', 'ad2'); }, 80);
   }
 
   // ── Lien WhatsApp ─────────────────────────────────────────────

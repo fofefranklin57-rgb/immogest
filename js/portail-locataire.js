@@ -521,6 +521,19 @@ async function loadDashboard() {
     }
   }
 
+  // ── Bannière pub Adsterra après historique ──
+  (function() {
+    var existing = document.getElementById('ig-ad-portail-loc');
+    if (!existing) {
+      var slot = document.createElement('div');
+      slot.id = 'ig-ad-portail-loc';
+      slot.style.cssText = 'margin:16px 0;text-align:center';
+      var histEl = document.getElementById('payment-history');
+      if (histEl && histEl.parentNode) histEl.parentNode.insertBefore(slot, histEl.nextSibling);
+    }
+    if (window.IG && window.IG.ads) window.IG.ads.injecterSlot('ig-ad-portail-loc', 'ad1');
+  })();
+
   // ── Pré-remplir paiement ──
   const payAmt = document.getElementById('pay-amount');
   if (payAmt) payAmt.value = solde > 0 ? Math.min(solde, l.loyer) : (l.loyer || 0);
@@ -952,7 +965,9 @@ function loadMaFiche() {
           <tbody>${histo}</tbody>
         </table>
       </div>
-    </div>`;
+    </div>
+    <div id="ig-ad-mafiche" style="margin-top:16px;text-align:center"></div>`;
+  if (window.IG && window.IG.ads) setTimeout(function() { window.IG.ads.injecterSlot('ig-ad-mafiche', 'ad2'); }, 80);
 }
 
 function ficheRow(label, val) {
