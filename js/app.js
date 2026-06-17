@@ -219,7 +219,7 @@ window.IG.app = (function() {
     var _planLabel = _planLabels[plan] || plan.toUpperCase();
     var html = '<span onclick="' + badgeClick + '" title="' + (plan === 'gratuit' ? 'Upgrader votre plan' : 'Mon plan') + '" style="padding:3px 10px;border-radius:99px;background:' + color + ';color:#fff;font-size:10px;font-weight:700;letter-spacing:.04em;white-space:nowrap;cursor:pointer;transition:opacity .15s;" onmouseenter="this.style.opacity=\'0.8\'" onmouseleave="this.style.opacity=\'1\'">' + _planLabel + (plan === 'gratuit' ? ' ↑' : '') + '</span>';
     // Sélecteur langue — hardcodé car window.IG.i18n n'expose pas langs
-    var LANGS = [['fr','🇫🇷 FR'],['en','🇬🇧 EN'],['pt','🇧🇷 PT'],['es','🇪🇸 ES'],['ha','🌍 HA'],['ar','🇸🇦 AR']];
+    var LANGS = [['fr','🇫🇷 FR'],['en','🇬🇧 EN'],['pt','🇧🇷 PT'],['es','🇪🇸 ES'],['ha','🌍 HA'],['ar','🇸🇦 AR'],['sw','🇰🇪 SW'],['zh','🇨🇳 ZH'],['hi','🇮🇳 HI'],['id','🇮🇩 ID'],['yo','🇳🇬 YO'],['ln','🇨🇩 LN'],['am','🇪🇹 AM']];
     var currentLang = (window.IG.i18n && window.IG.i18n.lang) ? window.IG.i18n.lang : (localStorage.getItem('ig_lang') || 'fr');
     html += '<select onchange="window.IG.i18n.setLang(this.value)" style="background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;padding:4px 8px;font-family:var(--font);cursor:pointer;">';
     LANGS.forEach(function(l) {
