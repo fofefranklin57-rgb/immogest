@@ -94,7 +94,7 @@ window.IG.app = (function() {
       '</div></nav>' +
       // Bouton IA flottant
       '<button id="ai-float-btn" onclick="window.IG.app.toggleAIChat()" title="Assistant IA ImmoGest">' +
-      '<svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6L17 21H7l1.3-6A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/><circle cx="9" cy="9" r="1" fill="#fff" stroke="none"/><circle cx="15" cy="9" r="1" fill="#fff" stroke="none"/><path d="M9 13s1 2 3 2 3-2 3-2"/></svg>' +
+      '<svg viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z"/></svg>' +
       '</button>' +
       // Panel chat IA
       '<div id="ai-chat-panel">' +
@@ -133,13 +133,23 @@ window.IG.app = (function() {
       '<div class="topbar-sub" id="topbar-sub"></div></div>' +
       '</div>' +
       '<div class="topbar-actions">' +
+      // Chip utilisateur + rôle
+      '<div style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;background:var(--bg4);border:1px solid var(--border2);cursor:pointer;" onclick="window.IG.app.showPage(\'parametres\')">' +
+      '<div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#0e6aaf,#6b46c1);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' + esc((session.nom || 'U').charAt(0).toUpperCase()) + '</div>' +
+      '<span style="font-size:12px;font-weight:600;color:var(--text);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(session.nom || '') + '</span>' +
+      '<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;background:rgba(14,106,175,0.12);color:var(--accent);text-transform:capitalize;">' + esc(session.role || 'user') + '</span>' +
+      '</div>' +
+      '<button onclick="window.IG.auth.logout()" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(185,48,32,0.3);background:var(--red-bg);color:var(--red);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:5px;white-space:nowrap;">⏻ ' + t('Déconnexion') + '</button>' +
+      // Langue + plan
+      '<div id="topbar-lang-plan" style="display:flex;align-items:center;gap:4px;"></div>' +
+      // Sélecteurs mois/année
       '<select id="sel-mois" onchange="window.IG.app.refresh()" style="background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:6px 10px;font-family:var(--font);">' +
       Array.from({length:12}, function(_,i) { return '<option value="' + (i+1) + '"' + ((i+1) === mois ? ' selected' : '') + '>' + ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'][i] + '</option>'; }).join('') +
       '</select>' +
       '<select id="sel-annee" onchange="window.IG.app.refresh()" style="background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:6px 10px;font-family:var(--font);">' +
       [2024,2025,2026,2027].map(function(y) { return '<option value="' + y + '"' + (y === annee ? ' selected' : '') + '>' + y + '</option>'; }).join('') +
       '</select>' +
-      '<button class="btn btn-primary btn-sm" id="topbar-main-btn" onclick="window.IG.app.topbarAction()">＋ Nouveau</button>' +
+      '<button class="btn btn-primary btn-sm" id="topbar-main-btn" onclick="window.IG.app.topbarAction()">＋ ' + t('Nouveau') + '</button>' +
       '</div></div>' +
       // Bottom nav mobile
       '<nav id="mobile-bottom-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;background:var(--bg2);border-top:1.5px solid var(--border);box-shadow:0 -2px 12px rgba(0,0,0,.08);">' +
