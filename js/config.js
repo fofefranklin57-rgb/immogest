@@ -11,6 +11,7 @@ window.IG.config = {
   workerUrl:   'https://immogest1.fofefranklin57.workers.dev',
   oneSignalAppId: '8a3857ab-64cc-4a62-9916-ce46b4768dac',
   monetagMeta: 'd9b7d2935fbcb3e568288a4ff0852e32',
+  monetagBannerZone: '', // À remplir : zone "Display Banner" créée sur monetag.com
   primaryColor:'#0E6AAF',
   modules: {
     locatif:     true,

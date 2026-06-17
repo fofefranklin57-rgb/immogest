@@ -24,10 +24,48 @@ window.IG.ads = (function() {
     var plan = window.IG.plans ? window.IG.plans.getPlan() : 'gratuit';
     if (plan !== 'gratuit') {
       _cacherToutesLesPubs();
-      return;
+    } else {
+      _injecterScript();
+      _afficherBandeauUpgrade();
     }
-    _injecterScript();
-    _afficherBandeauUpgrade();
+    // Bannière CPM dans le panel IA — tous plans
+    _injecterBanniereIA();
+  }
+
+  // ID de la zone Banner dans Monetag (créer une zone "Display Banner 300x60" dans le dashboard)
+  // https://monetag.com/ → Sites → Add Zone → Display Banners → format 300x60 ou "Responsive"
+  var BANNER_ZONE_ID = window.IG.config ? (window.IG.config.monetagBannerZone || '') : '';
+
+  function _injecterBanniereIA() {
+    var _tries = 0;
+    var _check = setInterval(function() {
+      var banner = document.getElementById('ai-ad-banner');
+      if (banner || ++_tries > 40) {
+        clearInterval(_check);
+        if (!banner) return;
+        if (BANNER_ZONE_ID) {
+          // Zone Banner Monetag dédiée
+          var wrap = document.createElement('div');
+          wrap.id = 'monetag-banner-slot';
+          banner.appendChild(wrap);
+          var s = document.createElement('script');
+          s.setAttribute('data-cfasync', 'false');
+          s.src = '//thubanoa.com/1?z=' + BANNER_ZONE_ID;
+          s.async = true;
+          banner.appendChild(s);
+        } else {
+          // Fallback maison — bannière promo ImmoGest jusqu'à config Monetag
+          banner.innerHTML +=
+            '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:10px;cursor:pointer" onclick="window.IG.plans.afficherUpgrade()">' +
+            '<div style="font-size:11px;color:var(--text2);line-height:1.4">' +
+              '<strong style="color:var(--accent)">ImmoGest Pro</strong> — Rapports Word, IA illimitée, export.<br>' +
+              '<span style="color:var(--text3)">Dès 9 999 FCFA/mois · Annulation libre</span>' +
+            '</div>' +
+            '<div style="flex-shrink:0;padding:6px 12px;border-radius:8px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;white-space:nowrap">Voir →</div>' +
+            '</div>';
+        }
+      }
+    }, 250);
   }
 
   function _cacherToutesLesPubs() {
