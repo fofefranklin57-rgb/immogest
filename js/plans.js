@@ -7,11 +7,11 @@ window.IG = window.IG || {};
 
 window.IG.plans = (function() {
 
-  var PLANS = window.IG.config ? window.IG.config.plans : {
-    gratuit:  { immeubles: 2,  locataires: 20,  label: 'Gratuit',  prix: 0 },
-    starter:  { immeubles: 5,  locataires: 100, label: 'Starter',  prix: 3000 },
-    pro:      { immeubles: 20, locataires: 500, label: 'Pro',       prix: 10000 },
-    cabinet:  { immeubles: -1, locataires: -1,  label: 'Cabinet',  prix: 25000 }
+  var PLANS = {
+    gratuit: { immeubles: 1,  locataires: 10,  utilisateurs: 2,  label: 'Gratuit', labelDisplay: 'GRATUIT', prix: 0,     prixAnnuel: 0,       couleur: '#6B7280' },
+    starter: { immeubles: 3,  locataires: 50,  utilisateurs: 5,  label: 'Starter', labelDisplay: 'STARTER', prix: 9999,  prixAnnuel: 99900,   couleur: '#0E6AAF' },
+    pro:     { immeubles: 10, locataires: -1,  utilisateurs: 15, label: 'Pro',     labelDisplay: 'PRO',     prix: 19999, prixAnnuel: 199900,  couleur: '#0E7A45' },
+    cabinet: { immeubles: -1, locataires: -1,  utilisateurs: -1, label: 'Agence',  labelDisplay: 'AGENCE',  prix: 29999, prixAnnuel: 299900,  couleur: '#B45309' }
   };
 
   // ── Vérification limites ──────────────────────────────────────
@@ -104,37 +104,107 @@ window.IG.plans = (function() {
 
   // ── Modal upgrade ─────────────────────────────────────────────
   function afficherUpgrade() {
-    var session = window.IG.auth ? window.IG.auth.getSession() : {};
     var planActuel = getPlan();
+    var fmt = window.IG.utils.formatMontant;
 
-    var PLANS_LIST = [
-      { id: 'starter',  label: 'Starter',  prix: 3000,  features: ['5 immeubles', '100 locataires', 'Rapports complets', 'Export DOCX'] },
-      { id: 'pro',      label: 'Pro',       prix: 10000, features: ['20 immeubles', '500 locataires', 'LegalOS', 'Marketplace', 'Portail locataire'] },
-      { id: 'cabinet',  label: 'Cabinet',   prix: 25000, features: ['Illimité', 'Multi-utilisateurs', 'API Access', 'Support prioritaire', 'WhatsApp auto'] }
-    ].filter(function(p) { return p.id !== planActuel && !(planActuel === 'pro' && p.id === 'starter'); });
+    var PLANS_UI = [
+      {
+        id: 'gratuit', badge: '', badgeColor: '',
+        features: [
+          { ok: true,  text: '1 immeuble' },
+          { ok: true,  text: '10 locataires' },
+          { ok: true,  text: '2 utilisateurs' },
+          { ok: true,  text: 'Rapports PDF' },
+          { ok: true,  text: '1 rapport Word/mois' },
+          { ok: true,  text: 'Fiche de suivi' },
+          { ok: true,  text: '3 relances/mois' },
+          { ok: false, text: 'Assistant IA' },
+          { ok: false, text: 'Export données' },
+          { ok: 'warn',text: 'Publicités' }
+        ]
+      },
+      {
+        id: 'starter', badge: '⭐ POPULAIRE', badgeColor: '#0E6AAF',
+        features: [
+          { ok: true,  text: '3 immeubles' },
+          { ok: true,  text: '50 locataires' },
+          { ok: true,  text: '5 utilisateurs' },
+          { ok: true,  text: 'Rapports PDF + Word illimités' },
+          { ok: true,  text: 'Fiche de suivi' },
+          { ok: true,  text: 'Relances illimitées' },
+          { ok: true,  text: 'IA 10 msgs/jour' },
+          { ok: false, text: 'Export données' },
+          { ok: true,  text: 'Sans publicité' }
+        ]
+      },
+      {
+        id: 'pro', badge: '✦ RECOMMANDÉ', badgeColor: '#0E7A45',
+        features: [
+          { ok: true, text: '10 immeubles' },
+          { ok: true, text: 'Locataires illimités' },
+          { ok: true, text: '15 utilisateurs' },
+          { ok: true, text: 'Rapports PDF + Word illimités' },
+          { ok: true, text: 'Fiche de suivi' },
+          { ok: true, text: 'Relances illimitées' },
+          { ok: true, text: 'IA illimitée' },
+          { ok: true, text: 'Export données' },
+          { ok: true, text: 'Support prioritaire' }
+        ]
+      },
+      {
+        id: 'cabinet', badge: '🏢 ENTREPRISE', badgeColor: '#B45309',
+        features: [
+          { ok: true, text: 'Immeubles illimités' },
+          { ok: true, text: 'Locataires illimités' },
+          { ok: true, text: 'Utilisateurs illimités' },
+          { ok: true, text: 'Tout inclus' },
+          { ok: true, text: 'IA illimitée' },
+          { ok: true, text: 'Export données' },
+          { ok: true, text: 'Sans publicité' },
+          { ok: true, text: 'Support dédié 24h' },
+          { ok: true, text: 'Portail locataire' }
+        ]
+      }
+    ];
 
-    var html = '<h3 style="font-size:15px;font-weight:700;margin-bottom:16px">⬆️ Choisissez votre plan</h3>' +
-      '<div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">';
+    var html = '<div style="text-align:center;padding:20px 20px 8px;background:linear-gradient(135deg,#0E6AAF,#0E7A45);margin:-16px -16px 20px;border-radius:12px 12px 0 0">' +
+      '<div style="font-size:20px;font-weight:900;color:#fff">⭐ Choisissez votre plan</div>' +
+      '<div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:4px">Gérez vos biens immobiliers sans limites</div>' +
+      (planActuel !== 'gratuit' ? '<div style="display:inline-block;margin-top:8px;padding:3px 14px;border-radius:99px;background:rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:700">' + PLANS[planActuel].labelDisplay + ' — Plan actuel</div>' : '') +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px">';
 
-    PLANS_LIST.forEach(function(p) {
-      var isTop = p.id === 'cabinet';
-      html += '<div style="border:' + (isTop ? '2px solid var(--accent)' : '1px solid var(--border2)') + ';border-radius:12px;padding:16px;cursor:pointer;position:relative" ' +
-        'onclick="window.IG.plans._initierPaiement(\'' + p.id + '\',' + p.prix + ')">' +
-        (isTop ? '<div style="position:absolute;top:-10px;right:14px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:99px">POPULAIRE</div>' : '') +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
-        '<span style="font-weight:700;font-size:15px">' + p.label + '</span>' +
-        '<span style="font-weight:700;font-size:15px;color:var(--accent)">' + window.IG.utils.formatMontant(p.prix) + '<span style="font-size:11px;font-weight:400;color:var(--text3)">/mois</span></span>' +
-        '</div>' +
-        '<div style="display:flex;flex-wrap:wrap;gap:6px">' +
-        p.features.map(function(f) {
-          return '<span style="font-size:11px;padding:2px 8px;border-radius:99px;background:var(--bg4);color:var(--text2)">✓ ' + f + '</span>';
+    PLANS_UI.forEach(function(pu) {
+      var p = PLANS[pu.id];
+      var isActuel = pu.id === planActuel;
+      var isFree = pu.id === 'gratuit';
+      var border = pu.badgeColor ? '2px solid ' + pu.badgeColor : '1px solid var(--border2)';
+      if (isActuel) border = '2px solid var(--accent)';
+
+      html += '<div style="border:' + border + ';border-radius:12px;padding:14px;position:relative;background:' + (isActuel ? 'var(--bg4)' : 'var(--bg3)') + '">' +
+        (pu.badge ? '<div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:' + pu.badgeColor + ';color:#fff;font-size:9px;font-weight:700;padding:2px 10px;border-radius:99px;white-space:nowrap">' + pu.badge + '</div>' : '') +
+        '<div style="font-weight:900;font-size:14px;color:' + (pu.badgeColor || 'var(--text)') + ';margin-bottom:4px;margin-top:' + (pu.badge ? '6px' : '0') + '">' + p.labelDisplay + '</div>' +
+        '<div style="font-size:20px;font-weight:900;color:var(--text);margin-bottom:2px">' + (isFree ? '<span style="font-size:14px">0</span> FCFA' : fmt(p.prix)) + '</div>' +
+        (!isFree ? '<div style="font-size:10px;color:var(--text3);margin-bottom:8px">FCFA/mois · ' + fmt(p.prixAnnuel) + '/an<br><span style="color:#0E7A45;font-weight:700">2 mois offerts</span></div>' : '<div style="font-size:10px;color:var(--text3);margin-bottom:8px">Pour toujours</div>') +
+        '<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:10px">' +
+        pu.features.map(function(f) {
+          var icon = f.ok === true ? '<span style="color:#0E7A45;font-weight:700">✅</span>' : f.ok === 'warn' ? '<span style="color:#B45309">⚠️</span>' : '<span style="color:var(--red)">✗</span>';
+          return '<div style="font-size:11px;display:flex;align-items:center;gap:5px;color:' + (f.ok === false ? 'var(--text3)' : 'var(--text2)') + '">' + icon + ' ' + f.text + '</div>';
         }).join('') +
-        '</div></div>';
+        '</div>' +
+        (isActuel
+          ? '<div style="width:100%;padding:8px;border-radius:8px;background:var(--bg4);text-align:center;font-size:11px;font-weight:700;color:var(--text3)">Plan actuel</div>'
+          : (isFree
+            ? '<div style="width:100%;padding:8px;border-radius:8px;background:var(--bg4);text-align:center;font-size:11px;color:var(--text3)">Gratuit</div>'
+            : '<button onclick="window.IG.plans._initierPaiement(\'' + pu.id + '\',' + p.prix + ')" style="width:100%;padding:8px;border-radius:8px;border:none;background:' + (pu.badgeColor || '#0E6AAF') + ';color:#fff;cursor:pointer;font-size:12px;font-weight:700">🚀 Passer à ' + p.label + '</button>'
+          )
+        ) +
+        '</div>';
     });
 
-    html += '</div><button data-modal-close style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Pas maintenant</button>';
+    html += '</div><button data-modal-close style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px;color:var(--text3)">Pas maintenant</button>';
 
-    window.IG.utils.showModal(html, { width: '480px' });
+    window.IG.utils.showModal(html, { width: '600px' });
   }
 
   async function _initierPaiement(planId, prix) {
