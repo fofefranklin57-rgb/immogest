@@ -30,7 +30,7 @@ window.IG.rapports = (function() {
       '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">' +
       _metricCard('🏢', immeubles.length, t('Immeubles')) +
       _metricCard('👤', actifs.length, t('Locataires actifs')) +
-      _metricCard('💰', fmt(totalRecettes), t('Recettes ' + nomMois)) +
+      _metricCard('💰', fmt(totalRecettes), t('Recettes') + ' ' + t(nomMois)) +
       '</div>';
 
     // Tableau par immeuble

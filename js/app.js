@@ -144,7 +144,7 @@ window.IG.app = (function() {
       '<div id="topbar-lang-plan" style="display:flex;align-items:center;gap:4px;"></div>' +
       // Sélecteurs mois/année
       '<select id="sel-mois" onchange="window.IG.app.refresh()" style="background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:6px 10px;font-family:var(--font);">' +
-      Array.from({length:12}, function(_,i) { return '<option value="' + (i+1) + '"' + ((i+1) === mois ? ' selected' : '') + '>' + ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'][i] + '</option>'; }).join('') +
+      Array.from({length:12}, function(_,i) { var mn = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'][i]; return '<option value="' + (i+1) + '"' + ((i+1) === mois ? ' selected' : '') + '>' + t(mn) + '</option>'; }).join('') +
       '</select>' +
       '<select id="sel-annee" onchange="window.IG.app.refresh()" style="background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:6px 10px;font-family:var(--font);">' +
       [2024,2025,2026,2027].map(function(y) { return '<option value="' + y + '"' + (y === annee ? ' selected' : '') + '>' + y + '</option>'; }).join('') +
@@ -215,7 +215,9 @@ window.IG.app = (function() {
     var badgeClick = plan === 'gratuit'
       ? 'if(window.IG.plans)window.IG.plans.afficherUpgrade();else window.IG.app.showPage(\'parametres\')'
       : 'window.IG.app.showPage(\'parametres\')';
-    var html = '<span onclick="' + badgeClick + '" title="' + (plan === 'gratuit' ? 'Upgrader votre plan' : 'Mon plan') + '" style="padding:3px 10px;border-radius:99px;background:' + color + ';color:#fff;font-size:10px;font-weight:700;letter-spacing:.04em;white-space:nowrap;cursor:pointer;transition:opacity .15s;" onmouseenter="this.style.opacity=\'0.8\'" onmouseleave="this.style.opacity=\'1\'">' + plan.toUpperCase() + (plan === 'gratuit' ? ' ↑' : '') + '</span>';
+    var _planLabels = { gratuit: t('Gratuit'), starter: 'Starter', pro: 'Pro', cabinet: t('Cabinet') };
+    var _planLabel = _planLabels[plan] || plan.toUpperCase();
+    var html = '<span onclick="' + badgeClick + '" title="' + (plan === 'gratuit' ? 'Upgrader votre plan' : 'Mon plan') + '" style="padding:3px 10px;border-radius:99px;background:' + color + ';color:#fff;font-size:10px;font-weight:700;letter-spacing:.04em;white-space:nowrap;cursor:pointer;transition:opacity .15s;" onmouseenter="this.style.opacity=\'0.8\'" onmouseleave="this.style.opacity=\'1\'">' + _planLabel + (plan === 'gratuit' ? ' ↑' : '') + '</span>';
     // Sélecteur langue — hardcodé car window.IG.i18n n'expose pas langs
     var LANGS = [['fr','🇫🇷 FR'],['en','🇬🇧 EN'],['pt','🇧🇷 PT'],['es','🇪🇸 ES'],['ha','🌍 HA'],['ar','🇸🇦 AR']];
     var currentLang = (window.IG.i18n && window.IG.i18n.lang) ? window.IG.i18n.lang : (localStorage.getItem('ig_lang') || 'fr');

@@ -217,6 +217,57 @@ window.IG.i18n = (function() {
       'Voir relances': 'View follow-ups',
       'Loyer théorique': 'Theoretical rent',
       'occupés': 'occupied',
+
+      // Topbar / plan
+      'Nouveau': 'New',
+      'Gratuit': 'Free',
+
+      // Relances
+      'Relances & Alertes': 'Follow-ups & Alerts',
+      'Tous les locataires sont à jour !': 'All tenants are up to date!',
+      '1 mois de retard': '1 month late',
+      '2 mois — Mise en demeure': '2 months — Formal notice',
+      '3+ mois — Commandement': '3+ months — Court order',
+      'montant dû': 'amount due',
+
+      // Marketplace
+      'Marketplace': 'Marketplace',
+      'Chargement marketplace...': 'Loading marketplace...',
+      'Aucune annonce publiée': 'No listings published',
+      'Publiez des annonces pour vos locaux disponibles': 'Publish listings for your available units',
+      'Publier une annonce': 'Post a listing',
+      'Tout': 'All',
+      'ANNONCES PREMIUM': 'PREMIUM LISTINGS',
+      'vues': 'views',
+      '/mois': '/month',
+      'Annonce publiée !': 'Listing published!',
+      'Le titre est requis': 'Title is required',
+      'Contacter': 'Contact',
+      'Titre *': 'Title *',
+      'Catégorie': 'Category',
+      'Loyer/Prix': 'Rent/Price',
+      'Description': 'Description',
+      'Publier': 'Publish',
+      'Location résidentielle': 'Residential rental',
+      'Local commercial': 'Commercial space',
+      'Bureau': 'Office',
+      'Colocation': 'Coliving',
+      'Location saisonnière': 'Seasonal rental',
+      'Vente': 'Sale',
+      'Prestige & Luxe': 'Prestige & Luxury',
+      'Professionnel': 'Professional',
+
+      // Portail locataire
+      'MON ESPACE LOCATAIRE': 'MY TENANT SPACE',
+      'Accès réservé aux locataires': 'Restricted to tenants',
+      'Locataire non associé à ce compte.': 'Tenant not linked to this account.',
+      'Fiche locataire introuvable.': 'Tenant record not found.',
+      'Score de paiement': 'Payment score',
+      'Situation locative': 'Rental status',
+      'Mois réglés': 'Months settled',
+      'Mois en retard': 'Months late',
+      'Solde dû': 'Balance due',
+      'Historique complet': 'Full history',
     },
 
     pt: {
@@ -410,6 +461,57 @@ window.IG.i18n = (function() {
       'Voir relances': 'Ver acompanhamentos',
       'Loyer théorique': 'Aluguel teórico',
       'occupés': 'ocupados',
+
+      // Topbar / plan
+      'Nouveau': 'Novo',
+      'Gratuit': 'Grátis',
+
+      // Relances
+      'Relances & Alertes': 'Acompanhamentos & Alertas',
+      'Tous les locataires sont à jour !': 'Todos os inquilinos estão em dia!',
+      '1 mois de retard': '1 mês de atraso',
+      '2 mois — Mise en demeure': '2 meses — Notificação formal',
+      '3+ mois — Commandement': '3+ meses — Ordem judicial',
+      'montant dû': 'valor devido',
+
+      // Marketplace
+      'Marketplace': 'Marketplace',
+      'Chargement marketplace...': 'Carregando marketplace...',
+      'Aucune annonce publiée': 'Nenhum anúncio publicado',
+      'Publiez des annonces pour vos locaux disponibles': 'Publique anúncios para suas unidades disponíveis',
+      'Publier une annonce': 'Publicar anúncio',
+      'Tout': 'Tudo',
+      'ANNONCES PREMIUM': 'ANÚNCIOS PREMIUM',
+      'vues': 'visualizações',
+      '/mois': '/mês',
+      'Annonce publiée !': 'Anúncio publicado!',
+      'Le titre est requis': 'O título é obrigatório',
+      'Contacter': 'Contatar',
+      'Titre *': 'Título *',
+      'Catégorie': 'Categoria',
+      'Loyer/Prix': 'Aluguel/Preço',
+      'Description': 'Descrição',
+      'Publier': 'Publicar',
+      'Location résidentielle': 'Aluguel residencial',
+      'Local commercial': 'Espaço comercial',
+      'Bureau': 'Escritório',
+      'Colocation': 'Coliving',
+      'Location saisonnière': 'Aluguel temporário',
+      'Vente': 'Venda',
+      'Prestige & Luxe': 'Prestígio & Luxo',
+      'Professionnel': 'Profissional',
+
+      // Portail locataire
+      'MON ESPACE LOCATAIRE': 'MEU ESPAÇO DE INQUILINO',
+      'Accès réservé aux locataires': 'Acesso restrito a inquilinos',
+      'Locataire non associé à ce compte.': 'Inquilino não vinculado a esta conta.',
+      'Fiche locataire introuvable.': 'Ficha de inquilino não encontrada.',
+      'Score de paiement': 'Pontuação de pagamento',
+      'Situation locative': 'Situação locatícia',
+      'Mois réglés': 'Meses pagos',
+      'Mois en retard': 'Meses em atraso',
+      'Solde dû': 'Saldo devedor',
+      'Historique complet': 'Histórico completo',
     },
 
     es: {
@@ -557,7 +659,7 @@ window.IG.i18n = (function() {
 
       // Mois
       'Janvier': 'Enero', 'Février': 'Febrero', 'Mars': 'Marzo',
-      'Abril': 'Abril', 'Mai': 'Mayo', 'Juin': 'Junio',
+      'Avril': 'Abril', 'Mai': 'Mayo', 'Juin': 'Junio',
       'Juillet': 'Julio', 'Août': 'Agosto', 'Septembre': 'Septiembre',
       'Octobre': 'Octubre', 'Novembre': 'Noviembre', 'Décembre': 'Diciembre',
 
@@ -603,6 +705,57 @@ window.IG.i18n = (function() {
       'Voir relances': 'Ver seguimientos',
       'Loyer théorique': 'Renta teórica',
       'occupés': 'ocupados',
+
+      // Topbar / plan
+      'Nouveau': 'Nuevo',
+      'Gratuit': 'Gratuito',
+
+      // Relances
+      'Relances & Alertes': 'Seguimientos & Alertas',
+      'Tous les locataires sont à jour !': '¡Todos los inquilinos están al día!',
+      '1 mois de retard': '1 mes de retraso',
+      '2 mois — Mise en demeure': '2 meses — Notificación formal',
+      '3+ mois — Commandement': '3+ meses — Orden judicial',
+      'montant dû': 'importe adeudado',
+
+      // Marketplace
+      'Marketplace': 'Marketplace',
+      'Chargement marketplace...': 'Cargando marketplace...',
+      'Aucune annonce publiée': 'Sin anuncios publicados',
+      'Publiez des annonces pour vos locaux disponibles': 'Publique anuncios para sus unidades disponibles',
+      'Publier une annonce': 'Publicar anuncio',
+      'Tout': 'Todo',
+      'ANNONCES PREMIUM': 'ANUNCIOS PREMIUM',
+      'vues': 'vistas',
+      '/mois': '/mes',
+      'Annonce publiée !': '¡Anuncio publicado!',
+      'Le titre est requis': 'El título es obligatorio',
+      'Contacter': 'Contactar',
+      'Titre *': 'Título *',
+      'Catégorie': 'Categoría',
+      'Loyer/Prix': 'Renta/Precio',
+      'Description': 'Descripción',
+      'Publier': 'Publicar',
+      'Location résidentielle': 'Alquiler residencial',
+      'Local commercial': 'Local comercial',
+      'Bureau': 'Oficina',
+      'Colocation': 'Coliving',
+      'Location saisonnière': 'Alquiler temporal',
+      'Vente': 'Venta',
+      'Prestige & Luxe': 'Prestigio & Lujo',
+      'Professionnel': 'Profesional',
+
+      // Portail locataire
+      'MON ESPACE LOCATAIRE': 'MI ESPACIO DE INQUILINO',
+      'Accès réservé aux locataires': 'Acceso restringido a inquilinos',
+      'Locataire non associé à ce compte.': 'Inquilino no vinculado a esta cuenta.',
+      'Fiche locataire introuvable.': 'Ficha de inquilino no encontrada.',
+      'Score de paiement': 'Puntuación de pago',
+      'Situation locative': 'Situación locativa',
+      'Mois réglés': 'Meses pagados',
+      'Mois en retard': 'Meses atrasados',
+      'Solde dû': 'Saldo adeudado',
+      'Historique complet': 'Historial completo',
     },
 
     ha: {
@@ -796,6 +949,57 @@ window.IG.i18n = (function() {
       'Voir relances': 'Duba tunatar',
       'Loyer théorique': 'Kudin haya na ka\'ida',
       'occupés': 'masu mazauni',
+
+      // Topbar / plan
+      'Nouveau': 'Sabo',
+      'Gratuit': 'Kyauta',
+
+      // Relances
+      'Relances & Alertes': 'Tunatarwa & Gargadi',
+      'Tous les locataires sont à jour !': 'Dukan masu haya sun biya !',
+      '1 mois de retard': 'Wata 1 jinkiri',
+      '2 mois — Mise en demeure': 'Wata 2 — Gargadi na hukuma',
+      '3+ mois — Commandement': 'Wata 3+ — Umarnin kotu',
+      'montant dû': 'adadin da ake bin',
+
+      // Marketplace
+      'Marketplace': 'Kasuwa',
+      'Chargement marketplace...': 'Ana lodi kasuwa...',
+      'Aucune annonce publiée': 'Babu sanarwa da aka buga',
+      'Publiez des annonces pour vos locaux disponibles': 'Buga sanarwa don dakunanku da suke koshe',
+      'Publier une annonce': 'Buga sanarwa',
+      'Tout': 'Duka',
+      'ANNONCES PREMIUM': 'SANARWAR PREMIUM',
+      'vues': 'kallo',
+      '/mois': '/wata',
+      'Annonce publiée !': 'An buga sanarwa !',
+      'Le titre est requis': 'Ana buƙatar take',
+      'Contacter': 'Tuntuɓa',
+      'Titre *': 'Take *',
+      'Catégorie': 'Nau\'i',
+      'Loyer/Prix': 'Haya/Farashi',
+      'Description': 'Bayani',
+      'Publier': 'Buga',
+      'Location résidentielle': 'Hayar gida',
+      'Local commercial': 'Dakin kasuwanci',
+      'Bureau': 'Ofis',
+      'Colocation': 'Zama tare',
+      'Location saisonnière': 'Hayar lokaci',
+      'Vente': 'Siyarwa',
+      'Prestige & Luxe': 'Martaba & Alatu',
+      'Professionnel': 'Ƙwararru',
+
+      // Portail locataire
+      'MON ESPACE LOCATAIRE': 'WURINA NA MAI HAYA',
+      'Accès réservé aux locataires': 'Na masu haya ne kawai',
+      'Locataire non associé à ce compte.': 'Mai haya bai dace da wannan asusu ba.',
+      'Fiche locataire introuvable.': 'Ba a sami takardar mai haya ba.',
+      'Score de paiement': 'Maki na biyan kudi',
+      'Situation locative': 'Yanayin haya',
+      'Mois réglés': 'Watanni da aka biya',
+      'Mois en retard': 'Watanni da jinkiri',
+      'Solde dû': 'Ragowar kudi',
+      'Historique complet': 'Cikakken tarihi',
     },
 
     ar: {
@@ -989,6 +1193,57 @@ window.IG.i18n = (function() {
       'Voir relances': 'عرض المتابعات',
       'Loyer théorique': 'الإيجار النظري',
       'occupés': 'مشغولة',
+
+      // Topbar / plan
+      'Nouveau': 'جديد',
+      'Gratuit': 'مجاني',
+
+      // Relances
+      'Relances & Alertes': 'المتابعات والتنبيهات',
+      'Tous les locataires sont à jour !': 'جميع المستأجرين على المستوى!',
+      '1 mois de retard': 'شهر تأخير',
+      '2 mois — Mise en demeure': 'شهران — إنذار رسمي',
+      '3+ mois — Commandement': '3+ أشهر — أمر قضائي',
+      'montant dû': 'المبلغ المستحق',
+
+      // Marketplace
+      'Marketplace': 'سوق العقارات',
+      'Chargement marketplace...': 'جارٍ تحميل السوق...',
+      'Aucune annonce publiée': 'لا توجد إعلانات',
+      'Publiez des annonces pour vos locaux disponibles': 'انشر إعلانات للوحدات المتاحة',
+      'Publier une annonce': 'نشر إعلان',
+      'Tout': 'الكل',
+      'ANNONCES PREMIUM': 'إعلانات مميزة',
+      'vues': 'مشاهدة',
+      '/mois': '/شهر',
+      'Annonce publiée !': 'تم نشر الإعلان!',
+      'Le titre est requis': 'العنوان مطلوب',
+      'Contacter': 'تواصل',
+      'Titre *': 'العنوان *',
+      'Catégorie': 'الفئة',
+      'Loyer/Prix': 'الإيجار/السعر',
+      'Description': 'الوصف',
+      'Publier': 'نشر',
+      'Location résidentielle': 'إيجار سكني',
+      'Local commercial': 'محل تجاري',
+      'Bureau': 'مكتب',
+      'Colocation': 'شراكة سكنية',
+      'Location saisonnière': 'إيجار موسمي',
+      'Vente': 'بيع',
+      'Prestige & Luxe': 'فخامة ورفاهية',
+      'Professionnel': 'مهني',
+
+      // Portail locataire
+      'MON ESPACE LOCATAIRE': 'مساحتي كمستأجر',
+      'Accès réservé aux locataires': 'مخصص للمستأجرين فقط',
+      'Locataire non associé à ce compte.': 'المستأجر غير مرتبط بهذا الحساب.',
+      'Fiche locataire introuvable.': 'ملف المستأجر غير موجود.',
+      'Score de paiement': 'درجة الدفع',
+      'Situation locative': 'الوضع الإيجاري',
+      'Mois réglés': 'أشهر مسددة',
+      'Mois en retard': 'أشهر متأخرة',
+      'Solde dû': 'الرصيد المستحق',
+      'Historique complet': 'السجل الكامل',
     }
   };
 

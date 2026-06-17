@@ -21,12 +21,12 @@ window.IG.portail = (function() {
     if (!session || session.role !== 'locataire') {
       content.innerHTML = '<div class="content"><div class="card" style="text-align:center;padding:60px 20px">' +
         '<div style="font-size:48px;margin-bottom:12px">🔒</div>' +
-        '<p style="color:var(--text3)">Accès réservé aux locataires</p></div></div>';
+        '<p style="color:var(--text3)">' + t('Accès réservé aux locataires') + '</p></div></div>';
       return;
     }
 
     var locId = session.locataireId || session.locataire_id;
-    if (!locId) { content.innerHTML = '<div class="content"><p style="color:var(--text3);padding:20px">Locataire non associé à ce compte.</p></div>'; return; }
+    if (!locId) { content.innerHTML = '<div class="content"><p style="color:var(--text3);padding:20px">' + t('Locataire non associé à ce compte.') + '</p></div>'; return; }
 
     var data = window.IG.app ? window.IG.app.getData() : { locataires: [], paiements: [] };
     var loc = data.locataires.find(function(l) { return l.id == locId; });
@@ -36,7 +36,7 @@ window.IG.portail = (function() {
         loc = locs[0];
       } catch(e) {}
     }
-    if (!loc) { content.innerHTML = '<div class="content"><p style="color:var(--text3);padding:20px">Fiche locataire introuvable.</p></div>'; return; }
+    if (!loc) { content.innerHTML = '<div class="content"><p style="color:var(--text3);padding:20px">' + t('Fiche locataire introuvable.') + '</p></div>'; return; }
 
     var paiements = data.paiements.filter(function(p) { return p.locataire_id == loc.id; });
     var fiche = window.IG.paiements ? window.IG.paiements.calculerFiche(loc, paiements) : [];
@@ -50,9 +50,9 @@ window.IG.portail = (function() {
       '<div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">' +
       '<div>' +
-      '<div style="font-size:11px;opacity:.75;margin-bottom:4px">MON ESPACE LOCATAIRE</div>' +
+      '<div style="font-size:11px;opacity:.75;margin-bottom:4px">' + t('MON ESPACE LOCATAIRE') + '</div>' +
       '<div style="font-size:20px;font-weight:700">' + esc(loc.nom) + '</div>' +
-      '<div style="font-size:13px;opacity:.85;margin-top:4px">Local ' + esc(loc.appt || '—') + ' · Loyer ' + fmt(loc.loyer) + '/mois</div>' +
+      '<div style="font-size:13px;opacity:.85;margin-top:4px">' + t('Local') + ' ' + esc(loc.appt || '—') + ' · ' + t('Loyer') + ' ' + fmt(loc.loyer) + t('/mois') + '</div>' +
       '</div>' +
       '<div style="text-align:right">' +
       '<div style="font-size:24px">' + scoreBadge.emoji + '</div>' +
@@ -63,25 +63,25 @@ window.IG.portail = (function() {
 
       // KPIs
       '<div class="metrics-grid" style="margin-bottom:16px">' +
-      _kpi('💰', fmt(montantDu), 'Solde dû', montantDu > 0 ? 'red' : 'green') +
-      _kpi('📅', impayes.length + ' mois', 'En retard', impayes.length > 0 ? 'red' : 'green') +
-      _kpi('✅', paiements.length, 'Paiements enregistrés', '') +
+      _kpi('💰', fmt(montantDu), t('Solde dû'), montantDu > 0 ? 'red' : 'green') +
+      _kpi('📅', impayes.length + ' ' + t('Mois'), t('En retard'), impayes.length > 0 ? 'red' : 'green') +
+      _kpi('✅', paiements.length, t('Paiements'), '') +
       '</div>' +
 
       // Bouton déclarer paiement
       (montantDu > 0 ? '<button onclick="window.IG.portail.declarerPaiement(' + loc.id + ')" ' +
         'style="width:100%;padding:14px;border-radius:12px;border:none;background:var(--green);color:#fff;cursor:pointer;font-size:14px;font-weight:700;margin-bottom:16px">' +
-        '💵 Déclarer un paiement</button>' : '') +
+        '💵 ' + t('Enregistrer un paiement') + '</button>' : '') +
 
       // Historique fiche
       '<div class="card">' +
       '<div class="card-header"><div class="card-title">📋 Historique des loyers</div></div>' +
       '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
       '<thead><tr style="background:var(--bg4)">' +
-      '<th style="padding:8px 10px;text-align:left;font-weight:600">Période</th>' +
-      '<th style="padding:8px 10px;text-align:right;font-weight:600">Loyer</th>' +
-      '<th style="padding:8px 10px;text-align:center;font-weight:600">Statut</th>' +
-      '<th style="padding:8px 10px;text-align:right;font-weight:600">Reste</th>' +
+      '<th style="padding:8px 10px;text-align:left;font-weight:600">' + t('Période') + '</th>' +
+      '<th style="padding:8px 10px;text-align:right;font-weight:600">' + t('Loyer') + '</th>' +
+      '<th style="padding:8px 10px;text-align:center;font-weight:600">' + t('Statut') + '</th>' +
+      '<th style="padding:8px 10px;text-align:right;font-weight:600">' + t('Reste') + '</th>' +
       '</tr></thead><tbody>' +
       fiche.slice().reverse().map(function(ligne) {
         var paye = ligne.statut === 'Payé';
@@ -92,7 +92,7 @@ window.IG.portail = (function() {
           '<span style="padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;' +
           'background:' + (paye ? 'var(--green-bg)' : 'var(--red-bg)') + ';' +
           'color:' + (paye ? 'var(--green)' : 'var(--red)') + '">' +
-          (paye ? '✓ Payé' : '✗ Impayé') + '</span></td>' +
+          (paye ? '✓ ' + t('Payé') : '✗ ' + t('Impayé')) + '</span></td>' +
           '<td style="padding:8px 10px;text-align:right;color:' + (ligne.reste > 0 ? 'var(--red)' : 'var(--green)') + ';font-weight:600">' +
           (ligne.reste > 0 ? fmt(ligne.reste) : '—') + '</td>' +
           '</tr>';

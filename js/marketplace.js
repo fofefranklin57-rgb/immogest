@@ -13,16 +13,24 @@ window.IG.marketplace = (function() {
   function fmt(n) { return window.IG.utils.formatMontant(n); }
   function db()  { return window.IG.db; }
 
-  var CATEGORIES = {
-    location_residentielle: { label: 'Location résidentielle', icon: '🏠' },
-    location_commerciale:   { label: 'Local commercial',       icon: '🏪' },
-    bureau:                 { label: 'Bureau',                 icon: '🏢' },
-    colocation:             { label: 'Colocation',             icon: '👥' },
-    location_saisonniere:   { label: 'Location saisonnière',   icon: '🌴' },
-    vente:                  { label: 'Vente',                  icon: '🔑' },
-    luxe:                   { label: 'Prestige & Luxe',        icon: '💎' },
-    professionnel:          { label: 'Professionnel',          icon: '🏭' }
+  var CATEGORIES_RAW = {
+    location_residentielle: { labelKey: 'Location résidentielle', icon: '🏠' },
+    location_commerciale:   { labelKey: 'Local commercial',       icon: '🏪' },
+    bureau:                 { labelKey: 'Bureau',                 icon: '🏢' },
+    colocation:             { labelKey: 'Colocation',             icon: '👥' },
+    location_saisonniere:   { labelKey: 'Location saisonnière',   icon: '🌴' },
+    vente:                  { labelKey: 'Vente',                  icon: '🔑' },
+    luxe:                   { labelKey: 'Prestige & Luxe',        icon: '💎' },
+    professionnel:          { labelKey: 'Professionnel',          icon: '🏭' }
   };
+
+  function CATEGORIES() {
+    var result = {};
+    Object.keys(CATEGORIES_RAW).forEach(function(k) {
+      result[k] = { label: t(CATEGORIES_RAW[k].labelKey), icon: CATEGORIES_RAW[k].icon };
+    });
+    return result;
+  }
 
   var PAYS_DEVISES = {
     CM: { label: 'Cameroun',     devise: 'XAF',  symbol: 'FCFA' },
@@ -84,7 +92,7 @@ window.IG.marketplace = (function() {
     var content = document.getElementById('page-content');
     if (!content) return;
 
-    content.innerHTML = '<div class="content"><div style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:32px">🏪</div><p>Chargement marketplace...</p></div></div>';
+    content.innerHTML = '<div class="content"><div style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:32px">🏪</div><p>' + t('Chargement marketplace...') + '</p></div></div>';
 
     var annonces = await getAnnonces();
     var session = window.IG.auth ? window.IG.auth.getSession() : {};
@@ -98,13 +106,13 @@ window.IG.marketplace = (function() {
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">' +
       '<h2 style="font-size:17px;font-weight:700">🏪 Marketplace ImmoGest</h2>' +
       '<div style="display:flex;gap:8px">' +
-      '<button onclick="window.IG.marketplace.afficherFormulaire()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">+ Publier une annonce</button>' +
+      '<button onclick="window.IG.marketplace.afficherFormulaire()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">+ ' + t('Publier une annonce') + '</button>' +
       '</div></div>' +
 
       // Filtres catégories
       '<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px;flex-wrap:nowrap">' +
-      '<button onclick="window.IG.marketplace._filtrer(\'tous\')" style="padding:6px 14px;border-radius:99px;border:1px solid var(--border2);background:var(--accent);color:#fff;cursor:pointer;font-size:12px;white-space:nowrap;font-weight:600">Tout</button>' +
-      Object.entries(CATEGORIES).map(function(entry) {
+      '<button onclick="window.IG.marketplace._filtrer(\'tous\')" style="padding:6px 14px;border-radius:99px;border:1px solid var(--border2);background:var(--accent);color:#fff;cursor:pointer;font-size:12px;white-space:nowrap;font-weight:600">' + t('Tout') + '</button>' +
+      Object.entries(CATEGORIES()).map(function(entry) {
         return '<button onclick="window.IG.marketplace._filtrer(\'' + entry[0] + '\')" style="padding:6px 14px;border-radius:99px;border:1px solid var(--border2);background:var(--bg4);color:var(--text2);cursor:pointer;font-size:12px;white-space:nowrap">' + entry[1].icon + ' ' + entry[1].label + '</button>';
       }).join('') +
       '</div>';
@@ -112,9 +120,9 @@ window.IG.marketplace = (function() {
     if (!annonces.length) {
       html += '<div class="card" style="text-align:center;padding:60px 20px;color:var(--text3)">' +
         '<div style="font-size:48px;margin-bottom:12px">🏠</div>' +
-        '<p style="font-size:16px;font-weight:600;margin-bottom:8px">Aucune annonce publiée</p>' +
-        '<p style="font-size:13px;margin-bottom:20px">Publiez des annonces pour vos locaux disponibles</p>' +
-        '<button onclick="window.IG.marketplace.afficherFormulaire()" style="padding:10px 24px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:600">+ Première annonce</button>' +
+        '<p style="font-size:16px;font-weight:600;margin-bottom:8px">' + t('Aucune annonce publiée') + '</p>' +
+        '<p style="font-size:13px;margin-bottom:20px">' + t('Publiez des annonces pour vos locaux disponibles') + '</p>' +
+        '<button onclick="window.IG.marketplace.afficherFormulaire()" style="padding:10px 24px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:600">+ ' + t('Publier une annonce') + '</button>' +
         '</div>';
     } else {
       // Annonces premium (Prompt 1 : niveaux de visibilité)
@@ -122,7 +130,7 @@ window.IG.marketplace = (function() {
         html += '<div style="margin-bottom:16px">' +
           '<div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:6px">' +
           '<span style="background:linear-gradient(135deg,#F59E0B,#EF4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:14px">⭐</span>' +
-          'ANNONCES PREMIUM</div>' +
+          + t('ANNONCES PREMIUM') + '</div>' +
           '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">' +
           premium.map(function(a) { return _carteAnnonce(a, true); }).join('') +
           '</div></div>';
@@ -140,7 +148,8 @@ window.IG.marketplace = (function() {
   }
 
   function _carteAnnonce(a, isPremium) {
-    var cat = CATEGORIES[a.categorie] || { icon: '🏠', label: a.categorie || 'Location' };
+    var _cats = CATEGORIES();
+    var cat = _cats[a.categorie] || { icon: '🏠', label: a.categorie || 'Location' };
     var paysInfo = PAYS_DEVISES[a.pays] || PAYS_DEVISES.CM;
     var photo = (a.photos && a.photos[0]) || null;
 
@@ -159,7 +168,7 @@ window.IG.marketplace = (function() {
       '<div style="font-size:12px;color:var(--text3);margin-bottom:8px">' + esc(a.ville || '') + (a.quartier ? ' — ' + esc(a.quartier) : '') + ' · ' + (a.pays || 'CM') + '</div>' +
       '<div style="display:flex;justify-content:space-between;align-items:center">' +
       '<div style="font-size:16px;font-weight:700;color:var(--accent)">' + fmt(a.loyer) + '</div>' +
-      '<div style="font-size:11px;color:var(--text3)">' + (a.vues || 0) + ' vues</div>' +
+      '<div style="font-size:11px;color:var(--text3)">' + (a.vues || 0) + ' ' + t('vues') + '</div>' +
       '</div></div></div>';
   }
 
@@ -177,7 +186,8 @@ window.IG.marketplace = (function() {
     var annonces = window._mktAnnonces || [];
     var a = annonces.find(function(x) { return x.id == id; });
     if (!a) return;
-    var cat = CATEGORIES[a.categorie] || { icon: '🏠', label: '' };
+    var _cats = CATEGORIES();
+    var cat = _cats[a.categorie] || { icon: '🏠', label: '' };
 
     window.IG.utils.showModal(
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">' +
@@ -185,11 +195,11 @@ window.IG.marketplace = (function() {
       '<button data-modal-close style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3)">✕</button>' +
       '</div>' +
       '<div style="font-size:12px;color:var(--text3);margin-bottom:12px">' + cat.icon + ' ' + cat.label + ' · ' + esc(a.ville || '') + ' · ' + (a.pays || 'CM') + '</div>' +
-      '<div style="font-size:24px;font-weight:700;color:var(--accent);margin-bottom:12px">' + fmt(a.loyer) + '/mois</div>' +
+      '<div style="font-size:24px;font-weight:700;color:var(--accent);margin-bottom:12px">' + fmt(a.loyer) + t('/mois') + '</div>' +
       (a.description ? '<p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px">' + esc(a.description) + '</p>' : '') +
       '<div style="display:flex;gap:8px">' +
       '<a href="https://wa.me/?text=' + encodeURIComponent('Je suis intéressé par cette annonce : ' + a.titre + ' — ' + (a.loyer || '') + ' FCFA') + '" target="_blank" ' +
-      'style="flex:1;padding:10px;border-radius:8px;background:#25D366;color:#fff;font-weight:700;font-size:13px;text-align:center;text-decoration:none">📱 Contacter</a>' +
+      'style="flex:1;padding:10px;border-radius:8px;background:#25D366;color:#fff;font-weight:700;font-size:13px;text-align:center;text-decoration:none">📱 ' + t('Contacter') + '</a>' +
       '</div>',
       { width: '500px' }
     );
@@ -200,41 +210,41 @@ window.IG.marketplace = (function() {
     var immeubles = window.IG.app ? window.IG.app.getData().immeubles : [];
 
     var modal = window.IG.utils.showModal(
-      '<h3 style="margin-bottom:16px;font-size:15px;font-weight:700">🏪 Publier une annonce</h3>' +
+      '<h3 style="margin-bottom:16px;font-size:15px;font-weight:700">🏪 ' + t('Publier une annonce') + '</h3>' +
       '<div style="display:flex;flex-direction:column;gap:12px">' +
 
-      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">Titre *</label>' +
+      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Titre *') + '</label>' +
       '<input id="mkt-titre" placeholder="Ex: Appartement 3 pièces disponible" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px"></div>' +
 
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
-      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">Catégorie</label>' +
+      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Catégorie') + '</label>' +
       '<select id="mkt-cat" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px">' +
-      Object.entries(CATEGORIES).map(function(e) { return '<option value="' + e[0] + '">' + e[1].icon + ' ' + e[1].label + '</option>'; }).join('') +
+      Object.entries(CATEGORIES()).map(function(e) { return '<option value="' + e[0] + '">' + e[1].icon + ' ' + e[1].label + '</option>'; }).join('') +
       '</select></div>' +
-      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">Loyer/Prix</label>' +
+      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Loyer/Prix') + '</label>' +
       '<input id="mkt-loyer" type="number" placeholder="0" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px"></div>' +
       '</div>' +
 
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
-      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">Ville</label>' +
+      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Ville') + '</label>' +
       '<input id="mkt-ville" placeholder="Douala" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px"></div>' +
-      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">Quartier</label>' +
+      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Quartier') + '</label>' +
       '<input id="mkt-qrt" placeholder="Bastos" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px"></div>' +
       '</div>' +
 
-      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">Description</label>' +
+      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Description') + '</label>' +
       '<textarea id="mkt-desc" rows="3" placeholder="Décrivez le bien..." style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;resize:vertical;margin-top:4px"></textarea></div>' +
 
       '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">' +
-      '<button data-modal-close style="padding:9px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Annuler</button>' +
-      '<button id="mkt-save" style="padding:9px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Publier</button>' +
+      '<button data-modal-close style="padding:9px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">' + t('Annuler') + '</button>' +
+      '<button id="mkt-save" style="padding:9px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">' + t('Publier') + '</button>' +
       '</div></div>',
       { width: '520px' }
     );
 
     modal.box.querySelector('#mkt-save').addEventListener('click', async function() {
       var titre = modal.box.querySelector('#mkt-titre').value.trim();
-      if (!titre) { window.IG.utils.showToast('Le titre est requis', 'red'); return; }
+      if (!titre) { window.IG.utils.showToast(t('Le titre est requis'), 'red'); return; }
       var session = window.IG.auth ? window.IG.auth.getSession() : {};
       await db().insert('marketplace_annonces', {
         titre,
@@ -251,7 +261,7 @@ window.IG.marketplace = (function() {
         return db().insert('annonces', { titre, loyer: parseFloat(modal.box.querySelector('#mkt-loyer').value) || 0 });
       });
       modal.close();
-      window.IG.utils.showToast('Annonce publiée !', 'green');
+      window.IG.utils.showToast(t('Annonce publiée !'), 'green');
       renderPage();
     });
   }
