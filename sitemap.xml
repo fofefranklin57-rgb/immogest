@@ -1,28 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
-  <!-- Application principale -->
   <url>
     <loc>https://immogest-34w.pages.dev/</loc>
-    <lastmod>2026-06-12</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
 
-  <!-- Marketplace — priorité maximale, indexée en 6 langues -->
   <url>
-    <loc>https://immogest-34w.pages.dev/marche.html</loc>
-    <lastmod>2026-06-12</lastmod>
+    <loc>https://immogest-34w.pages.dev/marketplace.html</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
-    <xhtml:link rel="alternate" hreflang="fr"    href="https://immogest-34w.pages.dev/marche.html"/>
-    <xhtml:link rel="alternate" hreflang="en"    href="https://immogest-34w.pages.dev/marche.html"/>
-    <xhtml:link rel="alternate" hreflang="pt"    href="https://immogest-34w.pages.dev/marche.html"/>
-    <xhtml:link rel="alternate" hreflang="es"    href="https://immogest-34w.pages.dev/marche.html"/>
-    <xhtml:link rel="alternate" hreflang="ha"    href="https://immogest-34w.pages.dev/marche.html"/>
-    <xhtml:link rel="alternate" hreflang="ar"    href="https://immogest-34w.pages.dev/marche.html"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://immogest-34w.pages.dev/marche.html"/>
   </url>
 
 </urlset>
