@@ -178,6 +178,18 @@ window.IG.i18n = (function() {
       // Statut juridique
       'normal': 'normal', 'retard': 'late', 'misEnDemeure': 'formal notice',
 
+      // Actions rapides dashboard
+      'Ajouter immeuble': 'Add building',
+      'Ajouter locataire': 'Add tenant',
+      'Encaisser loyer': 'Collect rent',
+
+      // Ads / plan footer
+      'Plan Gratuit': 'Free plan',
+      'immeubles': 'buildings',
+      'locataires': 'tenants',
+      'Passer Pro': 'Go Pro',
+      'Gestion Immobilière': 'Property Management',
+
       // Sidebar / navigation
       'Réseau': 'Network',
       'Interne': 'Internal',
@@ -358,6 +370,18 @@ window.IG.i18n = (function() {
 
       // Statut juridique
       'normal': 'normal', 'retard': 'atraso', 'misEnDemeure': 'notificação formal',
+
+      // Actions rapides dashboard
+      'Ajouter immeuble': 'Adicionar edifício',
+      'Ajouter locataire': 'Adicionar inquilino',
+      'Encaisser loyer': 'Receber aluguel',
+
+      // Ads / plan footer
+      'Plan Gratuit': 'Plano Gratuito',
+      'immeubles': 'edifícios',
+      'locataires': 'inquilinos',
+      'Passer Pro': 'Ir Pro',
+      'Gestion Immobilière': 'Gestão Imobiliária',
 
       // Sidebar / navigation
       'Réseau': 'Rede',
@@ -540,6 +564,18 @@ window.IG.i18n = (function() {
       // Statut juridique
       'normal': 'normal', 'retard': 'retraso', 'misEnDemeure': 'notificación formal',
 
+      // Actions rapides dashboard
+      'Ajouter immeuble': 'Agregar edificio',
+      'Ajouter locataire': 'Agregar inquilino',
+      'Encaisser loyer': 'Cobrar renta',
+
+      // Ads / plan footer
+      'Plan Gratuit': 'Plan Gratuito',
+      'immeubles': 'edificios',
+      'locataires': 'inquilinos',
+      'Passer Pro': 'Ir Pro',
+      'Gestion Immobilière': 'Gestión Inmobiliaria',
+
       // Sidebar / navigation
       'Réseau': 'Red',
       'Interne': 'Interno',
@@ -721,6 +757,18 @@ window.IG.i18n = (function() {
       // Statut juridique
       'normal': 'al\'ada', 'retard': 'jinkiri', 'misEnDemeure': 'gargadi na hukuma',
 
+      // Actions rapides dashboard
+      'Ajouter immeuble': 'Kara gida',
+      'Ajouter locataire': 'Kara mai haya',
+      'Encaisser loyer': 'Karbi haya',
+
+      // Ads / plan footer
+      'Plan Gratuit': 'Shirin kyauta',
+      'immeubles': 'gidaje',
+      'locataires': 'masu haya',
+      'Passer Pro': 'Je Pro',
+      'Gestion Immobilière': 'Gudanar da gidaje',
+
       // Sidebar / navigation
       'Réseau': 'Hanyar sadarwa',
       'Interne': 'Na ciki',
@@ -901,6 +949,18 @@ window.IG.i18n = (function() {
 
       // Statut juridique
       'normal': 'عادي', 'retard': 'متأخر', 'misEnDemeure': 'إنذار رسمي',
+
+      // Actions rapides dashboard
+      'Ajouter immeuble': 'إضافة مبنى',
+      'Ajouter locataire': 'إضافة مستأجر',
+      'Encaisser loyer': 'تحصيل الإيجار',
+
+      // Ads / plan footer
+      'Plan Gratuit': 'الخطة المجانية',
+      'immeubles': 'مبانٍ',
+      'locataires': 'مستأجرين',
+      'Passer Pro': 'الترقية للبرو',
+      'Gestion Immobilière': 'إدارة العقارات',
 
       // Sidebar / navigation
       'Réseau': 'الشبكة',

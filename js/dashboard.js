@@ -97,7 +97,7 @@ window.IG.dashboard = (function() {
     var kpis = calculerKPIs(data.locataires, data.paiements);
     var session = window.IG.auth ? window.IG.auth.getSession() : {};
     var now = new Date();
-    var moisNom = window.IG.utils.nomMois(now.getMonth() + 1);
+    var moisNom = t(window.IG.utils.nomMois(now.getMonth() + 1));
 
     // Compter retards
     var nbRetards = 0;

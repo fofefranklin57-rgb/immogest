@@ -46,11 +46,12 @@ window.IG.ads = (function() {
       'background:linear-gradient(90deg,#0E6AAF,#7C3AED);' +
       'color:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;' +
       'font-size:12px;box-shadow:0 -4px 20px rgba(0,0,0,0.2)';
+    var t = window.IG.i18n ? window.IG.i18n.t.bind(window.IG.i18n) : function(k){return k;};
     div.innerHTML =
-      '<span>✨ <strong>Plan Gratuit</strong> — 2 immeubles, 20 locataires max</span>' +
+      '<span>✨ <strong>' + t('Plan Gratuit') + '</strong> — 2 ' + t('immeubles') + ', 20 ' + t('locataires') + ' max</span>' +
       '<button onclick="window.IG.plans.afficherUpgrade()" ' +
         'style="padding:6px 14px;border-radius:8px;border:none;background:#fff;color:#0E6AAF;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">' +
-        '⬆ Passer Pro</button>';
+        '⬆ ' + t('Passer Pro') + '</button>';
     document.body.appendChild(div);
     document.body.style.paddingBottom = '48px';
   }

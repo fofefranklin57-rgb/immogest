@@ -582,6 +582,7 @@ window.IG.app = (function() {
     _showAppShell();
     _applyDarkMode();
     _renderLangPlan();
+    document.title = 'ImmoGest — ' + t('Gestion Immobilière');
     showPage(_currentPage);
   }
 
