@@ -46,22 +46,13 @@ window.IG.ads = (function() {
     s.async = true;
     document.head.appendChild(s);
 
-    // Remplacer le bloc #ai-ad-banner par une bannière promo maison discrète
-    // (le In-Page Push Monetag s'affiche lui en bas de page globalement)
+    // Bannière promo dans le panel IA
     var _tries = 0;
     var _check = setInterval(function() {
       var banner = document.getElementById('ai-ad-banner');
       if (banner || ++_tries > 40) {
         clearInterval(_check);
-        if (!banner) return;
-        banner.innerHTML +=
-          '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:10px;cursor:pointer;border-top:1px solid var(--border)" onclick="window.IG.plans.afficherUpgrade()">' +
-          '<div style="font-size:11px;color:var(--text2);line-height:1.4">' +
-            '<strong style="color:var(--accent)">ImmoGest Pro</strong> — IA illimitée, rapports Word, export données.<br>' +
-            '<span style="color:var(--text3)">Dès 9 999 FCFA/mois · 2 mois offerts en annuel</span>' +
-          '</div>' +
-          '<div style="flex-shrink:0;padding:6px 12px;border-radius:8px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;white-space:nowrap">Voir →</div>' +
-          '</div>';
+        if (banner) rendreBannierePromo('ai-ad-banner');
       }
     }, 250);
   }
@@ -222,6 +213,33 @@ window.IG.ads = (function() {
     document.body.prepend(banner);
   }
 
-  return { init, rendreBlocPub, surUpgrade, renderUsageWidget, scoreDisplay, checkExpiry };
+  // ── Bannière promo CPM réutilisable (dashboard, etc.) ────────
+  function rendreBannierePromo(containerId) {
+    var parent = containerId
+      ? document.getElementById(containerId)
+      : document.getElementById('page-content');
+    if (!parent) return;
+
+    var existing = parent.querySelector('.ig-promo-banner');
+    if (existing) existing.remove();
+
+    var div = document.createElement('div');
+    div.className = 'ig-promo-banner';
+    div.style.cssText = 'margin:0 0 16px;border-radius:12px;border:1px solid var(--border2);background:var(--bg3);overflow:hidden;cursor:pointer;';
+    div.setAttribute('onclick', 'window.IG.plans.afficherUpgrade()');
+    div.innerHTML =
+      '<div style="padding:2px 10px;font-size:9px;letter-spacing:.06em;color:var(--text3);text-transform:uppercase;font-weight:600;border-bottom:1px solid var(--border2);background:var(--bg4)">Publicité</div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:10px">' +
+      '<div style="font-size:12px;color:var(--text2);line-height:1.5">' +
+        '<strong style="color:var(--accent)">ImmoGest Pro</strong> — IA illimitée, rapports Word, export données.<br>' +
+        '<span style="color:var(--text3);font-size:11px">Dès 9 999 FCFA/mois · 2 mois offerts en annuel</span>' +
+      '</div>' +
+      '<div style="flex-shrink:0;padding:7px 14px;border-radius:8px;background:var(--accent);color:#fff;font-size:12px;font-weight:700;white-space:nowrap">Voir →</div>' +
+      '</div>';
+
+    parent.insertBefore(div, parent.firstChild);
+  }
+
+  return { init, rendreBlocPub, surUpgrade, renderUsageWidget, scoreDisplay, checkExpiry, rendreBannierePromo };
 
 })();

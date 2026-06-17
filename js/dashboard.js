@@ -154,6 +154,9 @@ window.IG.dashboard = (function() {
       '</div>';
 
     content.innerHTML = html;
+
+    // Bannière pub CPM — tous plans
+    if (window.IG.ads) window.IG.ads.rendreBannierePromo('page-content');
   }
 
   function _kpi(icon, val, label, color) {
