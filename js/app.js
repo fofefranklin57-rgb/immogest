@@ -871,7 +871,7 @@ window.IG.app = (function() {
       '<div class="card" style="margin-bottom:14px">' +
       '<div class="card-header"><div class="card-title">🌐 Langue</div></div>' +
       '<select onchange="window.IG.i18n.setLang(this.value)" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
-      [['fr','Français'],['en','English'],['pt','Português'],['es','Español'],['ha','Hausa'],['ar','العربية']].map(function(l) {
+      [['fr','Français'],['en','English'],['pt','Português'],['es','Español'],['ha','Hausa'],['ar','العربية'],['sw','Kiswahili'],['zh','中文'],['hi','हिन्दी'],['id','Bahasa Indonesia'],['yo','Yorùbá'],['ln','Lingála'],['am','አማርኛ']].map(function(l) {
         return '<option value="' + l[0] + '"' + (window.IG.i18n && window.IG.i18n.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>';
       }).join('') + '</select></div>' +
 
@@ -1325,7 +1325,7 @@ window.IG.app = (function() {
           mois:         d.mois_c,
           annee:        d.annee_c,
           montant:      d.montant,
-          mode:         d.mode || 'especes',
+          mode_paiement: d.mode || d.mode_paiement || 'espèces',
           reference:    d.reference || '',
           note:         'Déclaration validée'
         }]);

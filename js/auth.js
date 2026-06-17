@@ -118,6 +118,39 @@ window.IG.auth = (function() {
     return SESSION;
   }
 
+  // ── Rejoindre un espace avec code d'invitation ───────────────
+  async function join(code, nom, password) {
+    var passwordHash = await _hash(password);
+    var wUrl = window.IG.config.workerUrl;
+    var res = await fetch(wUrl + '/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, nom, passwordHash })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Code invalide ou expiré');
+
+    var session = {
+      tenantId:    data.tenant.id,
+      userId:      data.userId,
+      role:        data.role || 'agent',
+      nom:         nom,
+      nomCabinet:  data.tenant.nom_cabinet || data.tenant.nom,
+      plan:        data.tenant.plan || 'gratuit',
+      telephone:   data.tenant.telephone,
+      loginAt:     Date.now(),
+      locale:      data.tenant.locale || null,
+      locataireId: data.locataireId || null
+    };
+    _saveSession(session);
+
+    if (typeof loginOneSignal === 'function') {
+      loginOneSignal(session.userId || session.tenantId, { tenant_id: session.tenantId, role: session.role });
+    }
+
+    return session;
+  }
+
   // ── Déconnexion ───────────────────────────────────────────────
   function logout() {
     SESSION = null;
@@ -143,7 +176,7 @@ window.IG.auth = (function() {
   }
 
   return {
-    register, login, loginUser, logout,
+    register, login, loginUser, join, logout,
     getSession, getTenantId, isLoggedIn, hasRole,
     init, ROLES
   };

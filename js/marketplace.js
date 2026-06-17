@@ -141,7 +141,7 @@ window.IG.marketplace = (function() {
       html += '<div id="ig-ad-marketplace" style="margin:8px 0 16px;text-align:center"></div>';
 
       // Annonces standard
-      html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">' +
+      html += '<div class="mkt-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">' +
         standard.map(function(a) { return _carteAnnonce(a, false); }).join('') +
         '</div>';
     }

@@ -124,7 +124,7 @@ window.IG.locataires = (function() {
       var alerte = _alerteLabel(loc, paiements);
       var obsHtml = obs ? '<span style="color:var(--text3);font-size:11px">' + obs + '</span>' : '';
       if (alerte) obsHtml += (obsHtml ? '<br>' : '') + alerte;
-      if (reste > 0 && loc.loyer > 0) obsHtml += '<br><span style="font-size:10px;color:var(--red)">' + (reste/loc.loyer).toFixed(1) + ' mois dus</span>';
+      if (reste > 0 && loc.loyer > 0) { var mDus = Math.floor(reste / loc.loyer); if (mDus >= 1) obsHtml += '<br><span style="font-size:10px;color:var(--red)">' + mDus + ' mois dus</span>'; }
 
       var isFree = loc.statut === 'libre';
       html += '<tr id="loc-row-' + loc.id + '" class="' + (isFree ? 'row-libre' : '') + '">' +
@@ -361,9 +361,16 @@ window.IG.locataires = (function() {
     return '<span class="local-A">' + esc(appt) + '</span>';
   }
 
+  // Calcule le cumul total dû (toute la fiche depuis date entrée, pas seulement le mois courant)
   function _resteCalc(loc, paiements) {
     if (loc.statut === 'libre') return 0;
+    if (!loc.entree || !loc.loyer) return 0;
     var pays = (paiements || []).filter(function(p) { return p.locataire_id == loc.id; });
+    if (window.IG.paiements && window.IG.paiements.calculerFiche) {
+      var fiche = window.IG.paiements.calculerFiche(loc, pays);
+      return fiche.reduce(function(s, l) { return s + (l.reste || 0); }, 0);
+    }
+    // Fallback mois courant si paiements module non chargé
     var now = new Date();
     var mois = now.getMonth() + 1;
     var annee = now.getFullYear();
@@ -375,9 +382,18 @@ window.IG.locataires = (function() {
 
   function _alerteLabel(loc, paiements) {
     if (loc.statut === 'libre' || loc.statut === 'inactif') return '';
-    var reste = _resteCalc(loc, paiements);
-    if (reste <= 0) return '';
-    var moisDus = Math.round(reste / (loc.loyer || 1));
+    if (!loc.entree) return '';
+    var pays = (paiements || []).filter(function(p) { return p.locataire_id == loc.id; });
+    var moisDus = 0;
+    if (window.IG.paiements && window.IG.paiements.calculerFiche) {
+      var fiche = window.IG.paiements.calculerFiche(loc, pays);
+      moisDus = fiche.filter(function(l) { return l.statut !== 'Payé'; }).length;
+    } else {
+      var reste = _resteCalc(loc, paiements);
+      if (reste <= 0) return '';
+      moisDus = Math.round(reste / (loc.loyer || 1));
+    }
+    if (moisDus <= 0) return '';
     if (moisDus >= 3) return '<span style="font-size:10px;font-weight:700;color:var(--red)">🔴 Cas critique</span>';
     if (moisDus >= 2) return '<span style="font-size:10px;font-weight:700;color:#E07800">🟠 À surveiller</span>';
     return '<span style="font-size:10px;font-weight:700;color:#CA8A04">🟡 À surveiller</span>';
