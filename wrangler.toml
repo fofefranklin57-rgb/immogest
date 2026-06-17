@@ -20,6 +20,11 @@ ONESIGNAL_REST_KEY = "os_v2_app_ri4fpk3ezrfgfgiwzzdli5unvsmcdap4mq6u3u57p5bgfvkr
 SUPABASE_URL       = "https://uggxfmwpttfsfcirmeqx.supabase.co"
 SUPABASE_KEY          = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZ3hmbXdwdHRmc2ZjaXJtZXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNTA4MjIsImV4cCI6MjA5NDYyNjgyMn0.l8iYlJHOt6evNlBQ3zRskZasn_J2BjAUs1l2vKOZNvY"
 CAMPAY_ENV         = "demo"
-# Secrets Campay (injectés via Cloudflare Dashboard > Workers > Settings > Variables) :
-# CAMPAY_TOKEN       = permanent access token
-# CAMPAY_WEBHOOK_KEY = webhook key (vérification webhooks entrants)
+# ── Secrets (injectés via: wrangler secret put NOM) ──────────
+# SUPABASE_SERVICE_KEY  = clé service_role Supabase (utilisée par le cron et toutes les routes /db)
+# CAMPAY_TOKEN          = permanent access token CamPay
+# CAMPAY_WEBHOOK_KEY    = webhook key CamPay
+# NOTCHPAY_PK           = clé publique NotchPay
+# ONESIGNAL_REST_KEY    = REST key OneSignal (si tu veux déplacer hors [vars])
+# ANTHROPIC_API_KEY     = clé API Claude
+# OWNER_TOKEN           = token admin propriétaire

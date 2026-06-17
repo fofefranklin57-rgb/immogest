@@ -89,6 +89,12 @@ window.IG.auth = (function() {
       locale:      data.tenant.locale || null
     };
     _saveSession(session);
+
+    // Associer le tenant à OneSignal pour ciblage cron
+    if (typeof loginOneSignal === 'function') {
+      loginOneSignal(session.userId || session.tenantId, { tenant_id: session.tenantId });
+    }
+
     return session;
   }
 
