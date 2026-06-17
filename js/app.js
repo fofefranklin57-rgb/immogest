@@ -24,6 +24,7 @@ window.IG.app = (function() {
       return;
     }
     _showAppShell();
+    _applyDarkMode();
     await _loadData();
     showPage('dashboard');
 
@@ -84,6 +85,10 @@ window.IG.app = (function() {
       (session.role !== 'locataire' ? '<div onclick="window.IG.app.showPage(\'portail\')" class="sidebar-footer-btn sidebar-footer-btn-green"><span>🏢</span><span>' + t('Portail Propriétaire') + '</span></div>' : '') +
       '<div onclick="window.IG.app.showPage(\'archives\')" class="sidebar-footer-btn"><span>🗄️ ' + t('Archives') + '</span></div>' +
       '<div onclick="window.IG.app.showPage(\'corbeille\')" class="sidebar-footer-btn" style="margin-bottom:8px"><span>🗑️ ' + t('Corbeille') + '</span><span id="badge-corbeille" class="nav-badge" style="display:none">0</span></div>' +
+      '<div style="display:flex;gap:6px;margin-bottom:6px">' +
+      '<button id="btn-dark-mode" onclick="window.IG.app.toggleDarkMode()" title="Mode sombre" style="flex:1;padding:7px;border-radius:7px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85);font-size:16px;cursor:pointer;font-family:var(--font);">🌙</button>' +
+      '<button onclick="window.IG.app.lockScreen()" title="Verrouiller" style="flex:1;padding:7px;border-radius:7px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85);font-size:16px;cursor:pointer;font-family:var(--font);">🔒</button>' +
+      '</div>' +
       '<button onclick="window.IG.auth.logout()" style="width:100%;padding:8px;border-radius:7px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px">⏻ Se déconnecter</button>' +
       '</div></nav>' +
       // Overlay mobile
@@ -140,6 +145,33 @@ window.IG.app = (function() {
     else if (p === 'immeubles') { if (window.IG.immeubles) window.IG.immeubles.afficherFormulaire(); }
     else if (p === 'rapport-annuel') { if (window.IG.rapports) window.IG.rapports.afficherRapportAnnuel(); }
     else { showPage('locataires'); }
+  }
+
+  function toggleDarkMode() {
+    var isDark = document.body.classList.toggle('dark');
+    localStorage.setItem('ig_dark_mode', isDark ? '1' : '0');
+    var btn = document.getElementById('btn-dark-mode');
+    if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+  }
+
+  function _applyDarkMode() {
+    var saved = localStorage.getItem('ig_dark_mode');
+    if (saved === '1') {
+      document.body.classList.add('dark');
+      var btn = document.getElementById('btn-dark-mode');
+      if (btn) btn.textContent = '☀️';
+    }
+  }
+
+  function lockScreen() {
+    var overlay = document.createElement('div');
+    overlay.id = 'lock-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(10,30,60,0.97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
+    overlay.innerHTML = '<div style="font-size:48px">🔒</div>' +
+      '<div style="color:#fff;font-size:18px;font-weight:600;">ImmoGest verrouillé</div>' +
+      '<div style="color:rgba(255,255,255,0.6);font-size:13px;">Cliquez pour reprendre la session</div>' +
+      '<button onclick="document.getElementById(\'lock-overlay\').remove()" style="margin-top:8px;padding:10px 28px;border-radius:8px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.12);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Déverrouiller</button>';
+    document.body.appendChild(overlay);
   }
 
   // Afficher / masquer la bottom nav selon la largeur
@@ -1317,7 +1349,7 @@ window.IG.app = (function() {
     init, showPage, refresh, renderCurrentPage,
     _renderLogin,
     authGoStep, doLogin, joinV2, registerV2, browseMarketplace,
-    toggleSidebar, closeSidebar, toggleSidebarSection,
+    toggleSidebar, closeSidebar, toggleSidebarSection, toggleDarkMode, lockScreen,
     _refreshPaiements, _restaurer,
     _genererInvitation, _toggleUser, _appliquerPromo,
     _loadDeclarations, _validerDeclaration,
