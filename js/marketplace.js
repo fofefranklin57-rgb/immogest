@@ -123,7 +123,8 @@ window.IG.marketplace = (function() {
         '<p style="font-size:16px;font-weight:600;margin-bottom:8px">' + t('Aucune annonce publiée') + '</p>' +
         '<p style="font-size:13px;margin-bottom:20px">' + t('Publiez des annonces pour vos locaux disponibles') + '</p>' +
         '<button onclick="window.IG.marketplace.afficherFormulaire()" style="padding:10px 24px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:600">+ ' + t('Publier une annonce') + '</button>' +
-        '</div>';
+        '</div>' +
+        '<div id="ig-ad-marketplace" style="margin-top:16px;text-align:center"></div>';
     } else {
       // Annonces premium (Prompt 1 : niveaux de visibilité)
       if (premium.length) {
@@ -136,6 +137,9 @@ window.IG.marketplace = (function() {
           '</div></div>';
       }
 
+      // Slot pub entre premium et standard
+      html += '<div id="ig-ad-marketplace" style="margin:8px 0 16px;text-align:center"></div>';
+
       // Annonces standard
       html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">' +
         standard.map(function(a) { return _carteAnnonce(a, false); }).join('') +
@@ -145,6 +149,7 @@ window.IG.marketplace = (function() {
     html += '</div>';
     content.innerHTML = html;
     window._mktAnnonces = annonces;
+    if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-marketplace', 'ad1');
   }
 
   function _carteAnnonce(a, isPremium) {

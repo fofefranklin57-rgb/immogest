@@ -668,8 +668,10 @@ window.IG.app = (function() {
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
       '<h2 style="font-size:17px;font-weight:700">🏢 ' + t('Mes immeubles') + '</h2>' +
       '<button onclick="window.IG.immeubles.afficherFormulaire()" style="padding:9px 18px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">+ ' + t('Ajouter') + '</button>' +
-      '</div><div id="immeubles-liste"></div></div>';
+      '</div><div id="immeubles-liste"></div>' +
+      '<div id="ig-ad-immeubles" style="margin-top:20px;text-align:center"></div></div>';
     if (window.IG.immeubles) window.IG.immeubles.renderListe(_data.locataires);
+    if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-immeubles', 'ad1');
   }
 
   // ── Locataires ────────────────────────────────────────────────
@@ -685,8 +687,10 @@ window.IG.app = (function() {
         'style="padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;width:200px;color:var(--text)">' +
       '<button onclick="window.IG.locataires.afficherFormulaire()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">+ ' + t('Ajouter') + '</button>' +
       '</div></div>' +
-      '<div class="card" style="padding:0;overflow:hidden"><div id="locataires-liste" style="overflow-x:auto"></div></div></div>';
+      '<div class="card" style="padding:0;overflow:hidden"><div id="locataires-liste" style="overflow-x:auto"></div></div>' +
+      '<div id="ig-ad-locataires" style="margin-top:20px;text-align:center"></div></div>';
     if (window.IG.locataires) window.IG.locataires.renderListe(_data.paiements, _currentImmeubleId);
+    if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-locataires', 'ad2');
   }
 
   // ── Paiements ─────────────────────────────────────────────────
@@ -723,6 +727,7 @@ window.IG.app = (function() {
         'style="padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);width:160px">' +
       '</div></div>' +
       '<div id="pay-total-bar" style="margin-bottom:12px"></div>' +
+      '<div id="ig-ad-paiements" style="margin-bottom:16px;text-align:center"></div>' +
       '<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table id="pay-table" style="width:100%;border-collapse:collapse;font-size:13px">' +
       '<thead><tr style="background:var(--bg3);font-size:11px;text-transform:uppercase;color:var(--text3)">' +
       '<th style="padding:10px 14px;text-align:left">' + t('Locataire') + '</th>' +
@@ -737,6 +742,7 @@ window.IG.app = (function() {
 
     content.innerHTML = html;
     _refreshPaiements();
+    if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-paiements', 'ad2');
   }
 
   function _refreshPaiements() {

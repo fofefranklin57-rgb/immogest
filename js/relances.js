@@ -88,6 +88,7 @@ window.IG.relances = (function() {
       _nCard('🔴', n3, t('3+ mois — Commandement')) +
       '</div>';
 
+    html += '<div id="ig-ad-relances" style="margin-bottom:16px;text-align:center"></div>';
     html += '<div style="display:flex;flex-direction:column;gap:10px">';
     alertes.forEach(function(a) {
       var n = a.niveau;
@@ -118,6 +119,7 @@ window.IG.relances = (function() {
     });
     html += '</div></div>';
     content.innerHTML = html;
+    if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-relances', 'ad2');
   }
 
   function _nCard(emoji, nb, label) {

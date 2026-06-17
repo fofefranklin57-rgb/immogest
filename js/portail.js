@@ -99,6 +99,9 @@ window.IG.portail = (function() {
       }).join('') +
       '</tbody></table></div></div>' +
 
+      // Bannière pub
+      '<div id="ig-ad-portail" style="margin:16px 0;text-align:center"></div>' +
+
       // Déclarations en attente
       '<div id="portail-declarations" style="margin-top:16px"></div>' +
 
@@ -106,6 +109,7 @@ window.IG.portail = (function() {
 
     content.innerHTML = html;
     _chargerDeclarations(loc.id);
+    if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-portail', 'ad1');
   }
 
   async function _chargerDeclarations(locId) {

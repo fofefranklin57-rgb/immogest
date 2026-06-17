@@ -282,8 +282,10 @@ window.IG.legal = (function() {
       });
       html += '</div>';
     }
+    html += '<div id="ig-ad-legal" style="margin-top:20px;text-align:center"></div>';
     html += '</div>';
     content.innerHTML = html;
+    if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-legal', 'ad2');
   }
 
   function nouveauDossier() {

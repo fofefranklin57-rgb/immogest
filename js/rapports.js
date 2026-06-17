@@ -246,6 +246,9 @@ window.IG.rapports = (function() {
       '<div class="card" style="margin-bottom:20px"><div class="card-header"><div class="card-title">📊 Recettes mensuelles ' + annee + '</div></div>' +
       '<div style="padding-top:8px">' + graphe + '</div></div>' +
 
+      // Slot pub entre graphe et tableau
+      '<div id="ig-ad-rapports" style="margin-bottom:20px;text-align:center"></div>' +
+
       // Tableau mensuel
       '<div class="card"><div class="card-header"><div class="card-title">📋 Détail mensuel</div></div>' +
       '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
@@ -265,6 +268,7 @@ window.IG.rapports = (function() {
       '</div>';
 
     content.innerHTML = html;
+    if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-rapports', 'ad2');
   }
 
   // ── Export DOCX rapport annuel ────────────────────────────────
