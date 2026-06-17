@@ -134,7 +134,7 @@ footer a{color:#3b82f6}
     }
 
     function _footer() {
-      return `<footer><p>© 2026 <a href="${APP_URL}">ImmoGest</a> — Plateforme de gestion immobilière pour l'Afrique · <a href="${BASE_URL}/sitemap.xml">Sitemap</a></p></footer>`;
+      return `<footer><p>© 2026 <a href="${APP_URL}">ImmoGest</a> — Plateforme de gestion immobilière mondiale · <a href="${BASE_URL}/sitemap.xml">Sitemap</a></p></footer>`;
     }
 
     function _cardHtml(a) {
@@ -382,7 +382,7 @@ ${_footer()}</body></html>`;
           body: JSON.stringify({
             model: 'claude-haiku-4-5-20251001',
             max_tokens: 2048,
-            system: system || 'Tu es un assistant de gestion immobilière pour l\'Afrique francophone.',
+            system: system || 'Tu es un assistant de gestion immobilière spécialisé dans le droit local et les pratiques immobilières mondiales.',
             messages: messages || []
           })
         });
