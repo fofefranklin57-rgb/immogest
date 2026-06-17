@@ -669,9 +669,14 @@
     if (e.key === 'Enter') rechercherAnnonces();
   });
 
+  function _trackLead(annonce_id, type, source) {
+    fetch(WORKER + '/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ annonce_id: annonce_id, type: type, source: source || 'marketplace' }) }).catch(function() {});
+  }
+
   function voirAnnonce(id) {
     var a = _annonces.find(function(x) { return x.id == id; });
     if (!a) return;
+    _trackLead(id, 'information', 'marketplace');
     var cat = CATS[a.categorie] || '🏠';
     var pays = PAYS_LABELS[a.pays] || (a.pays || '');
     var url = annonceUrl(a);
@@ -691,7 +696,7 @@
 
       // Actions principales
       '<div class="modal-actions" style="margin-bottom:14px;">' +
-      '<a href="https://wa.me/?text=' + waMsg + '" target="_blank" rel="noopener" class="btn-whatsapp">📱 Contacter sur WhatsApp</a>' +
+      '<a href="https://wa.me/?text=' + waMsg + '" target="_blank" rel="noopener" class="btn-whatsapp" onclick="_trackLead(' + id + ',\'whatsapp\',\'marketplace\')">📱 Contacter sur WhatsApp</a>' +
       '<a href="' + esc(url) + '" target="_blank" class="btn-login-cta">🔗 Voir l\'annonce</a>' +
       '</div>' +
 

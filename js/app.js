@@ -64,6 +64,7 @@ window.IG.app = (function() {
       _navItem('juridique', '⚖️', t('Juridique')) +
       _navSection(t('Réseau')) +
       _navItem('marketplace', '🌍', t('Marketplace')) +
+      (session.role !== 'locataire' ? _navItem('leads', '📬', t('Leads')) : '') +
       (session.role === 'locataire' ? _navItem('portail', '🏠', t('Mon espace')) : '') +
       _navSection(t('Gestion interne')) +
       (session.role === 'admin' || session.role === 'gestionnaire' ? _navItem('declarations', '📨', t('Déclarations')) : '') +
@@ -296,6 +297,10 @@ window.IG.app = (function() {
         if (window.IG.marketplace) window.IG.marketplace.renderPage();
         else content.innerHTML = '<div class="content"><p style="color:var(--text3);padding:20px">Module marketplace non chargé.</p></div>';
         break;
+      case 'leads':
+        if (title) title.textContent = 'Leads & Contacts';
+        if (sub) sub.textContent = '';
+        _renderLeads(); break;
       case 'portail':
         if (title) title.textContent = t('Mon espace');
         if (sub) sub.textContent = '';
@@ -705,6 +710,48 @@ window.IG.app = (function() {
       if (input) input.value = '';
     } catch(e) {
       if (msg) { msg.style.color = 'var(--red)'; msg.textContent = e.message; }
+    }
+  }
+
+  // ── Leads marketplace ────────────────────────────────────────
+  async function _renderLeads() {
+    var content = document.getElementById('page-content');
+    if (!content) return;
+    var WORKER = window.APP_CONFIG ? window.APP_CONFIG.API_URL : window.IG.config.workerUrl;
+    var session = JSON.parse(localStorage.getItem('ig_session_v2') || '{}');
+    content.innerHTML = '<div class="content"><div class="skeleton" style="height:200px;border-radius:12px"></div></div>';
+    try {
+      var r = await fetch(WORKER + '/leads-gestionnaire', { headers: { 'Authorization': 'Bearer ' + session.token } });
+      var leads = r.ok ? await r.json() : [];
+      var TYPES = { whatsapp:'📱 WhatsApp', telephone:'📞 Téléphone', visite:'🏠 Visite', information:'👁️ Vue', message:'✉️ Message', partage:'🔗 Partage' };
+      var STATUTS = { nouveau:'🔵 Nouveau', contacte:'🟡 Contacté', visite_planifiee:'🟠 Visite planifiée', converti:'🟢 Converti', perdu:'🔴 Perdu' };
+      var rows = leads.map(function(l) {
+        return '<tr style="border-bottom:1px solid var(--border)">' +
+          '<td style="padding:10px 8px;font-size:13px">' + (TYPES[l.type] || l.type) + '</td>' +
+          '<td style="padding:10px 8px;font-size:12px;color:var(--text2)">' + (l.annonce_titre || '#' + l.annonce_id) + '</td>' +
+          '<td style="padding:10px 8px;font-size:12px">' + (l.nom || '—') + '</td>' +
+          '<td style="padding:10px 8px;font-size:12px">' + (l.telephone ? '<a href="tel:' + l.telephone + '" style="color:#3b82f6">' + l.telephone + '</a>' : '—') + '</td>' +
+          '<td style="padding:10px 8px;font-size:12px">' + (STATUTS[l.statut] || l.statut) + '</td>' +
+          '<td style="padding:10px 8px;font-size:11px;color:var(--text3)">' + new Date(l.created_at).toLocaleDateString('fr-FR') + '</td>' +
+        '</tr>';
+      }).join('');
+      content.innerHTML = '<div class="content">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">' +
+        '<h2 style="font-size:16px;font-weight:700">Leads & Contacts <span style="font-size:13px;font-weight:400;color:var(--text3)">' + leads.length + ' total</span></h2>' +
+        '</div>' +
+        (leads.length ? '<div style="overflow-x:auto;border-radius:12px;border:1px solid var(--border)"><table style="width:100%;border-collapse:collapse">' +
+        '<thead><tr style="background:var(--surface2)">' +
+        '<th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">TYPE</th>' +
+        '<th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">ANNONCE</th>' +
+        '<th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">NOM</th>' +
+        '<th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">TÉLÉPHONE</th>' +
+        '<th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">STATUT</th>' +
+        '<th style="padding:10px 8px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">DATE</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table></div>' :
+        '<div style="text-align:center;padding:60px 20px;color:var(--text3)"><div style="font-size:48px;margin-bottom:12px">📭</div><p>Aucun lead pour le moment.<br>Ils apparaîtront dès que des visiteurs interagiront avec vos annonces.</p></div>') +
+        '</div>';
+    } catch(e) {
+      content.innerHTML = '<div class="content"><p style="color:var(--danger)">Erreur de chargement des leads.</p></div>';
     }
   }
 

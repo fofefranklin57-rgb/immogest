@@ -39,7 +39,7 @@ CREATE POLICY leads_tenant_isolation ON marketplace_leads
   USING (
     tenant_id = (
       SELECT tenant_id FROM users_app
-      WHERE id = auth.uid()
+      WHERE id = auth.uid()::text
       LIMIT 1
     )
   );

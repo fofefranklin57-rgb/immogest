@@ -632,6 +632,57 @@ ${_footer()}</body></html>`;
         return json({ success: true, code: inv, tenantNom: tenant.nom_cabinet || tenant.nom || '' });
       }
 
+      // ── GET /leads-gestionnaire — leads du tenant authentifié ────
+      if (path === '/leads-gestionnaire' && method === 'GET') {
+        const authHeader = request.headers.get('Authorization') || '';
+        const token = authHeader.replace('Bearer ', '').trim();
+        if (!token) return json({ error: 'Non autorisé' }, 401);
+        // Vérifier le token et récupérer le tenant_id
+        const sessionR = await sbFetch('users_app', '?pin=eq.' + token + '&select=tenant_id&limit=1');
+        const sessions = sessionR.ok ? await sessionR.json() : [];
+        // Fallback : chercher par token dans sessions si table existe
+        let tenantId = sessions[0]?.tenant_id;
+        if (!tenantId) return json({ error: 'Session invalide' }, 401);
+        const lr = await fetch(`${env.SUPABASE_URL || SUPABASE_URL_DEFAULT}/rest/v1/marketplace_leads?tenant_id=eq.${tenantId}&order=created_at.desc&limit=200&select=*,marketplace_annonces(titre)`, {
+          headers: { 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_KEY }
+        });
+        const leads = lr.ok ? await lr.json() : [];
+        const flat = leads.map(l => ({ ...l, annonce_titre: l.marketplace_annonces?.titre || null, marketplace_annonces: undefined }));
+        return json(flat);
+      }
+
+      // ── POST /lead — enregistrement lead public (no auth) ─────────
+      if (path === '/lead' && method === 'POST') {
+        let body = {};
+        try { body = await request.json(); } catch(_) {}
+        const { annonce_id, type, nom, telephone, email, message, source } = body;
+        if (!annonce_id || !type) return json({ error: 'annonce_id et type requis' }, 400);
+        const TYPES = ['whatsapp','telephone','visite','information','message','partage'];
+        if (!TYPES.includes(type)) return json({ error: 'type invalide' }, 400);
+
+        // Récupérer le tenant_id de l'annonce
+        const ar = await sbFetch('marketplace_annonces', '?id=eq.' + annonce_id + '&select=tenant_id&limit=1');
+        const ann = ar.ok ? await ar.json() : [];
+        const tenant_id = ann[0]?.tenant_id || null;
+
+        // Incrémenter vues si type = whatsapp ou visite
+        if (type === 'whatsapp' || type === 'visite') {
+          await sbFetch('marketplace_annonces', '?id=eq.' + annonce_id, 'PATCH',
+            { vues: null }, // géré via RPC ci-dessous
+            false
+          );
+        }
+
+        const leadBody = JSON.stringify({ annonce_id, tenant_id, type, statut: 'nouveau', nom: nom||null, telephone: telephone||null, email: email||null, message: message||null, source: source||null, ip: request.headers.get('CF-Connecting-IP')||null, user_agent: request.headers.get('User-Agent')||null });
+        const ins = await fetch(`${env.SUPABASE_URL || SUPABASE_URL_DEFAULT}/rest/v1/marketplace_leads`, {
+          method: 'POST',
+          headers: { 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+          body: leadBody
+        });
+        const lead = ins.ok ? await ins.json() : [];
+        return json({ success: true, lead_id: lead[0]?.id || null });
+      }
+
       // ── /robots.txt ───────────────────────────────────────────────
       if (path === '/robots.txt') {
         const txt = `User-agent: *\nAllow: /\n\nSitemap: ${BASE_URL}/sitemap.xml\n`;
@@ -789,6 +840,16 @@ ${_header('← Toutes les annonces', MKT_URL)}
   <div class="meta">Annonce #${a.id} · ${a.vues||0} vues · Publié via ImmoGest</div>
 </div>
 ${_footer()}
+<script>
+(function(){
+  var API='${BASE_URL}',ID=${a.id};
+  function lead(type){fetch(API+'/lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({annonce_id:ID,type:type,source:document.referrer||'direct'})}).catch(function(){});}
+  document.querySelectorAll('a[href*="wa.me"]').forEach(function(el){el.addEventListener('click',function(){lead('whatsapp');});});
+  document.querySelectorAll('a[href*="facebook"]').forEach(function(el){el.addEventListener('click',function(){lead('partage');});});
+  document.querySelectorAll('a[href*="t.me"]').forEach(function(el){el.addEventListener('click',function(){lead('partage');});});
+  lead('information');
+})();
+</script>
 </body></html>`;
         return new Response(html, {headers:{...cors,'Content-Type':'text/html;charset=utf-8'}});
       }
