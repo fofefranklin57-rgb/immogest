@@ -9,12 +9,24 @@ window.IG.utils = (function() {
   // ── Formatage monnaie ────────────────────────────────────────
   function formatMontant(n, devise) {
     if (n === null || n === undefined || n === '') return '—';
-    var d = devise || 'XAF';
+    var d = devise || (window.IG._locale && window.IG._locale.devise) || 'XAF';
     var num = parseFloat(n) || 0;
-    if (d === 'XAF' || d === 'CFA') {
-      return num.toLocaleString('fr-FR') + ' FCFA';
-    }
-    return num.toLocaleString('fr-FR') + ' ' + d;
+    var DEVISE_CONFIG = {
+      XAF: { suffix: ' FCFA', locale: 'fr-FR' },
+      XOF: { suffix: ' FCFA', locale: 'fr-FR' },
+      CFA: { suffix: ' FCFA', locale: 'fr-FR' },
+      EUR: { suffix: ' €',    locale: 'fr-FR' },
+      USD: { suffix: ' $',    locale: 'en-US' },
+      GBP: { suffix: ' £',    locale: 'en-GB' },
+      NGN: { suffix: ' ₦',    locale: 'en-NG' },
+      GHS: { suffix: ' ₵',    locale: 'en-GH' },
+      KES: { suffix: ' KSh',  locale: 'sw-KE' },
+      MAD: { suffix: ' DH',   locale: 'fr-MA' },
+      TND: { suffix: ' TND',  locale: 'fr-TN' },
+      EGP: { suffix: ' ج.م',  locale: 'ar-EG' },
+    };
+    var cfg = DEVISE_CONFIG[d] || { suffix: ' ' + d, locale: 'fr-FR' };
+    return num.toLocaleString(cfg.locale) + cfg.suffix;
   }
 
   // ── Formatage date ───────────────────────────────────────────

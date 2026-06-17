@@ -789,12 +789,15 @@ window.IG.i18n = (function() {
   }
 
   function setLang(newLang) {
+    if (!['fr','en','pt','es','ha','ar'].includes(newLang)) return;
     lang = newLang;
     localStorage.setItem('immogest_lang', newLang);
+    document.documentElement.lang = newLang;
     document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
-    document.querySelectorAll('[data-i18n]').forEach(function(el) {
-      el.textContent = translate(el.dataset.i18n);
-    });
+    // Re-render l'interface complète sans rechargement page
+    if (window.IG.app && window.IG.app.reloadShell) {
+      window.IG.app.reloadShell();
+    }
   }
 
   function nomMois(idx) { return MOIS_FR[parseInt(idx)] || ''; }

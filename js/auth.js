@@ -86,7 +86,8 @@ window.IG.auth = (function() {
       plan:        data.tenant.plan || 'gratuit',
       telephone:   data.tenant.telephone,
       _pwdHash:    passwordHash,
-      loginAt:     Date.now()
+      loginAt:     Date.now(),
+      locale:      data.tenant.locale || null
     };
     _saveSession(session);
     return session;

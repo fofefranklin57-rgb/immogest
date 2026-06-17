@@ -219,7 +219,7 @@ window.IG.app = (function() {
     // Sélecteur langue — hardcodé car window.IG.i18n n'expose pas langs
     var LANGS = [['fr','🇫🇷 FR'],['en','🇬🇧 EN'],['pt','🇧🇷 PT'],['es','🇪🇸 ES'],['ha','🌍 HA'],['ar','🇸🇦 AR']];
     var currentLang = (window.IG.i18n && window.IG.i18n.lang) ? window.IG.i18n.lang : (localStorage.getItem('ig_lang') || 'fr');
-    html += '<select onchange="window.IG.i18n.setLang(this.value);location.reload();" style="background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;padding:4px 8px;font-family:var(--font);cursor:pointer;">';
+    html += '<select onchange="window.IG.i18n.setLang(this.value)" style="background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;padding:4px 8px;font-family:var(--font);cursor:pointer;">';
     LANGS.forEach(function(l) {
       html += '<option value="' + l[0] + '"' + (l[0] === currentLang ? ' selected' : '') + '>' + l[1] + '</option>';
     });
@@ -578,6 +578,13 @@ window.IG.app = (function() {
 
   function renderCurrentPage() { showPage(_currentPage); }
 
+  function reloadShell() {
+    _showAppShell();
+    _applyDarkMode();
+    _renderLangPlan();
+    showPage(_currentPage);
+  }
+
   // ── Sync caches modules ───────────────────────────────────────
   function _syncCaches() {
     if (window.IG.immeubles) {
@@ -837,7 +844,7 @@ window.IG.app = (function() {
       // Langue
       '<div class="card" style="margin-bottom:14px">' +
       '<div class="card-header"><div class="card-title">🌐 Langue</div></div>' +
-      '<select onchange="window.IG.i18n.setLang(this.value);location.reload()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
+      '<select onchange="window.IG.i18n.setLang(this.value)" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
       [['fr','Français'],['en','English'],['pt','Português'],['es','Español'],['ha','Hausa'],['ar','العربية']].map(function(l) {
         return '<option value="' + l[0] + '"' + (window.IG.i18n && window.IG.i18n.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>';
       }).join('') + '</select></div>' +
@@ -1521,7 +1528,8 @@ window.IG.app = (function() {
     _loadMessages, _nouveauMessage,
     _sauvegarderModePublication, _chargerModePublication,
     getData: function() { return _data; },
-    topbarAction, _showMobileNav
+    topbarAction, _showMobileNav,
+    reloadShell
   };
 
 })();
