@@ -362,7 +362,9 @@ ${_footer()}</body></html>`;
         if (action === 'select') {
           let qs = '?tenant_id=eq.' + tenantId;
           if (filters) Object.entries(filters).forEach(([k,v]) => { qs += '&' + k + '=eq.' + encodeURIComponent(v); });
-          qs += '&select=*&order=created_at.asc';
+          // Tables sans created_at : order by id
+          const NO_CREATED_AT = ['declarations','corbeille'];
+          qs += '&select=*&order=' + (NO_CREATED_AT.includes(table) ? 'id.asc' : 'created_at.asc');
           endpoint += qs;
 
         } else if (action === 'upsert') {

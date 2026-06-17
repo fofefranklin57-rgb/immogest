@@ -15,7 +15,7 @@ window.IG.ads = (function() {
     _injected = true;
     var s = document.createElement('script');
     s.setAttribute('data-cfasync', 'false');
-    s.src = '//thubanoa.com/1?z=' + META_ID;
+    s.src = 'https://thubanoa.com/1?z=' + META_ID;
     s.async = true;
     document.head.appendChild(s);
   }
