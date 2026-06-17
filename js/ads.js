@@ -209,28 +209,44 @@ window.IG.ads = (function() {
     document.body.prepend(banner);
   }
 
-  // ── Banner Adsterra CPM inline ────────────────────────────────
-  var ADSTERRA_KEY = 'a8b8306fd87bb4d734ff3ccae11c6e40';
-  var ADSTERRA_SRC = 'https://pl29779759.effectivecpmnetwork.com/' + ADSTERRA_KEY + '/invoke.js';
-  var _adsterraLoaded = false;
+  // ── Banners Adsterra CPM ──────────────────────────────────────
+  // Zone 1 : 300x250 / responsive — panel IA
+  var AD1_KEY = 'a8b8306fd87bb4d734ff3ccae11c6e40';
+  var AD1_SRC = 'https://pl29779759.effectivecpmnetwork.com/' + AD1_KEY + '/invoke.js';
+
+  // Zone 2 : 728x90 leaderboard — dashboard
+  var AD2_KEY = 'eca414bf7ac681267ea5cd09ff57482a';
+  var AD2_SRC = 'https://www.highperformanceformat.com/' + AD2_KEY + '/invoke.js';
+
+  var _ad1Loaded = false;
+  var _ad2Loaded = false;
 
   function _injecterAdsterra(containerId) {
     var container = document.getElementById(containerId);
     if (!container) return;
+    var isIA = containerId === 'ai-ad-banner';
 
-    // Créer le div cible Adsterra
-    var slot = document.createElement('div');
-    slot.id = 'container-' + ADSTERRA_KEY + '-' + containerId;
-    container.appendChild(slot);
-
-    // Injecter le script une seule fois
-    if (!_adsterraLoaded) {
-      _adsterraLoaded = true;
+    if (isIA && !_ad1Loaded) {
+      _ad1Loaded = true;
+      var slot = document.createElement('div');
+      slot.id = 'container-' + AD1_KEY;
+      container.appendChild(slot);
       var s = document.createElement('script');
-      s.async = true;
-      s.setAttribute('data-cfasync', 'false');
-      s.src = ADSTERRA_SRC;
+      s.async = true; s.setAttribute('data-cfasync', 'false');
+      s.src = AD1_SRC;
       document.head.appendChild(s);
+    }
+
+    if (!isIA && !_ad2Loaded) {
+      _ad2Loaded = true;
+      // Zone 728x90 via atOptions
+      var cfg = document.createElement('script');
+      cfg.text = "atOptions={'key':'" + AD2_KEY + "','format':'iframe','height':90,'width':728,'params':{}};";
+      container.appendChild(cfg);
+      var s2 = document.createElement('script');
+      s2.async = true; s2.setAttribute('data-cfasync', 'false');
+      s2.src = AD2_SRC;
+      container.appendChild(s2);
     }
   }
 
