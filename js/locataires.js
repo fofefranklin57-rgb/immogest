@@ -246,10 +246,81 @@ window.IG.locataires = (function() {
   }
 
   function _libererConfirm(id) {
+    var loc = getById(id);
+    if (!loc) return;
     window.IG.utils.confirm(t('Libérer ce locataire ?'), async function() {
+      var locSnapshot = { ...loc };
       await liberer(id, 'depart_volontaire');
       if (window.IG.app && window.IG.app.refresh) window.IG.app.refresh();
+      _proposerPublication(locSnapshot);
     });
+  }
+
+  async function _proposerPublication(loc) {
+    var tenantId = window.IG.auth && window.IG.auth.getTenantId ? window.IG.auth.getTenantId() : null;
+    if (!tenantId) return;
+    var WORKER = window.APP_CONFIG ? window.APP_CONFIG.API_URL : 'https://immogest1.fofefranklin57.workers.dev';
+    try {
+      var r = await fetch(WORKER + '/annonce-auto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locataire_id: loc.id, tenant_id: tenantId })
+      });
+      var res = r.ok ? await r.json() : null;
+      if (!res || res.error) return;
+
+      var imm = window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null;
+      var titre = (loc.type_local || 'Local') + ' — ' + (imm ? (imm.nom_immeuble || imm.nom) : '') + ' / ' + (loc.appt || '');
+      var score = res.score || 0;
+      var statut = res.statut;
+      var annonce_id = res.annonce_id;
+      var MKTURL = window.APP_CONFIG ? window.APP_CONFIG.APP_URL + '/marketplace.html' : '#';
+
+      var scoreColor = score >= 70 ? 'var(--green)' : score >= 40 ? '#E07800' : 'var(--red)';
+      var modeTxt = res.mode === 'auto' ? '⚡ Publiée automatiquement' : res.mode === 'proprio' ? '⏳ En attente validation propriétaire' : '📝 Brouillon créé';
+      var html = '<div style="text-align:center;padding:8px 0 16px">' +
+        '<div style="font-size:40px;margin-bottom:12px">🏠</div>' +
+        '<h3 style="margin-bottom:6px;font-size:16px">' + t('Local libéré — Publication marketplace') + '</h3>' +
+        '<p style="color:var(--text3);font-size:13px;margin-bottom:16px">' + esc(titre) + '</p>' +
+        '<div style="background:var(--bg3);border-radius:12px;padding:16px;margin-bottom:16px">' +
+        '<div style="font-size:12px;color:var(--text3);margin-bottom:4px">Score qualité de l\'annonce</div>' +
+        '<div style="font-size:32px;font-weight:700;color:' + scoreColor + '">' + score + '<span style="font-size:14px">/100</span></div>' +
+        '<div style="margin-top:8px;font-size:11px;color:var(--text3)">' +
+        (score < 70 ? '💡 Ajoutez photos et description pour améliorer le score' : '✅ Annonce complète') + '</div>' +
+        '</div>' +
+        '<div style="margin-bottom:16px;padding:10px 14px;background:var(--bg3);border-radius:8px;font-size:13px">' + modeTxt + '</div>' +
+        '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">';
+      if (statut === 'brouillon' && annonce_id) {
+        html += '<button onclick="window.IG.locataires._publierAnnonce(' + annonce_id + ', this)" style="padding:10px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">🚀 Publier maintenant</button>';
+      }
+      html += '<a href="' + MKTURL + '" target="_blank" style="padding:10px 18px;border-radius:8px;border:1px solid var(--border2);color:var(--text);text-decoration:none;font-size:13px;display:inline-flex;align-items:center;gap:6px">🌐 Voir Marketplace</a>' +
+        '<button data-modal-close style="padding:10px 18px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:13px">Fermer</button>' +
+        '</div></div>';
+
+      window.IG.utils.showModal(html, { width: '440px' });
+    } catch(_) {}
+  }
+
+  async function _publierAnnonce(annonce_id, btn) {
+    var WORKER = window.APP_CONFIG ? window.APP_CONFIG.API_URL : 'https://immogest1.fofefranklin57.workers.dev';
+    var tok = window.IG.auth && window.IG.auth.getToken ? window.IG.auth.getToken() : '';
+    if (btn) btn.disabled = true;
+    try {
+      var r = await fetch(WORKER + '/annonce-publier/' + annonce_id, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok }
+      });
+      var res = r.ok ? await r.json() : null;
+      if (res && res.success) {
+        toast('✅ Annonce publiée sur la marketplace !', 'green');
+        if (btn) { btn.textContent = '✓ Publiée'; btn.style.background = 'var(--green)'; }
+      } else {
+        toast('Erreur publication', 'red');
+        if (btn) btn.disabled = false;
+      }
+    } catch(_) {
+      if (btn) btn.disabled = false;
+    }
   }
 
   // ── Fiche locataire ───────────────────────────────────────────
@@ -336,7 +407,8 @@ window.IG.locataires = (function() {
   return {
     charger, getCache, getById, getByImmeuble, sauvegarder,
     liberer, supprimer, renderListe, afficherFormulaire, afficherFiche,
-    lienWA, _libererConfirm, _toggleMenu, _closeMenus, envoyerAccesWA
+    lienWA, _libererConfirm, _toggleMenu, _closeMenus, envoyerAccesWA,
+    _publierAnnonce
   };
 
 })();

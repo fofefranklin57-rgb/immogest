@@ -683,6 +683,135 @@ ${_footer()}</body></html>`;
         return json({ success: true, lead_id: lead[0]?.id || null });
       }
 
+      // ── POST /annonce-auto — crée pré-annonce depuis départ locataire ───
+      if (path === '/annonce-auto' && request.method === 'POST') {
+        let body = {};
+        try { body = await request.json(); } catch(_) {}
+        const { locataire_id, tenant_id } = body;
+        if (!locataire_id || !tenant_id) return json({ error: 'locataire_id et tenant_id requis' }, 400);
+
+        // Récupérer locataire + immeuble
+        const lr = await sbFetch('locataires', '?id=eq.' + locataire_id + '&select=*,immeubles(*)&limit=1');
+        const locs = lr.ok ? await lr.json() : [];
+        const loc = locs[0];
+        if (!loc) return json({ error: 'Locataire introuvable' }, 404);
+
+        const imm = loc.immeubles || {};
+
+        // Vérifier si annonce existe déjà pour ce local (non archivée)
+        const ea = await sbFetch('marketplace_annonces',
+          `?tenant_id=eq.${tenant_id}&immeuble_id=eq.${loc.immeuble_id}&appt=eq.${encodeURIComponent(loc.appt||'')}&statut=neq.archivée&limit=1`);
+        const existing = ea.ok ? await ea.json() : [];
+        if (existing.length > 0) return json({ exists: true, annonce_id: existing[0].id });
+
+        // Lire mode_publication depuis parametres
+        const pr = await sbFetch('parametres', `?tenant_id=eq.${tenant_id}&limit=1`);
+        const params = pr.ok ? await pr.json() : [];
+        const settings = params[0]?.settings || {};
+        const mode = settings.mode_publication || 'manuel';
+
+        const statut = mode === 'auto' ? 'active' : 'brouillon';
+
+        // Construire pré-annonce
+        const annonce = {
+          tenant_id,
+          immeuble_id: loc.immeuble_id,
+          appt: loc.appt || null,
+          contact_telephone: loc.telephone || imm.tel_proprio || null,
+          type_local: loc.type_local || 'appartement',
+          loyer: loc.loyer || 0,
+          caution: loc.caution || 0,
+          ville: imm.ville || '',
+          quartier: imm.quartier || '',
+          pays: imm.pays || '',
+          titre: `${loc.type_local || 'Local'} à louer — ${imm.quartier || imm.ville || ''}`.trim(),
+          description: imm.description_marketing || '',
+          photos: imm.photos || [],
+          visite_3d_url: imm.visite_3d_url || null,
+          commodites: imm.commodites || [],
+          mode_auto: mode === 'auto',
+          statut,
+          score_qualite: 0,
+          tags: []
+        };
+
+        const ins = await sbFetch('marketplace_annonces', '', 'POST', annonce);
+        const result = ins.ok ? await ins.json() : null;
+        const annonce_id = result?.[0]?.id || null;
+
+        // Calculer score qualité
+        if (annonce_id) {
+          let score = 0;
+          if ((annonce.photos||[]).length > 0) score += 30;
+          if ((annonce.description||'').length > 50) score += 20;
+          if (annonce.loyer > 0) score += 20;
+          if (annonce.ville) score += 15;
+          if (annonce.visite_3d_url) score += 15;
+          await sbFetch('marketplace_annonces', '?id=eq.' + annonce_id, 'PATCH', { score_qualite: score });
+
+          // Log workflow
+          await sbFetch('marketplace_workflow', '', 'POST', {
+            tenant_id, annonce_id, locataire_id, immeuble_id: loc.immeuble_id, appt: loc.appt || null,
+            evenement: 'pre_annonce.creee', details: { mode, statut, score }
+          });
+
+          if (mode === 'auto') {
+            await sbFetch('marketplace_workflow', '', 'POST', {
+              tenant_id, annonce_id, locataire_id, immeuble_id: loc.immeuble_id, appt: loc.appt || null,
+              evenement: 'annonce.publiee', details: { mode: 'auto' }
+            });
+          }
+        }
+
+        return json({ success: true, annonce_id, statut, mode });
+      }
+
+      // ── POST /annonce-publier/:id — publier un brouillon ──────────
+      if (path.startsWith('/annonce-publier/') && request.method === 'POST') {
+        const annonce_id = parseInt(path.split('/')[2]);
+        if (!annonce_id) return json({ error: 'id invalide' }, 400);
+
+        // Vérifier auth basique via header Authorization
+        const authHdr = request.headers.get('Authorization') || '';
+        if (!authHdr.startsWith('Bearer ')) return json({ error: 'Auth requise' }, 401);
+
+        const r = await sbFetch('marketplace_annonces', '?id=eq.' + annonce_id + '&select=*&limit=1');
+        const anns = r.ok ? await r.json() : [];
+        if (!anns.length) return json({ error: 'Annonce introuvable' }, 404);
+
+        await sbFetch('marketplace_annonces', '?id=eq.' + annonce_id, 'PATCH', {
+          statut: 'active', updated_at: new Date().toISOString()
+        });
+
+        await sbFetch('marketplace_workflow', '', 'POST', {
+          tenant_id: anns[0].tenant_id, annonce_id, immeuble_id: anns[0].immeuble_id,
+          appt: anns[0].appt || null, evenement: 'annonce.publiee', details: { par: 'gestionnaire' }
+        });
+
+        return json({ success: true, annonce_id });
+      }
+
+      // ── PUT /annonce-score/:id — recalcul score qualité ───────────
+      if (path.startsWith('/annonce-score/') && request.method === 'PUT') {
+        const annonce_id = parseInt(path.split('/')[2]);
+        if (!annonce_id) return json({ error: 'id invalide' }, 400);
+
+        const r = await sbFetch('marketplace_annonces', '?id=eq.' + annonce_id + '&select=*&limit=1');
+        const anns = r.ok ? await r.json() : [];
+        if (!anns.length) return json({ error: 'Annonce introuvable' }, 404);
+        const a = anns[0];
+
+        let score = 0;
+        if ((a.photos||[]).length > 0) score += 30;
+        if ((a.description||'').length > 50) score += 20;
+        if (a.loyer > 0) score += 20;
+        if (a.ville) score += 15;
+        if (a.visite_3d_url) score += 15;
+
+        await sbFetch('marketplace_annonces', '?id=eq.' + annonce_id, 'PATCH', { score_qualite: score });
+        return json({ success: true, score });
+      }
+
       // ── /robots.txt ───────────────────────────────────────────────
       if (path === '/robots.txt') {
         const txt = `User-agent: *\nAllow: /\n\nSitemap: ${BASE_URL}/sitemap.xml\n`;

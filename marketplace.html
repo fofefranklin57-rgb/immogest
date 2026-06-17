@@ -470,6 +470,24 @@
     <button class="filtre-btn" onclick="filtrer('luxe',this)">💎 Prestige & Luxe</button>
   </div>
 
+  <!-- ── Bloc 3D Marketing ── -->
+  <div id="bloc-3d" style="background:linear-gradient(135deg,#0D1F3C,#1a3a6b);border-radius:16px;padding:24px;margin-bottom:24px;display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px">
+      <div style="font-size:11px;font-weight:700;color:#60a5fa;letter-spacing:1px;margin-bottom:6px">SERVICE PARTENAIRE</div>
+      <h3 style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px;line-height:1.3">Valorisez vos biens avec la Visite 3D</h3>
+      <p style="color:rgba(255,255,255,0.65);font-size:13px;margin-bottom:14px;line-height:1.5">Rendu IA haute résolution · Visite virtuelle 360° · Pack promotion immobilière mondiale</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span style="background:rgba(96,165,250,0.15);color:#60a5fa;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:600">🤖 Rendu IA</span>
+        <span style="background:rgba(96,165,250,0.15);color:#60a5fa;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:600">🔄 360°</span>
+        <span style="background:rgba(96,165,250,0.15);color:#60a5fa;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:600">🌍 Pack Diaspora</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;min-width:160px">
+      <a href="index.html" style="display:block;padding:11px 20px;border-radius:10px;background:#2563EB;color:#fff;text-decoration:none;font-size:13px;font-weight:700;text-align:center">Demander un devis →</a>
+      <a href="index.html" style="display:block;padding:11px 20px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;text-align:center">En savoir plus</a>
+    </div>
+  </div>
+
   <!-- Annonces premium -->
   <div id="section-premium" style="display:none;">
     <div class="section-title">⭐ Annonces Premium</div>
@@ -637,7 +655,32 @@
     if (!standard.length && !premium.length) {
       gridStd.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="emoji">🏠</div><h3>Aucune annonce disponible</h3><p>Soyez le premier à publier une annonce !</p><a href="index.html" class="btn btn-primary">+ Publier une annonce</a></div>';
     } else {
-      gridStd.innerHTML = standard.map(function(a) { return carteHTML(a, false); }).join('');
+      var ADS = [
+        { bg:'#0D1F3C', label:'IMMOGEST PRO', title:'Gérez vos biens gratuitement', desc:'PWA offline · Quittances · IA juridique', cta:'Démarrer gratuitement →', href:'index.html', icon:'🏢', badge:'#2563EB' },
+        { bg:'#1a1a2e', label:'VISITE 3D', title:'Sublimez vos annonces en 3D', desc:'Rendu IA · 360° · Pack Diaspora', cta:'Demander un devis →', href:'index.html', icon:'🔄', badge:'#7C3AED' },
+        { bg:'#0f2c1f', label:'PUBLICITÉ', title:'Touchez des millions de locataires', desc:'Visibilité maximale sur ImmoGest', cta:'Nous contacter →', href:'index.html', icon:'📣', badge:'#059669' },
+        { bg:'#1f1a0d', label:'KALAMUNDI', title:'Solutions tech immobilières', desc:'IA · Automatisation · Multi-pays', cta:'Découvrir →', href:'index.html', icon:'🌍', badge:'#D97706' }
+      ];
+      var _adIdx = 0;
+      var cardsWithAds = [];
+      standard.forEach(function(a, i) {
+        cardsWithAds.push(carteHTML(a, false));
+        if ((i + 1) % 6 === 0 && i < standard.length - 1) {
+          var ad = ADS[_adIdx % ADS.length]; _adIdx++;
+          cardsWithAds.push(
+            '<div style="border-radius:14px;overflow:hidden;background:' + ad.bg + ';padding:20px;display:flex;flex-direction:column;justify-content:space-between;min-height:200px">' +
+            '<div>' +
+            '<div style="font-size:10px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-bottom:8px">' + ad.label + '</div>' +
+            '<div style="font-size:28px;margin-bottom:8px">' + ad.icon + '</div>' +
+            '<h4 style="color:#fff;font-size:15px;font-weight:700;margin-bottom:6px;line-height:1.3">' + ad.title + '</h4>' +
+            '<p style="color:rgba(255,255,255,0.6);font-size:12px;line-height:1.4">' + ad.desc + '</p>' +
+            '</div>' +
+            '<a href="' + ad.href + '" style="margin-top:14px;display:block;padding:9px 14px;border-radius:8px;background:' + ad.badge + ';color:#fff;text-decoration:none;font-size:12px;font-weight:700;text-align:center">' + ad.cta + '</a>' +
+            '</div>'
+          );
+        }
+      });
+      gridStd.innerHTML = cardsWithAds.join('');
     }
 
     // Mise à jour stats

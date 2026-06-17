@@ -614,6 +614,19 @@ window.IG.app = (function() {
         return '<option value="' + l[0] + '"' + (window.IG.i18n && window.IG.i18n.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>';
       }).join('') + '</select></div>' +
 
+      // Publication Marketplace
+      '<div class="card" id="card-publication" style="margin-bottom:14px">' +
+      '<div class="card-header"><div class="card-title">🏠 Publication Marketplace</div></div>' +
+      '<div style="font-size:13px;color:var(--text3);margin-bottom:12px">Quand un local est libéré, ImmoGest crée automatiquement une pré-annonce.</div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">Mode de publication</label>' +
+      '<select id="select-mode-publication" onchange="window.IG.app._sauvegarderModePublication(this.value)" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);width:100%">' +
+      '<option value="manuel">📝 Manuel — le gestionnaire valide avant publication</option>' +
+      '<option value="auto">⚡ Automatique — publié immédiatement à la libération</option>' +
+      '<option value="proprio">👤 Validation propriétaire — notification envoyée au proprio</option>' +
+      '</select></div>' +
+      '<div id="mode-publication-saved" style="font-size:11px;color:var(--green);display:none">✓ Sauvegardé</div>' +
+      '</div>' +
+
       // Déconnexion
       '<button onclick="window.IG.auth.logout()" style="padding:10px 20px;border-radius:10px;border:1px solid var(--red);color:var(--red);background:transparent;cursor:pointer;font-weight:600;font-size:13px;display:block;margin-bottom:30px">🚪 Se déconnecter</button>' +
       '</div>';
@@ -621,6 +634,36 @@ window.IG.app = (function() {
     content.innerHTML = html;
     if (window.IG.plans) window.IG.plans.renderBlocPlan('plans-bloc');
     if (session.role === 'admin') _chargerEquipe();
+    _chargerModePublication();
+  }
+
+  async function _chargerModePublication() {
+    var sel = document.getElementById('select-mode-publication');
+    if (!sel) return;
+    try {
+      var params = await window.IG.db.select('parametres');
+      var settings = (params && params[0] && params[0].settings) || {};
+      sel.value = settings.mode_publication || 'manuel';
+    } catch(_) {}
+  }
+
+  async function _sauvegarderModePublication(mode) {
+    try {
+      var params = await window.IG.db.select('parametres');
+      var row = params && params[0];
+      var settings = (row && row.settings) || {};
+      settings.mode_publication = mode;
+      if (row) {
+        await window.IG.db.update('parametres', row.id, { settings });
+      } else {
+        var session = window.IG.auth.getSession();
+        await window.IG.db.insert('parametres', [{ tenant_id: session.tenantId, settings }]);
+      }
+      var msg = document.getElementById('mode-publication-saved');
+      if (msg) { msg.style.display = 'block'; setTimeout(function() { msg.style.display = 'none'; }, 2000); }
+    } catch(e) {
+      window.IG.utils.showToast('Erreur sauvegarde : ' + e.message, 'red');
+    }
   }
 
   async function _chargerEquipe() {
