@@ -157,6 +157,10 @@ window.IG.juridique = (function() {
       '</div>' +
       '</div>' +
 
+      '<div id="ig-score-ad" style="margin-bottom:16px;min-height:92px;border-radius:10px;overflow:hidden;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;position:relative;">' +
+      '<span style="position:absolute;top:3px;left:8px;font-size:9px;color:var(--text3);letter-spacing:.05em;text-transform:uppercase;font-weight:600;opacity:.5">Pub</span>' +
+      '</div>' +
+
       (analyse.actions.length ? '<div style="background:var(--bg4);border-radius:10px;padding:14px;margin-bottom:16px">' +
         '<div style="font-size:12px;font-weight:700;margin-bottom:10px;color:var(--text2)">ACTIONS RECOMMANDÉES</div>' +
         analyse.actions.map(function(a, i) {
@@ -173,6 +177,10 @@ window.IG.juridique = (function() {
       '</div>'
     );
     window._jur_loc = loc;
+    // Injecter bannière Adsterra (728x90) dans le slot de la modal
+    setTimeout(function() {
+      if (window.IG.ads) window.IG.ads._injecterAdsterra('ig-score-ad');
+    }, 100);
   }
 
   // ── node --check safe export ──────────────────────────────────
