@@ -110,9 +110,9 @@ window.IG.app = (function() {
       '<div class="ai-msg-bot"><div class="ai-avatar"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6L17 21H7l1.3-6A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/><circle cx="9" cy="9" r="1" fill="#fff" stroke="none"/><circle cx="15" cy="9" r="1" fill="#fff" stroke="none"/></svg></div>' +
       '<div class="ai-bubble-bot">Bonjour ! Je suis votre assistant ImmoGest.<br>Je connais vos immeubles, locataires et paiements en temps réel. Posez-moi n\'importe quelle question ⬇️</div></div>' +
       '</div>' +
-      // Bannière pub CPM — visible tous plans
-      '<div id="ai-ad-banner" style="border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0;min-height:60px;overflow:hidden;position:relative;">' +
-      '<div style="position:absolute;top:2px;left:6px;font-size:9px;letter-spacing:.06em;color:var(--text3);text-transform:uppercase;font-weight:600;opacity:.5;pointer-events:none;">Pub</div>' +
+      // Bannière Adsterra CPM — visible tous plans
+      '<div id="ai-ad-banner" style="border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0;min-height:90px;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;">' +
+      '<span style="position:absolute;top:3px;left:8px;font-size:9px;color:var(--text3);letter-spacing:.05em;text-transform:uppercase;font-weight:600;opacity:.5;pointer-events:none">Pub</span>' +
       '</div>' +
       '<div style="padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;background:var(--bg2);flex-shrink:0;">' +
       '<button class="ai-chip" onclick="window.IG.app.aiQuickAction(\'impayés\')" style="background:var(--red-bg);color:var(--red);border-color:var(--red);">⚠️ Impayés</button>' +

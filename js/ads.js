@@ -209,16 +209,37 @@ window.IG.ads = (function() {
     document.body.prepend(banner);
   }
 
-  // ── Bannière promo CPM réutilisable (dashboard, etc.) ────────
-  function rendreBannierePromo(containerId) {
-    var parent = containerId
-      ? document.getElementById(containerId)
-      : document.getElementById('page-content');
-    if (!parent) return;
+  // ── Banner Adsterra CPM inline ────────────────────────────────
+  var ADSTERRA_KEY = 'a8b8306fd87bb4d734ff3ccae11c6e40';
+  var ADSTERRA_SRC = 'https://pl29779759.effectivecpmnetwork.com/' + ADSTERRA_KEY + '/invoke.js';
+  var _adsterraLoaded = false;
 
+  function _injecterAdsterra(containerId) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Créer le div cible Adsterra
+    var slot = document.createElement('div');
+    slot.id = 'container-' + ADSTERRA_KEY + '-' + containerId;
+    container.appendChild(slot);
+
+    // Injecter le script une seule fois
+    if (!_adsterraLoaded) {
+      _adsterraLoaded = true;
+      var s = document.createElement('script');
+      s.async = true;
+      s.setAttribute('data-cfasync', 'false');
+      s.src = ADSTERRA_SRC;
+      document.head.appendChild(s);
+    }
+  }
+
+  // ── Bannière promo maison (fallback si Adsterra pas chargé) ──
+  function rendreBannierePromo(containerId) {
+    var parent = document.getElementById(containerId);
+    if (!parent) return;
     var existing = parent.querySelector('.ig-promo-banner');
     if (existing) existing.remove();
-
     var div = document.createElement('div');
     div.className = 'ig-promo-banner';
     div.style.cssText = 'margin:0 0 16px;border-radius:12px;border:1px solid var(--border2);background:var(--bg3);overflow:hidden;cursor:pointer;';
@@ -226,16 +247,13 @@ window.IG.ads = (function() {
     div.innerHTML =
       '<div style="padding:2px 10px;font-size:9px;letter-spacing:.06em;color:var(--text3);text-transform:uppercase;font-weight:600;border-bottom:1px solid var(--border2);background:var(--bg4)">Publicité</div>' +
       '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:10px">' +
-      '<div style="font-size:12px;color:var(--text2);line-height:1.5">' +
-        '<strong style="color:var(--accent)">ImmoGest Pro</strong> — IA illimitée, rapports Word, export données.<br>' +
-        '<span style="color:var(--text3);font-size:11px">Dès 9 999 FCFA/mois · 2 mois offerts en annuel</span>' +
-      '</div>' +
-      '<div style="flex-shrink:0;padding:7px 14px;border-radius:8px;background:var(--accent);color:#fff;font-size:12px;font-weight:700;white-space:nowrap">Voir →</div>' +
+      '<div style="font-size:12px;color:var(--text2);line-height:1.5"><strong style="color:var(--accent)">ImmoGest Pro</strong> — IA illimitée, rapports Word, export.<br>' +
+      '<span style="color:var(--text3);font-size:11px">Dès 9 999 FCFA/mois · 2 mois offerts</span></div>' +
+      '<div style="flex-shrink:0;padding:7px 14px;border-radius:8px;background:var(--accent);color:#fff;font-size:12px;font-weight:700">Voir →</div>' +
       '</div>';
-
     parent.insertBefore(div, parent.firstChild);
   }
 
-  return { init, rendreBlocPub, surUpgrade, renderUsageWidget, scoreDisplay, checkExpiry, rendreBannierePromo };
+  return { init, rendreBlocPub, surUpgrade, renderUsageWidget, scoreDisplay, checkExpiry, rendreBannierePromo, _injecterAdsterra };
 
 })();

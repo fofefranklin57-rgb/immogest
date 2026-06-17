@@ -118,14 +118,9 @@ window.IG.dashboard = (function() {
       '<button onclick="window.IG.app.refresh()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:12px;color:var(--text2)">↻ ' + t('Actualiser') + '</button>' +
       '</div>' +
 
-      // Bannière pub CPM — tous plans
-      '<div onclick="window.IG.plans.afficherUpgrade()" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;margin-bottom:20px;border-radius:14px;background:linear-gradient(135deg,#0E6AAF22,#7C3AED22);border:1.5px solid #0E6AAF44;cursor:pointer;">' +
-      '<div>' +
-        '<div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:2px">🚀 Passez à ImmoGest Pro</div>' +
-        '<div style="font-size:12px;color:var(--text2)">IA illimitée · Rapports Word · Export données · Sans pub</div>' +
-        '<div style="font-size:11px;color:var(--text3);margin-top:2px">Dès 9 999 FCFA/mois · 2 mois offerts en annuel</div>' +
-      '</div>' +
-      '<div style="flex-shrink:0;padding:9px 18px;border-radius:10px;background:linear-gradient(135deg,#0E6AAF,#7C3AED);color:#fff;font-size:13px;font-weight:700;white-space:nowrap">Voir les plans →</div>' +
+      // Slot bannière Adsterra CPM
+      '<div id="ig-dash-ad" style="margin-bottom:18px;min-height:90px;border-radius:12px;overflow:hidden;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;position:relative;">' +
+      '<span style="position:absolute;top:3px;left:8px;font-size:9px;color:var(--text3);letter-spacing:.05em;text-transform:uppercase;font-weight:600;opacity:.5">Pub</span>' +
       '</div>' +
 
       // KPIs principaux
@@ -164,6 +159,7 @@ window.IG.dashboard = (function() {
       '</div>';
 
     content.innerHTML = html;
+    if (window.IG.ads) window.IG.ads._injecterAdsterra('ig-dash-ad');
   }
 
   function _kpi(icon, val, label, color) {
