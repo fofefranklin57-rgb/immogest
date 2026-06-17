@@ -53,10 +53,13 @@ window.IG.app = (function() {
       '<div class="sidebar-nav" id="sidebar-nav">' +
       _navSection(t('Principal')) +
       _navItem('dashboard', '📊', t('Tableau de bord')) +
-      _navSection(t('Immeubles')) +
+      _navSectionToggle('immeubles', t('Immeubles')) +
+      '<div id="sb-body-immeubles" class="nav-section-body">' +
       _navItem('immeubles', '🏢', t('Tous les immeubles')) +
       '<div id="sidebar-immeubles-list"></div>' +
-      _navSection(t('Gestion')) +
+      '</div>' +
+      _navSectionToggle('gestion', t('Gestion')) +
+      '<div id="sb-body-gestion" class="nav-section-body">' +
       _navItem('locataires', '👥', t('Locataires')) +
       _navItem('paiements', '💰', t('Encaissements')) +
       _navItem('relances', '⚠️', t('Relances'), true) +
@@ -64,6 +67,7 @@ window.IG.app = (function() {
       _navItem('rapport-annuel', '📅', t('Rapport annuel')) +
       _navItem('statistiques', '📈', t('Statistiques')) +
       _navItem('juridique', '⚖️', t('Juridique')) +
+      '</div>' +
       _navSection(t('Réseau')) +
       _navItem('marketplace', '🌍', t('Marketplace')) +
       (session.role !== 'locataire' ? _navItem('leads', '📬', t('Leads')) : '') +
@@ -205,6 +209,19 @@ window.IG.app = (function() {
 
   function _navSection(label) {
     return '<div class="nav-section">' + label + '</div>';
+  }
+
+  function _navSectionToggle(id, label) {
+    return '<div class="nav-section nav-section-toggle" onclick="window.IG.app.toggleSidebarSection(\'' + id + '\')">' +
+      label + '<span class="nav-section-icon" id="sb-icon-' + id + '">▸</span></div>';
+  }
+
+  function toggleSidebarSection(id) {
+    var body = document.getElementById('sb-body-' + id);
+    var icon = document.getElementById('sb-icon-' + id);
+    if (!body) return;
+    var open = body.classList.toggle('open');
+    if (icon) icon.textContent = open ? '▾' : '▸';
   }
 
   function _navItem(page, icon, label, hasBadge) {
@@ -1300,7 +1317,7 @@ window.IG.app = (function() {
     init, showPage, refresh, renderCurrentPage,
     _renderLogin,
     authGoStep, doLogin, joinV2, registerV2, browseMarketplace,
-    toggleSidebar, closeSidebar,
+    toggleSidebar, closeSidebar, toggleSidebarSection,
     _refreshPaiements, _restaurer,
     _genererInvitation, _toggleUser, _appliquerPromo,
     _loadDeclarations, _validerDeclaration,
