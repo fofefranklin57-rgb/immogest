@@ -75,7 +75,7 @@ window.IG.app = (function() {
       (session.role !== 'locataire' ? _navItem('leads', '📬', t('Leads')) : '') +
       (session.role === 'locataire' ? _navItem('portail', '🏠', t('Mon espace')) : '') +
       _navSection(t('Interne')) +
-      (session.role === 'admin' || session.role === 'gestionnaire' ? _navItem('declarations', '📨', t('Déclarations')) : '') +
+      (session.role === 'admin' || session.role === 'gestionnaire' ? '<div class="nav-item" data-page="declarations"><span class="nav-icon">📨</span><span>' + t('Déclarations') + '</span><span class="nav-badge" id="badge-declarations" style="display:none">0</span></div>' : '') +
       _navItem('messages', '💬', t('Messages')) +
       _navItem('signatures', '✍️', t('Signatures')) +
       _navItem('parametres', '⚙️', t('Paramètres')) +
@@ -390,6 +390,17 @@ window.IG.app = (function() {
     } catch(_) {}
   }
 
+  async function _updateDeclBadge() {
+    try {
+      var decls = await window.IG.db.select('declarations');
+      var nb = (decls || []).filter(function(d) { return d.statut === 'pending'; }).length;
+      var badge = document.getElementById('badge-declarations');
+      if (!badge) return;
+      badge.textContent = nb;
+      badge.style.display = nb > 0 ? 'inline-block' : 'none';
+    } catch(_) {}
+  }
+
   function _navSection(label) {
     return '<div class="nav-section">' + label + '</div>';
   }
@@ -427,6 +438,7 @@ window.IG.app = (function() {
       _updateSidebarImmeubles();
       _updateRelancesBadge();
       _updateCorbeilleBadge();
+      _updateDeclBadge();
     } catch(e) {
       _setSyncStatus('error');
       // Fallback localStorage
@@ -1040,24 +1052,90 @@ window.IG.app = (function() {
   function _renderStatistiques() {
     var content = document.getElementById('page-content');
     if (!content) return;
-    if (window.IG.dashboard) {
-      // Réutiliser les KPIs du dashboard avec graphes étendus
-      window.IG.dashboard.render(_data);
-    }
     var kpis = window.IG.dashboard ? window.IG.dashboard.calculerKPIs(_data.locataires, _data.paiements) : {};
     var fmt = window.IG.utils.formatMontant;
+    var tx = kpis.txRecouvrement || 0;
+
+    // ── Camembert statuts locataires ──────────────────────────
+    var locs = _data.locataires || [];
+    var nbActif = locs.filter(function(l){ return l.statut === 'actif' || l.statut === 'occupé'; }).length;
+    var nbImpaye = locs.filter(function(l){ return l.statut === 'impayé'; }).length;
+    var nbLibre  = locs.filter(function(l){ return l.statut === 'libre' || !l.statut; }).length;
+    var nbTotal  = locs.length || 1;
+    function _arc(cx, cy, r, startDeg, endDeg, color) {
+      var s = startDeg * Math.PI / 180, e = endDeg * Math.PI / 180;
+      var x1 = cx + r * Math.cos(s), y1 = cy + r * Math.sin(s);
+      var x2 = cx + r * Math.cos(e), y2 = cy + r * Math.sin(e);
+      var large = (endDeg - startDeg) > 180 ? 1 : 0;
+      if (endDeg - startDeg >= 360) return '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + color + '"/>';
+      return '<path d="M' + cx + ',' + cy + ' L' + x1 + ',' + y1 + ' A' + r + ',' + r + ' 0 ' + large + ',1 ' + x2 + ',' + y2 + ' Z" fill="' + color + '"/>';
+    }
+    var pA = nbActif / nbTotal * 360, pI = nbImpaye / nbTotal * 360, pL = nbLibre / nbTotal * 360;
+    var pie = '<svg viewBox="0 0 100 100" width="120" height="120">' +
+      _arc(50,50,48, -90, -90 + pA, 'var(--green)') +
+      _arc(50,50,48, -90 + pA, -90 + pA + pI, 'var(--red)') +
+      _arc(50,50,48, -90 + pA + pI, -90 + pA + pI + pL, 'var(--text3)') +
+      '<circle cx="50" cy="50" r="28" fill="var(--bg3)"/>' +
+      '<text x="50" y="54" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">' + locs.length + '</text>' +
+      '</svg>';
+
+    // ── Graphe bar mensuel ────────────────────────────────────
+    var grapheBar = window.IG.dashboard ? window.IG.dashboard.renderGrapheMensuel(kpis.recettesParMois||{}, kpis.loyerTheorique||0) : '';
+
+    // ── Répartition par immeuble ─────────────────────────────
+    var immeubles = _data.immeubles || [];
+    var parImmeuble = immeubles.map(function(imm) {
+      var locsImm = locs.filter(function(l){ return l.immeuble_id == imm.id && l.statut !== 'libre'; });
+      var loyer = locsImm.reduce(function(s,l){ return s + (l.loyer||0); }, 0);
+      return { nom: imm.nom || imm.id, nb: locsImm.length, loyer: loyer };
+    }).filter(function(i){ return i.nb > 0; });
+
+    var tableImm = parImmeuble.length ? '<div class="card" style="margin-top:16px">' +
+      '<div class="card-header"><div class="card-title">🏢 ' + t('Par immeuble') + '</div></div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+      '<thead><tr style="background:var(--bg4);font-size:11px;color:var(--text3)">' +
+      '<th style="padding:8px 12px;text-align:left">' + t('Immeuble') + '</th>' +
+      '<th style="padding:8px 12px;text-align:center">' + t('Locataires') + '</th>' +
+      '<th style="padding:8px 12px;text-align:right">' + t('Loyer théorique') + '</th></tr></thead><tbody>' +
+      parImmeuble.map(function(i,idx){
+        return '<tr style="border-bottom:1px solid var(--border2);background:' + (idx%2?'var(--bg4)':'transparent') + '">' +
+          '<td style="padding:8px 12px;font-weight:600">' + esc(i.nom) + '</td>' +
+          '<td style="padding:8px 12px;text-align:center">' + i.nb + '</td>' +
+          '<td style="padding:8px 12px;text-align:right">' + fmt(i.loyer) + '</td></tr>';
+      }).join('') +
+      '</tbody></table></div>' : '';
+
     var html = '<div class="content">' +
       '<h2 style="font-size:17px;font-weight:700;margin-bottom:20px">📈 ' + t('Statistiques') + '</h2>' +
+
+      // KPIs
       '<div class="metrics-grid" style="margin-bottom:20px">' +
-      '<div class="metric-card"><div class="metric-label">👥 Locataires actifs</div><div class="metric-value">' + (kpis.actifs||0) + '</div><div class="metric-sub">' + (kpis.libres||0) + ' locaux libres</div></div>' +
-      '<div class="metric-card"><div class="metric-label">💰 Loyer théorique/mois</div><div class="metric-value accent" style="font-size:17px">' + fmt(kpis.loyerTheorique||0) + '</div></div>' +
-      '<div class="metric-card"><div class="metric-label">✅ Encaissé ce mois</div><div class="metric-value green" style="font-size:17px">' + fmt(kpis.recetteMois||0) + '</div></div>' +
-      '<div class="metric-card"><div class="metric-label">⚠️ Total impayés cumulés</div><div class="metric-value red" style="font-size:17px">' + fmt(kpis.totalDu||0) + '</div></div>' +
-      '<div class="metric-card"><div class="metric-label">📈 Taux recouvrement</div><div class="metric-value" style="color:' + ((kpis.txRecouvrement||0)>=80?'var(--green)':'var(--red)') + '">' + (kpis.txRecouvrement||0) + '%</div></div>' +
-      '<div class="metric-card"><div class="metric-label">📅 Recette annuelle</div><div class="metric-value accent" style="font-size:16px">' + fmt(kpis.recetteAnnuelle||0) + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">👥 ' + t('Locataires actifs') + '</div><div class="metric-value">' + (kpis.actifs||0) + '</div><div class="metric-sub">' + (kpis.libres||0) + ' ' + t('libres') + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">💰 ' + t('Loyer théorique/mois') + '</div><div class="metric-value accent" style="font-size:17px">' + fmt(kpis.loyerTheorique||0) + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">✅ ' + t('Encaissé ce mois') + '</div><div class="metric-value green" style="font-size:17px">' + fmt(kpis.recetteMois||0) + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">⚠️ ' + t('Impayés cumulés') + '</div><div class="metric-value red" style="font-size:17px">' + fmt(kpis.totalDu||0) + '</div></div>' +
+      '<div class="metric-card"><div class="metric-label">📈 ' + t('Taux recouvrement') + '</div><div class="metric-value" style="color:' + (tx>=80?'var(--green)':'var(--red)') + '">' + tx + '%</div></div>' +
+      '<div class="metric-card"><div class="metric-label">📅 ' + t('Recette annuelle') + '</div><div class="metric-value accent" style="font-size:16px">' + fmt(kpis.recetteAnnuelle||0) + '</div></div>' +
       '</div>' +
-      '<div class="card"><div class="card-header"><div class="card-title">📊 Recettes mensuelles</div></div>' +
-      '<div style="padding-top:8px">' + (window.IG.dashboard ? window.IG.dashboard.renderGrapheMensuel(kpis.recettesParMois||{}, kpis.loyerTheorique||0) : '') + '</div></div>' +
+
+      // Camembert + légende
+      '<div class="card" style="margin-bottom:16px">' +
+      '<div class="card-header"><div class="card-title">🍩 ' + t('Statuts locataires') + '</div></div>' +
+      '<div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;padding:8px 0">' +
+      pie +
+      '<div style="display:flex;flex-direction:column;gap:8px">' +
+      '<div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:50%;background:var(--green)"></div><span style="font-size:13px">' + t('Actifs') + ' — <strong>' + nbActif + '</strong></span></div>' +
+      '<div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:50%;background:var(--red)"></div><span style="font-size:13px">' + t('Impayés') + ' — <strong>' + nbImpaye + '</strong></span></div>' +
+      '<div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:50%;background:var(--text3)"></div><span style="font-size:13px">' + t('Libres') + ' — <strong>' + nbLibre + '</strong></span></div>' +
+      '</div></div></div>' +
+
+      // Bar mensuel
+      '<div class="card" style="margin-bottom:16px"><div class="card-header"><div class="card-title">📊 ' + t('Recettes mensuelles') + '</div></div>' +
+      '<div style="padding-top:8px">' + grapheBar + '</div></div>' +
+
+      // Par immeuble
+      tableImm +
+
       '</div>';
     content.innerHTML = html;
   }
@@ -1098,28 +1176,63 @@ window.IG.app = (function() {
   function _renderCorbeille() {
     var content = document.getElementById('page-content');
     if (!content) return;
-    var html = '<div class="content"><h2 style="font-size:17px;font-weight:700;margin-bottom:20px">🗑️ Corbeille</h2>';
-    if (window.IG.db) {
-      window.IG.db.select('corbeille').then(function(items) {
-        if (!items || !items.length) {
-          document.getElementById('corbeille-body').innerHTML = '<div class="card" style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:36px;margin-bottom:10px">🗑️</div><p>La corbeille est vide</p></div>';
-          return;
-        }
-        var rows = items.map(function(item) {
-          var d = item.locataire_data || {};
-          return '<div class="card" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">' +
-            '<div><strong>' + esc(d.nom || '—') + '</strong>' +
-            '<div style="font-size:12px;color:var(--text3)">' + esc(d.appt || '') + ' — ' + window.IG.utils.formatMontant(d.loyer || 0) + '</div></div>' +
-            '<button onclick="window.IG.app._restaurer(' + item.id + ')" style="padding:6px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:12px">Restaurer</button>' +
-            '</div>';
-        }).join('');
-        document.getElementById('corbeille-body').innerHTML = rows;
-      }).catch(function() {
-        document.getElementById('corbeille-body').innerHTML = '<div class="alert alert-yellow">Corbeille non disponible hors connexion.</div>';
-      });
-    }
-    html += '<div id="corbeille-body"><div class="card" style="text-align:center;padding:40px"><div class="spinner" style="margin:0 auto"></div></div></div></div>';
+    var html = '<div class="content">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
+      '<h2 style="font-size:17px;font-weight:700">🗑️ ' + t('Corbeille') + '</h2>' +
+      '<button onclick="window.IG.app._viderCorbeille()" style="padding:7px 14px;border-radius:8px;border:1px solid var(--red);color:var(--red);background:transparent;cursor:pointer;font-size:12px">' + t('Vider la corbeille') + '</button>' +
+      '</div>' +
+      '<div id="corbeille-body"><div class="card" style="text-align:center;padding:40px"><div class="spinner" style="margin:0 auto"></div></div></div></div>';
     content.innerHTML = html;
+    _loadCorbeille();
+  }
+
+  async function _loadCorbeille() {
+    var el = document.getElementById('corbeille-body');
+    if (!el) return;
+    try {
+      var items = await window.IG.db.select('corbeille');
+      if (!items || !items.length) {
+        el.innerHTML = '<div class="card" style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:36px;margin-bottom:10px">🗑️</div><p>' + t('La corbeille est vide') + '</p></div>';
+        return;
+      }
+      var rows = items.map(function(item) {
+        var d = item.locataire_data || {};
+        var dateSuppr = item.date_suppression ? window.IG.utils.formatDate(item.date_suppression) : '';
+        return '<div class="card" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
+          '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:700">' + esc(d.nom || '—') + '</div>' +
+          '<div style="font-size:12px;color:var(--text3)">' + esc(d.appt || '') + (d.loyer ? ' · ' + window.IG.utils.formatMontant(d.loyer) + '/mois' : '') + (dateSuppr ? ' · ' + t('Supprimé le') + ' ' + dateSuppr : '') + '</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;flex-shrink:0">' +
+          '<button onclick="window.IG.app._restaurer(' + item.id + ')" style="padding:6px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:12px;font-weight:600">↩ ' + t('Restaurer') + '</button>' +
+          '<button onclick="window.IG.app._supprimerDefinitivement(' + item.id + ')" style="padding:6px 12px;border-radius:8px;border:none;background:var(--red);color:#fff;cursor:pointer;font-size:12px;font-weight:600">✕ ' + t('Supprimer') + '</button>' +
+          '</div></div>';
+      }).join('');
+      el.innerHTML = rows;
+    } catch(e) {
+      el.innerHTML = '<div class="alert alert-yellow">' + t('Corbeille non disponible hors connexion.') + '</div>';
+    }
+  }
+
+  async function _supprimerDefinitivement(corbeilleId) {
+    if (!confirm(t('Supprimer définitivement ? Cette action est irréversible.'))) return;
+    try {
+      await window.IG.db.remove('corbeille', corbeilleId);
+      window.IG.utils.showToast(t('Supprimé définitivement'), 'red');
+      _loadCorbeille();
+      _updateCorbeilleBadge();
+    } catch(e) { window.IG.utils.showToast('Erreur: ' + e.message, 'red'); }
+  }
+
+  async function _viderCorbeille() {
+    if (!confirm(t('Vider toute la corbeille ? Cette action est irréversible.'))) return;
+    try {
+      var items = await window.IG.db.select('corbeille');
+      await Promise.all((items || []).map(function(item) { return window.IG.db.remove('corbeille', item.id); }));
+      window.IG.utils.showToast(t('Corbeille vidée'), 'red');
+      _loadCorbeille();
+      _updateCorbeilleBadge();
+    } catch(e) { window.IG.utils.showToast('Erreur: ' + e.message, 'red'); }
   }
 
   // ── Déclarations (gestionnaire valide les paiements locataires) ──
@@ -1190,30 +1303,39 @@ window.IG.app = (function() {
 
   async function _validerDeclaration(id, statut) {
     try {
-      // Mettre à jour le statut de la déclaration
+      var decls = await window.IG.db.select('declarations', { id: id });
+      var d = decls && decls[0];
       await window.IG.db.update('declarations', id, { statut: statut });
 
-      if (statut === 'validated') {
-        // Récupérer la déclaration pour créer le paiement
-        var decls = await window.IG.db.select('declarations', { id: id });
-        var d = decls && decls[0];
-        if (d) {
-          await window.IG.db.insert('paiements', [{
-            locataire_id: d.locataire_id,
-            immeuble_id: d.immeuble_id,
-            mois: d.mois_c,
-            annee: d.annee_c,
-            montant: d.montant,
-            mode: d.mode || 'especes',
-            reference: d.reference || '',
-            note: 'Déclaration validée'
-          }]);
+      if (statut === 'validated' && d) {
+        await window.IG.db.insert('paiements', [{
+          locataire_id: d.locataire_id,
+          immeuble_id:  d.immeuble_id || null,
+          mois:         d.mois_c,
+          annee:        d.annee_c,
+          montant:      d.montant,
+          mode:         d.mode || 'especes',
+          reference:    d.reference || '',
+          note:         'Déclaration validée'
+        }]);
+        // Notifier le locataire via OneSignal
+        if (typeof sendOneSignalNotif === 'function' && d.locataire_id) {
+          sendOneSignalNotif('loc_' + d.locataire_id, '✅ Paiement confirmé',
+            'Votre paiement de ' + window.IG.utils.formatMontant(d.montant) + ' a été validé.',
+            { type: 'paiement_valide', decl_id: String(id) });
         }
-        window.IG.utils.showToast('Déclaration validée, paiement créé ✓', 'green');
-      } else {
-        window.IG.utils.showToast('Déclaration rejetée', 'red');
+        window.IG.utils.showToast(t('Déclaration validée, paiement créé ✓'), 'green');
+      } else if (statut === 'rejected' && d) {
+        // Notifier le locataire du rejet
+        if (typeof sendOneSignalNotif === 'function' && d.locataire_id) {
+          sendOneSignalNotif('loc_' + d.locataire_id, '⚠️ Déclaration rejetée',
+            'Votre déclaration de ' + window.IG.utils.formatMontant(d.montant) + ' a été rejetée. Contactez votre gestionnaire.',
+            { type: 'paiement_rejete', decl_id: String(id) });
+        }
+        window.IG.utils.showToast(t('Déclaration rejetée'), 'red');
       }
       _loadDeclarations();
+      _updateDeclBadge();
       await _loadData();
     } catch(e) { window.IG.utils.showToast('Erreur: ' + e.message, 'red'); }
   }
@@ -1222,11 +1344,10 @@ window.IG.app = (function() {
   function _renderMessages() {
     var content = document.getElementById('page-content');
     if (!content) return;
-    var session = window.IG.auth ? window.IG.auth.getSession() : {};
     var html = '<div class="content">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
-      '<h2 style="font-size:17px;font-weight:700">💬 Messages internes</h2>' +
-      '<button onclick="window.IG.app._nouveauMessage()" style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:12px;font-weight:600">✉️ Nouveau</button>' +
+      '<h2 style="font-size:17px;font-weight:700">💬 ' + t('Messages internes') + '</h2>' +
+      '<button onclick="window.IG.app._nouveauMessage()" style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:12px;font-weight:600">✉️ ' + t('Nouveau') + '</button>' +
       '</div><div id="messages-body"><div class="card" style="text-align:center;padding:40px"><div class="spinner" style="margin:0 auto"></div></div></div></div>';
     content.innerHTML = html;
     _loadMessages();
@@ -1235,23 +1356,26 @@ window.IG.app = (function() {
   async function _loadMessages() {
     var el = document.getElementById('messages-body');
     if (!el) return;
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var userId = session.userId || '';
     try {
       var msgs = await window.IG.db.select('messages_internes');
       if (!msgs || !msgs.length) {
-        el.innerHTML = '<div class="card" style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:36px;margin-bottom:10px">💬</div><p>Aucun message</p></div>';
+        el.innerHTML = '<div class="card" style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:36px;margin-bottom:10px">💬</div><p>' + t('Aucun message') + '</p></div>';
         return;
       }
       msgs.sort(function(a,b) { return new Date(b.created_at) - new Date(a.created_at); });
       el.innerHTML = msgs.map(function(m) {
-        var lu = m.lu_par && m.lu_par.includes(window.IG.auth ? window.IG.auth.getSession().userId : '');
-        return '<div class="card" style="margin-bottom:10px;' + (!lu ? 'border-left:3px solid var(--accent)' : '') + '">' +
-          '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-          '<div>' +
-          '<div style="font-weight:700;font-size:13px' + (!lu ? ';color:var(--accent)' : '') + '">' + esc(m.sujet || 'Message') + '</div>' +
-          '<div style="font-size:12px;color:var(--text3);margin-top:2px">' + esc(m.de_nom || 'Système') + ' · ' + window.IG.utils.formatDate(m.created_at) + '</div>' +
-          '<div style="font-size:13px;margin-top:6px">' + esc(m.contenu || '') + '</div>' +
+        var lu = Array.isArray(m.lu_par) && m.lu_par.includes(userId);
+        var destLabel = m.pour_nom ? (' → ' + esc(m.pour_nom)) : '';
+        return '<div class="card" onclick="window.IG.app._marquerLu(' + m.id + ')" style="margin-bottom:10px;cursor:pointer;' + (!lu ? 'border-left:3px solid var(--accent)' : '') + '">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' +
+          '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:700;font-size:13px' + (!lu ? ';color:var(--accent)' : '') + '">' + esc(m.sujet || t('Message')) + '</div>' +
+          '<div style="font-size:12px;color:var(--text3);margin-top:2px">' + esc(m.de_nom || t('Système')) + destLabel + ' · ' + window.IG.utils.formatDate(m.created_at) + '</div>' +
+          '<div style="font-size:13px;margin-top:6px;white-space:pre-wrap">' + esc(m.contenu || '') + '</div>' +
           '</div>' +
-          (!lu ? '<span style="font-size:10px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:99px;white-space:nowrap">Nouveau</span>' : '') +
+          (!lu ? '<span style="font-size:10px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:99px;white-space:nowrap;flex-shrink:0">' + t('Nouveau') + '</span>' : '') +
           '</div></div>';
       }).join('');
     } catch(e) {
@@ -1259,31 +1383,64 @@ window.IG.app = (function() {
     }
   }
 
+  async function _marquerLu(msgId) {
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var userId = session.userId || '';
+    if (!userId || !msgId) return;
+    try {
+      var msgs = await window.IG.db.select('messages_internes', { id: msgId });
+      var m = msgs && msgs[0];
+      if (!m) return;
+      var luPar = Array.isArray(m.lu_par) ? m.lu_par : [];
+      if (luPar.includes(userId)) return; // déjà lu
+      luPar.push(userId);
+      await window.IG.db.update('messages_internes', msgId, { lu_par: luPar });
+      _loadMessages();
+    } catch(_) {}
+  }
+
   function _nouveauMessage() {
     var session = window.IG.auth ? window.IG.auth.getSession() : {};
-    var html = '<h3 style="font-size:15px;font-weight:700;margin-bottom:14px">✉️ Nouveau message interne</h3>' +
-      '<label style="font-size:12px;color:var(--text3)">SUJET</label>' +
-      '<input id="msg-sujet" placeholder="Sujet du message" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin:4px 0 12px;box-sizing:border-box">' +
-      '<label style="font-size:12px;color:var(--text3)">MESSAGE</label>' +
-      '<textarea id="msg-contenu" rows="4" placeholder="Contenu du message..." style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin:4px 0 14px;box-sizing:border-box;resize:vertical"></textarea>' +
+    var locs = (_data.locataires || []).filter(function(l) { return l.statut !== 'libre'; });
+    var destOptions = '<option value="">— ' + t('Tous (broadcast)') + ' —</option>' +
+      locs.map(function(l) { return '<option value="loc_' + l.id + '" data-nom="' + esc(l.nom) + '">' + esc(l.nom) + ' (' + esc(l.appt || '') + ')</option>'; }).join('');
+
+    var html = '<h3 style="font-size:15px;font-weight:700;margin-bottom:14px">✉️ ' + t('Nouveau message interne') + '</h3>' +
+      '<label style="font-size:12px;color:var(--text3)">' + t('DESTINATAIRE') + '</label>' +
+      '<select id="msg-dest" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin:4px 0 12px;box-sizing:border-box">' + destOptions + '</select>' +
+      '<label style="font-size:12px;color:var(--text3)">' + t('SUJET') + '</label>' +
+      '<input id="msg-sujet" placeholder="' + t('Sujet du message') + '" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin:4px 0 12px;box-sizing:border-box">' +
+      '<label style="font-size:12px;color:var(--text3)">' + t('MESSAGE') + '</label>' +
+      '<textarea id="msg-contenu" rows="4" placeholder="' + t('Contenu du message...') + '" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin:4px 0 14px;box-sizing:border-box;resize:vertical"></textarea>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-      '<button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Annuler</button>' +
-      '<button id="msg-send" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Envoyer</button>' +
+      '<button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">' + t('Annuler') + '</button>' +
+      '<button id="msg-send" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">' + t('Envoyer') + '</button>' +
       '</div>';
     var modal = window.IG.utils.showModal(html, { width: '480px' });
     modal.box.querySelector('#msg-send').addEventListener('click', async function() {
+      var destEl = modal.box.querySelector('#msg-dest');
+      var destVal = destEl.value;
+      var destNom = destVal ? (destEl.options[destEl.selectedIndex].getAttribute('data-nom') || '') : '';
       var sujet = modal.box.querySelector('#msg-sujet').value.trim();
       var contenu = modal.box.querySelector('#msg-contenu').value.trim();
-      if (!contenu) { window.IG.utils.showToast('Message vide', 'red'); return; }
+      if (!contenu) { window.IG.utils.showToast(t('Message vide'), 'red'); return; }
       try {
         await window.IG.db.insert('messages_internes', [{
-          sujet: sujet || 'Sans sujet',
-          contenu: contenu,
+          sujet:      sujet || t('Sans sujet'),
+          contenu:    contenu,
           de_user_id: session.userId || '',
-          de_nom: session.nom || '',
-          lu_par: []
+          de_nom:     session.nom || session.nomCabinet || '',
+          pour_id:    destVal || null,
+          pour_nom:   destNom || null,
+          lu_par:     []
         }]);
-        window.IG.utils.showToast('Message envoyé ✓', 'green');
+        // Notif push si destinataire locataire identifié
+        if (destVal && destVal.startsWith('loc_') && typeof sendOneSignalNotif === 'function') {
+          var locId = destVal.replace('loc_', '');
+          sendOneSignalNotif(destVal, '💬 ' + t('Nouveau message'),
+            (session.nom || '') + ': ' + sujet, { type: 'message' });
+        }
+        window.IG.utils.showToast(t('Message envoyé ✓'), 'green');
         modal.close();
         _loadMessages();
       } catch(e) { window.IG.utils.showToast('Erreur: ' + e.message, 'red'); }
@@ -1296,11 +1453,16 @@ window.IG.app = (function() {
       if (!items || !items.length) return;
       var item = items[0];
       if (item.locataire_data) {
-        await window.IG.db.insert('locataires', [item.locataire_data]);
+        // Supprimer l'id pour forcer un insert propre (évite conflit sur PK)
+        var locData = Object.assign({}, item.locataire_data);
+        delete locData.id;
+        await window.IG.db.insert('locataires', [locData]);
       }
       await window.IG.db.remove('corbeille', corbeilleId);
-      window.IG.utils.showToast('Locataire restauré ✓', 'green');
-      showPage('corbeille');
+      window.IG.utils.showToast(t('Locataire restauré ✓'), 'green');
+      _loadCorbeille();
+      _updateCorbeilleBadge();
+      await _loadData();
     } catch(e) {
       window.IG.utils.showToast('Erreur restauration : ' + e.message, 'red');
     }
@@ -1525,10 +1687,10 @@ window.IG.app = (function() {
     authGoStep, doLogin, joinV2, registerV2, browseMarketplace,
     toggleSidebar, closeSidebar, toggleSidebarSection, toggleDarkMode, lockScreen, openGuide,
     toggleAIChat, sendAIMessage, aiQuickAction,
-    _refreshPaiements, _restaurer,
+    _refreshPaiements, _restaurer, _supprimerDefinitivement, _viderCorbeille, _loadCorbeille,
     _genererInvitation, _toggleUser, _appliquerPromo,
     _loadDeclarations, _validerDeclaration,
-    _loadMessages, _nouveauMessage,
+    _loadMessages, _nouveauMessage, _marquerLu,
     _sauvegarderModePublication, _chargerModePublication,
     getData: function() { return _data; },
     topbarAction, _showMobileNav,
