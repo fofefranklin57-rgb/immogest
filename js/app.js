@@ -29,8 +29,8 @@ window.IG.app = (function() {
     await _loadData();
     showPage('dashboard');
 
-    // Publicités plan gratuit
-    if (window.IG.ads) window.IG.ads.init();
+    // Publicités plan gratuit + expiry check
+    if (window.IG.ads) { window.IG.ads.init(); window.IG.ads.checkExpiry(); }
   }
 
   function _showAppShell() {
@@ -439,6 +439,7 @@ window.IG.app = (function() {
       _updateRelancesBadge();
       _updateCorbeilleBadge();
       _updateDeclBadge();
+      if (window.IG.ads) window.IG.ads.renderUsageWidget();
     } catch(e) {
       _setSyncStatus('error');
       // Fallback localStorage

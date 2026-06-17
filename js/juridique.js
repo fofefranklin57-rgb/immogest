@@ -147,7 +147,7 @@ window.IG.juridique = (function() {
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">' +
       '<div style="background:var(--bg4);border-radius:10px;padding:14px;text-align:center">' +
       '<div style="font-size:24px">' + badge.emoji + '</div>' +
-      '<div style="font-size:22px;font-weight:700;color:' + badge.color + '">' + score + '/100</div>' +
+      '<div style="font-size:22px">' + (window.IG.ads ? window.IG.ads.scoreDisplay(score) : score + '/100') + '</div>' +
       '<div style="font-size:11px;color:var(--text3)">Score locataire</div>' +
       '</div>' +
       '<div style="background:var(--red-bg);border-radius:10px;padding:14px;text-align:center">' +
