@@ -95,76 +95,183 @@ window.IG.paiements = (function() {
     return lignes;
   }
 
-  // ── Rendu fiche de suivi ─────────────────────────────────────
+  // ── Rendu fiche de suivi (CDC complet) ───────────────────────
   function renderFiche(loc, versements) {
     var lignes = calculerFiche(loc, versements);
-    var imm = window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null;
+    var imm    = window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null;
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var cabinet = session.nomCabinet || session.nom || 'ImmoGest';
 
-    var html = '<div style="font-size:14px">' +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">' +
-      '<div>' +
-      '<h3 style="font-size:17px;font-weight:700;margin-bottom:4px">' + esc(loc.nom) + '</h3>' +
-      '<div style="color:var(--text3);font-size:12px">' +
-      esc(imm ? (imm.nom_immeuble || imm.nom) : '') + ' — Local ' + esc(loc.appt || '?') + ' — ' + fmt(loc.loyer) + '/mois' +
+    // Solde cumulé
+    var totalDu   = lignes.reduce(function(s, l) { return s + (l.reste || 0); }, 0);
+    var arrieres  = parseFloat(loc.arrieres) || 0;
+    var soldeFinal = totalDu + arrieres;
+
+    // Score fiabilité
+    var nbMois  = lignes.length;
+    var nbPayes = lignes.filter(function(l) { return l.statut === 'Payé'; }).length;
+    var score   = nbMois ? Math.round((nbPayes / nbMois) * 100) : 100;
+    var scoreCouleur = score >= 80 ? 'var(--green)' : score >= 50 ? '#f39c12' : 'var(--red)';
+    var scoreLabel   = score >= 80 ? '😊 Fiable' : score >= 50 ? '😐 Moyen' : '😟 À risque';
+
+    // ── En-tête ───────────────────────────────────────────────
+    var html = '<div id="fiche-print-zone" style="font-size:13px">' +
+      // Barre actions
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:8px;flex-wrap:wrap">' +
+      '<h3 style="font-size:16px;font-weight:700;margin:0">📋 ' + t('Fiche de suivi') + '</h3>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+      '<button onclick="window.IG.paiements.afficherFormulaire(' + loc.id + ')" style="padding:7px 13px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:12px;font-weight:600;cursor:pointer">+ ' + t('Paiement') + '</button>' +
+      '<button onclick="window.IG.paiements.imprimerFiche()" style="padding:7px 13px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;cursor:pointer">🖨️ PDF</button>' +
+      (window.IG.ai ? '<button onclick="window.IG.ai.analyserLocataire(' + loc.id + ')" style="padding:7px 13px;border-radius:8px;border:none;background:linear-gradient(135deg,#7C3AED,#0E6AAF);color:#fff;font-size:12px;font-weight:600;cursor:pointer">✨ IA</button>' : '') +
       '</div></div>' +
-      '<button onclick="window.IG.paiements.afficherFormulaire(' + loc.id + ')" ' +
-        'style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:12px;font-weight:600;cursor:pointer">+ ' + t('Paiement') + '</button>' +
-      '</div>';
 
+      // Infos locataire
+      '<div style="background:var(--bg3);border-radius:12px;padding:14px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+      _ficheInfo('👤 ' + t('Locataire'), esc(loc.nom)) +
+      _ficheInfo('🏢 ' + t('Immeuble'), esc(imm ? (imm.nom_immeuble || imm.nom) : '—')) +
+      _ficheInfo('🚪 ' + t('Local'), esc(loc.appt || '—')) +
+      _ficheInfo('💰 ' + t('Loyer'), fmt(loc.loyer) + '/mois') +
+      _ficheInfo('📅 ' + t('Entrée'), loc.entree ? window.IG.utils.formatDate(loc.entree) : '—') +
+      _ficheInfo('📞 ' + t('Téléphone'), esc(loc.telephone || '—')) +
+      (loc.caution ? _ficheInfo('🔒 ' + t('Caution'), fmt(loc.caution)) : '') +
+      _ficheInfo('🏷️ ' + t('Cabinet'), esc(cabinet)) +
+      '</div>' +
+
+      // Solde + score
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">' +
+      '<div style="background:' + (soldeFinal > 0 ? 'var(--red-bg)' : 'var(--green-bg)') + ';border-radius:10px;padding:14px;text-align:center">' +
+      '<div style="font-size:10px;text-transform:uppercase;font-weight:700;color:var(--text3);margin-bottom:4px">' + (soldeFinal > 0 ? '⚠️ ' + t('Total dû') : '✅ ' + t('À jour')) + '</div>' +
+      '<div style="font-size:20px;font-weight:800;color:' + (soldeFinal > 0 ? 'var(--red)' : 'var(--green)') + '">' + fmt(Math.abs(soldeFinal)) + '</div>' +
+      '</div>' +
+      '<div style="background:var(--bg3);border-radius:10px;padding:14px;text-align:center">' +
+      '<div style="font-size:10px;text-transform:uppercase;font-weight:700;color:var(--text3);margin-bottom:4px">🎯 ' + t('Score fiabilité') + '</div>' +
+      '<div style="font-size:20px;font-weight:800;color:' + scoreCouleur + '">' + score + '%</div>' +
+      '<div style="font-size:11px;color:' + scoreCouleur + ';margin-top:2px">' + scoreLabel + '</div>' +
+      '</div></div>';
+
+    // ── Tableau historique ────────────────────────────────────
     if (!lignes.length) {
       html += '<p style="color:var(--text3);text-align:center;padding:20px">' + t('Pas encore de données') + '</p>';
     } else {
       html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">' +
         '<thead><tr style="background:var(--bg3);color:var(--text3);text-transform:uppercase;font-size:10px">' +
-        '<th style="padding:8px 12px;text-align:left">' + t('Période') + '</th>' +
-        '<th style="padding:8px 12px;text-align:center">' + t('Statut') + '</th>' +
-        '<th style="padding:8px 12px;text-align:right">' + t('Versement(s)') + '</th>' +
-        '<th style="padding:8px 12px;text-align:right">' + t('Reste') + '</th>' +
+        '<th style="padding:8px 10px;text-align:left">' + t('Période') + '</th>' +
+        '<th style="padding:8px 10px;text-align:right">' + t('Loyer dû') + '</th>' +
+        '<th style="padding:8px 10px;text-align:center">' + t('Statut') + '</th>' +
+        '<th style="padding:8px 10px;text-align:right">' + t('Versé') + '</th>' +
+        '<th style="padding:8px 10px;text-align:right">' + t('Reste') + '</th>' +
+        '<th style="padding:8px 10px;text-align:center">🖨️</th>' +
         '</tr></thead><tbody>';
 
+      // Ligne arriérés antérieurs si présents
+      if (arrieres > 0) {
+        html += '<tr style="border-bottom:1px solid var(--border2);background:var(--red-bg)">' +
+          '<td style="padding:8px 10px;font-weight:700;color:var(--red)">⚠️ ' + t('Arriérés antérieurs') + '</td>' +
+          '<td style="padding:8px 10px;text-align:right;color:var(--red)">' + fmt(arrieres) + '</td>' +
+          '<td style="padding:8px 10px;text-align:center"><span style="background:var(--red-bg);color:var(--red);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">' + t('Impayé') + '</span></td>' +
+          '<td colspan="3" style="padding:8px 10px;text-align:right;font-weight:600;color:var(--red)">' + fmt(arrieres) + '</td>' +
+          '</tr>';
+      }
+
       lignes.forEach(function(lg) {
-        var color = lg.statut === 'Payé' ? 'var(--green)' : lg.statut === 'Partiel' ? 'var(--yellow)' : 'var(--red)';
-        var bg    = lg.statut === 'Payé' ? 'var(--green-bg)' : lg.statut === 'Partiel' ? 'var(--yellow-bg)' : 'var(--red-bg)';
-        var txt   = lg.versements.map(function(v) {
-          return fmt(v.montant) + (v.date ? ' (' + window.IG.utils.formatDate(v.date) + ')' : '');
+        var color = lg.statut === 'Payé' ? 'var(--green)' : lg.statut === 'Partiel' ? '#f39c12' : 'var(--red)';
+        var bg    = lg.statut === 'Payé' ? 'var(--green-bg)' : lg.statut === 'Partiel' ? 'rgba(243,156,18,0.1)' : 'var(--red-bg)';
+        var verseTxt = lg.versements.map(function(v) {
+          return fmt(v.montant) + (v.date ? ' <span style="color:var(--text3);font-size:10px">(' + window.IG.utils.formatDate(v.date) + ')</span>' : '');
         }).join('<br>') || '—';
+        var loyer = parseFloat(loc.loyer) || 0;
 
         html += '<tr style="border-bottom:1px solid var(--border2)">' +
-          '<td style="padding:8px 12px;font-weight:600">' + esc(lg.periode) + '</td>' +
-          '<td style="padding:8px 12px;text-align:center">' +
+          '<td style="padding:8px 10px;font-weight:600">' + esc(lg.periode) + '</td>' +
+          '<td style="padding:8px 10px;text-align:right;color:var(--text2)">' + fmt(loyer) + '</td>' +
+          '<td style="padding:8px 10px;text-align:center">' +
           '<span style="background:' + bg + ';color:' + color + ';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">' + t(lg.statut) + '</span>' +
           '</td>' +
-          '<td style="padding:8px 12px;text-align:right">' + txt + '</td>' +
-          '<td style="padding:8px 12px;text-align:right;font-weight:600;color:' + (lg.reste > 0 ? 'var(--red)' : 'var(--green)') + '">' +
+          '<td style="padding:8px 10px;text-align:right">' + verseTxt + '</td>' +
+          '<td style="padding:8px 10px;text-align:right;font-weight:700;color:' + (lg.reste > 0 ? 'var(--red)' : 'var(--text3)') + '">' +
           (lg.reste > 0 ? fmt(lg.reste) : '—') + '</td>' +
+          '<td style="padding:8px 10px;text-align:center">' +
+          (lg.versements.length ? '<button onclick="window.IG.paiements.imprimerRecu(' + loc.id + ',' + lg.mois + ',' + lg.annee + ')" style="border:none;background:none;cursor:pointer;font-size:14px" title="' + t('Reçu') + '">🖨️</button>' : '') +
+          '</td>' +
           '</tr>';
       });
-      html += '</tbody></table></div>';
-    }
 
-    // Historique versements bruts
-    if (versements.length) {
-      html += '<details style="margin-top:16px"><summary style="cursor:pointer;font-size:12px;color:var(--text3);font-weight:600">' +
-        t('Historique versements') + ' (' + versements.length + ')</summary>' +
-        '<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">';
-      versements.slice().reverse().forEach(function(v) {
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg3);border-radius:8px;padding:8px 12px;font-size:12px">' +
-          '<div>' +
-          '<span style="font-weight:600">' + fmt(v.montant) + '</span>' +
-          '<span style="color:var(--text3);margin-left:8px">' + esc(v.mode_paiement || 'espèces') + '</span>' +
-          (v.note ? '<span style="color:var(--text3);margin-left:8px;font-style:italic">' + esc(v.note) + '</span>' : '') +
-          '</div>' +
-          '<div style="color:var(--text3)">' + window.IG.utils.formatDate(v.date_paiement) + '' +
-          '<button onclick="window.IG.paiements.annuler(' + v.id + ')" title="' + t('Supprimer') + '" ' +
-            'style="margin-left:8px;border:none;background:none;color:var(--red);cursor:pointer;font-size:14px">×</button>' +
-          '</div></div>';
-      });
-      html += '</div></details>';
+      // Ligne total
+      var totalVerse = lignes.reduce(function(s, l) { return s + l.cumul; }, 0);
+      html += '<tr style="background:var(--bg3);font-weight:700">' +
+        '<td style="padding:8px 10px">' + t('TOTAL') + '</td>' +
+        '<td style="padding:8px 10px;text-align:right">' + fmt((parseFloat(loc.loyer)||0) * nbMois + arrieres) + '</td>' +
+        '<td></td>' +
+        '<td style="padding:8px 10px;text-align:right">' + fmt(totalVerse) + '</td>' +
+        '<td style="padding:8px 10px;text-align:right;color:' + (soldeFinal > 0 ? 'var(--red)' : 'var(--green)') + '">' + fmt(soldeFinal) + '</td>' +
+        '<td></td>' +
+        '</tr>';
+      html += '</tbody></table></div>';
     }
 
     html += '<div id="ig-ad-fiche" style="margin-top:16px;text-align:center"></div>';
     html += '</div>';
     return html;
+  }
+
+  function _ficheInfo(label, val) {
+    return '<div><div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:2px">' + label + '</div>' +
+      '<div style="font-size:12px;font-weight:600">' + val + '</div></div>';
+  }
+
+  function imprimerFiche() {
+    var zone = document.getElementById('fiche-print-zone');
+    if (!zone) return;
+    var w = window.open('', '_blank', 'width=800,height=900');
+    w.document.write('<html><head><title>Fiche de suivi</title>' +
+      '<style>body{font-family:Arial,sans-serif;font-size:12px;padding:20px;color:#111}' +
+      'table{width:100%;border-collapse:collapse}th,td{padding:6px 10px;border:1px solid #ddd}' +
+      'th{background:#f5f5f5;font-weight:700}button{display:none}</style></head>' +
+      '<body>' + zone.innerHTML + '</body></html>');
+    w.document.close();
+    w.focus();
+    setTimeout(function() { w.print(); }, 400);
+  }
+
+  function imprimerRecu(locId, mois, annee) {
+    var loc = window.IG.locataires ? window.IG.locataires.getById(locId) : null;
+    if (!loc) return;
+    var imm    = window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null;
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var cabinet = session.nomCabinet || session.nom || 'ImmoGest';
+    var versements = (window.IG.paiements.getByLocataire(locId) || []).filter(function(v) {
+      return parseInt(v.mois) === mois && parseInt(v.annee) === annee && (v.type === 'loyer' || !v.type);
+    });
+    var totalVerse = versements.reduce(function(s, v) { return s + (parseFloat(v.montant) || 0); }, 0);
+    var nomMois = window.IG.utils.nomMois(mois) + ' ' + annee;
+    var w = window.open('', '_blank', 'width=600,height=700');
+    w.document.write('<html><head><title>Reçu ' + nomMois + '</title>' +
+      '<style>body{font-family:Arial,sans-serif;padding:40px;max-width:500px;margin:auto}' +
+      'h1{font-size:20px;text-align:center;margin-bottom:4px}' +
+      '.sub{text-align:center;color:#666;font-size:12px;margin-bottom:30px}' +
+      'table{width:100%;border-collapse:collapse;margin-top:16px}' +
+      'td{padding:8px 12px;border-bottom:1px solid #eee}' +
+      '.total{font-weight:700;font-size:16px;background:#f0f7ff}' +
+      '.footer{margin-top:40px;font-size:11px;color:#999;text-align:center}' +
+      'button{display:none}</style></head><body>' +
+      '<h1>REÇU DE LOYER</h1>' +
+      '<div class="sub">' + esc(cabinet) + ' — ' + new Date().toLocaleDateString('fr-FR') + '</div>' +
+      '<table>' +
+      '<tr><td>Locataire</td><td><strong>' + esc(loc.nom) + '</strong></td></tr>' +
+      '<tr><td>Immeuble / Local</td><td>' + esc(imm ? (imm.nom_immeuble || imm.nom) : '') + ' — Local ' + esc(loc.appt || '?') + '</td></tr>' +
+      '<tr><td>Période</td><td>' + nomMois + '</td></tr>' +
+      '<tr><td>Loyer mensuel</td><td>' + fmt(loc.loyer) + '</td></tr>' +
+      versements.map(function(v) {
+        return '<tr><td>Versement du ' + window.IG.utils.formatDate(v.date_paiement) + '</td><td>' + fmt(v.montant) + ' (' + esc(v.mode_paiement || 'espèces') + ')</td></tr>';
+      }).join('') +
+      '<tr class="total"><td>TOTAL VERSÉ</td><td>' + fmt(totalVerse) + '</td></tr>' +
+      (totalVerse < (parseFloat(loc.loyer)||0) ? '<tr><td style="color:#e74c3c">Reste dû</td><td style="color:#e74c3c;font-weight:700">' + fmt((parseFloat(loc.loyer)||0) - totalVerse) + '</td></tr>' : '') +
+      '</table>' +
+      '<div class="footer">Document généré par ImmoGest · ' + new Date().toLocaleString('fr-FR') + '</div>' +
+      '</body></html>');
+    w.document.close();
+    w.focus();
+    setTimeout(function() { w.print(); }, 400);
   }
 
   // ── Formulaire enregistrement paiement ────────────────────────
