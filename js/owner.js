@@ -236,8 +236,8 @@ window.IG.owner = (function() {
       '<select id="promo-plan" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px">' +
       '<option value="starter">Starter</option><option value="pro">Pro</option><option value="cabinet">Cabinet</option>' +
       '</select></div>' +
-      '<div><label style="font-size:11px;color:var(--text2);font-weight:600">Durée (jours)</label>' +
-      '<input id="promo-duree" type="number" value="30" min="1" max="365" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px"></div>' +
+      '<div><label style="font-size:11px;color:var(--text2);font-weight:600">Mois gratuits</label>' +
+      '<input id="promo-duree" type="number" value="1" min="1" max="24" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px"></div>' +
       '<div><label style="font-size:11px;color:var(--text2);font-weight:600">Utilisations max</label>' +
       '<input id="promo-maxuses" type="number" value="1" min="1" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px"></div>' +
       '</div>' +
@@ -271,7 +271,7 @@ window.IG.owner = (function() {
           return '<tr style="border-bottom:1px solid var(--border2)">' +
             '<td style="padding:7px 10px;font-weight:700;font-family:monospace">' + esc(p.code) + '</td>' +
             '<td style="padding:7px 10px;text-align:center">' + esc(p.plan) + '</td>' +
-            '<td style="padding:7px 10px;text-align:center">' + p.duree_jours + 'j</td>' +
+            '<td style="padding:7px 10px;text-align:center">' + Math.round(p.duree_jours / 30) + ' mois</td>' +
             '<td style="padding:7px 10px;text-align:center">' + p.uses + '/' + p.max_uses + '</td>' +
             '</tr>';
         }).join('') + '</tbody></table>';
@@ -283,11 +283,11 @@ window.IG.owner = (function() {
     modal.box.querySelector('#promo-create-btn').addEventListener('click', async function() {
       var code = modal.box.querySelector('#promo-code').value.trim().toUpperCase();
       var plan = modal.box.querySelector('#promo-plan').value;
-      var duree = parseInt(modal.box.querySelector('#promo-duree').value) || 30;
+      var mois = parseInt(modal.box.querySelector('#promo-duree').value) || 1;
       var maxUses = parseInt(modal.box.querySelector('#promo-maxuses').value) || 1;
       if (!code) { window.IG.utils.showToast('Code requis', 'red'); return; }
       try {
-        await _call('create_promo', { code, plan, duree_jours: duree, max_uses: maxUses });
+        await _call('create_promo', { code, plan, duree_jours: mois * 30, max_uses: maxUses });
         window.IG.utils.showToast('Code créé : ' + code, 'green');
         modal.close();
       } catch(e) {

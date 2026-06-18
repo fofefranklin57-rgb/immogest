@@ -200,6 +200,10 @@ window.IG.locataires = (function() {
       _fieldNum('caution', t('Caution'), loc ? (loc.caution || 0) : 0) +
       '</div>' +
       _field('entree', t('Date entrée'), loc ? (loc.entree || '') : '', false, 'date') +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+      _fieldNum('arrieres', t('Arriérés antérieurs (FCFA)'), loc ? (loc.arrieres || 0) : 0) +
+      _fieldNum('mois_arrieres', t('Nb mois arriérés'), loc ? (loc.mois_arrieres || 0) : 0) +
+      '</div>' +
       '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Observations') + '</label>' +
       '<textarea name="observations" rows="2" style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);resize:vertical">' + esc(loc ? (loc.observations || '') : '') + '</textarea></div>' +
       '<div id="ig-ad-loc-form" style="margin:14px 0 10px;text-align:center"></div>' +
@@ -233,8 +237,10 @@ window.IG.locataires = (function() {
       data.type_local   = fd.get('type_local');
       data.loyer        = parseFloat(fd.get('loyer')) || 0;
       data.caution      = parseFloat(fd.get('caution')) || 0;
-      data.entree       = fd.get('entree');
-      data.observations = fd.get('observations');
+      data.entree         = fd.get('entree');
+      data.arrieres       = parseFloat(fd.get('arrieres')) || 0;
+      data.mois_arrieres  = parseInt(fd.get('mois_arrieres')) || 0;
+      data.observations   = fd.get('observations');
       data.statut       = data.statut || 'actif';
       try {
         await sauvegarder(data);

@@ -155,7 +155,8 @@ window.IG.utils = (function() {
     var now = new Date();
     var mois = [];
     var d = new Date(debut.getFullYear(), debut.getMonth(), 1);
-    while (d <= now) {
+    var limit = new Date(now.getFullYear(), now.getMonth(), 1);
+    while (d < limit) {
       mois.push({ mois: d.getMonth() + 1, annee: d.getFullYear() });
       d.setMonth(d.getMonth() + 1);
     }

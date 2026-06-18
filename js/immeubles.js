@@ -81,6 +81,7 @@ window.IG.immeubles = (function() {
         '<div style="display:flex;gap:8px">' +
         '<button onclick="window.IG.immeubles.afficherDetail(' + imm.id + ')" class="btn-sm btn-primary" style="flex:1">' + t('Détails') + '</button>' +
         '<button onclick="window.IG.immeubles.afficherFormulaire(' + imm.id + ')" class="btn-sm btn-secondary">' + t('Modifier') + '</button>' +
+        '<button onclick="window.IG.immeubles.confirmerSuppression(' + imm.id + ')" class="btn-sm" style="background:#e53935;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px" title="' + t('Supprimer') + '">🗑</button>' +
         '</div></div>';
     });
     html += '</div>';
@@ -184,8 +185,18 @@ window.IG.immeubles = (function() {
     renderListe(locataires);
   }
 
+  function confirmerSuppression(id) {
+    var imm = getById(id);
+    if (!imm) return;
+    window.IG.utils.confirm(t('Supprimer cet immeuble ?') + ' « ' + (imm.nom_immeuble || imm.nom) + ' »', async function() {
+      await supprimer(id);
+      if (window.IG.app && window.IG.app.refresh) window.IG.app.refresh();
+      window.IG.utils.showToast(t('Immeuble supprimé'), 'green');
+    });
+  }
+
   return {
-    charger, getCache, getById, sauvegarder, supprimer,
+    charger, getCache, getById, sauvegarder, supprimer, confirmerSuppression,
     render, renderListe, afficherFormulaire, afficherDetail
   };
 

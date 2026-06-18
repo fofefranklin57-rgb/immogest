@@ -21,7 +21,8 @@ window.IG.relances = (function() {
 
   function montantDu(loc, paiements) {
     var fiche = window.IG.paiements ? window.IG.paiements.calculerFiche(loc, paiements) : [];
-    return fiche.reduce(function(s, l) { return s + (l.reste || 0); }, 0);
+    var duFiche = fiche.reduce(function(s, l) { return s + (l.reste || 0); }, 0);
+    return duFiche + (parseFloat(loc.arrieres) || 0);
   }
 
   // ── Niveaux de relance ────────────────────────────────────────
