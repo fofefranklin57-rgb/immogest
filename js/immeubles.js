@@ -97,6 +97,11 @@ window.IG.immeubles = (function() {
 
   // ── Formulaire ajout/édition ──────────────────────────────────
   function afficherFormulaire(id) {
+    if (window.IG.plans && window.IG.plans.estEnModeRetro()) {
+      window.IG.utils.showToast(t('Accès limité — upgradez votre plan pour modifier les données'), 'red');
+      setTimeout(function() { window.IG.plans.afficherUpgrade(); }, 800);
+      return;
+    }
     var imm = id ? getById(id) : null;
     var titre = imm ? t('Modifier immeuble') : t('Ajouter un immeuble');
 

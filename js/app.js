@@ -31,6 +31,8 @@ window.IG.app = (function() {
 
     // Publicités plan gratuit + expiry check
     if (window.IG.ads) { window.IG.ads.init(); window.IG.ads.checkExpiry(); }
+    // Vérifier rétrogradation (données > limites plan actuel)
+    if (window.IG.plans) window.IG.plans.verifierRetrogradation();
   }
 
   function _showAppShell() {

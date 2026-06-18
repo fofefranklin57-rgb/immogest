@@ -171,15 +171,17 @@ async function submitRegistration(mode) {
 
     _setStoredTenant({ tenantId: json.tenantId, mode, nom, telephone: tel });
     SESSION = {
-      userId:    json.tenantId,
-      tenantId:  json.tenantId,
-      role:      'admin',
-      version:   mode,
+      userId:      json.tenantId,
+      tenantId:    json.tenantId,
+      role:        'admin',
+      version:     mode,
       nom,
-      telephone: tel,
-      immeubles: [],
-      _pwdHash:  passwordHash,
-      _ts: Date.now()
+      telephone:   tel,
+      immeubles:   [],
+      plan:        json.plan || 'starter',
+      plan_expire: json.plan_expire || null,
+      _pwdHash:    passwordHash,
+      _ts:         Date.now()
     };
     saveSession();
     USERS = [];

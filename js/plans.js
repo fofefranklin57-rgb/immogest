@@ -54,6 +54,52 @@ window.IG.plans = (function() {
     return null;
   }
 
+  // ── Vérification rétrogradation + bannière lecture seule ─────
+  function verifierRetrogradation() {
+    var data = window.IG.app ? window.IG.app.getData() : null;
+    if (!data) return;
+    var lim = getLimites();
+    var nbImm = data.immeubles.length;
+    var nbLoc = data.locataires.filter(function(l) { return l.statut !== 'libre'; }).length;
+
+    var depasse = (lim.immeubles !== -1 && nbImm > lim.immeubles) ||
+                  (lim.locataires !== -1 && nbLoc > lim.locataires);
+    if (!depasse) { _retirerBanniereRetro(); return; }
+
+    var existing = document.getElementById('ig-retro-banner');
+    if (existing) return;
+
+    var msgs = [];
+    if (lim.immeubles !== -1 && nbImm > lim.immeubles)
+      msgs.push(nbImm + ' immeubles enregistrés (max ' + lim.immeubles + ' sur votre plan)');
+    if (lim.locataires !== -1 && nbLoc > lim.locataires)
+      msgs.push(nbLoc + ' locataires actifs (max ' + lim.locataires + ' sur votre plan)');
+
+    var banner = document.createElement('div');
+    banner.id = 'ig-retro-banner';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#7C3AED;color:#fff;' +
+      'padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;font-weight:500;box-shadow:0 2px 8px rgba(0,0,0,.3)';
+    banner.innerHTML =
+      '<span>🔒 <strong>Accès limité</strong> — ' + msgs.join(' · ') + '. Vos données sont conservées.</span>' +
+      '<button onclick="window.IG.plans.afficherUpgrade()" style="background:#fff;color:#7C3AED;border:none;padding:5px 14px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">⬆️ Upgrade</button>';
+    document.body.prepend(banner);
+  }
+
+  function _retirerBanniereRetro() {
+    var b = document.getElementById('ig-retro-banner');
+    if (b) b.remove();
+  }
+
+  function estEnModeRetro() {
+    var data = window.IG.app ? window.IG.app.getData() : null;
+    if (!data) return false;
+    var lim = getLimites();
+    var nbImm = data.immeubles.length;
+    var nbLoc = data.locataires.filter(function(l) { return l.statut !== 'libre'; }).length;
+    return (lim.immeubles !== -1 && nbImm > lim.immeubles) ||
+           (lim.locataires !== -1 && nbLoc > lim.locataires);
+  }
+
   // ── Bloc plan actuel (pour paramètres) ───────────────────────
   function renderBlocPlan(containerId) {
     var el = document.getElementById(containerId);
@@ -326,7 +372,8 @@ window.IG.plans = (function() {
     peutAjouterImmeuble, peutAjouterLocataire,
     verifierImmeuble, verifierLocataire,
     renderBlocPlan, afficherUpgrade, afficherSaisiePromo,
-    _initierPaiement
+    _initierPaiement,
+    verifierRetrogradation, estEnModeRetro
   };
 
 })();

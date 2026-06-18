@@ -238,9 +238,11 @@ ${_footer()}</body></html>`;
         const { nom, telephone, passwordHash, nomCabinet } = await request.json();
         if (!nom || !telephone || !passwordHash) return json({ error: 'Champs manquants' }, 400);
 
+        const trialExpire = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
         const res = await sbFetch('tenants', '', 'POST', {
           nom, telephone, password_hash: passwordHash,
-          nom_cabinet: nomCabinet || '', mode: 'entreprise'
+          nom_cabinet: nomCabinet || '', mode: 'entreprise',
+          plan: 'starter', plan_expire: trialExpire
         });
         if (!res.ok) {
           const err = await res.json();
@@ -261,7 +263,7 @@ ${_footer()}</body></html>`;
         try { await sbFetch('locale_profiles', '', 'POST', { tenant_id: tenant.id }); } catch(_) {}
 
         await logEvent(tenant.id, 'info', 'tenant.register', 'Nouveau tenant', { nom, telephone });
-        return json({ success: true, tenantId: tenant.id, userId: adminId });
+        return json({ success: true, tenantId: tenant.id, userId: adminId, plan: 'starter', plan_expire: trialExpire });
       }
 
       // ── /login-tenant ─────────────────────────────────────────

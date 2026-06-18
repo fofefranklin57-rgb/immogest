@@ -168,6 +168,11 @@ window.IG.locataires = (function() {
 
   // ── Formulaire ajout/édition ──────────────────────────────────
   function afficherFormulaire(id) {
+    if (window.IG.plans && window.IG.plans.estEnModeRetro()) {
+      window.IG.utils.showToast(t('Accès limité — upgradez votre plan pour modifier les données'), 'red');
+      setTimeout(function() { window.IG.plans.afficherUpgrade(); }, 800);
+      return;
+    }
     var loc = id ? getById(id) : null;
     var imms = window.IG.immeubles ? window.IG.immeubles.getCache() : [];
     var titre = loc ? t('Modifier locataire') : t('Ajouter un locataire');
