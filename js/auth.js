@@ -84,6 +84,7 @@ window.IG.auth = (function() {
       nom:         data.tenant.nom,
       nomCabinet:  data.tenant.nom_cabinet,
       plan:        data.tenant.plan || 'gratuit',
+      plan_expire: data.tenant.plan_expire || null,
       telephone:   data.tenant.telephone,
       loginAt:     Date.now(),
       locale:      data.tenant.locale || null

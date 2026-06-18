@@ -33,6 +33,8 @@ window.IG.app = (function() {
     if (window.IG.ads) { window.IG.ads.init(); window.IG.ads.checkExpiry(); }
     // Vérifier rétrogradation (données > limites plan actuel)
     if (window.IG.plans) window.IG.plans.verifierRetrogradation();
+    // Badge essai + toast premier login
+    _initEssai();
   }
 
   function _showAppShell() {
@@ -208,6 +210,44 @@ window.IG.app = (function() {
       var btn = document.getElementById('btn-dark-mode');
       if (btn) btn.textContent = '☀️';
     }
+  }
+
+  function _initEssai() {
+    var session = window.IG.auth ? window.IG.auth.getSession() : null;
+    if (!session || !session.plan_expire) return;
+    var plan = (session.plan || '').toLowerCase();
+    if (plan === 'gratuit' || plan === 'pro' || plan === 'cabinet') return;
+
+    var now     = Date.now();
+    var expire  = new Date(session.plan_expire).getTime();
+    var joursRestants = Math.ceil((expire - now) / 86400000);
+    if (joursRestants <= 0) return;
+
+    // Toast premier login essai (si loginAt < 5 min)
+    var isNouveauLogin = session.loginAt && (now - session.loginAt) < 300000;
+    if (isNouveauLogin) {
+      var msg = joursRestants >= 29
+        ? '🎉 Essai Starter 30 jours activé ! Profitez de toutes les fonctionnalités.'
+        : '⏳ Essai en cours — ' + joursRestants + ' jour(s) restant(s) sur votre période d\'essai.';
+      window.IG.utils.showToast(msg, 'green', 6000);
+    }
+
+    // Badge compte à rebours dans la sidebar
+    var footer = document.querySelector('.sidebar-footer');
+    if (!footer) return;
+    var existing = document.getElementById('ig-trial-badge');
+    if (existing) existing.remove();
+
+    var color = joursRestants <= 5 ? '#e74c3c' : joursRestants <= 10 ? '#f39c12' : '#0E7A45';
+    var badge = document.createElement('div');
+    badge.id = 'ig-trial-badge';
+    badge.style.cssText = 'margin:0 0 8px 0;padding:10px 12px;border-radius:8px;background:' + color + '22;border:1px solid ' + color + '55;cursor:pointer;';
+    badge.onclick = function() { if (window.IG.plans) window.IG.plans.afficherUpgrade(); };
+    badge.innerHTML =
+      '<div style="font-size:9px;text-transform:uppercase;font-weight:700;color:' + color + ';letter-spacing:.06em;margin-bottom:4px">⏳ PÉRIODE D\'ESSAI</div>' +
+      '<div style="font-size:18px;font-weight:800;color:' + color + ';line-height:1">' + joursRestants + ' <span style="font-size:11px;font-weight:500">jour' + (joursRestants > 1 ? 's' : '') + ' restant' + (joursRestants > 1 ? 's' : '') + '</span></div>' +
+      '<div style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:4px">Cliquez pour vous abonner →</div>';
+    footer.insertBefore(badge, footer.firstChild);
   }
 
   function _renderLangPlan() {
