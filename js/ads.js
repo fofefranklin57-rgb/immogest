@@ -24,8 +24,6 @@ window.IG.ads = (function() {
     var plan = window.IG.plans ? window.IG.plans.getPlan() : 'gratuit';
     if (plan !== 'gratuit') {
       _cacherToutesLesPubs();
-    } else {
-      _injecterScript();
     }
     // Bannière Adsterra fixe en bas — tous plans, toutes pages
     _injecterBanniereFixe();

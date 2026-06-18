@@ -101,6 +101,17 @@
   .immeubles-grid { grid-template-columns: 1fr; }
   .topbar { padding: 12px 16px; }
 }
+
+/* ── Limiter la hauteur des blocs natifs Monetag ── */
+[id^="container-"], .monetag-native, .monetag-widget,
+div[class*="monetag"], div[id*="monetag"] {
+  max-height: 120px !important;
+  overflow: hidden !important;
+}
+/* Bannière fixe Adsterra — hauteur contrôlée */
+#ig-fixed-ad {
+  max-height: 96px !important;
+}
 </style>
 </head>
 
