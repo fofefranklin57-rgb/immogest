@@ -118,9 +118,12 @@ window.IG.paiements = (function() {
     var html = '<div id="fiche-print-zone" style="font-size:13px">' +
       // Barre actions
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:8px;flex-wrap:wrap">' +
-      '<h3 style="font-size:16px;font-weight:700;margin:0">📋 ' + t('Fiche de suivi') + '</h3>' +
+      '<div>' +
+      '<h3 style="font-size:16px;font-weight:700;margin:0 0 2px">📋 ' + t('Fiche de suivi') + '</h3>' +
+      '<div style="font-size:12px;color:var(--text3)">' + esc(loc.nom) + '</div>' +
+      '</div>' +
       '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
-      '<button onclick="window.IG.paiements.afficherFormulaire(' + loc.id + ')" style="padding:7px 13px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:12px;font-weight:600;cursor:pointer">+ ' + t('Paiement') + '</button>' +
+      '<button onclick="window.IG.paiements.afficherFormulaireFiche(' + loc.id + ')" style="padding:7px 13px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:12px;font-weight:600;cursor:pointer">+ ' + t('Paiement') + '</button>' +
       '<button onclick="window.IG.paiements.imprimerFiche()" style="padding:7px 13px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;cursor:pointer">🖨️ PDF</button>' +
       (window.IG.ai ? '<button onclick="window.IG.ai.analyserLocataire(' + loc.id + ')" style="padding:7px 13px;border-radius:8px;border:none;background:linear-gradient(135deg,#7C3AED,#0E6AAF);color:#fff;font-size:12px;font-weight:600;cursor:pointer">✨ IA</button>' : '') +
       '</div></div>' +
@@ -145,9 +148,13 @@ window.IG.paiements = (function() {
       '</div>' +
       '<div style="background:var(--bg3);border-radius:10px;padding:14px;text-align:center">' +
       '<div style="font-size:10px;text-transform:uppercase;font-weight:700;color:var(--text3);margin-bottom:4px">🎯 ' + t('Score fiabilité') + '</div>' +
-      '<div style="font-size:20px;font-weight:800;color:' + scoreCouleur + '">' + score + '%</div>' +
+      '<div style="font-size:20px;font-weight:800;color:' + scoreCouleur + '">' + score + '<span style="font-size:13px;font-weight:500">/100</span></div>' +
       '<div style="font-size:11px;color:' + scoreCouleur + ';margin-top:2px">' + scoreLabel + '</div>' +
-      '</div></div>';
+      '</div></div>' +
+      // Ligne arriérés antérieurs résumé (si mois_arrieres renseigné)
+      (loc.mois_arrieres > 0 ? '<div style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--red)">' +
+      '⚠️ <strong>' + fmt(arrieres) + '</strong> d\'arriérés antérieurs — représente <strong>' + loc.mois_arrieres + ' mois</strong> de loyer impayé avant l\'entrée dans ce suivi.' +
+      '</div>' : '');
 
     // ── Tableau historique ────────────────────────────────────
     if (!lignes.length) {
@@ -274,8 +281,15 @@ window.IG.paiements = (function() {
     setTimeout(function() { w.print(); }, 400);
   }
 
+  // ── Paiement depuis la fiche → rouvre la fiche après succès ──
+  function afficherFormulaireFiche(locId) {
+    afficherFormulaire(locId, function() {
+      if (window.IG.locataires) window.IG.locataires.afficherFiche(locId);
+    });
+  }
+
   // ── Formulaire enregistrement paiement ────────────────────────
-  function afficherFormulaire(locId) {
+  function afficherFormulaire(locId, onSuccess) {
     var loc = window.IG.locataires ? window.IG.locataires.getById(locId) : null;
     if (!loc) { toast(t('Locataire introuvable'), 'red'); return; }
 
@@ -335,7 +349,17 @@ window.IG.paiements = (function() {
         await enregistrer(pay);
         modal.close();
         toast('✓ ' + t('Paiement enregistré'), 'green');
-        if (window.IG.app && window.IG.app.refresh) window.IG.app.refresh();
+        if (onSuccess) {
+          // Recharger les données puis rappeler le callback (ex: rouvrir la fiche)
+          if (window.IG.app && window.IG.app.refresh) {
+            window.IG.app.refresh();
+            setTimeout(onSuccess, 500);
+          } else {
+            onSuccess();
+          }
+        } else {
+          if (window.IG.app && window.IG.app.refresh) window.IG.app.refresh();
+        }
       } catch(err) {
         toast(t('Erreur') + ': ' + err.message, 'red');
       }
@@ -381,7 +405,8 @@ window.IG.paiements = (function() {
 
   return {
     charger, getCache, getByLocataire, enregistrer, annuler,
-    calculerFiche, renderFiche, afficherFormulaire, calculerStats
+    calculerFiche, renderFiche, afficherFormulaire, afficherFormulaireFiche,
+    imprimerFiche, imprimerRecu, calculerStats
   };
 
 })();
