@@ -226,18 +226,49 @@ window.IG.paiements = (function() {
       '<div style="font-size:12px;font-weight:600">' + val + '</div></div>';
   }
 
+  // ── Aperçu avant impression (générique) ──────────────────────
+  function _apercuImprimer(titre, bodyHtml, cssExtra) {
+    var css = 'body{font-family:Arial,sans-serif;font-size:12px;padding:24px;color:#111;max-width:780px;margin:auto}' +
+      'table{width:100%;border-collapse:collapse}th,td{padding:6px 10px;border:1px solid #ddd}' +
+      'th{background:#f0f0f0;font-weight:700}.no-print{display:none}' + (cssExtra || '');
+
+    var previewHtml =
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">' +
+      '<h3 style="font-size:15px;font-weight:700;margin:0">👁 Aperçu — ' + titre + '</h3>' +
+      '<div style="display:flex;gap:8px">' +
+      '<button id="btn-apercu-imprimer" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer">🖨️ Imprimer / PDF</button>' +
+      '<button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;cursor:pointer">✕ Fermer</button>' +
+      '</div></div>' +
+      '<div style="border:1px solid var(--border2);border-radius:8px;overflow:hidden">' +
+      '<iframe id="apercu-iframe" style="width:100%;height:520px;border:none;background:#fff"></iframe>' +
+      '</div>';
+
+    var modal = window.IG.utils.showModal(previewHtml, { width: '800px' });
+
+    var iframe = modal.box.querySelector('#apercu-iframe');
+    var doc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+    if (doc) {
+      doc.open();
+      doc.write('<html><head><style>' + css + '</style></head><body>' + bodyHtml + '</body></html>');
+      doc.close();
+    }
+
+    modal.box.querySelector('#btn-apercu-imprimer').addEventListener('click', function() {
+      var w = window.open('', '_blank', 'width=820,height=950');
+      w.document.write('<html><head><title>' + titre + '</title><style>' + css + '@media print{.no-print{display:none}}</style></head><body>' + bodyHtml + '</body></html>');
+      w.document.close();
+      w.focus();
+      setTimeout(function() { w.print(); }, 400);
+    });
+  }
+
   function imprimerFiche() {
     var zone = document.getElementById('fiche-print-zone');
     if (!zone) return;
-    var w = window.open('', '_blank', 'width=800,height=900');
-    w.document.write('<html><head><title>Fiche de suivi</title>' +
-      '<style>body{font-family:Arial,sans-serif;font-size:12px;padding:20px;color:#111}' +
-      'table{width:100%;border-collapse:collapse}th,td{padding:6px 10px;border:1px solid #ddd}' +
-      'th{background:#f5f5f5;font-weight:700}button{display:none}</style></head>' +
-      '<body>' + zone.innerHTML + '</body></html>');
-    w.document.close();
-    w.focus();
-    setTimeout(function() { w.print(); }, 400);
+    var titre = 'Fiche de suivi';
+    var h3 = zone.querySelector('h3');
+    if (h3) titre = h3.textContent.replace('📋', '').trim();
+    _apercuImprimer(titre, zone.innerHTML);
   }
 
   function imprimerRecu(locId, mois, annee) {
@@ -251,18 +282,10 @@ window.IG.paiements = (function() {
     });
     var totalVerse = versements.reduce(function(s, v) { return s + (parseFloat(v.montant) || 0); }, 0);
     var nomMois = window.IG.utils.nomMois(mois) + ' ' + annee;
-    var w = window.open('', '_blank', 'width=600,height=700');
-    w.document.write('<html><head><title>Reçu ' + nomMois + '</title>' +
-      '<style>body{font-family:Arial,sans-serif;padding:40px;max-width:500px;margin:auto}' +
-      'h1{font-size:20px;text-align:center;margin-bottom:4px}' +
-      '.sub{text-align:center;color:#666;font-size:12px;margin-bottom:30px}' +
-      'table{width:100%;border-collapse:collapse;margin-top:16px}' +
-      'td{padding:8px 12px;border-bottom:1px solid #eee}' +
-      '.total{font-weight:700;font-size:16px;background:#f0f7ff}' +
-      '.footer{margin-top:40px;font-size:11px;color:#999;text-align:center}' +
-      'button{display:none}</style></head><body>' +
-      '<h1>REÇU DE LOYER</h1>' +
-      '<div class="sub">' + esc(cabinet) + ' — ' + new Date().toLocaleDateString('fr-FR') + '</div>' +
+
+    var bodyHtml =
+      '<h1 style="font-size:20px;text-align:center;margin-bottom:4px">REÇU DE LOYER</h1>' +
+      '<div style="text-align:center;color:#666;font-size:12px;margin-bottom:30px">' + esc(cabinet) + ' — ' + new Date().toLocaleDateString('fr-FR') + '</div>' +
       '<table>' +
       '<tr><td>Locataire</td><td><strong>' + esc(loc.nom) + '</strong></td></tr>' +
       '<tr><td>Immeuble / Local</td><td>' + esc(imm ? (imm.nom_immeuble || imm.nom) : '') + ' — Local ' + esc(loc.appt || '?') + '</td></tr>' +
@@ -271,14 +294,12 @@ window.IG.paiements = (function() {
       versements.map(function(v) {
         return '<tr><td>Versement du ' + window.IG.utils.formatDate(v.date_paiement) + '</td><td>' + fmt(v.montant) + ' (' + esc(v.mode_paiement || 'espèces') + ')</td></tr>';
       }).join('') +
-      '<tr class="total"><td>TOTAL VERSÉ</td><td>' + fmt(totalVerse) + '</td></tr>' +
+      '<tr style="font-weight:700;font-size:15px;background:#f0f7ff"><td>TOTAL VERSÉ</td><td>' + fmt(totalVerse) + '</td></tr>' +
       (totalVerse < (parseFloat(loc.loyer)||0) ? '<tr><td style="color:#e74c3c">Reste dû</td><td style="color:#e74c3c;font-weight:700">' + fmt((parseFloat(loc.loyer)||0) - totalVerse) + '</td></tr>' : '') +
       '</table>' +
-      '<div class="footer">Document généré par ImmoGest · ' + new Date().toLocaleString('fr-FR') + '</div>' +
-      '</body></html>');
-    w.document.close();
-    w.focus();
-    setTimeout(function() { w.print(); }, 400);
+      '<div style="margin-top:40px;font-size:11px;color:#999;text-align:center">Document généré par ImmoGest · ' + new Date().toLocaleString('fr-FR') + '</div>';
+
+    _apercuImprimer('Reçu ' + nomMois + ' — ' + esc(loc.nom), bodyHtml);
   }
 
   // ── Paiement depuis la fiche → rouvre la fiche après succès ──

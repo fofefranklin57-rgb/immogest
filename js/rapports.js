@@ -114,6 +114,7 @@ window.IG.rapports = (function() {
       '<div id="rapport-contenu"></div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">' +
       '<button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">' + t('Fermer') + '</button>' +
+      '<button id="btn-imprimer-rapport" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);cursor:pointer;font-size:13px;display:none">🖨️ Imprimer</button>' +
       '<button id="btn-export-docx" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600;display:none">📥 DOCX</button>' +
       '</div>';
 
@@ -126,6 +127,7 @@ window.IG.rapports = (function() {
       _lastHtml = genererRapportMensuelHTML(m, a, imm, loc, pay);
       modal.box.querySelector('#rapport-contenu').innerHTML = _lastHtml;
       modal.box.querySelector('#btn-export-docx').style.display = 'inline-block';
+      modal.box.querySelector('#btn-imprimer-rapport').style.display = 'inline-block';
     }
 
     modal.box.querySelector('#btn-generer-rapport').addEventListener('click', generer);
@@ -133,6 +135,18 @@ window.IG.rapports = (function() {
 
     modal.box.querySelector('#btn-export-docx').addEventListener('click', function() {
       exporterDocx(_lastHtml);
+    });
+
+    modal.box.querySelector('#btn-imprimer-rapport').addEventListener('click', function() {
+      var w = window.open('', '_blank', 'width=820,height=950');
+      w.document.write('<html><head><title>Rapport mensuel</title>' +
+        '<style>body{font-family:Arial,sans-serif;font-size:12px;padding:24px;color:#111}' +
+        'table{width:100%;border-collapse:collapse}th,td{padding:6px 10px;border:1px solid #ddd}' +
+        'th{background:#f0f0f0;font-weight:700}button{display:none}</style></head>' +
+        '<body>' + _lastHtml + '</body></html>');
+      w.document.close();
+      w.focus();
+      setTimeout(function() { w.print(); }, 400);
     });
   }
 
