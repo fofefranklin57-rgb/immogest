@@ -1654,7 +1654,8 @@ window.IG.app = (function() {
     var slides = document.querySelectorAll('.aslide');
     if (slides.length > 1) {
       var idx = 0;
-      setInterval(function() {
+      var _slideTimer = setInterval(function() {
+        if (!document.getElementById('auth-screen')) { clearInterval(_slideTimer); return; }
         slides[idx].style.opacity = '0';
         idx = (idx + 1) % slides.length;
         slides[idx].style.opacity = '1';
@@ -1736,7 +1737,7 @@ window.IG.app = (function() {
 
   return {
     init, showPage, refresh, renderCurrentPage,
-    _renderLogin,
+    _renderLogin, renderLogin: _renderLogin,
     authGoStep, doLogin, joinV2, registerV2, browseMarketplace,
     toggleSidebar, closeSidebar, toggleSidebarSection, toggleDarkMode, lockScreen, openGuide,
     toggleAIChat, sendAIMessage, aiQuickAction,

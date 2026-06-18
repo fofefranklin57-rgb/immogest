@@ -158,8 +158,8 @@ window.IG.auth = (function() {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('SESSION');
     window.IG.db && window.IG.db.resetAuth();
-    if (window.IG.app && window.IG.app.showPage) {
-      window.IG.app.showPage('login');
+    if (window.IG.app && window.IG.app.renderLogin) {
+      window.IG.app.renderLogin();
     } else {
       window.location.reload();
     }
