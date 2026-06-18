@@ -37,27 +37,28 @@ window.IG.ads = (function() {
     wrap.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:990;' +
       'background:var(--bg2);border-top:1px solid var(--border2);' +
       'display:flex;align-items:center;justify-content:center;' +
-      'min-height:90px;padding:4px 80px 4px 4px;overflow:hidden;';
+      'height:50px;max-height:50px;overflow:hidden;';
 
     // Étiquette "Pub"
     var lbl = document.createElement('span');
-    lbl.style.cssText = 'position:absolute;top:3px;left:6px;font-size:9px;' +
+    lbl.style.cssText = 'position:absolute;top:2px;left:6px;font-size:9px;' +
       'color:var(--text3);text-transform:uppercase;letter-spacing:.05em;font-weight:600;opacity:.5;';
     lbl.textContent = 'Pub';
     wrap.appendChild(lbl);
 
-    // Slot Adsterra zone 1 — ID exact requis par le script invoke.js
-    var slot = document.createElement('div');
-    slot.id = 'container-' + AD1_KEY;
-    wrap.appendChild(slot);
+    // Slot Adsterra zone 2 (728x90 leaderboard — format plat)
+    var cfg = document.createElement('script');
+    cfg.text = "atOptions={'key':'" + AD2_KEY + "','format':'iframe','height':50,'width':320,'params':{}};";
+    wrap.appendChild(cfg);
+    var s = document.createElement('script');
+    s.src = AD2_SRC;
+    s.async = true;
+    wrap.appendChild(s);
 
     document.body.appendChild(wrap);
 
-    // Décaler le contenu principal pour ne pas masquer
-    document.body.style.paddingBottom = '96px';
-
-    // Script Adsterra zone 1 (chargé une seule fois)
-    _chargerScriptAD1();
+    // Décaler le contenu principal de 50px seulement
+    document.body.style.paddingBottom = '54px';
   }
 
   // Zone In-Page Push Monetag — CPM, impression seule, tous plans

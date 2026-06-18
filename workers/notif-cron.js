@@ -283,10 +283,26 @@ ${_footer()}</body></html>`;
         const users = uRes.ok ? await uRes.json() : [];
         const adminUser = users[0] || { id: 'admin_' + tenant.id, role: 'admin', nom: tenant.nom };
 
+        // Trial automatique 30j pour comptes sans plan payant
+        let planFinal = tenant.plan || 'gratuit';
+        let planExpireFinal = tenant.plan_expire || null;
+        if (planFinal === 'gratuit') {
+          const createdAt = new Date(tenant.created_at || Date.now());
+          const ageDays = (Date.now() - createdAt.getTime()) / 86400000;
+          if (ageDays <= 30) {
+            planFinal = 'starter';
+            planExpireFinal = new Date(createdAt.getTime() + 30 * 86400000).toISOString();
+            // Persister en DB si pas encore fait
+            if (!tenant.plan || tenant.plan === 'gratuit') {
+              await sbFetch('tenants', '?id=eq.' + tenant.id, 'PATCH',
+                { plan: 'starter', plan_expire: planExpireFinal });
+            }
+          }
+        }
         await logEvent(tenant.id, 'info', 'tenant.login', 'Connexion', { telephone });
         return json({
           success: true,
-          tenant: { ...tenant, plan: tenant.plan || 'gratuit' },
+          tenant: { ...tenant, plan: planFinal, plan_expire: planExpireFinal },
           userId: adminUser.id,
           role: adminUser.role,
           user: adminUser

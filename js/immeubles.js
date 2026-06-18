@@ -196,6 +196,7 @@ window.IG.immeubles = (function() {
     window.IG.utils.confirm(t('Supprimer cet immeuble ?') + ' « ' + (imm.nom_immeuble || imm.nom) + ' »', async function() {
       await supprimer(id);
       if (window.IG.app && window.IG.app.refresh) window.IG.app.refresh();
+      if (window.IG.plans) window.IG.plans.verifierRetrogradation();
       window.IG.utils.showToast(t('Immeuble supprimé'), 'green');
     });
   }
