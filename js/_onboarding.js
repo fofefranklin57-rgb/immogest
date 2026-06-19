@@ -47,65 +47,111 @@ function showWelcomeScreen() {
     </div>`;
 }
 
-// ── Choix du mode (Perso / Cabinet) ─────────────────────────────
+// ── Choix du profil (3 types) ────────────────────────────────────
 function showModeSelection() {
   const as = document.getElementById('auth-screen');
   const inner = as.querySelector('.auth-inner') || as;
+
+  const profils = [
+    {
+      id: 'proprietaire', icon: '🏠', label: 'Propriétaire',
+      desc: 'Je gère mes propres biens en autonomie',
+      features: [
+        { ok: true,  t: 'Suivi locataires & loyers' },
+        { ok: true,  t: 'Fiches de suivi & reçus' },
+        { ok: true,  t: 'Rapports simplifiés' },
+        { ok: false, t: 'Honoraires cabinet' },
+        { ok: false, t: 'Section remis au bailleur' },
+        { ok: false, t: 'Multi-utilisateurs' }
+      ],
+      note: 'Idéal si vous êtes propriétaire et gérez vous-même vos appartements',
+      mode: 'individuel'
+    },
+    {
+      id: 'gestionnaire', icon: '👤', label: 'Gestionnaire indépendant',
+      desc: 'Je gère les biens d\'autres propriétaires',
+      features: [
+        { ok: true,  t: 'Suivi locataires & loyers' },
+        { ok: true,  t: 'Fiches de suivi & reçus' },
+        { ok: true,  t: 'Rapport complet par immeuble' },
+        { ok: true,  t: 'Honoraires configurables' },
+        { ok: true,  t: 'Section remis au bailleur' },
+        { ok: false, t: 'Multi-utilisateurs / équipe' }
+      ],
+      note: 'Idéal si vous gérez les biens d\'autrui seul, sans structure formelle',
+      mode: 'individuel'
+    },
+    {
+      id: 'cabinet', icon: '🏢', label: 'Cabinet immobilier',
+      desc: 'Structure professionnelle avec équipe',
+      features: [
+        { ok: true, t: 'Tout du gestionnaire' },
+        { ok: true, t: 'Branding cabinet (logo, cachet)' },
+        { ok: true, t: 'Multi-utilisateurs & rôles' },
+        { ok: true, t: 'Documents juridiques' },
+        { ok: true, t: 'Signature numérique' },
+        { ok: true, t: 'Support prioritaire' }
+      ],
+      note: 'Idéal pour un cabinet, une agence ou une SCI professionnelle',
+      mode: 'entreprise'
+    }
+  ];
+
+  const cards = profils.map(function(p) {
+    return `<div style="border:2px solid var(--border);border-radius:14px;padding:18px;cursor:pointer;transition:border-color .15s"
+      id="profil-card-${p.id}"
+      onclick="selectProfil('${p.id}','${p.mode}')">
+      <div style="font-size:24px;text-align:center;margin-bottom:8px">${p.icon}</div>
+      <div style="font-size:14px;font-weight:800;text-align:center;margin-bottom:4px">${p.label}</div>
+      <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px;font-style:italic">${p.desc}</div>
+      <div style="font-size:11.5px;line-height:2;margin-bottom:10px">
+        ${p.features.map(f => (f.ok ? '✅ ' : '❌ ') + f.t).join('<br>')}
+      </div>
+      <div style="font-size:10.5px;color:var(--text3);border-top:1px solid var(--border);padding-top:8px;font-style:italic">${p.note}</div>
+    </div>`;
+  }).join('');
+
   inner.innerHTML = `
-    <div style="max-width:700px;width:100%;padding:24px 16px;margin:auto;overflow-y:auto;max-height:100vh;">
+    <div style="max-width:760px;width:100%;padding:24px 16px;margin:auto;overflow-y:auto;max-height:100vh;">
       <button onclick="showWelcomeScreen()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;margin-bottom:16px;">← Retour</button>
-      <div style="text-align:center;margin-bottom:8px;">
-        <div style="font-size:18px;font-weight:800;color:var(--text);">Choisissez votre mode de gestion</div>
-        <div style="font-size:12px;color:var(--red);margin-top:4px;font-weight:600;">⚠️ Ce choix est définitif — il détermine toute votre expérience</div>
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:18px;font-weight:800;color:var(--text)">Quel est votre profil ?</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px">Ce choix définit comment l'application fonctionne. Modifiable dans les paramètres.</div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;">
-
-        <div style="border:2px solid var(--border);border-radius:14px;padding:20px;">
-          <div style="font-size:24px;text-align:center;margin-bottom:8px;">👤</div>
-          <div style="font-size:15px;font-weight:800;text-align:center;margin-bottom:12px;">MODE PERSO</div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:10px;font-style:italic;">Pour qui ? Particulier ou petit propriétaire qui gère ses biens en autonomie</div>
-          <div style="font-size:12px;margin-bottom:6px;font-weight:600;color:var(--text2);">Utilisateurs :</div>
-          <div style="font-size:12px;line-height:1.9;">✅ Vous (administrateur)<br>✅ Vos propriétaires partenaires<br>✅ Vos locataires (portail dédié)<br>❌ Pas de gestionnaires salariés<br>❌ Pas de comptables</div>
-          <div style="font-size:12px;margin:10px 0 6px;font-weight:600;color:var(--text2);">Fonctionnalités :</div>
-          <div style="font-size:12px;line-height:1.9;">✅ Immeubles & locataires<br>✅ Paiements & suivi loyers<br>✅ Fiches de suivi PDF<br>✅ Portail propriétaire<br>✅ Portail locataire<br>✅ Notifications push</div>
-          <div style="font-size:11px;color:var(--text3);margin:10px 0;font-style:italic;border-top:1px solid var(--border);padding-top:8px;">"Je gère mes biens moi-même, éventuellement avec des propriétaires partenaires, mais sans équipe salariée"</div>
-          <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="showRegistrationForm('individuel')">✅ Choisir Mode Perso</button>
-        </div>
-
-        <div style="border:2px solid var(--border);border-radius:14px;padding:20px;">
-          <div style="font-size:24px;text-align:center;margin-bottom:8px;">🏢</div>
-          <div style="font-size:15px;font-weight:800;text-align:center;margin-bottom:12px;">MODE CABINET</div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:10px;font-style:italic;">Pour qui ? Agence immobilière, cabinet ou professionnel avec une équipe</div>
-          <div style="font-size:12px;margin-bottom:6px;font-weight:600;color:var(--text2);">Utilisateurs :</div>
-          <div style="font-size:12px;line-height:1.9;">✅ Vous (administrateur)<br>✅ Gestionnaires<br>✅ Comptables<br>✅ Propriétaires assignés<br>✅ Locataires (portail dédié)</div>
-          <div style="font-size:12px;margin:10px 0 6px;font-weight:600;color:var(--text2);">Fonctionnalités :</div>
-          <div style="font-size:12px;line-height:1.9;">✅ Tout du Mode Perso<br>✅ Gestion d'équipe & rôles<br>✅ Rapports multi-gestionnaires<br>✅ Comptabilité avancée<br>✅ Messagerie interne</div>
-          <div style="font-size:11px;color:var(--text3);margin:10px 0;font-style:italic;border-top:1px solid var(--border);padding-top:8px;">"J'ai des collègues, associés ou employés qui travaillent avec moi sur la gestion immobilière"</div>
-          <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="showRegistrationForm('entreprise')">✅ Choisir Mode Cabinet</button>
-        </div>
-
-      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">${cards}</div>
     </div>`;
 }
 
+function selectProfil(profilId, mode) {
+  document.querySelectorAll('[id^="profil-card-"]').forEach(function(el) {
+    el.style.borderColor = 'var(--border)';
+  });
+  var card = document.getElementById('profil-card-' + profilId);
+  if (card) card.style.borderColor = '#0E6AAF';
+  setTimeout(function() { showRegistrationForm(mode, profilId); }, 180);
+}
+}
+
 // ── Formulaire d'inscription ─────────────────────────────────────
-function showRegistrationForm(mode) {
+function showRegistrationForm(mode, typeProfil) {
   const as = document.getElementById('auth-screen');
   const inner = as.querySelector('.auth-inner') || as;
   const isEntreprise = mode === 'entreprise';
+  const profil = typeProfil || (isEntreprise ? 'cabinet' : 'proprietaire');
+  const icons   = { proprietaire: '🏠', gestionnaire: '👤', cabinet: '🏢' };
+  const labels  = { proprietaire: 'Propriétaire', gestionnaire: 'Gestionnaire indépendant', cabinet: 'Cabinet immobilier' };
   inner.innerHTML = `
     <div style="max-width:400px;width:100%;padding:24px 16px;margin:auto;">
       <button onclick="showModeSelection()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;margin-bottom:16px;">← Retour</button>
       <div style="text-align:center;margin-bottom:24px;">
-        <div style="font-size:20px;">${isEntreprise ? '🏢' : '👤'}</div>
-        <div style="font-size:17px;font-weight:800;color:var(--text);margin-top:6px;">
-          ${isEntreprise ? 'Créer votre espace Cabinet' : 'Créer votre espace Perso'}
-        </div>
+        <div style="font-size:24px;">${icons[profil] || '👤'}</div>
+        <div style="font-size:17px;font-weight:800;color:var(--text);margin-top:6px;">Créer votre espace</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px;">${labels[profil] || ''}</div>
       </div>
       ${isEntreprise ? `
         <div style="margin-bottom:14px;">
           <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">NOM DU CABINET</label>
-          <input id="reg-cabinet" class="auth-input" placeholder="Ex: Immobilier Kamdem, Cabinet XYZ…" style="width:100%;">
+          <input id="reg-cabinet" class="auth-input" placeholder="Ex: Cabinet CRAA, Immobilier Kamdem…" style="width:100%;">
         </div>` : ''}
       <div style="margin-bottom:14px;">
         <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">VOTRE NOM COMPLET</label>
@@ -124,13 +170,13 @@ function showRegistrationForm(mode) {
         <input id="reg-pwd2" class="auth-input" type="password" placeholder="Répéter le mot de passe" style="width:100%;">
       </div>
       <div id="reg-err" style="display:none;color:var(--red);font-size:12px;margin-bottom:12px;padding:8px;background:rgba(255,0,0,0.08);border-radius:8px;"></div>
-      <button id="reg-btn" class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;" onclick="submitRegistration('${mode}')">
+      <button id="reg-btn" class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;" onclick="submitRegistration('${mode}','${profil}')">
         Créer mon espace →
       </button>
     </div>`;
 }
 
-async function submitRegistration(mode) {
+async function submitRegistration(mode, typeProfil) {
   const nomEl     = document.getElementById('reg-nom');
   const telEl     = document.getElementById('reg-tel');
   const pwdEl     = document.getElementById('reg-pwd');
@@ -161,7 +207,7 @@ async function submitRegistration(mode) {
     const res = await fetch(WORKER_URL + '/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nom, telephone: tel, passwordHash, mode, nomCabinet: nomCab || null })
+      body: JSON.stringify({ nom, telephone: tel, passwordHash, mode, typeProfil: typeProfil || null, nomCabinet: nomCab || null })
     });
     const json = await res.json();
     if (!json.ok) {
@@ -169,12 +215,14 @@ async function submitRegistration(mode) {
       return showErr(json.error || 'Erreur serveur');
     }
 
-    _setStoredTenant({ tenantId: json.tenantId, mode, nom, telephone: tel });
+    const profil = typeProfil || (mode === 'entreprise' ? 'cabinet' : 'proprietaire');
+    _setStoredTenant({ tenantId: json.tenantId, mode, typeProfil: profil, nom, telephone: tel, created_at: new Date().toISOString() });
     SESSION = {
       userId:      json.tenantId,
       tenantId:    json.tenantId,
       role:        'admin',
       version:     mode,
+      type_profil: profil,
       nom,
       telephone:   tel,
       immeubles:   [],
@@ -308,16 +356,18 @@ async function submitLoginTenant() {
       errEl.textContent = json.error || 'Erreur'; errEl.style.display='block';
       return;
     }
-    _setStoredTenant({ tenantId: json.tenantId, mode: json.mode, nom: json.nom, telephone: tel });
+    const profilLogin = json.type_profil || (json.mode === 'entreprise' ? 'cabinet' : 'proprietaire');
+    _setStoredTenant({ tenantId: json.tenantId, mode: json.mode, typeProfil: profilLogin, nom: json.nom, telephone: tel });
     SESSION = {
-      userId:    json.tenantId,
-      tenantId:  json.tenantId,
-      role:      'admin',
-      version:   json.mode,
-      nom:       json.nom,
-      telephone: tel,
-      immeubles: [],
-      _pwdHash:  passwordHash,
+      userId:      json.tenantId,
+      tenantId:    json.tenantId,
+      role:        'admin',
+      version:     json.mode,
+      type_profil: profilLogin,
+      nom:         json.nom,
+      telephone:   tel,
+      immeubles:   [],
+      _pwdHash:    passwordHash,
       _ts: Date.now()
     };
     saveSession();

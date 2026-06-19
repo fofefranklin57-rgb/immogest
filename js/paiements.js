@@ -42,27 +42,55 @@ window.IG.paiements = (function() {
     toast(t('Paiement supprimé'), 'orange');
   }
 
-  // ── Algorithme cumul fiche de suivi (CDC obligatoire) ─────────
-  function calculerFiche(locataire, versements) {
+  // ── Helpers fiche ────────────────────────────────────────────
+  function _formatPeriode(mois, annee) {
+    var debut = new Date(annee, mois - 1, 1);
+    var fin   = new Date(annee, mois, 0);
+    var d = function(dt) {
+      return ('0' + dt.getDate()).slice(-2) + '/' + ('0' + (dt.getMonth()+1)).slice(-2) + '/' + dt.getFullYear();
+    };
+    return d(debut) + ' — ' + d(fin);
+  }
+
+  function _infoRow(l1, v1, l2, v2) {
+    var cell = 'border:1px solid #BBBBBB;padding:4px 7px;font-size:10px;vertical-align:middle;';
+    var lbl  = cell + 'background:#D8E8F7;font-weight:700;color:#1A1A1A;width:22%;';
+    return '<tr><td style="' + lbl + '">' + l1 + '</td><td style="' + cell + '">' + v1 + '</td>' +
+           '<td style="' + lbl + '">' + l2 + '</td><td style="' + cell + '">' + v2 + '</td></tr>';
+  }
+
+  // ── Algorithme cumul FIFO (du plus ancien au plus récent) ────
+  function calculerFiche(locataire, versements, anneeMax) {
     if (!locataire || !locataire.entree) return [];
+
+    var annee = anneeMax || new Date().getFullYear();
 
     var loyers = versements
       .filter(function(v) { return v.type === 'loyer' || !v.type; })
-      .map(function(v) { return { ...v, _restant: parseFloat(v.montant) || 0 }; })
+      .map(function(v) { return Object.assign({}, v, { _restant: parseFloat(v.montant) || 0 }); })
       .sort(function(a, b) { return new Date(a.date_paiement) - new Date(b.date_paiement); });
 
-    var avances = versements.filter(function(v) { return v.type === 'avance'; });
+    var avances     = versements.filter(function(v) { return v.type === 'avance'; });
     var cumulAvance = avances.reduce(function(s, v) { return s + (parseFloat(v.montant) || 0); }, 0);
 
-    var moisList = window.IG.utils.getMoisDepuisEntree(locataire.entree);
-    var lignes   = [];
-    var loyer    = parseFloat(locataire.loyer) || 0;
+    // Générer les mois de la date d'entrée jusqu'à décembre de annee
+    var entree  = new Date(locataire.entree);
+    var moisList = [];
+    var cur = new Date(entree.getFullYear(), entree.getMonth(), 1);
+    var end = new Date(annee, 11, 31);
+    while (cur <= end) {
+      moisList.push({ mois: cur.getMonth() + 1, annee: cur.getFullYear() });
+      cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+    }
+
+    var lignes = [];
+    var loyer  = parseFloat(locataire.loyer) || 0;
 
     moisList.forEach(function(m) {
       var cumul = 0;
       var versementsMois = [];
 
-      // 1. Consommer avance
+      // 1. Consommer avance en premier
       if (cumulAvance >= loyer) {
         cumul = loyer;
         cumulAvance -= loyer;
@@ -71,7 +99,7 @@ window.IG.paiements = (function() {
         cumulAvance = 0;
       }
 
-      // 2. Consommer versements dans l'ordre
+      // 2. Consommer versements FIFO
       loyers.forEach(function(v) {
         if (v._restant <= 0 || cumul >= loyer) return;
         var pris = Math.min(loyer - cumul, v._restant);
@@ -82,7 +110,7 @@ window.IG.paiements = (function() {
 
       var paye = cumul >= loyer;
       lignes.push({
-        periode:    window.IG.utils.nomMois(m.mois) + ' ' + m.annee,
+        periode:    _formatPeriode(m.mois, m.annee),
         mois:       m.mois,
         annee:      m.annee,
         statut:     paye ? 'Payé' : (cumul > 0 ? 'Partiel' : 'Impayé'),
@@ -95,39 +123,57 @@ window.IG.paiements = (function() {
     return lignes;
   }
 
-  // ── Rendu fiche de suivi (CDC complet) ───────────────────────
+  // ── Rendu fiche de suivi V2 ──────────────────────────────────
   function renderFiche(loc, versements, anneeParam) {
-    var toutesLignes = calculerFiche(loc, versements);
-    var annee  = anneeParam || new Date().getFullYear();
-    var imm    = window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null;
-    var session = window.IG.auth ? window.IG.auth.getSession() : {};
-    var cabinet = session.nomCabinet || session.nom || 'ImmoGest';
+    var annee      = anneeParam || new Date().getFullYear();
+    var toutesLignes = calculerFiche(loc, versements, annee);
+    var imm        = window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null;
+    var session    = window.IG.auth ? window.IG.auth.getSession() : {};
+    var params     = session.parametres || {};
+    var loyer      = parseFloat(loc.loyer) || 0;
 
-    // Solde global toutes années
-    var arrieres   = parseFloat(loc.arrieres) || 0;
-    var totalDu    = toutesLignes.reduce(function(s, l) { return s + (l.reste || 0); }, 0);
-    var soldeFinal = totalDu + arrieres;
+    // Paramètres cabinet (auto depuis settings)
+    var cabNom       = params.nom_cabinet  || session.nomCabinet || session.nom || 'Cabinet';
+    var cabAdresse   = params.adresse      || session.adresse    || '';
+    var cabTel       = params.tel          || session.telephone  || '';
+    var cabEmail     = params.email        || session.email      || '';
+    var cabVille     = params.ville        || (imm && imm.ville) || 'Yaoundé';
+    var cabLogo      = params.logo_url     || null;
+    var cabSignataire= params.signataire   || session.signataire || '';
+    var cabRccm      = params.rccm         || '';
 
-    // Score fiabilité (toutes années)
-    var nbMois  = toutesLignes.length;
-    var nbPayes = toutesLignes.filter(function(l) { return l.statut === 'Payé'; }).length;
-    var score   = nbMois ? Math.round((nbPayes / nbMois) * 100) : 100;
+    // Lignes de l'année affichée
+    var lignes = toutesLignes.filter(function(lg) { return lg.annee === annee; });
+
+    // Statistiques
+    var now        = new Date();
+    var todayYYMM  = now.getFullYear() * 100 + (now.getMonth() + 1);
+    var nbPayes    = lignes.filter(function(l) { return l.statut === 'Payé'; }).length;
+    var totalVerse = lignes.reduce(function(s, l) { return s + (l.cumul  || 0); }, 0);
+    var totalReste = lignes.reduce(function(s, l) { return s + (l.reste  || 0); }, 0);
+    var nbMoisAll  = toutesLignes.length;
+    var nbPayesAll = toutesLignes.filter(function(l) { return l.statut === 'Payé'; }).length;
+    var score      = nbMoisAll ? Math.round((nbPayesAll / nbMoisAll) * 100) : 100;
     var scoreCouleur = score >= 80 ? '#27ae60' : score >= 50 ? '#f39c12' : '#e74c3c';
     var scoreLabel   = score >= 80 ? 'Fiable' : score >= 50 ? 'Moyen' : 'À risque';
 
-    // Sélecteur d'années (date entrée → maintenant)
-    var entreeY = loc.entree ? new Date(loc.entree).getFullYear() : new Date().getFullYear();
-    var curY    = new Date().getFullYear();
+    // Sélecteur d'années
+    var entreeY = loc.entree ? new Date(loc.entree).getFullYear() : now.getFullYear();
+    var curY    = now.getFullYear();
     var years   = [];
     for (var y = entreeY; y <= curY; y++) years.push(y);
 
-    // Lignes filtrées sur l'année
-    var lignes = toutesLignes.filter(function(lg) { return lg.annee === annee; });
+    // Infos immeuble
+    var immNom    = imm ? (imm.nom_immeuble || imm.nom || '—') : '—';
 
-    var TD = 'border:1px solid #ddd;padding:5px 6px;vertical-align:top;font-size:10px;';
-    var TH = 'border:1px solid #555;padding:5px 6px;text-align:left;white-space:nowrap;font-size:10px;';
+    // Date edition
+    var dateEdition = now.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    var refDoc      = cabNom.replace(/\s/g,'').substring(0,4).toUpperCase() + '/FS/' + annee + '/' + esc(loc.appt || loc.nom || '').replace(/\s/g,'');
 
-    // ── Barre actions + sélecteur année ──────────────────────────
+    var TH = 'background:#0E6AAF;color:#fff;padding:5px 7px;font-size:9.5px;text-align:left;font-weight:700;border:1px solid #0E6AAF;';
+    var TD = 'border:1px solid #CCCCCC;padding:4px 7px;font-size:9.5px;vertical-align:top;';
+
+    // ── Barre actions ─────────────────────────────────────────
     var html = '<div id="fiche-print-zone">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap">' +
       '<div style="display:flex;align-items:center;gap:8px">' +
@@ -139,127 +185,188 @@ window.IG.paiements = (function() {
       '<button onclick="window.IG.paiements.afficherFormulaireFiche(' + loc.id + ')" style="padding:7px 13px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:12px;font-weight:600;cursor:pointer">+ Paiement</button>' +
       '<button onclick="window.IG.paiements.imprimerFiche()" style="padding:7px 13px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;cursor:pointer">🖨️ PDF</button>' +
       (window.IG.ai ? '<button onclick="window.IG.ai.analyserLocataire(' + loc.id + ')" style="padding:7px 13px;border-radius:8px;border:none;background:linear-gradient(135deg,#7C3AED,#0E6AAF);color:#fff;font-size:12px;font-weight:600;cursor:pointer">✨ IA</button>' : '') +
-      '</div></div>' +
+      '</div></div>';
 
-      // Cards solde + score
+    // Cards solde + score
+    html +=
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
-      '<div style="background:' + (soldeFinal > 0 ? 'rgba(231,76,60,0.1)' : 'rgba(39,174,96,0.1)') + ';border-radius:10px;padding:12px;text-align:center">' +
-      '<div style="font-size:10px;text-transform:uppercase;font-weight:700;color:var(--text3);margin-bottom:4px">' + (soldeFinal > 0 ? '⚠️ Solde dû' : '✅ À jour') + '</div>' +
-      '<div style="font-size:20px;font-weight:800;color:' + (soldeFinal > 0 ? '#e74c3c' : '#27ae60') + '">' + fmt(Math.abs(soldeFinal)) + '</div>' +
+      '<div style="background:' + (totalReste > 0 ? 'rgba(231,76,60,0.1)' : 'rgba(39,174,96,0.1)') + ';border-radius:10px;padding:12px;text-align:center">' +
+      '<div style="font-size:10px;text-transform:uppercase;font-weight:700;color:var(--text3);margin-bottom:4px">' + (totalReste > 0 ? '⚠️ Solde dû' : '✅ À jour') + '</div>' +
+      '<div style="font-size:20px;font-weight:800;color:' + (totalReste > 0 ? '#e74c3c' : '#27ae60') + '">' + fmt(Math.abs(totalReste)) + '</div>' +
       '</div>' +
       '<div style="background:var(--bg3);border-radius:10px;padding:12px;text-align:center">' +
       '<div style="font-size:10px;text-transform:uppercase;font-weight:700;color:var(--text3);margin-bottom:4px">🎯 Score fiabilité</div>' +
       '<div style="font-size:20px;font-weight:800;color:' + scoreCouleur + '">' + score + '<span style="font-size:12px;font-weight:500">/100</span></div>' +
       '<div style="font-size:11px;color:' + scoreCouleur + ';margin-top:2px">' + scoreLabel + '</div>' +
-      '</div></div>' +
+      '</div></div>';
 
-      // ── Document fiche style V1 ──
-      '<div style="font-family:Arial,sans-serif;font-size:11px;background:#fff;color:#111;padding:8px">' +
+    // ── Document papier ──────────────────────────────────────
+    html += '<div id="fiche-doc" style="font-family:\'Times New Roman\',serif;font-size:11px;background:#fff;color:#111;padding:20px;border:0.5px solid #ddd;border-radius:4px">';
 
-      // Titre centré V1
-      '<div style="text-align:center;font-size:15px;font-weight:900;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">Fiche de Suivi des Loyers</div>' +
+    // En-tête cabinet (logo ou nom texte)
+    html += '<table style="width:100%;border-collapse:collapse;margin-bottom:8px"><tr>' +
+      '<td style="vertical-align:top;width:55%">';
+    if (cabLogo) {
+      html += '<img src="' + cabLogo + '" style="max-height:48px;max-width:140px;margin-bottom:4px"><br>';
+    } else {
+      html += '<div style="font-size:13px;font-weight:700;color:#0E6AAF">' + esc(cabNom) + '</div>';
+    }
+    if (cabAdresse)  html += '<div style="font-size:9px;color:#333">' + esc(cabAdresse) + '</div>';
+    if (cabTel)      html += '<div style="font-size:9px;color:#333">Tél : ' + esc(cabTel) + '</div>';
+    if (cabEmail)    html += '<div style="font-size:9px;color:#333">Email : ' + esc(cabEmail) + '</div>';
+    if (cabRccm)     html += '<div style="font-size:9px;color:#666">RCCM : ' + esc(cabRccm) + '</div>';
+    html += '</td><td style="vertical-align:top;text-align:right">' +
+      '<div style="font-size:9px;color:#333">' + esc(cabVille) + ', le ' + dateEdition + '</div>' +
+      '<div style="font-size:8.5px;color:#666;font-style:italic">Réf : ' + refDoc + '</div>' +
+      '</td></tr></table>';
 
-      // Grille identité V1 — border global, padding 6px, gap minimal
-      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:10px;border:1px solid #333;padding:6px">' +
-      '<div><strong>Immeuble :</strong> ' + esc(imm ? (imm.nom_immeuble || imm.nom) : '—') + '</div>' +
-      '<div><strong>Nom locataire :</strong> ' + esc(loc.nom) + '</div>' +
-      '<div><strong>N° local :</strong> ' + esc(loc.appt || '—') + '</div>' +
-      '<div><strong>Type :</strong> ' + esc(loc.type_local || 'Appartement') + '</div>' +
-      '<div><strong>Adresse :</strong> ' + esc(imm ? ((imm.ville || '') + (imm.quartier ? ' – ' + imm.quartier : '')) : '—') + '</div>' +
-      '<div><strong>Loyer :</strong> ' + fmt(loc.loyer) + ' FCFA</div>' +
-      '<div><strong>Année :</strong> ' + annee + '</div>' +
-      '<div><strong>Date d\'entrée :</strong> ' + (loc.entree ? window.IG.utils.formatDate(loc.entree) : '—') + '</div>' +
-      '<div><strong>Cabinet :</strong> ' + esc(cabinet) + '</div>' +
-      '</div>' +
+    // Séparateur
+    html += '<div style="border-bottom:3px solid #0E6AAF;margin:8px 0 10px"></div>';
 
-      // Tableau V1 : 7 colonnes
-      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
-      '<thead><tr style="background:#0a1628;color:#fff">' +
-      '<th style="' + TH + '">Période</th>' +
-      '<th style="' + TH + 'text-align:center">Statut</th>' +
-      '<th style="' + TH + 'text-align:right">Montant versé</th>' +
-      '<th style="' + TH + 'text-align:right">Reste</th>' +
-      '<th style="' + TH + 'text-align:center">Date règlement</th>' +
-      '<th style="' + TH + 'text-align:center">Mode règlement</th>' +
-      '<th style="' + TH + 'width:18%">Observations</th>' +
+    // Titre + sous-titre
+    html += '<div style="text-align:center;font-size:14px;font-weight:700;color:#0E6AAF;margin-bottom:4px;text-transform:uppercase">Fiche de suivi des versements</div>';
+    html += '<div style="text-align:center;font-style:italic;font-size:10px;color:#333;margin-bottom:12px">Depuis le ' + (loc.entree ? window.IG.utils.formatDate(loc.entree) : '—') + ' — Édition au ' + dateEdition + '</div>';
+
+    // Infos locataire
+    html += '<table style="width:100%;border-collapse:collapse;margin-bottom:12px">';
+    html += _infoRow('Locataire',     esc(loc.nom),                                  'Immeuble',      esc(immNom));
+    html += _infoRow('Local',         esc(loc.appt || '—'),                          'Date d\'entrée', loc.entree ? window.IG.utils.formatDate(loc.entree) : '—');
+    html += _infoRow('Loyer mensuel', fmt(loyer) + ' F',                             'Caution versée', fmt(parseFloat(loc.caution) || 0) + ' F');
+    html += '</table>';
+
+    // Section Caution & avances
+    var cautions = versements.filter(function(v) { return v.type === 'caution'; });
+    var avances  = versements.filter(function(v) { return v.type === 'avance'; });
+    var speciaux = cautions.concat(avances).sort(function(a, b) { return new Date(a.date_paiement) - new Date(b.date_paiement); });
+    if (speciaux.length) {
+      html += '<div style="font-size:10.5px;font-weight:700;color:#0E6AAF;margin:10px 0 5px;text-transform:uppercase">Caution &amp; avances versées à l\'entrée</div>';
+      html += '<table style="width:100%;border-collapse:collapse;margin-bottom:10px">';
+      html += '<thead><tr>' +
+        '<th style="' + TH + '">Type</th>' +
+        '<th style="' + TH + '">Date</th>' +
+        '<th style="' + TH + '">Montant</th>' +
+        '<th style="' + TH + '">Mode</th>' +
+        '<th style="' + TH + '">Mois couverts</th>' +
+        '<th style="' + TH + '">Note</th>' +
+        '</tr></thead><tbody>';
+      speciaux.forEach(function(v, i) {
+        var bg = i % 2 === 0 ? '' : 'background:#F5F9FD;';
+        var moisCouverts = v.type === 'avance' ? Math.floor((parseFloat(v.montant) || 0) / loyer) + ' mois' : '—';
+        html += '<tr style="' + bg + '">' +
+          '<td style="' + TD + 'font-weight:700">' + (v.type === 'caution' ? 'Caution' : 'Avance') + '</td>' +
+          '<td style="' + TD + '">' + (v.date_paiement ? window.IG.utils.formatDate(v.date_paiement) : '—') + '</td>' +
+          '<td style="' + TD + '">' + fmt(v.montant) + ' F</td>' +
+          '<td style="' + TD + '">' + esc(v.mode_paiement || 'espèces') + '</td>' +
+          '<td style="' + TD + '">' + moisCouverts + '</td>' +
+          '<td style="' + TD + '">' + esc(v.note || '—') + '</td>' +
+          '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+
+    // Section Historique
+    html += '<div style="font-size:10.5px;font-weight:700;color:#0E6AAF;margin:10px 0 5px;text-transform:uppercase">Historique des versements</div>';
+    html += '<table style="width:100%;border-collapse:collapse;margin-bottom:10px">';
+    html += '<thead><tr>' +
+      '<th style="' + TH + 'width:22%">Période</th>' +
+      '<th style="' + TH + 'width:10%">Statut</th>' +
+      '<th style="' + TH + 'width:35%">Versement(s) — Montant / Date</th>' +
+      '<th style="' + TH + 'width:13%">Reste dû</th>' +
+      '<th style="' + TH + 'width:20%">Observation</th>' +
       '</tr></thead><tbody>';
 
-    // Ligne arriérés antérieurs
-    if (arrieres > 0) {
-      html += '<tr style="background:#fff5f5">' +
-        '<td style="' + TD + 'font-weight:700;color:#e74c3c">Arriérés antérieurs</td>' +
-        '<td style="' + TD + 'text-align:center;color:#e74c3c;font-weight:700">Impayé</td>' +
-        '<td style="' + TD + '">—</td>' +
-        '<td style="' + TD + 'text-align:right;color:#e74c3c;font-weight:700">' + fmt(arrieres) + '</td>' +
-        '<td colspan="3" style="' + TD + 'color:#888">' + (loc.mois_arrieres > 0 ? loc.mois_arrieres + ' mois avant suivi' : '—') + '</td>' +
+    lignes.forEach(function(lg, i) {
+      var bg      = i % 2 === 0 ? '' : 'background:#F5F9FD;';
+      var isFutur = (lg.annee * 100 + lg.mois) > todayYYMM;
+
+      if (isFutur) {
+        html += '<tr style="' + bg + '">' +
+          '<td style="' + TD + 'color:#bbb;font-style:italic">' + lg.periode + '</td>' +
+          '<td style="' + TD + '"></td><td style="' + TD + '"></td>' +
+          '<td style="' + TD + '"></td><td style="' + TD + '"></td>' +
+          '</tr>';
+        return;
+      }
+
+      // Statut : affiché uniquement si mois intégralement payé
+      var statutCell = lg.statut === 'Payé'
+        ? '<span style="color:#1a7a3a;font-weight:700">Payé</span>'
+        : '';
+
+      // Versements empilés
+      var versCell = '';
+      if (lg.versements && lg.versements.length > 0) {
+        versCell = lg.versements.map(function(v) {
+          return '<span style="display:block;line-height:1.8">' +
+            fmt(v.montant) + ' F &nbsp;—&nbsp; ' +
+            (v.date ? window.IG.utils.formatDate(v.date) : '—') +
+            '</span>';
+        }).join('');
+      } else if (lg.cumul > 0) {
+        versCell = '<span style="color:#888;font-style:italic;font-size:9px">Couvert par avance</span>';
+      }
+
+      var resteCell = lg.reste > 0
+        ? '<span style="color:#c0392b;font-weight:700">' + fmt(lg.reste) + ' F</span>'
+        : (lg.statut === 'Payé' ? '—' : '');
+
+      var obs = lg.versements && lg.versements.length > 1
+        ? lg.versements.length + ' versements'
+        : (lg.versements && lg.versements[0] ? esc(lg.versements[0].note || '') : '');
+
+      var recuBtn = (lg.versements && lg.versements.length > 0)
+        ? ' <button onclick="window.IG.paiements.imprimerRecu(' + loc.id + ',' + lg.mois + ',' + lg.annee + ')" style="border:none;background:none;cursor:pointer;font-size:11px;padding:0;margin-left:4px" title="Reçu">🖨️</button>'
+        : '';
+
+      html += '<tr style="' + bg + '">' +
+        '<td style="' + TD + '">' + lg.periode + '</td>' +
+        '<td style="' + TD + '">' + statutCell + '</td>' +
+        '<td style="' + TD + '">' + versCell + '</td>' +
+        '<td style="' + TD + '">' + resteCell + '</td>' +
+        '<td style="' + TD + '">' + obs + recuBtn + '</td>' +
         '</tr>';
-    }
+    });
 
-    if (!lignes.length) {
-      html += '<tr><td colspan="7" style="text-align:center;padding:16px;color:#999">Aucune donnée pour ' + annee + '</td></tr>';
-    } else {
-      lignes.forEach(function(lg, i) {
-        var bg = i % 2 === 0 ? '#fff' : '#f8f9fa';
-        if (!lg.versements || lg.versements.length === 0) {
-          html += '<tr style="background:' + bg + '">' +
-            '<td style="' + TD + 'font-weight:600">' + esc(lg.periode) + '</td>' +
-            '<td style="' + TD + '"></td><td style="' + TD + '"></td>' +
-            '<td style="' + TD + 'text-align:right;color:#e74c3c">' + (lg.reste > 0 ? fmt(lg.reste) : '—') + '</td>' +
-            '<td style="' + TD + '"></td><td style="' + TD + '"></td><td style="' + TD + '"></td></tr>';
-        } else {
-          var montants = lg.versements.map(function(v) { return fmt(v.montant); }).join('<br>');
-          var restes   = lg.versements.map(function(v, vi) {
-            var r = vi === lg.versements.length - 1 ? lg.reste : null;
-            return r !== null ? '<span style="color:' + (r > 0 ? '#e74c3c' : '#27ae60') + '">' + fmt(r) + '</span>' : '—';
-          }).join('<br>');
-          var dates    = lg.versements.map(function(v) { return v.date ? window.IG.utils.formatDate(v.date) : '—'; }).join('<br>');
-          var modes    = lg.versements.map(function(v) { return v.mode_paiement || 'espèces'; }).join('<br>');
-          var obs      = lg.versements.length > 1 ? lg.versements.length + ' versements' : (lg.versements[0].note || '');
-          var sColor   = lg.statut === 'Payé' ? '#27ae60' : lg.statut === 'Partiel' ? '#f39c12' : '#e74c3c';
-          html += '<tr style="background:' + bg + '">' +
-            '<td style="' + TD + 'font-weight:600">' + esc(lg.periode) + '</td>' +
-            '<td style="' + TD + 'text-align:center;color:' + sColor + ';font-weight:700">' + lg.statut + '</td>' +
-            '<td style="' + TD + 'text-align:right">' + montants + '</td>' +
-            '<td style="' + TD + 'text-align:right">' + restes + '</td>' +
-            '<td style="' + TD + 'text-align:center">' + dates + '</td>' +
-            '<td style="' + TD + 'text-align:center">' + modes + '</td>' +
-            '<td style="' + TD + '">' + esc(obs) + ' ' +
-            '<button onclick="window.IG.paiements.imprimerRecu(' + loc.id + ',' + lg.mois + ',' + lg.annee + ')" style="border:none;background:none;cursor:pointer;font-size:12px;padding:0" title="Reçu">🖨️</button>' +
-            '</td></tr>';
-        }
-      });
-    }
-
-    var totalVerse = lignes.reduce(function(s, l) { return s + (l.cumul || 0); }, 0);
-    html += '<tr style="background:#f0f0f0;font-weight:700">' +
-      '<td style="' + TD + '" colspan="2">TOTAL</td>' +
-      '<td style="' + TD + 'text-align:right">' + fmt(totalVerse) + ' FCFA</td>' +
-      '<td colspan="4" style="' + TD + '"></td>' +
+    // Ligne TOTAUX
+    html += '<tr style="background:#0E6AAF">' +
+      '<td style="' + TD + 'border-color:#0E6AAF;font-weight:700;color:#fff">' + nbPayes + ' mois payés</td>' +
+      '<td style="' + TD + 'border-color:#0E6AAF"></td>' +
+      '<td style="' + TD + 'border-color:#0E6AAF;font-weight:700;color:#fff">' + fmt(totalVerse) + ' F</td>' +
+      '<td style="' + TD + 'border-color:#0E6AAF;font-weight:700;color:#fff">' + fmt(totalReste) + ' F</td>' +
+      '<td style="' + TD + 'border-color:#0E6AAF"></td>' +
       '</tr>';
-    html += '</tbody></table></div>' +
+    html += '</tbody></table>';
 
-    // Signatures V1 — ligne simple
-    '<div style="margin-top:16px;display:flex;justify-content:space-between;font-size:10px">' +
-    '<div>Signature du locataire : _______________________</div>' +
-    '<div>Signature du gestionnaire : _______________________</div>' +
-    '</div>' +
-    '</div>' + // fin document fiche
+    // Solde dû / À jour
+    if (totalReste > 0) {
+      html += '<div style="background:#fff5f5;border:1px solid #e74c3c;padding:7px 12px;text-align:center;font-weight:700;font-size:11.5px;color:#c0392b;margin:12px 0;border-radius:3px">' +
+        'SOLDE DÛ AU ' + dateEdition.toUpperCase() + ' : ' + fmt(totalReste) + ' F' +
+        '</div>';
+    } else {
+      html += '<div style="background:#f0faf4;border:1px solid #27ae60;padding:7px 12px;text-align:center;font-weight:700;font-size:11.5px;color:#1a7a3a;margin:12px 0;border-radius:3px">' +
+        '✓ À JOUR AU ' + dateEdition.toUpperCase() +
+        '</div>';
+    }
 
-    '<div id="ig-ad-fiche" style="margin-top:14px;text-align:center"></div>' +
-    '</div>'; // fin fiche-print-zone
+    // Signatures
+    html += '<div style="display:flex;justify-content:space-between;margin-top:18px;border-top:1px solid #ddd;padding-top:12px">' +
+      '<div style="text-align:center;width:45%;font-size:9.5px">' +
+      '<div style="font-weight:700;font-size:10px">Le Gestionnaire</div>' +
+      '<div>' + esc(cabNom) + '</div>' +
+      (cabSignataire ? '<div style="color:#666;font-size:9px">' + esc(cabSignataire) + '</div>' : '') +
+      '<div style="border-top:1px solid #555;margin-top:30px;padding-top:4px;font-style:italic;color:#666;font-size:9px">Signature et cachet</div>' +
+      '</div>' +
+      '<div style="text-align:center;width:45%;font-size:9.5px">' +
+      '<div style="font-weight:700;font-size:10px">Le Locataire</div>' +
+      '<div>' + esc(loc.nom) + '</div>' +
+      '<div style="border-top:1px solid #555;margin-top:30px;padding-top:4px;font-style:italic;color:#666;font-size:9px">Signature</div>' +
+      '</div></div>';
+
+    html += '</div>'; // fin fiche-doc
+    html += '<div id="ig-ad-fiche" style="margin-top:14px;text-align:center"></div>';
+    html += '</div>'; // fin fiche-print-zone
 
     return html;
-  }
-
-  function _ficheInfo(label, val) {
-    return '<div><div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:2px">' + label + '</div>' +
-      '<div style="font-size:12px;font-weight:600">' + val + '</div></div>';
-  }
-
-  function _ficheCell(label, val) {
-    return '<div style="padding:5px 8px;border-right:1px solid #ccc;border-bottom:1px solid #ccc;font-size:10px">' +
-      '<span style="color:#666;font-size:9px;display:block;text-transform:uppercase;font-weight:600;margin-bottom:1px">' + label + '</span>' +
-      '<strong>' + (val || '—') + '</strong></div>';
   }
 
   // ── Aperçu avant impression (générique) ──────────────────────
@@ -294,7 +401,6 @@ window.IG.paiements = (function() {
       w.document.write('<html><head><title>' + titre + '</title><style>' + css + '@media print{.no-print{display:none}}</style></head><body>' + bodyHtml + '</body></html>');
       w.document.close();
       w.focus();
-      setTimeout(function() { w.print(); }, 400);
     });
   }
 
@@ -380,6 +486,15 @@ window.IG.paiements = (function() {
       '<option value="charge">Charge</option>' +
       '</select></div>' +
       _field('note', t('Note (optionnel)'), '') +
+      (function() {
+        var session = window.IG.auth ? window.IG.auth.getSession() : {};
+        var profil = session.type_profil || '';
+        if (profil === 'proprietaire') return '';
+        return '<div style="margin-bottom:12px;padding:10px 12px;background:var(--bg3);border-radius:8px;display:flex;align-items:center;gap:10px">' +
+          '<input type="checkbox" name="remisAuBailleur" id="chk-remis" value="1" style="width:16px;height:16px;cursor:pointer">' +
+          '<label for="chk-remis" style="font-size:13px;color:var(--text);cursor:pointer">' +
+          t('Loyer remis directement au bailleur') + '</label></div>';
+      })() +
       '<div id="ig-ad-pay-form" style="margin:14px 0 10px;text-align:center"></div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">' +
       '<button type="button" data-modal-close style="padding:10px 18px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer">' + t('Annuler') + '</button>' +
@@ -400,7 +515,8 @@ window.IG.paiements = (function() {
         annee:          parseInt(fd.get('annee')),
         mode_paiement:  fd.get('mode_paiement'),
         type:           fd.get('type'),
-        note:           fd.get('note')
+        note:           fd.get('note'),
+        remisAuBailleur: fd.get('remisAuBailleur') === '1'
       };
       try {
         await enregistrer(pay);

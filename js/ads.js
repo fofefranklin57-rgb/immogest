@@ -22,11 +22,20 @@ window.IG.ads = (function() {
 
   function init() {
     var plan = window.IG.plans ? window.IG.plans.getPlan() : 'gratuit';
-    if (plan !== 'gratuit') {
+
+    if (plan === 'gratuit') {
+      // Plan gratuit : toutes les pubs (Monetag native + Adsterra bannière fixe + in-page push)
+      _injecterScript();          // Monetag native ads
+      _injecterBanniereFixe();    // Adsterra bannière fixe en bas
+      _injecterBanniereIA();      // Monetag in-page push
+    } else if (plan === 'trial') {
+      // Essai : zéro pub — expérience premium complète
       _cacherToutesLesPubs();
+    } else {
+      // Payant (starter / pro / cabinet) : uniquement bannière statique Adsterra en bas
+      _cacherToutesLesPubs();
+      _injecterBanniereFixe();    // Bannière discrète non-intrusive
     }
-    // Bannière Adsterra fixe en bas — tous plans, toutes pages
-    _injecterBanniereFixe();
   }
 
   function _injecterBanniereFixe() {
@@ -104,7 +113,7 @@ window.IG.ads = (function() {
       'font-size:12px;box-shadow:0 -4px 20px rgba(0,0,0,0.2)';
     var t = window.IG.i18n ? window.IG.i18n.t.bind(window.IG.i18n) : function(k){return k;};
     div.innerHTML =
-      '<span>✨ <strong>' + t('Plan Gratuit') + '</strong> — 2 ' + t('immeubles') + ', 20 ' + t('locataires') + ' max</span>' +
+      '<span>✨ <strong>' + t('Plan Gratuit') + '</strong> — 1 immeuble, 10 locataires max</span>' +
       '<button onclick="window.IG.plans.afficherUpgrade()" ' +
         'style="padding:6px 14px;border-radius:8px;border:none;background:#fff;color:#0E6AAF;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">' +
         '⬆ ' + t('Passer Pro') + '</button>';
@@ -116,6 +125,7 @@ window.IG.ads = (function() {
     var el = document.getElementById(containerId);
     if (!el) return;
     var plan = window.IG.plans ? window.IG.plans.getPlan() : 'gratuit';
+    // Seulement sur plan gratuit (pas essai, pas payant)
     if (plan !== 'gratuit') { el.style.display = 'none'; return; }
 
     el.className = 'ig-ad-zone';
@@ -123,7 +133,7 @@ window.IG.ads = (function() {
     el.innerHTML =
       '<div style="padding:8px 12px;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border)">PUBLICITÉ</div>' +
       '<div class="monetag-ad" style="min-height:90px;display:flex;align-items:center;justify-content:center;padding:12px">' +
-      '<p style="font-size:12px;color:var(--text3);text-align:center">⬆ Passez au plan <strong>Starter</strong> (3 000 FCFA/mois) pour supprimer les publicités</p>' +
+      '<p style="font-size:12px;color:var(--text3);text-align:center">⬆ Passez à <strong>Starter</strong> (5 000 FCFA/mois) pour supprimer les publicités</p>' +
       '</div>';
   }
 
@@ -142,7 +152,40 @@ window.IG.ads = (function() {
     if (!footer) return;
 
     var existing = document.getElementById('ig-usage-widget');
+    // Masquer pour essai ET plans payants
     if (plan !== 'gratuit') { if (existing) existing.remove(); return; }
+
+    // Afficher le badge essai si applicable
+    var joursRestants = window.IG.plans ? window.IG.plans.getJoursEssaiRestants() : 0;
+    if (joursRestants > 0) {
+      if (!existing) {
+        existing = document.createElement('div');
+        existing.id = 'ig-usage-widget';
+        footer.insertBefore(existing, footer.firstChild);
+      }
+      // Urgence progressive selon jours restants
+    var urgColor = joursRestants > 14 ? '#7C3AED' : joursRestants > 7 ? '#d97706' : '#dc2626';
+    var urgMsg   = joursRestants > 14
+      ? 'Toutes les fonctionnalités actives'
+      : joursRestants > 7
+        ? '⚠️ Profitez-en — bientôt limité'
+        : joursRestants > 3
+          ? '🔥 Derniers jours — ne perdez pas vos données'
+          : '⛔ Expiration imminente — agissez maintenant';
+    var ctaText  = joursRestants > 14
+      ? 'Choisir mon plan →'
+      : joursRestants > 3
+        ? 'Continuer sans interruption →'
+        : '🔓 Sécuriser mon accès →';
+
+    existing.style.cssText = 'margin-bottom:10px;padding:10px 12px;background:' + urgColor + '22;border-radius:8px;border:1px solid ' + urgColor + '55;';
+    existing.innerHTML =
+      '<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">🎁 Période d\'essai</div>' +
+      '<div style="font-size:16px;font-weight:900;color:' + urgColor.replace('#','').length === 6 ? urgColor : '#c4b5fd' + ';margin-bottom:2px">' + joursRestants + ' jour' + (joursRestants > 1 ? 's' : '') + ' restant' + (joursRestants > 1 ? 's' : '') + '</div>' +
+      '<div style="font-size:10px;color:rgba(255,255,255,0.55);margin-bottom:8px">' + urgMsg + '</div>' +
+      '<button onclick="window.IG.plans.afficherUpgrade()" style="width:100%;padding:7px;background:' + urgColor + ';color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">' + ctaText + '</button>';
+    return;
+    }
 
     if (!existing) {
       existing = document.createElement('div');
@@ -153,7 +196,7 @@ window.IG.ads = (function() {
     var data = window.IG.app ? window.IG.app.getData() : { immeubles: [], locataires: [] };
     var nbImm = data.immeubles ? data.immeubles.length : 0;
     var nbLoc = data.locataires ? data.locataires.filter(function(l) { return l.statut !== 'libre'; }).length : 0;
-    var maxImm = 1, maxLoc = 10;
+    var maxImm = 1, maxLoc = 10; // limites plan gratuit
     var pImm = Math.min(100, Math.round((nbImm / maxImm) * 100));
     var pLoc = Math.min(100, Math.round((nbLoc / maxLoc) * 100));
     var cImm = pImm >= 100 ? '#e74c3c' : pImm >= 80 ? '#f39c12' : 'rgba(255,255,255,0.35)';

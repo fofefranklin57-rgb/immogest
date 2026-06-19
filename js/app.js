@@ -70,7 +70,6 @@ window.IG.app = (function() {
       _navItem('paiements', '💰', t('Encaissements')) +
       _navItem('relances', '⚠️', t('Relances'), true) +
       _navItem('rapports', '📄', t('Rapports')) +
-      _navItem('rapport-annuel', '📅', t('Rapport annuel')) +
       _navItem('statistiques', '📈', t('Statistiques')) +
       _navItem('juridique', '⚖️', t('Juridique')) +
       '</div>' +
@@ -192,7 +191,6 @@ window.IG.app = (function() {
     if (p === 'locataires') { if (window.IG.locataires) window.IG.locataires.afficherFormulaire(); }
     else if (p === 'paiements') { if (window.IG.paiements) window.IG.paiements.afficherFormulaire(); }
     else if (p === 'immeubles') { if (window.IG.immeubles) window.IG.immeubles.afficherFormulaire(); }
-    else if (p === 'rapport-annuel') { if (window.IG.rapports) window.IG.rapports.afficherRapportAnnuel(); }
     else { showPage('locataires'); }
   }
 
@@ -589,11 +587,6 @@ window.IG.app = (function() {
         if (title) title.textContent = t('Statistiques');
         if (sub) sub.textContent = '';
         _renderStatistiques(); break;
-      case 'rapport-annuel':
-        if (title) title.textContent = t('Rapport annuel');
-        if (sub) sub.textContent = '';
-        if (window.IG.rapports) window.IG.rapports.afficherRapportAnnuel();
-        break;
       case 'archives':
         if (title) title.textContent = t('Archives');
         if (sub) sub.textContent = '';
@@ -620,7 +613,7 @@ window.IG.app = (function() {
     var sectionMap = {
       immeubles: 'immeubles',
       locataires: 'gestion', paiements: 'gestion', relances: 'gestion',
-      rapports: 'gestion', 'rapport-annuel': 'gestion', statistiques: 'gestion', juridique: 'gestion'
+      rapports: 'gestion', statistiques: 'gestion', juridique: 'gestion'
     };
     var sectionId = sectionMap[page];
     if (sectionId) {
@@ -1545,9 +1538,10 @@ window.IG.app = (function() {
       '<p style="font-size:16px;line-height:1.7;color:rgba(255,255,255,0.65);margin-bottom:30px;max-width:380px;">La plateforme complète de gestion immobilière.<br>Locataires, encaissements, rapports et bien plus.</p>' +
       // Badges fonctionnalités
       '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:36px;">' +
-      '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">✅ Droit local</span>' +
-      '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">📊 Hors-ligne</span>' +
+      '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">✅ Droit OHADA</span>' +
+      '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">📶 Hors-ligne</span>' +
       '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">💳 Mobile Money</span>' +
+      '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">📋 Documents juridiques</span>' +
       '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">✍️ Signature électronique</span>' +
       '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">🤖 Assistant IA</span>' +
       '</div>' +

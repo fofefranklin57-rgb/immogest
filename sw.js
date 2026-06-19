@@ -33,6 +33,8 @@ var ASSETS_CACHE = [
   '/js/plans.js',
   '/js/ads.js',
   '/js/owner.js',
+  '/js/signature.js',
+  '/js/onesignal.js',
   '/js/app.js'
 ];
 

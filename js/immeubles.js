@@ -122,6 +122,23 @@ window.IG.immeubles = (function() {
       '</div>' +
       '<div style="margin-bottom:14px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Couleur') + '</label>' +
       '<input type="color" name="couleur" value="' + esc(imm ? (imm.couleur || '#0E6AAF') : '#0E6AAF') + '" style="width:100%;height:36px;border-radius:6px;border:1px solid var(--border2);cursor:pointer;margin-top:4px"></div>' +
+      (function() {
+        var session = window.IG.auth ? window.IG.auth.getSession() : {};
+        if ((session.type_profil || '') === 'proprietaire') return '';
+        var typeHon = imm ? (imm.type_honoraires || 'aucun') : 'aucun';
+        var valHon  = imm ? (imm.valeur_honoraires || 0) : 0;
+        return '<div style="margin-bottom:14px">' +
+          '<label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Honoraires cabinet') + '</label>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">' +
+          '<select name="type_honoraires" style="padding:8px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px">' +
+          '<option value="aucun"' + (typeHon === 'aucun' ? ' selected' : '') + '>Aucun</option>' +
+          '<option value="pourcentage"' + (typeHon === 'pourcentage' ? ' selected' : '') + '>Pourcentage (%)</option>' +
+          '<option value="forfait"' + (typeHon === 'forfait' ? ' selected' : '') + '>Forfait fixe (F CFA)</option>' +
+          '</select>' +
+          '<input type="number" name="valeur_honoraires" value="' + esc(String(valHon)) + '" min="0" placeholder="Ex: 10 ou 50000" ' +
+          'style="padding:8px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px">' +
+          '</div></div>';
+      })() +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">' +
       '<button type="button" data-modal-close class="btn-secondary" style="padding:10px 18px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer">' + t('Annuler') + '</button>' +
       '<button type="submit" class="btn-primary" style="padding:10px 20px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:600">' + t('Sauvegarder') + '</button>' +
@@ -153,7 +170,9 @@ window.IG.immeubles = (function() {
       data.studios      = parseInt(fd.get('studios'))  || 0;
       data.chambres     = parseInt(fd.get('chambres')) || 0;
       data.duplex       = parseInt(fd.get('duplex'))   || 0;
-      data.couleur      = fd.get('couleur');
+      data.couleur            = fd.get('couleur');
+      data.type_honoraires    = fd.get('type_honoraires') || 'aucun';
+      data.valeur_honoraires  = parseFloat(fd.get('valeur_honoraires')) || 0;
       try {
         await sauvegarder(data);
         modal.close();

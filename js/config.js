@@ -11,6 +11,11 @@ window.IG.config = {
   workerUrl:   'https://immogest1.fofefranklin57.workers.dev',
   oneSignalAppId: '8a3857ab-64cc-4a62-9916-ce46b4768dac',
   monetagMeta: 'd9b7d2935fbcb3e568288a4ff0852e32',
+  fapshi: {
+    apikey:   'FAK_cbc4bca6ea0ddf6e23d57ab438b93a4a',
+    apiuser:  'fofefranklin57@gmail.com',
+    baseUrl:  'https://live.fapshi.com'
+  },
 
   primaryColor:'#0E6AAF',
   modules: {
@@ -21,10 +26,11 @@ window.IG.config = {
     ia:          true
   },
   plans: {
-    gratuit:      { immeubles: 2, locataires: 20, label: 'Gratuit' },
-    starter:      { immeubles: 5, locataires: 100, label: 'Starter', prix: 3000 },
-    pro:          { immeubles: 20, locataires: 500, label: 'Pro', prix: 10000 },
-    cabinet:      { immeubles: -1, locataires: -1, label: 'Cabinet', prix: 25000 }
+    gratuit:  { immeubles: 1,  locataires: 10,  utilisateurs: 1,  label: 'Gratuit', prix: 0 },
+    trial:    { immeubles: -1, locataires: -1,  utilisateurs: -1, label: 'Essai',   prix: 0 },
+    starter:  { immeubles: 10, locataires: 300, utilisateurs: 5,  label: 'Starter', prix: 10000 },
+    pro:      { immeubles: 50, locataires: -1,  utilisateurs: 15, label: 'Pro',     prix: 15000 },
+    cabinet:  { immeubles: -1, locataires: -1,  utilisateurs: -1, label: 'Cabinet', prix: 30000 }
   }
 };
 
