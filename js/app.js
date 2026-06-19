@@ -278,10 +278,10 @@ window.IG.app = (function() {
     panel.style.display = open ? 'none' : 'flex';
     if (!open) {
       document.getElementById('ai-input').focus();
-      // Injecter la bannière promo si pas encore fait
+      // Injecter pub Monetag 300x250 dans le panel IA
       var banner = document.getElementById('ai-ad-banner');
-      if (banner && !banner.querySelector('.ig-promo-banner') && window.IG.ads) {
-        window.IG.ads.rendreBannierePromo('ai-ad-banner');
+      if (banner && !banner.querySelector('script[data-zone]') && window.IG.ads) {
+        window.IG.ads.injecterMonetag('ai-ad-banner', 29679261);
       }
     }
   }

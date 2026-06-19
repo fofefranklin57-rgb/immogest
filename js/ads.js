@@ -77,7 +77,7 @@ window.IG.ads = (function() {
       var b = document.getElementById('ai-ad-banner');
       if (b) {
         clearInterval(iv);
-        if (!b.querySelector('.ig-promo-banner')) rendreBannierePromo('ai-ad-banner');
+        if (!b.querySelector('script[data-zone]')) injecterMonetag('ai-ad-banner', 29679261);
       } else if (++tries > 80) {
         clearInterval(iv);
       }
@@ -98,13 +98,13 @@ window.IG.ads = (function() {
     s.async = true;
     document.head.appendChild(s);
 
-    // Bannière promo dans le panel IA
+    // Zone Monetag 300x250 dans le panel IA
     var _tries = 0;
     var _check = setInterval(function() {
       var banner = document.getElementById('ai-ad-banner');
       if (banner || ++_tries > 40) {
         clearInterval(_check);
-        if (banner) rendreBannierePromo('ai-ad-banner');
+        if (banner && !banner.querySelector('script[data-zone]')) injecterMonetag('ai-ad-banner', 29679261);
       }
     }, 250);
   }
@@ -347,7 +347,20 @@ window.IG.ads = (function() {
     }
   }
 
-  // ── Bannière promo maison (fallback si Adsterra pas chargé) ──
+  // ── Monetag zones numériques (Banner / Native) ───────────────
+  function injecterMonetag(containerId, zoneId) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    if (container.querySelector('script[data-zone="' + zoneId + '"]')) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.setAttribute('data-cfasync', 'false');
+    s.setAttribute('data-zone', String(zoneId));
+    s.src = 'https://pl' + zoneId + '.profitableratecpm.com/invokeMNTags.min.js';
+    container.appendChild(s);
+  }
+
+  // ── Bannière promo maison (fallback si pub pas chargée) ──────
   function rendreBannierePromo(containerId) {
     var parent = document.getElementById(containerId);
     if (!parent) return;
@@ -390,6 +403,6 @@ window.IG.ads = (function() {
     if (doc) { doc.open(); doc.write(inner); doc.close(); }
   }
 
-  return { init, rendreBlocPub, surUpgrade, renderUsageWidget, scoreDisplay, checkExpiry, rendreBannierePromo, _injecterAdsterra, injecterSlot };
+  return { init, rendreBlocPub, surUpgrade, renderUsageWidget, scoreDisplay, checkExpiry, rendreBannierePromo, _injecterAdsterra, injecterSlot, injecterMonetag };
 
 })();

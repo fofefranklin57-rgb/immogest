@@ -147,6 +147,11 @@ window.IG.dashboard = (function() {
       (nbRetards > 0 ? _actionBtn('🔔', t('Relances') + ' (' + nbRetards + ')', 'window.IG.app.showPage(\'relances\')', '#B93020') : '') +
       '</div></div>' +
 
+      // 2ème slot pub — Monetag 728x90
+      '<div id="ig-dash-ad2" style="margin-bottom:18px;min-height:90px;border-radius:12px;overflow:hidden;background:var(--bg3);border:1px solid var(--border2);position:relative;">' +
+      '<span style="position:absolute;top:3px;left:8px;font-size:9px;color:var(--text3);letter-spacing:.05em;text-transform:uppercase;font-weight:600;opacity:.5">Pub</span>' +
+      '</div>' +
+
       // Alertes impayés
       (kpis.totalDu > 0 ? _alerteDu(kpis.totalDu, data.locataires, data.paiements) : '') +
 
@@ -159,7 +164,10 @@ window.IG.dashboard = (function() {
       '</div>';
 
     content.innerHTML = html;
-    if (window.IG.ads) window.IG.ads._injecterAdsterra('ig-dash-ad');
+    if (window.IG.ads) {
+      window.IG.ads._injecterAdsterra('ig-dash-ad');
+      window.IG.ads.injecterMonetag('ig-dash-ad2', 29679262);
+    }
   }
 
   function _kpi(icon, val, label, color) {
