@@ -174,14 +174,63 @@ window.IG.immeubles = (function() {
       data.type_honoraires    = fd.get('type_honoraires') || 'aucun';
       data.valeur_honoraires  = parseFloat(fd.get('valeur_honoraires')) || 0;
       try {
+        var estNouveau = !imm;
         await sauvegarder(data);
         modal.close();
-        toast(t('Immeuble sauvegardé'), 'green');
         if (window.IG.app && window.IG.app.refresh) window.IG.app.refresh();
+        if (estNouveau && data.nom_proprio && data.tel_proprio) {
+          _genererInvitationBailleur(data);
+        } else {
+          toast(t('Immeuble sauvegardé'), 'green');
+        }
       } catch(err) {
         toast(t('Erreur') + ': ' + err.message, 'red');
       }
     });
+  }
+
+  // ── Invitation automatique bailleur à la création d'un immeuble ─
+  async function _genererInvitationBailleur(imm) {
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var WORKER  = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || 'https://immogest1.fofefranklin57.workers.dev';
+    try {
+      var res = await fetch(WORKER + '/generate-invite', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ tenantId: session.tenantId, role: 'bailleur', immeuble_id: imm.id })
+      });
+      var data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Erreur');
+      var code = data.code;
+      var tel  = (imm.tel_proprio || '').replace(/\s/g, '');
+      var msg  = 'Bonjour ' + (imm.nom_proprio || '') + ' 👋\n' +
+        'Votre espace propriétaire ImmoGest est prêt.\n' +
+        '🏢 Immeuble : ' + (imm.nom_immeuble || imm.nom) + '\n' +
+        (imm.ville ? '📍 ' + imm.ville + (imm.quartier ? ' / ' + imm.quartier : '') + '\n' : '') +
+        '\n📲 Votre code d\'accès : *' + code + '*\n' +
+        'Téléchargez ImmoGest et entrez ce code à l\'inscription pour suivre vos loyers.';
+      var waUrl = 'https://wa.me/' + (tel.startsWith('+') ? tel.slice(1) : '237' + tel) + '?text=' + encodeURIComponent(msg);
+
+      window.IG.utils.showModal(
+        '<div style="text-align:center;padding:8px 0 16px">' +
+        '<div style="font-size:36px;margin-bottom:10px">🏢</div>' +
+        '<h3 style="font-size:15px;margin-bottom:6px">' + t('Immeuble ajouté !') + '</h3>' +
+        '<p style="font-size:13px;color:var(--text3);margin-bottom:16px">' + esc(imm.nom_immeuble || imm.nom) + ' · ' + t('Propriétaire') + ' : ' + esc(imm.nom_proprio) + '</p>' +
+        '<div style="background:var(--bg3);border-radius:12px;padding:16px;margin-bottom:16px">' +
+        '<div style="font-size:11px;color:var(--text3);margin-bottom:6px">CODE D\'ACCÈS BAILLEUR</div>' +
+        '<div style="font-size:32px;font-weight:900;letter-spacing:4px;color:var(--accent)">' + code + '</div>' +
+        '<div style="font-size:11px;color:var(--text3);margin-top:6px">Valable 7 jours</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">' +
+        (tel ? '<a href="' + waUrl + '" target="_blank" style="padding:10px 16px;border-radius:8px;border:none;background:#25D366;color:#fff;font-weight:700;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px">📱 Envoyer par WhatsApp</a>' : '') +
+        '<button onclick="navigator.clipboard.writeText(\'' + code + '\');window.IG.utils.showToast(\'Code copié ✓\',\'green\')" style="padding:10px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">📋 Copier le code</button>' +
+        '<button data-modal-close style="padding:10px 16px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:13px">Fermer</button>' +
+        '</div></div>',
+        { width: '420px' }
+      );
+    } catch(e) {
+      toast(t('Immeuble sauvegardé') + ' — ' + t('Erreur génération code') + ': ' + e.message, 'orange');
+    }
   }
 
   function _field(name, label, val, required, type) {

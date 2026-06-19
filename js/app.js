@@ -968,7 +968,7 @@ window.IG.app = (function() {
     try {
       var users = await window.IG.db.select('users_app');
       if (!users || !users.length) { el.innerHTML = '<p style="color:var(--text3);font-size:13px;text-align:center;padding:16px">Aucun collaborateur</p>'; return; }
-      var ROLE_ICONS = { admin:'👑', gestionnaire:'🏘️', comptable:'📊', agent:'🤝', locataire:'🔑' };
+      var ROLE_ICONS = { admin:'👑', coordinateur:'🎯', gestionnaire:'🏘️', comptable:'📊', agent:'🤝', bailleur:'🏠', locataire:'🔑' };
       var rows = users.map(function(u) {
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border2)">' +
           '<div><div style="font-weight:600;font-size:13px">' + (ROLE_ICONS[u.role] || '👤') + ' ' + esc(u.nom || u.id) + '</div>' +
@@ -984,11 +984,19 @@ window.IG.app = (function() {
 
   async function _genererInvitation() {
     var session = window.IG.auth.getSession();
-    var ROLES = ['gestionnaire','comptable','agent','locataire'];
+    var ROLES_INFO = {
+      coordinateur: { icon: '🎯', label: 'Coordinateur', desc: 'Coordonne toute l\'équipe, gère les immeubles assignés, peut inviter des collaborateurs' },
+      gestionnaire: { icon: '🏘️', label: 'Gestionnaire', desc: 'Gère ses immeubles assignés, locataires et paiements' },
+      comptable:    { icon: '📊', label: 'Comptable',    desc: 'Accès aux paiements et rapports financiers uniquement' },
+      agent:        { icon: '🤝', label: 'Agent',        desc: 'Marketplace + consultation des locataires' }
+    };
     var html = '<h3 style="font-size:16px;margin-bottom:16px">👥 Inviter un collaborateur</h3>' +
       '<label style="font-size:12px;color:var(--text3);display:block;margin-bottom:6px">RÔLE</label>' +
-      '<select id="inv-role" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);margin-bottom:16px">' +
-      ROLES.map(function(r) { return '<option value="' + r + '">' + r.charAt(0).toUpperCase() + r.slice(1) + '</option>'; }).join('') + '</select>' +
+      '<select id="inv-role" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);margin-bottom:8px" onchange="window.IG.app._majDescRole(this.value)">' +
+      Object.entries(ROLES_INFO).map(function(e) {
+        return '<option value="' + e[0] + '">' + e[1].icon + ' ' + e[1].label + '</option>';
+      }).join('') + '</select>' +
+      '<div id="inv-role-desc" style="font-size:12px;color:var(--text3);background:var(--bg3);border-radius:8px;padding:8px 12px;margin-bottom:16px">' + ROLES_INFO.coordinateur.desc + '</div>' +
       '<button id="btn-gen-inv" style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Générer le code</button>' +
       '<div id="inv-result" style="margin-top:16px"></div>' +
       '<div style="text-align:right;margin-top:16px"><button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Fermer</button></div>';
@@ -1020,6 +1028,17 @@ window.IG.app = (function() {
         btn.textContent = 'Générer le code'; btn.disabled = false;
       }
     });
+  }
+
+  function _majDescRole(role) {
+    var ROLES_INFO = {
+      coordinateur: 'Coordonne toute l\'équipe, gère les immeubles assignés, peut inviter des collaborateurs',
+      gestionnaire: 'Gère ses immeubles assignés, locataires et paiements',
+      comptable:    'Accès aux paiements et rapports financiers uniquement',
+      agent:        'Marketplace + consultation des locataires'
+    };
+    var el = document.getElementById('inv-role-desc');
+    if (el) el.textContent = ROLES_INFO[role] || '';
   }
 
   async function _toggleUser(userId, currentlyActive) {

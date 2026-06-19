@@ -248,10 +248,16 @@ window.IG.locataires = (function() {
       data.observations   = fd.get('observations');
       data.statut       = data.statut || 'actif';
       try {
+        var estNouveau = !loc;
         await sauvegarder(data);
         modal.close();
-        toast(t('Locataire sauvegardé'), 'green');
         if (window.IG.app && window.IG.app.refresh) window.IG.app.refresh();
+        if (estNouveau) {
+          // Générer code d'invitation automatiquement pour le nouveau locataire
+          _genererInvitationLocataire(data);
+        } else {
+          toast(t('Locataire sauvegardé'), 'green');
+        }
       } catch(err) {
         toast(t('Erreur') + ': ' + err.message, 'red');
       }
@@ -449,6 +455,52 @@ window.IG.locataires = (function() {
   document.addEventListener('click', function(e) {
     if (!e.target.closest('.action-menu')) _closeMenus();
   });
+
+  // ── Invitation automatique à la création d'un locataire ───────
+  async function _genererInvitationLocataire(loc) {
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var WORKER  = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || 'https://immogest1.fofefranklin57.workers.dev';
+    var imm     = window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null;
+    try {
+      var res = await fetch(WORKER + '/generate-invite', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ tenantId: session.tenantId, role: 'locataire', locataire_id: loc.id })
+      });
+      var data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Erreur');
+      var code = data.code;
+      var tel  = (loc.whatsapp || loc.telephone || '').replace(/\s/g,'');
+      var msg  = 'Bonjour ' + (loc.nom || '') + ' 👋\n' +
+        'Votre espace locataire ImmoGest est prêt.\n' +
+        (imm ? '🏢 Immeuble : ' + (imm.nom_immeuble || imm.nom) + '\n' : '') +
+        '🏠 Local : ' + (loc.appt || '') + '\n' +
+        '💰 Loyer : ' + (loc.loyer || 0) + ' FCFA/mois\n\n' +
+        '📲 Votre code d\'accès : *' + code + '*\n' +
+        'Téléchargez ImmoGest et entrez ce code à l\'inscription.';
+      var waUrl = 'https://wa.me/' + (tel.startsWith('+') ? tel.slice(1) : '237' + tel) + '?text=' + encodeURIComponent(msg);
+
+      window.IG.utils.showModal(
+        '<div style="text-align:center;padding:8px 0 16px">' +
+        '<div style="font-size:36px;margin-bottom:10px">🎉</div>' +
+        '<h3 style="font-size:15px;margin-bottom:6px">' + t('Locataire ajouté !') + '</h3>' +
+        '<p style="font-size:13px;color:var(--text3);margin-bottom:16px">' + esc(loc.nom) + ' — Local ' + esc(loc.appt || '?') + '</p>' +
+        '<div style="background:var(--bg3);border-radius:12px;padding:16px;margin-bottom:16px">' +
+        '<div style="font-size:11px;color:var(--text3);margin-bottom:6px">CODE D\'ACCÈS LOCATAIRE</div>' +
+        '<div style="font-size:32px;font-weight:900;letter-spacing:4px;color:var(--accent)">' + code + '</div>' +
+        '<div style="font-size:11px;color:var(--text3);margin-top:6px">Valable 7 jours</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">' +
+        (tel ? '<a href="' + waUrl + '" target="_blank" style="padding:10px 16px;border-radius:8px;border:none;background:#25D366;color:#fff;font-weight:700;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px">📱 Envoyer par WhatsApp</a>' : '') +
+        '<button onclick="navigator.clipboard.writeText(\'' + code + '\');window.IG.utils.showToast(\'Code copié ✓\',\'green\')" style="padding:10px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">📋 Copier le code</button>' +
+        '<button data-modal-close style="padding:10px 16px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:13px">Fermer</button>' +
+        '</div></div>',
+        { width: '420px' }
+      );
+    } catch(e) {
+      toast(t('Locataire sauvegardé') + ' — ' + t('Erreur génération code') + ': ' + e.message, 'orange');
+    }
+  }
 
   return {
     charger, getCache, getById, getByImmeuble, sauvegarder,
