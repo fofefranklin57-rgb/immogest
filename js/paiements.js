@@ -86,37 +86,48 @@ window.IG.paiements = (function() {
     var lignes = [];
     var loyer  = parseFloat(locataire.loyer) || 0;
 
+    var aujourdhui = new Date();
+    var moisCourant = aujourdhui.getMonth() + 1;
+    var anneeCourante = aujourdhui.getFullYear();
+
     moisList.forEach(function(m) {
+      // Mois futur = pas encore échu
+      var futur = (m.annee > anneeCourante) ||
+                  (m.annee === anneeCourante && m.mois > moisCourant);
+
       var cumul = 0;
       var versementsMois = [];
 
-      // 1. Consommer avance en premier
-      if (cumulAvance >= loyer) {
-        cumul = loyer;
-        cumulAvance -= loyer;
-      } else if (cumulAvance > 0) {
-        cumul += cumulAvance;
-        cumulAvance = 0;
+      if (!futur) {
+        // 1. Consommer avance en premier
+        if (cumulAvance >= loyer) {
+          cumul = loyer;
+          cumulAvance -= loyer;
+        } else if (cumulAvance > 0) {
+          cumul += cumulAvance;
+          cumulAvance = 0;
+        }
+
+        // 2. Consommer versements FIFO
+        loyers.forEach(function(v) {
+          if (v._restant <= 0 || cumul >= loyer) return;
+          var pris = Math.min(loyer - cumul, v._restant);
+          v._restant -= pris;
+          cumul += pris;
+          versementsMois.push({ montant: pris, date: v.date_paiement, note: v.note, id: v.id, mode_paiement: v.mode_paiement || 'espèces' });
+        });
       }
 
-      // 2. Consommer versements FIFO
-      loyers.forEach(function(v) {
-        if (v._restant <= 0 || cumul >= loyer) return;
-        var pris = Math.min(loyer - cumul, v._restant);
-        v._restant -= pris;
-        cumul += pris;
-        versementsMois.push({ montant: pris, date: v.date_paiement, note: v.note, id: v.id, mode_paiement: v.mode_paiement || 'espèces' });
-      });
-
-      var paye = cumul >= loyer;
+      var paye = !futur && cumul >= loyer;
       lignes.push({
         periode:    _formatPeriode(m.mois, m.annee),
         mois:       m.mois,
         annee:      m.annee,
-        statut:     paye ? 'Payé' : (cumul > 0 ? 'Partiel' : 'Impayé'),
+        futur:      futur,
+        statut:     futur ? 'À venir' : (paye ? 'Payé' : (cumul > 0 ? 'Partiel' : 'Impayé')),
         versements: versementsMois,
         cumul:      cumul,
-        reste:      paye ? 0 : loyer - cumul
+        reste:      futur ? 0 : (paye ? 0 : loyer - cumul)
       });
     });
 
