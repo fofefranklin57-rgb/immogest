@@ -503,6 +503,21 @@ window.IG.paiements = (function() {
 
     var modal = window.IG.utils.showModal(html, { width: '480px' });
     setTimeout(function() { if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-pay-form', 'ad1'); }, 80);
+
+    // Auto-dériver mois et année depuis la date de paiement
+    var dateInput = modal.box.querySelector('[name="date_paiement"]');
+    var moisInput = modal.box.querySelector('[name="mois"]');
+    var anneeInput = modal.box.querySelector('[name="annee"]');
+    if (dateInput && moisInput && anneeInput) {
+      dateInput.addEventListener('change', function() {
+        var d = new Date(this.value);
+        if (!isNaN(d)) {
+          moisInput.value = d.getMonth() + 1;
+          anneeInput.value = d.getFullYear();
+        }
+      });
+    }
+
     modal.box.querySelector('#form-paiement').addEventListener('submit', async function(e) {
       e.preventDefault();
       var fd = new FormData(e.target);

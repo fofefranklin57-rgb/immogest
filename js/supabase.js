@@ -87,7 +87,27 @@ window.IG.db = (function() {
     return { immeubles: im, locataires: lo, paiements: pa };
   }
 
-  return { select, upsert, insert, update, remove, syncAll, loadAll, workerCall, resetAuth, _db };
+  // ── Upload photo vers Supabase Storage ───────────────────────
+  var _SB_URL  = 'https://uggxfmwpttfsfcirmeqx.supabase.co';
+  var _SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZ3hmbXdwdHRmc2ZjaXJtZXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNTA4MjIsImV4cCI6MjA5NDYyNjgyMn0.l8iYlJHOt6evNlBQ3zRskZasn_J2BjAUs1l2vKOZNvY';
+  var _BUCKET  = 'marketplace';
+
+  async function uploadPhoto(file, folder) {
+    var ext  = file.name.split('.').pop().toLowerCase() || 'jpg';
+    var name = (folder || 'annonces') + '/' + Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
+    var res  = await fetch(_SB_URL + '/storage/v1/object/' + _BUCKET + '/' + name, {
+      method:  'POST',
+      headers: { 'Authorization': 'Bearer ' + _SB_KEY, 'Content-Type': file.type || 'image/jpeg' },
+      body:    file
+    });
+    if (!res.ok) {
+      var err = await res.json().catch(function() { return {}; });
+      throw new Error(err.message || 'Erreur upload photo');
+    }
+    return _SB_URL + '/storage/v1/object/public/' + _BUCKET + '/' + name;
+  }
+
+  return { select, upsert, insert, update, remove, syncAll, loadAll, workerCall, resetAuth, _db, uploadPhoto };
 
 })();
 
