@@ -29,8 +29,9 @@ window.IG.ads = (function() {
       _injecterBanniereFixe();    // Adsterra bannière fixe en bas
       _injecterBanniereIA();      // Monetag in-page push
     } else if (plan === 'trial') {
-      // Essai : zéro pub — expérience premium complète
+      // Essai : zéro pub tierce mais promo upgrade dans panel IA
       _cacherToutesLesPubs();
+      _injecterPromoIA();
     } else {
       // Payant (starter / pro / cabinet) : uniquement bannière statique Adsterra en bas
       _cacherToutesLesPubs();
@@ -68,6 +69,19 @@ window.IG.ads = (function() {
 
     // Décaler le contenu principal de 50px seulement
     document.body.style.paddingBottom = '54px';
+  }
+
+  function _injecterPromoIA() {
+    var tries = 0;
+    var iv = setInterval(function() {
+      var b = document.getElementById('ai-ad-banner');
+      if (b) {
+        clearInterval(iv);
+        if (!b.querySelector('.ig-promo-banner')) rendreBannierePromo('ai-ad-banner');
+      } else if (++tries > 80) {
+        clearInterval(iv);
+      }
+    }, 250);
   }
 
   // Zone In-Page Push Monetag — CPM, impression seule, tous plans
