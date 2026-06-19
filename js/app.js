@@ -114,9 +114,7 @@ window.IG.app = (function() {
       '<div class="ai-bubble-bot">Bonjour ! Je suis votre assistant ImmoGest.<br>Je connais vos immeubles, locataires et paiements en temps réel. Posez-moi n\'importe quelle question ⬇️</div></div>' +
       '</div>' +
       // Bannière Adsterra CPM — visible tous plans
-      '<div id="ai-ad-banner" style="border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0;min-height:90px;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;">' +
-      '<span style="position:absolute;top:3px;left:8px;font-size:9px;color:var(--text3);letter-spacing:.05em;text-transform:uppercase;font-weight:600;opacity:.5;pointer-events:none">Pub</span>' +
-      '</div>' +
+      '<div id="ai-ad-banner" style="border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0;padding:8px;box-sizing:border-box;"></div>' +
       '<div style="padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;background:var(--bg2);flex-shrink:0;">' +
       '<button class="ai-chip" onclick="window.IG.app.aiQuickAction(\'impayés\')" style="background:var(--red-bg);color:var(--red);border-color:var(--red);">⚠️ Impayés</button>' +
       '<button class="ai-chip" onclick="window.IG.app.aiQuickAction(\'anomalies\')" style="background:rgba(107,70,193,.1);color:#6b46c1;border-color:#6b46c1;">📊 Anomalies</button>' +

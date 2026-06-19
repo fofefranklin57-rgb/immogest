@@ -341,14 +341,14 @@ window.IG.ads = (function() {
     if (existing) existing.remove();
     var div = document.createElement('div');
     div.className = 'ig-promo-banner';
-    div.style.cssText = 'margin:0 0 16px;border-radius:12px;border:1px solid var(--border2);background:var(--bg3);overflow:hidden;cursor:pointer;';
+    div.style.cssText = 'border-radius:10px;border:1px solid var(--border2);background:var(--bg3);overflow:hidden;cursor:pointer;width:100%;box-sizing:border-box;';
     div.setAttribute('onclick', 'window.IG.plans.afficherUpgrade()');
     div.innerHTML =
       '<div style="padding:2px 10px;font-size:9px;letter-spacing:.06em;color:var(--text3);text-transform:uppercase;font-weight:600;border-bottom:1px solid var(--border2);background:var(--bg4)">Publicité</div>' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:10px">' +
-      '<div style="font-size:12px;color:var(--text2);line-height:1.5"><strong style="color:var(--accent)">ImmoGest Pro</strong> — IA illimitée, rapports Word, export.<br>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;gap:10px">' +
+      '<div style="font-size:12px;color:var(--text2);line-height:1.5"><strong style="color:var(--accent)">ImmoGest Pro</strong> — IA illimitée, rapports, export.<br>' +
       '<span style="color:var(--text3);font-size:11px">Dès 9 999 FCFA/mois · 2 mois offerts</span></div>' +
-      '<div style="flex-shrink:0;padding:7px 14px;border-radius:8px;background:var(--accent);color:#fff;font-size:12px;font-weight:700">Voir →</div>' +
+      '<div style="flex-shrink:0;padding:6px 12px;border-radius:8px;background:var(--accent);color:#fff;font-size:12px;font-weight:700">Voir →</div>' +
       '</div>';
     parent.insertBefore(div, parent.firstChild);
   }
