@@ -242,9 +242,9 @@ window.IG.app = (function() {
     badge.style.cssText = 'margin:0 0 8px 0;padding:10px 12px;border-radius:8px;background:' + color + '22;border:1px solid ' + color + '55;cursor:pointer;';
     badge.onclick = function() { if (window.IG.plans) window.IG.plans.afficherUpgrade(); };
     badge.innerHTML =
-      '<div style="font-size:9px;text-transform:uppercase;font-weight:700;color:' + color + ';letter-spacing:.06em;margin-bottom:4px">⏳ PÉRIODE D\'ESSAI</div>' +
-      '<div style="font-size:18px;font-weight:800;color:' + color + ';line-height:1">' + joursRestants + ' <span style="font-size:11px;font-weight:500">jour' + (joursRestants > 1 ? 's' : '') + ' restant' + (joursRestants > 1 ? 's' : '') + '</span></div>' +
-      '<div style="font-size:10px;color:' + color + ';opacity:0.85;margin-top:4px;font-weight:600">Cliquez pour vous abonner →</div>';
+      '<div style="font-size:9px;text-transform:uppercase;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:.06em;margin-bottom:4px">⏳ PÉRIODE D\'ESSAI</div>' +
+      '<div style="font-size:18px;font-weight:800;color:#fff;line-height:1">' + joursRestants + ' <span style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.85)">jour' + (joursRestants > 1 ? 's' : '') + ' restant' + (joursRestants > 1 ? 's' : '') + '</span></div>' +
+      '<div style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:4px;">Cliquez pour vous abonner →</div>';
     footer.insertBefore(badge, footer.firstChild);
   }
 
@@ -278,7 +278,14 @@ window.IG.app = (function() {
     if (!panel) return;
     var open = panel.style.display === 'flex';
     panel.style.display = open ? 'none' : 'flex';
-    if (!open) document.getElementById('ai-input').focus();
+    if (!open) {
+      document.getElementById('ai-input').focus();
+      // Injecter la bannière promo si pas encore fait
+      var banner = document.getElementById('ai-ad-banner');
+      if (banner && !banner.querySelector('.ig-promo-banner') && window.IG.ads) {
+        window.IG.ads.rendreBannierePromo('ai-ad-banner');
+      }
+    }
   }
 
   async function sendAIMessage() {
