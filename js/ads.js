@@ -23,19 +23,17 @@ window.IG.ads = (function() {
   function init() {
     var plan = window.IG.plans ? window.IG.plans.getPlan() : 'gratuit';
 
+    _injecterVignette();  // Vignette Banner tous plans
+
     if (plan === 'gratuit') {
-      // Plan gratuit : toutes les pubs (Monetag native + Adsterra bannière fixe + in-page push)
-      _injecterScript();          // Monetag native ads
-      _injecterBanniereFixe();    // Adsterra bannière fixe en bas
-      _injecterBanniereIA();      // Monetag in-page push
+      _injecterScript();       // Monetag native
+      _injecterBanniereFixe(); // Adsterra bas de page
+      _injecterBanniereIA();   // IPP + promo IA
     } else if (plan === 'trial') {
-      // Essai : bannières non-intrusives
       _injecterBanniereFixe();
       _injecterPromoIA();
     } else {
-      // Payant (starter / pro / cabinet) : bannières non-intrusives
       _injecterBanniereFixe();
-      // zones dashboard et IA injectées directement par dashboard.js / toggleAIChat
     }
   }
 
@@ -86,6 +84,18 @@ window.IG.ads = (function() {
 
   // Zone In-Page Push Monetag — CPM, impression seule, tous plans
   var IPP_ZONE_ID = '11087888';
+  var VIGNETTE_ZONE_ID = '11135220';
+
+  function _injecterVignette() {
+    if (document.getElementById('monetag-vignette')) return;
+    var s = document.createElement('script');
+    s.id = 'monetag-vignette';
+    s.setAttribute('data-cfasync', 'false');
+    s.setAttribute('data-zone', VIGNETTE_ZONE_ID);
+    s.src = 'https://nap5k.com/tag.min.js';
+    s.async = true;
+    document.head.appendChild(s);
+  }
 
   function _injecterBanniereIA() {
     // Injecte le script In-Page Push une seule fois (peut déjà être chargé par portail)

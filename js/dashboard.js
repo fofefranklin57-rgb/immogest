@@ -166,7 +166,7 @@ window.IG.dashboard = (function() {
     content.innerHTML = html;
     if (window.IG.ads) {
       window.IG.ads.injecterAdDash('ig-dash-ad');
-      window.IG.ads.injecterAdDash('ig-dash-ad2');
+      window.IG.ads.rendreBannierePromo('ig-dash-ad2');
     }
   }
 
