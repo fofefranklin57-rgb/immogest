@@ -347,6 +347,19 @@ window.IG.ads = (function() {
     }
   }
 
+  // ── Adsterra dashboard — re-injectable à chaque render ───────
+  function injecterAdDash(containerId) {
+    var container = document.getElementById(containerId);
+    if (!container || container.querySelector('script')) return;
+    var cfg = document.createElement('script');
+    cfg.text = "atOptions={'key':'" + AD2_KEY + "','format':'iframe','height':90,'width':728,'params':{}};";
+    container.appendChild(cfg);
+    var s = document.createElement('script');
+    s.async = true; s.setAttribute('data-cfasync', 'false');
+    s.src = AD2_SRC;
+    container.appendChild(s);
+  }
+
   // ── Monetag zones numériques (Banner / Native) ───────────────
   function injecterMonetag(containerId, zoneId) {
     var container = document.getElementById(containerId);
@@ -403,6 +416,6 @@ window.IG.ads = (function() {
     if (doc) { doc.open(); doc.write(inner); doc.close(); }
   }
 
-  return { init, rendreBlocPub, surUpgrade, renderUsageWidget, scoreDisplay, checkExpiry, rendreBannierePromo, _injecterAdsterra, injecterSlot, injecterMonetag };
+  return { init, rendreBlocPub, surUpgrade, renderUsageWidget, scoreDisplay, checkExpiry, rendreBannierePromo, _injecterAdsterra, injecterSlot, injecterMonetag, injecterAdDash };
 
 })();

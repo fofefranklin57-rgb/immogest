@@ -165,7 +165,7 @@ window.IG.dashboard = (function() {
 
     content.innerHTML = html;
     if (window.IG.ads) {
-      window.IG.ads.injecterMonetag('ig-dash-ad', 29679262);
+      window.IG.ads.injecterAdDash('ig-dash-ad');
       window.IG.ads.injecterMonetag('ig-dash-ad2', 29679260);
     }
   }
