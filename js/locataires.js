@@ -338,12 +338,27 @@ window.IG.locataires = (function() {
   }
 
   // ── Fiche locataire ───────────────────────────────────────────
-  function afficherFiche(id) {
+  function afficherFiche(id, annee) {
     var loc = getById(id);
     if (!loc) return;
     var pays = window.IG.paiements ? window.IG.paiements.getByLocataire(id) : [];
-    var html = window.IG.paiements ? window.IG.paiements.renderFiche(loc, pays) : '<p>Chargement...</p>';
-    window.IG.utils.showModal(html, { width: '680px' });
+    var html = window.IG.paiements ? window.IG.paiements.renderFiche(loc, pays, annee) : '<p>Chargement...</p>';
+    window.IG.utils.showModal(html, { width: '720px' });
+    setTimeout(function() { if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-fiche', 'ad2'); }, 80);
+  }
+
+  function rafraichirFiche(id) {
+    var sel = document.getElementById('fiche-annee-sel');
+    var annee = sel ? parseInt(sel.value) : new Date().getFullYear();
+    var zone = document.getElementById('fiche-print-zone');
+    if (!zone) return;
+    var loc = getById(id);
+    if (!loc) return;
+    var pays = window.IG.paiements ? window.IG.paiements.getByLocataire(id) : [];
+    var html = window.IG.paiements ? window.IG.paiements.renderFiche(loc, pays, annee) : '';
+    // Remplacer le contenu dans le modal existant
+    var wrapper = zone.parentNode;
+    if (wrapper) wrapper.innerHTML = html;
     setTimeout(function() { if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-fiche', 'ad2'); }, 80);
   }
 
@@ -439,7 +454,7 @@ window.IG.locataires = (function() {
     charger, getCache, getById, getByImmeuble, sauvegarder,
     liberer, supprimer, renderListe, afficherFormulaire, afficherFiche,
     lienWA, _libererConfirm, _toggleMenu, _closeMenus, envoyerAccesWA,
-    _publierAnnonce
+    _publierAnnonce, rafraichirFiche
   };
 
 })();
