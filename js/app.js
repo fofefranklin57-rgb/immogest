@@ -244,7 +244,7 @@ window.IG.app = (function() {
     badge.innerHTML =
       '<div style="font-size:9px;text-transform:uppercase;font-weight:700;color:' + color + ';letter-spacing:.06em;margin-bottom:4px">⏳ PÉRIODE D\'ESSAI</div>' +
       '<div style="font-size:18px;font-weight:800;color:' + color + ';line-height:1">' + joursRestants + ' <span style="font-size:11px;font-weight:500">jour' + (joursRestants > 1 ? 's' : '') + ' restant' + (joursRestants > 1 ? 's' : '') + '</span></div>' +
-      '<div style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:4px">Cliquez pour vous abonner →</div>';
+      '<div style="font-size:10px;color:' + color + ';opacity:0.85;margin-top:4px;font-weight:600">Cliquez pour vous abonner →</div>';
     footer.insertBefore(badge, footer.firstChild);
   }
 
