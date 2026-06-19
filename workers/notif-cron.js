@@ -517,6 +517,58 @@ ${_footer()}</body></html>`;
         return json({ success: true, result: d });
       }
 
+      // ── /fapshi-init — proxy Fapshi initiate-pay ─────────────
+      if (path === '/fapshi-init' && request.method === 'POST') {
+        const { amount, email, tenantId, planId, duree, ref } = await request.json();
+        const FAPSHI_KEY  = env.FAPSHI_APIKEY  || 'FAK_cbc4bca6ea0ddf6e23d57ab438b93a4a';
+        const FAPSHI_USER = env.FAPSHI_APIUSER || 'fofefranklin57@gmail.com';
+        const dureeLabel  = duree === 1 ? '1 mois' : duree === 12 ? '1 an' : duree + ' mois';
+        const res = await fetch('https://live.fapshi.com/initiate-pay', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', apiuser: FAPSHI_USER, apikey: FAPSHI_KEY },
+          body: JSON.stringify({
+            amount,
+            email:       email || 'client@immogest.cm',
+            redirectUrl: 'https://immogest-34w.pages.dev',
+            userId:      tenantId || ref,
+            externalId:  ref,
+            message:     'ImmoGest ' + (planId||'').toUpperCase() + ' — ' + dureeLabel
+          })
+        });
+        const d = await res.json();
+        if (!res.ok) return json({ error: d.message || 'Erreur Fapshi' }, 400);
+        return json({ link: d.link, transId: d.transId });
+      }
+
+      // ── /fapshi-check — proxy Fapshi payment-status ───────────
+      if (path === '/fapshi-check' && request.method === 'GET') {
+        const transId     = url.searchParams.get('transId');
+        if (!transId) return json({ error: 'transId requis' }, 400);
+        const FAPSHI_KEY  = env.FAPSHI_APIKEY  || 'FAK_cbc4bca6ea0ddf6e23d57ab438b93a4a';
+        const FAPSHI_USER = env.FAPSHI_APIUSER || 'fofefranklin57@gmail.com';
+        const res = await fetch('https://live.fapshi.com/payment-status/' + transId, {
+          headers: { apiuser: FAPSHI_USER, apikey: FAPSHI_KEY }
+        });
+        const d = await res.json();
+        return json({ status: d.status, transId });
+      }
+
+      // ── /activate-plan — activer plan après paiement Fapshi ───
+      if (path === '/activate-plan' && request.method === 'POST') {
+        const { planId, ref, duree, tenantId } = await request.json();
+        if (!planId || !tenantId) return json({ error: 'planId + tenantId requis' }, 400);
+        const dureeJours  = (duree || 1) === 12 ? 365 : (duree || 1) * 31;
+        const planExpire  = new Date(Date.now() + dureeJours * 86400000).toISOString();
+        const r = await fetch(sbBase + '/rest/v1/tenants?id=eq.' + tenantId, {
+          method: 'PATCH',
+          headers: { ...sbHdrs(), 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ plan: planId, plan_expire: planExpire })
+        });
+        if (!r.ok) return json({ error: 'Mise à jour plan échouée' }, 500);
+        await logEvent(tenantId, 'info', 'plan.activated', 'Plan activé: ' + planId, { ref, duree });
+        return json({ success: true, plan: planId, plan_expire: planExpire });
+      }
+
       // ── /apply-promo ──────────────────────────────────────────
       if (path === '/apply-promo' && request.method === 'POST') {
         const { code, tenantId } = await request.json();

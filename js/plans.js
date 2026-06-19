@@ -454,21 +454,11 @@ window.IG.plans = (function() {
     });
   }
 
-  function _fapshiHeaders() {
-    var f = window.IG.config.fapshi || {};
-    return {
-      'Content-Type': 'application/json',
-      'apiuser': f.apiuser || '',
-      'apikey':  f.apikey  || ''
-    };
-  }
-
   async function _initierPaiement(planId, prixTotal, duree) {
     duree = duree || 1;
-    var session = window.IG.auth ? window.IG.auth.getSession() : {};
-    var f = window.IG.config.fapshi || {};
+    var session  = window.IG.auth ? window.IG.auth.getSession() : {};
+    var workerUrl = window.IG.config.workerUrl;
     var ref = 'IMMOGEST-' + (session.tenantId || '').substring(0,8).toUpperCase() + '-' + planId.toUpperCase() + '-D' + duree + '-' + Date.now();
-    var dureeLabel = duree === 1 ? '1 mois' : (duree === 12 ? '1 an' : duree + ' mois');
 
     var upg = document.getElementById('ig-upgrade-modal');
     if (upg) upg.remove();
@@ -476,20 +466,19 @@ window.IG.plans = (function() {
     window.IG.utils.showToast('Connexion à Fapshi...', 'blue');
 
     try {
-      var res = await fetch(f.baseUrl + '/initiate-pay', {
+      var res = await fetch(workerUrl + '/fapshi-init', {
         method: 'POST',
-        headers: _fapshiHeaders(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount:      prixTotal,
-          email:       session.email || 'client@immogest.cm',
-          redirectUrl: window.location.origin || 'https://immogest-34w.pages.dev',
-          userId:      session.tenantId || ref,
-          externalId:  ref,
-          message:     'ImmoGest ' + planId.toUpperCase() + ' — ' + dureeLabel + ' — ' + (session.nomCabinet || session.nom || '')
+          amount:   prixTotal,
+          tenantId: session.tenantId || '',
+          planId:   planId,
+          duree:    duree,
+          ref:      ref
         })
       });
       var d = await res.json();
-      if (!res.ok) throw new Error(d.message || 'Erreur Fapshi');
+      if (!res.ok) throw new Error(d.error || 'Erreur paiement');
       if (d.link) {
         window.open(d.link, '_blank');
         _afficherAttentePaiement(d.transId, ref, planId, duree);
@@ -503,12 +492,12 @@ window.IG.plans = (function() {
 
   function _afficherAttentePaiement(transId, ref, planId, duree) {
     duree = duree || 1;
-    var f = window.IG.config.fapshi || {};
+    var workerUrl = window.IG.config.workerUrl;
     var modal = window.IG.utils.showModal(
       '<div style="text-align:center;padding:20px">' +
       '<div style="font-size:48px;margin-bottom:12px">⏳</div>' +
       '<h3 style="font-size:15px;font-weight:700;margin-bottom:8px">Paiement en attente</h3>' +
-      '<p style="font-size:13px;color:var(--text3);margin-bottom:20px">Complétez le paiement dans l\'onglet qui vient de s\'ouvrir (MTN MoMo / Orange Money), puis cliquez sur Vérifier.</p>' +
+      '<p style="font-size:13px;color:var(--text3);margin-bottom:20px">Complétez le paiement dans l\'onglet ouvert (MTN MoMo / Orange Money), puis cliquez sur Vérifier.</p>' +
       '<p style="font-size:11px;color:var(--text3);background:var(--bg4);padding:8px 12px;border-radius:8px;margin-bottom:16px">Réf : ' + ref + '</p>' +
       '<div style="display:flex;gap:8px;justify-content:center">' +
       '<button data-modal-close style="padding:9px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Annuler</button>' +
@@ -520,15 +509,17 @@ window.IG.plans = (function() {
     modal.box.querySelector('#check-pmt-btn').addEventListener('click', async function() {
       this.textContent = '⏳ Vérification...'; this.disabled = true;
       try {
-        var r = await fetch(f.baseUrl + '/payment-status/' + transId, {
-          headers: _fapshiHeaders()
-        });
+        var r = await fetch(workerUrl + '/fapshi-check?transId=' + encodeURIComponent(transId));
         var d = await r.json();
         var st = (d.status || '').toUpperCase();
         if (st === 'SUCCESSFUL') {
           modal.close();
-          // Notifier le worker pour activer le plan en base
-          _activerPlanApresPaiement(planId, ref, duree).catch(function(){});
+          var session2 = window.IG.auth ? window.IG.auth.getSession() : {};
+          await fetch(workerUrl + '/activate-plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ planId: planId, ref: ref, duree: duree, tenantId: session2.tenantId || '' })
+          }).catch(function(){});
           var dl = duree === 1 ? '1 mois' : duree === 12 ? '1 an' : duree + ' mois';
           window.IG.utils.showToast('Paiement confirmé ! Plan ' + planId.toUpperCase() + ' activé pour ' + dl + '.', 'green');
           setTimeout(function() { location.reload(); }, 2000);
@@ -544,21 +535,6 @@ window.IG.plans = (function() {
         this.textContent = '✓ Vérifier le paiement'; this.disabled = false;
       }
     });
-  }
-
-  async function _activerPlanApresPaiement(planId, ref, duree) {
-    try {
-      await fetch(window.IG.config.workerUrl + '/activate-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          planId,
-          ref,
-          duree: duree || 1,
-          tenantId: (window.IG.auth ? window.IG.auth.getSession().tenantId : '')
-        })
-      });
-    } catch(e) {}
   }
 
   // ── Code promo ────────────────────────────────────────────────
