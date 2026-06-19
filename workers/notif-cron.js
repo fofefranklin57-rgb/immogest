@@ -520,23 +520,25 @@ ${_footer()}</body></html>`;
       // ── /fapshi-init — proxy Fapshi initiate-pay ─────────────
       if (path === '/fapshi-init' && request.method === 'POST') {
         const { amount, email, tenantId, planId, duree, ref } = await request.json();
-        const FAPSHI_KEY  = env.FAPSHI_APIKEY  || 'FAK_cbc4bca6ea0ddf6e23d57ab438b93a4a';
-        const FAPSHI_USER = env.FAPSHI_APIUSER || 'fofefranklin57@gmail.com';
+        const FAPSHI_KEY  = env.FAPSHI_APIKEY  || 'FAK_49b4bbee5088be50e98dfcb21120cd7b';
+        const FAPSHI_USER = env.FAPSHI_APIUSER || 'bd0c1e07-3ae4-4009-a1b9-3946225e1291';
+        const FAPSHI_BASE = 'https://live.fapshi.com';
         const dureeLabel  = duree === 1 ? '1 mois' : duree === 12 ? '1 an' : duree + ' mois';
-        const res = await fetch('https://live.fapshi.com/initiate-pay', {
+        const body = {
+          amount,
+          email:       email || 'client@immogest.cm',
+          redirectUrl: 'https://immogest-34w.pages.dev',
+          userId:      tenantId || ref,
+          externalId:  ref,
+          message:     'ImmoGest ' + (planId||'').toUpperCase() + ' — ' + dureeLabel
+        };
+        const res = await fetch(FAPSHI_BASE + '/initiate-pay', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', apiuser: FAPSHI_USER, apikey: FAPSHI_KEY },
-          body: JSON.stringify({
-            amount,
-            email:       email || 'client@immogest.cm',
-            redirectUrl: 'https://immogest-34w.pages.dev',
-            userId:      tenantId || ref,
-            externalId:  ref,
-            message:     'ImmoGest ' + (planId||'').toUpperCase() + ' — ' + dureeLabel
-          })
+          body: JSON.stringify(body)
         });
         const d = await res.json();
-        if (!res.ok) return json({ error: d.message || 'Erreur Fapshi' }, 400);
+        if (!res.ok) return json({ error: d.message || d.error || JSON.stringify(d), fapshiStatus: res.status }, 400);
         return json({ link: d.link, transId: d.transId });
       }
 
@@ -544,8 +546,8 @@ ${_footer()}</body></html>`;
       if (path === '/fapshi-check' && request.method === 'GET') {
         const transId     = url.searchParams.get('transId');
         if (!transId) return json({ error: 'transId requis' }, 400);
-        const FAPSHI_KEY  = env.FAPSHI_APIKEY  || 'FAK_cbc4bca6ea0ddf6e23d57ab438b93a4a';
-        const FAPSHI_USER = env.FAPSHI_APIUSER || 'fofefranklin57@gmail.com';
+        const FAPSHI_KEY  = env.FAPSHI_APIKEY  || 'FAK_49b4bbee5088be50e98dfcb21120cd7b';
+        const FAPSHI_USER = env.FAPSHI_APIUSER || 'bd0c1e07-3ae4-4009-a1b9-3946225e1291';
         const res = await fetch('https://live.fapshi.com/payment-status/' + transId, {
           headers: { apiuser: FAPSHI_USER, apikey: FAPSHI_KEY }
         });
