@@ -206,8 +206,14 @@ window.IG.locataires = (function() {
       '</div>' +
       _field('entree', t('Date entrée'), loc ? (loc.entree || '') : '', false, 'date') +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-      _fieldNum('arrieres', t('Arriérés antérieurs (FCFA)'), loc ? (loc.arrieres || 0) : 0) +
-      _fieldNum('mois_arrieres', t('Nb mois arriérés'), loc ? (loc.mois_arrieres || 0) : 0) +
+      '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Arriérés antérieurs (FCFA)') + '</label>' +
+      '<input type="number" name="arrieres" id="ig-arrieres-montant" value="' + (loc ? (loc.arrieres || 0) : 0) + '" min="0" step="500"' +
+      ' oninput="(function(){var l=parseFloat(document.querySelector(\'[name=loyer]\').value)||0;var m=document.getElementById(\'ig-arrieres-mois\');if(l>0&&m)m.value=Math.round((parseFloat(this.value)||0)/l);})()" ' +
+      ' style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Nb mois arriérés') + '</label>' +
+      '<input type="number" name="mois_arrieres" id="ig-arrieres-mois" value="' + (loc ? (loc.mois_arrieres || 0) : 0) + '" min="0" step="1"' +
+      ' oninput="(function(){var l=parseFloat(document.querySelector(\'[name=loyer]\').value)||0;var m=document.getElementById(\'ig-arrieres-montant\');if(l>0&&m)m.value=(parseInt(this.value)||0)*l;})()" ' +
+      ' style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
       '</div>' +
       '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Observations') + '</label>' +
       '<textarea name="observations" rows="2" style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);resize:vertical">' + esc(loc ? (loc.observations || '') : '') + '</textarea></div>' +
