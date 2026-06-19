@@ -224,7 +224,7 @@ window.IG.paiements = (function() {
     html += '<div style="border-bottom:3px solid #0E6AAF;margin:8px 0 10px"></div>';
 
     // Titre + sous-titre
-    html += '<div style="text-align:center;font-size:14px;font-weight:700;color:#0E6AAF;margin-bottom:4px;text-transform:uppercase">Fiche de suivi des versements</div>';
+    html += '<div style="text-align:center;font-size:14px;font-weight:700;color:#0E6AAF;margin-bottom:4px;text-transform:uppercase;text-decoration:underline">Fiche de suivi des versements</div>';
     html += '<div style="text-align:center;font-style:italic;font-size:10px;color:#333;margin-bottom:12px">Depuis le ' + (loc.entree ? window.IG.utils.formatDate(loc.entree) : '—') + ' — Édition au ' + dateEdition + '</div>';
 
     // Infos locataire
