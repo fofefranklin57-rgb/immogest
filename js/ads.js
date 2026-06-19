@@ -29,13 +29,13 @@ window.IG.ads = (function() {
       _injecterBanniereFixe();    // Adsterra bannière fixe en bas
       _injecterBanniereIA();      // Monetag in-page push
     } else if (plan === 'trial') {
-      // Essai : zéro pub tierce mais promo upgrade dans panel IA
-      _cacherToutesLesPubs();
+      // Essai : bannières non-intrusives
+      _injecterBanniereFixe();
       _injecterPromoIA();
     } else {
-      // Payant (starter / pro / cabinet) : uniquement bannière statique Adsterra en bas
-      _cacherToutesLesPubs();
-      _injecterBanniereFixe();    // Bannière discrète non-intrusive
+      // Payant (starter / pro / cabinet) : bannières non-intrusives
+      _injecterBanniereFixe();
+      // zones dashboard et IA injectées directement par dashboard.js / toggleAIChat
     }
   }
 
