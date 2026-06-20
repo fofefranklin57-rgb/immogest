@@ -1338,14 +1338,17 @@ window.IG.app = (function() {
 
         if (showCode) {
           // Carte étendue pour proprio / locataire — affiche le mot de passe portail
+          var tel = u.telephone || '—';
           var codeHtml = code
-            ? '<div style="margin-top:6px">' +
-              '<div style="font-size:10px;color:var(--text3);margin-bottom:3px">🔑 Mot de passe portail</div>' +
+            ? '<div style="margin-top:6px;background:var(--bg3);border-radius:8px;padding:8px 10px">' +
+              '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">' +
+              '<span style="font-size:10px;color:var(--text3);min-width:60px">📱 Login</span>' +
+              '<span style="font-family:monospace;font-size:13px;font-weight:700;color:var(--text)">' + esc(tel) + '</span></div>' +
               '<div style="display:flex;align-items:center;gap:8px">' +
-              '<span style="font-family:monospace;font-size:15px;font-weight:800;letter-spacing:3px;color:var(--accent);background:var(--bg3);padding:5px 12px;border-radius:8px;cursor:pointer" ' +
-              'onclick="navigator.clipboard.writeText(\'' + esc(code) + '\');window.IG.utils.showToast(\'MP copié ✓\',\'green\')" title="Cliquer pour copier">' +
-              esc(code) + '</span>' +
-              '<span style="font-size:10px;color:var(--text3)">📋 copier</span></div></div>'
+              '<span style="font-size:10px;color:var(--text3);min-width:60px">🔑 MP</span>' +
+              '<span style="font-family:monospace;font-size:15px;font-weight:800;letter-spacing:3px;color:var(--accent);cursor:pointer" ' +
+              'onclick="navigator.clipboard.writeText(\'' + esc(tel) + ' / ' + esc(code) + '\');window.IG.utils.showToast(\'Login + MP copiés ✓\',\'green\')" title="Cliquer pour copier login+MP">' +
+              esc(code) + ' 📋</span></div></div>'
             : '<div style="margin-top:6px;font-size:11px;color:var(--text3);font-style:italic">Aucun mot de passe défini</div>';
 
           return '<div style="padding:12px 0;border-bottom:1px solid var(--border)">' +
