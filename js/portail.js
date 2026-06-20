@@ -168,10 +168,18 @@ window.IG.portail = (function() {
       '</div>' +
 
       '<div><label style="font-size:12px;color:var(--text2);font-weight:600">Mode de paiement</label>' +
-      '<select id="decl-mode" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px">' +
-      '<option value="mtn_momo">MTN MoMo</option><option value="orange_money">Orange Money</option>' +
-      '<option value="especes">Espèces</option><option value="virement">Virement</option>' +
-      '</select></div>' +
+      '<select id="decl-mode" onchange="window.IG.portail._afficherNumeroMomo(this.value)" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px">' +
+      '<option value="mtn_momo">MTN MoMo 💛</option>' +
+      '<option value="orange_money">Orange Money 🟠</option>' +
+      '<option value="wave">Wave 🌊</option>' +
+      '<option value="airtel">Airtel Money 🔴</option>' +
+      '<option value="moov">Moov Money 🔵</option>' +
+      '<option value="especes">Espèces 💵</option>' +
+      '<option value="virement">Virement bancaire 🏦</option>' +
+      '</select>' +
+      '<div id="decl-momo-numero" style="display:none;margin-top:8px;padding:10px 14px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);font-size:13px">' +
+      '📲 Envoyez à ce numéro : <strong id="decl-momo-num-val" style="font-size:15px;color:var(--accent)"></strong>' +
+      '</div></div>' +
 
       '<div><label style="font-size:12px;color:var(--text2);font-weight:600">Référence de transaction</label>' +
       '<input id="decl-ref" placeholder="Ex: TXN123456" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px"></div>' +
@@ -206,9 +214,28 @@ window.IG.portail = (function() {
       } catch(e) {
         window.IG.utils.showToast('Erreur: ' + e.message, 'red');
       }
-    });
+    // Afficher le numéro du 1er opérateur configuré par défaut
+    setTimeout(function() {
+      var sel = modal.box.querySelector('#decl-mode');
+      if (sel) window.IG.portail._afficherNumeroMomo(sel.value);
+    }, 50);
   }
 
-  return { renderPage, declarerPaiement };
+  function _afficherNumeroMomo(mode) {
+    var data = window.IG.app ? window.IG.app.getData() : {};
+    var momo = (data.settings && data.settings.momo_numeros) || {};
+    var numero = momo[mode] || '';
+    var bloc = document.getElementById('decl-momo-numero');
+    var val  = document.getElementById('decl-momo-num-val');
+    if (!bloc) return;
+    if (numero) {
+      val.textContent = numero;
+      bloc.style.display = 'block';
+    } else {
+      bloc.style.display = 'none';
+    }
+  }
+
+  return { renderPage, declarerPaiement, _afficherNumeroMomo };
 
 })();

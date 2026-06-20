@@ -482,6 +482,12 @@ window.IG.app = (function() {
       _data.immeubles  = result.immeubles  || [];
       _data.locataires = result.locataires || [];
       _data.paiements  = result.paiements  || [];
+      // Charger settings momo pour le portail locataire
+      try {
+        var params = await window.IG.db.select('parametres');
+        var settings = (params && params[0] && params[0].settings) || {};
+        _data.settings = { momo_numeros: settings.momo_numeros || {} };
+      } catch(_) {}
       _setSyncStatus('ok');
       _updateSidebarImmeubles();
       _updateRelancesBadge();
@@ -927,6 +933,27 @@ window.IG.app = (function() {
       '<div id="mode-publication-saved" style="font-size:11px;color:var(--green);display:none">✓ Sauvegardé</div>' +
       '</div>' +
 
+      // Mobile Money (admin + comptable)
+      (['admin','comptable'].includes(session.role) ?
+        '<div class="card" style="margin-bottom:14px">' +
+        '<div class="card-header"><div class="card-title">📱 Numéros Mobile Money</div></div>' +
+        '<div style="font-size:13px;color:var(--text3);margin-bottom:14px">Ces numéros seront affichés aux locataires quand ils déclarent un paiement. Laissez vide les opérateurs non utilisés.</div>' +
+        [
+          { key:'orange_money', label:'Orange Money 🟠', placeholder:'Ex: 699 00 00 00' },
+          { key:'mtn_momo',     label:'MTN MoMo 💛',    placeholder:'Ex: 677 00 00 00' },
+          { key:'wave',         label:'Wave 🌊',         placeholder:'Ex: 70 00 00 00' },
+          { key:'airtel',       label:'Airtel Money 🔴', placeholder:'Ex: 666 00 00 00' },
+          { key:'moov',         label:'Moov Money 🔵',  placeholder:'Ex: 668 00 00 00' },
+        ].map(function(op) {
+          return '<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">' + op.label + '</label>' +
+            '<input id="momo-' + op.key + '" type="tel" placeholder="' + op.placeholder + '" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px"></div>';
+        }).join('') +
+        '<div style="display:flex;align-items:center;gap:10px;margin-top:4px">' +
+        '<button onclick="window.IG.app._sauvegarderMomo()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Enregistrer</button>' +
+        '<span id="momo-saved" style="font-size:12px;color:var(--green);display:none">✓ Sauvegardé</span>' +
+        '</div></div>'
+      : '') +
+
       // Clé IA personnelle (admin uniquement)
       (session.role === 'admin' ?
         '<div class="card" style="margin-bottom:14px">' +
@@ -948,6 +975,7 @@ window.IG.app = (function() {
     content.innerHTML = html;
     if (window.IG.plans) window.IG.plans.renderBlocPlan('plans-bloc');
     if (session.role === 'admin') { _chargerEquipe(); _chargerCleIA(); }
+    if (['admin','comptable'].includes(session.role)) _chargerMomo();
     _chargerModePublication();
   }
 
@@ -959,6 +987,50 @@ window.IG.app = (function() {
       var settings = (params && params[0] && params[0].settings) || {};
       sel.value = settings.mode_publication || 'manuel';
     } catch(_) {}
+  }
+
+  async function _sauvegarderMomo() {
+    var keys = ['orange_money','mtn_momo','wave','airtel','moov'];
+    var momo = {};
+    keys.forEach(function(k) {
+      var el = document.getElementById('momo-' + k);
+      if (el && el.value.trim()) momo[k] = el.value.trim();
+    });
+    try {
+      var params = await window.IG.db.select('parametres');
+      var row = params && params[0];
+      var settings = (row && row.settings) || {};
+      settings.momo_numeros = momo;
+      if (row) {
+        await window.IG.db.update('parametres', row.id, { settings });
+      } else {
+        var session = window.IG.auth.getSession();
+        await window.IG.db.insert('parametres', [{ tenant_id: session.tenantId, settings }]);
+      }
+      // Mise à jour cache _data
+      _data.settings = _data.settings || {};
+      _data.settings.momo_numeros = momo;
+      var msg = document.getElementById('momo-saved');
+      if (msg) { msg.style.display = 'inline'; setTimeout(function() { msg.style.display = 'none'; }, 2000); }
+    } catch(e) {
+      window.IG.utils.showToast('Erreur : ' + e.message, 'red');
+    }
+  }
+
+  async function _chargerMomo() {
+    var keys = ['orange_money','mtn_momo','wave','airtel','moov'];
+    try {
+      var params = await window.IG.db.select('parametres');
+      var settings = (params && params[0] && params[0].settings) || {};
+      var momo = settings.momo_numeros || {};
+      keys.forEach(function(k) {
+        var el = document.getElementById('momo-' + k);
+        if (el) el.value = momo[k] || '';
+      });
+      // Mise à jour cache _data pour portail
+      _data.settings = _data.settings || {};
+      _data.settings.momo_numeros = momo;
+    } catch(e) {}
   }
 
   async function _sauvegarderCleIA() {
@@ -1822,7 +1894,7 @@ window.IG.app = (function() {
     _genererInvitation, _toggleUser, _appliquerPromo,
     _loadDeclarations, _validerDeclaration,
     _loadMessages, _nouveauMessage, _marquerLu,
-    _sauvegarderModePublication, _chargerModePublication, _sauvegarderCleIA, _chargerCleIA,
+    _sauvegarderModePublication, _chargerModePublication, _sauvegarderCleIA, _chargerCleIA, _sauvegarderMomo, _chargerMomo,
     getData: function() { return _data; },
     topbarAction, _showMobileNav,
     reloadShell
