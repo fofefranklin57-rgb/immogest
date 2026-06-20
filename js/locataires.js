@@ -474,7 +474,18 @@ window.IG.locataires = (function() {
     var dd = btn.nextElementSibling;
     var wasOpen = dd.classList.contains('open');
     _closeMenus();
-    if (!wasOpen) dd.classList.add('open');
+    if (!wasOpen) {
+      dd.classList.add('open');
+      // Retourner vers le haut si le menu dépasse le bas de l'écran
+      var rect = dd.getBoundingClientRect();
+      if (rect.bottom > window.innerHeight - 8) {
+        dd.style.top = 'auto';
+        dd.style.bottom = 'calc(100% + 4px)';
+      } else {
+        dd.style.top = '';
+        dd.style.bottom = '';
+      }
+    }
   }
 
   function _closeMenus() {
