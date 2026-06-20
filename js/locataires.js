@@ -475,16 +475,21 @@ window.IG.locataires = (function() {
     var wasOpen = dd.classList.contains('open');
     _closeMenus();
     if (!wasOpen) {
+      // Positionner en fixed pour éviter tout clipping
+      dd.style.position = 'fixed';
+      dd.style.right = '';
+      dd.style.top = '';
+      dd.style.bottom = '';
       dd.classList.add('open');
-      // Retourner vers le haut si le menu dépasse le bas de l'écran
-      var rect = dd.getBoundingClientRect();
-      if (rect.bottom > window.innerHeight - 8) {
-        dd.style.top = 'auto';
-        dd.style.bottom = 'calc(100% + 4px)';
+      var btnRect = btn.getBoundingClientRect();
+      var ddH = dd.offsetHeight;
+      var spaceBelow = window.innerHeight - btnRect.bottom - 8;
+      if (spaceBelow >= ddH) {
+        dd.style.top = (btnRect.bottom + 4) + 'px';
       } else {
-        dd.style.top = '';
-        dd.style.bottom = '';
+        dd.style.top = Math.max(8, btnRect.top - ddH - 4) + 'px';
       }
+      dd.style.right = (window.innerWidth - btnRect.right) + 'px';
     }
   }
 
