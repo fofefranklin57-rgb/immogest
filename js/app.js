@@ -592,6 +592,7 @@ window.IG.app = (function() {
 
     switch(page) {
       case 'dashboard':
+        if (window.IG.auth.getSession().role === 'locataire') { showPage('portail'); return; }
         if (title) title.textContent = t('Tableau de bord');
         if (sub) sub.textContent = '';
         _renderDashboard(); break;
