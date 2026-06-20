@@ -1229,19 +1229,135 @@ window.IG.app = (function() {
     if (!el) return;
     try {
       var users = await window.IG.db.select('users_app');
-      if (!users || !users.length) { el.innerHTML = '<p style="color:var(--text3);font-size:13px;text-align:center;padding:16px">Aucun collaborateur</p>'; return; }
+      if (!users) users = [];
+      var COLLAB_ROLES = ['admin','coordinateur','gestionnaire','comptable','agent'];
+      var collabs   = users.filter(function(u) { return COLLAB_ROLES.includes(u.role); });
+      var proprios  = users.filter(function(u) { return u.role === 'bailleur'; });
+      var locUsers  = users.filter(function(u) { return u.role === 'locataire'; });
+
       var ROLE_ICONS = { admin:'👑', coordinateur:'🎯', gestionnaire:'🏘️', comptable:'📊', agent:'🤝', bailleur:'🏠', locataire:'🔑' };
-      var rows = users.map(function(u) {
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border2)">' +
-          '<div><div style="font-weight:600;font-size:13px">' + (ROLE_ICONS[u.role] || '👤') + ' ' + esc(u.nom || u.id) + '</div>' +
-          '<div style="font-size:11px;color:var(--text3)">' + esc(u.role || '') + (u.actif === false ? ' · <span style="color:var(--red)">Désactivé</span>' : '') + '</div></div>' +
-          (u.role !== 'admin' ? '<button onclick="window.IG.app._toggleUser(\'' + u.id + '\',' + (u.actif !== false) + ')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:11px">' + (u.actif !== false ? 'Désactiver' : 'Réactiver') + '</button>' : '') +
-          '</div>';
-      }).join('');
-      el.innerHTML = '<div style="padding:4px 0">' + rows + '</div>';
+
+      function _badgeActif(actif) {
+        return actif === false ? '<span style="font-size:10px;color:var(--red);font-weight:600;margin-left:6px">BLOQUÉ</span>' : '';
+      }
+      function _actions(u, showCode) {
+        var btns = '';
+        if (showCode) {
+          var code = esc(u.code_invitation || u.code || '—');
+          btns += '<span style="font-family:monospace;font-size:12px;background:var(--bg3);padding:3px 8px;border-radius:6px;margin-right:6px">' + code + '</span>';
+          btns += '<button onclick="window.IG.app._resetCodeUser(\'' + u.id + '\',\'' + esc(u.nom) + '\')" style="padding:3px 9px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:11px;margin-right:4px" title="Réinitialiser le mot de passe">🔄 Réinit.</button>';
+        }
+        if (u.role !== 'admin') {
+          var active = u.actif !== false;
+          btns += '<button onclick="window.IG.app._toggleUser(\'' + u.id + '\',' + active + ')" style="padding:3px 9px;border-radius:6px;border:1px solid ' + (active ? 'var(--red)' : 'var(--green)') + ';color:' + (active ? 'var(--red)' : 'var(--green)') + ';background:var(--bg4);cursor:pointer;font-size:11px">' + (active ? '🔒 Bloquer' : '✓ Débloquer') + '</button>';
+        }
+        return btns;
+      }
+
+      function _userRow(u, showCode) {
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">' +
+          '<div><div style="font-size:13px;font-weight:600">' + (ROLE_ICONS[u.role] || '👤') + ' ' + esc(u.nom || u.id) + _badgeActif(u.actif) + '</div>' +
+          '<div style="font-size:11px;color:var(--text3);margin-top:2px">' + esc(u.role || '') + (u.telephone ? ' · ' + esc(u.telephone) : '') + '</div></div>' +
+          '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">' + _actions(u, showCode) + '</div></div>';
+      }
+
+      // ── Tab : Collaborateurs
+      var htmlCollab = collabs.length
+        ? collabs.map(function(u) { return _userRow(u, false); }).join('')
+        : '<p style="color:var(--text3);font-size:13px;padding:12px 0;text-align:center">Aucun collaborateur</p>';
+
+      // ── Tab : Propriétaires
+      var htmlProprio = proprios.length
+        ? proprios.map(function(u) { return _userRow(u, true); }).join('')
+        : '<p style="color:var(--text3);font-size:13px;padding:12px 0;text-align:center">Aucun propriétaire enregistré</p>';
+
+      // ── Tab : Locataires (groupés par immeuble)
+      var immeublesData = _data.locataires ? _data.immeubles || [] : [];
+      var locatairesData = _data.locataires || [];
+      // Mapper user locataire → locataire → immeuble_id
+      var grouped = {};
+      locUsers.forEach(function(u) {
+        var loc = locatairesData.find(function(l) { return l.nom && u.nom && l.nom.trim().toLowerCase() === u.nom.trim().toLowerCase(); })
+                || locatairesData.find(function(l) { return l.telephone && u.telephone && l.telephone === u.telephone; });
+        var immId = (loc && loc.immeuble_id) ? String(loc.immeuble_id) : '__sans_immeuble';
+        grouped[immId] = grouped[immId] || { imm: null, users: [] };
+        if (!grouped[immId].imm && loc) {
+          var imm = immeublesData.find(function(i) { return String(i.id) === String(loc.immeuble_id); });
+          grouped[immId].imm = imm;
+        }
+        grouped[immId].users.push(u);
+      });
+      var htmlLoc = '';
+      if (!locUsers.length) {
+        htmlLoc = '<p style="color:var(--text3);font-size:13px;padding:12px 0;text-align:center">Aucun locataire avec accès portail</p>';
+      } else {
+        Object.keys(grouped).forEach(function(immId, idx) {
+          var g = grouped[immId];
+          var nom = g.imm ? esc(g.imm.nom_immeuble || g.imm.nom) : 'Sans immeuble';
+          var bodyId = 'eq-imm-' + idx;
+          htmlLoc += '<div style="border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden">' +
+            '<div onclick="var b=document.getElementById(\'' + bodyId + '\');b.style.display=b.style.display===\'none\'?\'block\':\'none\';this.querySelector(\'.eq-arrow\').textContent=b.style.display===\'none\'?\'▶\':\'▼\'" ' +
+            'style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg3);cursor:pointer;font-size:13px;font-weight:600">' +
+            '🏢 ' + nom + ' <span style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;font-weight:400;color:var(--text3)">' + g.users.length + ' locataire' + (g.users.length > 1 ? 's' : '') + '</span><span class="eq-arrow">▼</span></span></div>' +
+            '<div id="' + bodyId + '" style="padding:0 14px">' +
+            g.users.map(function(u) { return _userRow(u, true); }).join('') +
+            '</div></div>';
+        });
+      }
+
+      var tabs = [
+        { id:'collab', label:'Collaborateurs', count: collabs.length, html: htmlCollab },
+        { id:'proprio', label:'Propriétaires', count: proprios.length, html: htmlProprio },
+        { id:'loc', label:'Locataires', count: locUsers.length, html: htmlLoc }
+      ];
+
+      var tabBar = '<div style="display:flex;gap:4px;margin-bottom:14px;border-bottom:2px solid var(--border);padding-bottom:0">' +
+        tabs.map(function(tab, i) {
+          return '<button id="eq-tab-' + tab.id + '" onclick="window.IG.app._equipeTab(\'' + tab.id + '\')" ' +
+            'style="padding:8px 14px;border:none;border-bottom:' + (i === 0 ? '2px solid var(--accent)' : '2px solid transparent') + ';background:transparent;cursor:pointer;font-size:12px;font-weight:' + (i === 0 ? '700' : '400') + ';color:' + (i === 0 ? 'var(--accent)' : 'var(--text3)') + ';margin-bottom:-2px">' +
+            tab.label + ' <span style="font-size:11px;background:var(--bg3);padding:1px 6px;border-radius:99px">' + tab.count + '</span></button>';
+        }).join('') + '</div>' +
+        tabs.map(function(tab, i) {
+          return '<div id="eq-panel-' + tab.id + '" style="display:' + (i === 0 ? 'block' : 'none') + '">' + tab.html + '</div>';
+        }).join('');
+
+      el.innerHTML = tabBar;
     } catch(e) {
       el.innerHTML = '<p style="color:var(--text3);font-size:13px;padding:16px">' + e.message + '</p>';
     }
+  }
+
+  function _equipeTab(tabId) {
+    var ids = ['collab','proprio','loc'];
+    ids.forEach(function(id) {
+      var btn = document.getElementById('eq-tab-' + id);
+      var panel = document.getElementById('eq-panel-' + id);
+      var active = id === tabId;
+      if (btn) {
+        btn.style.borderBottom = active ? '2px solid var(--accent)' : '2px solid transparent';
+        btn.style.fontWeight = active ? '700' : '400';
+        btn.style.color = active ? 'var(--accent)' : 'var(--text3)';
+      }
+      if (panel) panel.style.display = active ? 'block' : 'none';
+    });
+  }
+
+  async function _resetCodeUser(userId, nom) {
+    var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    var newCode = Array.from({ length: 8 }, function() { return chars[Math.floor(Math.random() * chars.length)]; }).join('');
+    try {
+      await window.IG.db.update('users_app', userId, { code_invitation: newCode, actif: true });
+      var html = '<h3 style="font-size:15px;margin-bottom:14px">🔄 Nouveau mot de passe</h3>' +
+        '<p style="font-size:13px;color:var(--text3);margin-bottom:14px">Communiquez ce code à <strong>' + esc(nom) + '</strong>. Il servira de mot de passe à la prochaine connexion.</p>' +
+        '<div style="text-align:center;background:var(--bg3);border-radius:10px;padding:20px">' +
+        '<div style="font-size:26px;font-weight:900;letter-spacing:4px;color:var(--accent);font-family:monospace">' + newCode + '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:10px;margin-top:16px">' +
+        '<button onclick="navigator.clipboard.writeText(\'' + newCode + '\');window.IG.utils.showToast(\'Code copié ✓\',\'green\')" style="flex:1;padding:9px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">📋 Copier</button>' +
+        '<button data-modal-close style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Fermer</button>' +
+        '</div>';
+      window.IG.utils.showModal(html, { width: '360px' });
+    } catch(e) { window.IG.utils.showToast('Erreur : ' + e.message, 'red'); }
   }
 
   async function _genererInvitation() {
@@ -2017,10 +2133,10 @@ window.IG.app = (function() {
     toggleSidebar, closeSidebar, toggleSidebarSection, toggleDarkMode, lockScreen, openGuide,
     toggleAIChat, sendAIMessage, aiQuickAction,
     _refreshPaiements, _restaurer, _supprimerDefinitivement, _viderCorbeille, _loadCorbeille,
-    _genererInvitation, _toggleUser, _appliquerPromo,
+    _genererInvitation, _toggleUser, _equipeTab, _resetCodeUser, _appliquerPromo,
     _loadDeclarations, _validerDeclaration,
     _loadMessages, _nouveauMessage, _marquerLu,
-    _sauvegarderModePublication, _chargerModePublication, _sauvegarderCleIA, _chargerCleIA, _sauvegarderMomo, _chargerMomo,
+    _sauvegarderModePublication, _chargerModePublication, _sauvegarderCleIA, _chargerCleIA, _sauvegarderMomo, _chargerMomo, _sauvegarderCabinet, _chargerCabinet,
     getData: function() { return _data; },
     topbarAction, _showMobileNav,
     reloadShell
