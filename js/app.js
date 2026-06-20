@@ -1333,13 +1333,52 @@ window.IG.app = (function() {
         var hasImmeubles = u.immeubles_assignes && u.immeubles_assignes.length > 0;
         var droitsBadge = (hasOverrides || hasImmeubles)
           ? '<span style="font-size:10px;background:var(--accent);color:#fff;padding:1px 5px;border-radius:4px;margin-left:5px">⚙</span>' : '';
+        var code = u.code_invitation || u.code || null;
+
+        if (showCode) {
+          // Carte étendue pour proprio / locataire
+          var codeHtml = code
+            ? '<div style="display:flex;align-items:center;gap:8px;margin-top:6px">' +
+              '<span style="font-family:monospace;font-size:15px;font-weight:800;letter-spacing:3px;color:var(--accent);background:var(--bg3);padding:5px 12px;border-radius:8px;cursor:pointer" ' +
+              'onclick="navigator.clipboard.writeText(\'' + esc(code) + '\');window.IG.utils.showToast(\'Code copié ✓\',\'green\')" title="Cliquer pour copier">' +
+              esc(code) + '</span>' +
+              '<span style="font-size:10px;color:var(--text3)">📋 copier</span></div>'
+            : '<div style="margin-top:6px;font-size:11px;color:var(--text3);font-style:italic">Connecté · aucun code actif</div>';
+
+          return '<div style="padding:12px 0;border-bottom:1px solid var(--border)">' +
+            // Ligne principale : nom + badges + actions
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+            '<div style="min-width:0">' +
+            '<div style="font-size:13px;font-weight:700">' + (ROLE_ICONS[u.role] || '👤') + ' ' + esc(u.nom || u.id) + _badgeActif(u) + droitsBadge + '</div>' +
+            '<div style="font-size:11px;color:var(--text3);margin-top:2px">' + esc(u.telephone || '—') + '</div>' +
+            codeHtml +
+            '</div>' +
+            '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">' +
+            '<button onclick="window.IG.app._ouvrirDroits(\'' + u.id + '\')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--accent);color:var(--accent);background:var(--bg4);cursor:pointer;font-size:11px">⚙️ Droits</button>' +
+            '<button onclick="window.IG.app._resetCodeUser(\'' + u.id + '\',\'' + esc(u.nom) + '\')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:11px">🔄 Réinit. code</button>' +
+            _actionsExtra(u) +
+            '</div></div></div>';
+        }
+
+        // Ligne compacte pour collaborateurs
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">' +
           '<div style="min-width:0"><div style="font-size:13px;font-weight:600">' + (ROLE_ICONS[u.role] || '👤') + ' ' + esc(u.nom || u.id) + _badgeActif(u) + droitsBadge + '</div>' +
-          '<div style="font-size:11px;color:var(--text3);margin-top:2px">' + esc(u.role || '') + (u.telephone ? ' · ' + esc(u.telephone) : '') +
-          (hasImmeubles ? ' · <span style="color:var(--accent)">' + u.immeubles_assignes.length + ' imm.</span>' : '') + '</div></div>' +
-          '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">' +
+          '<div style="font-size:11px;color:var(--text3);margin-top:2px">' + esc(u.role || '') + (u.telephone ? ' · ' + esc(u.telephone) : '') + '</div></div>' +
+          '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">' +
           '<button onclick="window.IG.app._ouvrirDroits(\'' + u.id + '\')" style="padding:3px 9px;border-radius:6px;border:1px solid var(--accent);color:var(--accent);background:var(--bg4);cursor:pointer;font-size:11px">⚙️ Droits</button>' +
-          _actions(u, showCode) + '</div></div>';
+          _actionsExtra(u) + '</div></div>';
+      }
+
+      function _actionsExtra(u) {
+        var btns = '';
+        if (u.role !== 'admin') {
+          var active = u.actif !== false;
+          if (!active || u.date_blocage_auto) {
+            btns += '<button onclick="window.IG.app._reintegrerUser(\'' + u.id + '\',\'' + esc(u.nom) + '\')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--green);color:var(--green);background:var(--bg4);cursor:pointer;font-size:11px">🔓 Réintégrer</button>';
+          }
+          btns += '<button onclick="window.IG.app._toggleUser(\'' + u.id + '\',' + active + ')" style="padding:4px 10px;border-radius:6px;border:1px solid ' + (active ? 'var(--red)' : 'var(--green)') + ';color:' + (active ? 'var(--red)' : 'var(--green)') + ';background:var(--bg4);cursor:pointer;font-size:11px">' + (active ? '🔒 Bloquer' : '✓ Débloquer') + '</button>';
+        }
+        return btns;
       }
 
       // ── Tab : Collaborateurs
