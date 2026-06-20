@@ -476,14 +476,6 @@ window.IG.paiements = (function() {
       _fieldNum('montant', t('Montant (FCFA)'), loc.loyer) +
       _field('date_paiement', t('Date paiement'), now.toISOString().split('T')[0], true, 'date') +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-      '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Mois') + '</label>' +
-      '<input type="number" name="mois" value="' + (now.getMonth()+1) + '" min="1" max="12" ' +
-        'style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
-      '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Année') + '</label>' +
-      '<input type="number" name="annee" value="' + now.getFullYear() + '" min="2020" max="2030" ' +
-        'style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
-      '</div>' +
       '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Mode paiement') + '</label>' +
       '<select name="mode_paiement" style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
       ['espèces','virement','mobile money','chèque'].map(function(m) {
@@ -515,30 +507,18 @@ window.IG.paiements = (function() {
     var modal = window.IG.utils.showModal(html, { width: '480px' });
     setTimeout(function() { if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-pay-form', 'ad1'); }, 80);
 
-    // Auto-dériver mois et année depuis la date de paiement
-    var dateInput = modal.box.querySelector('[name="date_paiement"]');
-    var moisInput = modal.box.querySelector('[name="mois"]');
-    var anneeInput = modal.box.querySelector('[name="annee"]');
-    if (dateInput && moisInput && anneeInput) {
-      dateInput.addEventListener('change', function() {
-        var d = new Date(this.value);
-        if (!isNaN(d)) {
-          moisInput.value = d.getMonth() + 1;
-          anneeInput.value = d.getFullYear();
-        }
-      });
-    }
-
     modal.box.querySelector('#form-paiement').addEventListener('submit', async function(e) {
       e.preventDefault();
       var fd = new FormData(e.target);
+      var datePay = fd.get('date_paiement');
+      var dObj = datePay ? new Date(datePay) : new Date();
       var pay = {
         id:             window.IG.utils.uid(),
         locataire_id:   parseInt(fd.get('locataire_id')),
         montant:        parseFloat(fd.get('montant')) || 0,
-        date_paiement:  fd.get('date_paiement'),
-        mois:           parseInt(fd.get('mois')),
-        annee:          parseInt(fd.get('annee')),
+        date_paiement:  datePay,
+        mois:           dObj.getMonth() + 1,
+        annee:          dObj.getFullYear(),
         mode_paiement:  fd.get('mode_paiement'),
         type:           fd.get('type'),
         note:           fd.get('note'),

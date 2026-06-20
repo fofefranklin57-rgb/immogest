@@ -147,6 +147,13 @@ Format : `[DATE] FICHIER — Erreur → Solution`
 - **Solution** : condition `lg.reste > 0 && lg.cumul > 0` (cumul = versements reçus)
 - **Fichier** : `js/paiements.js`
 
+### [2026-06-20] paiements.js — Champs Mois/Année manuels dans le formulaire de paiement
+- **Erreur** : l'utilisateur devait saisir manuellement le mois et l'année couverts, source de confusion
+- **Cause** : mois/annee stockés séparément mais redondants avec date_paiement — le FIFO utilise date_paiement
+- **Solution** : suppression des champs du formulaire, mois/annee auto-calculés depuis date_paiement au submit
+- **Logique** : un paiement enregistré couvre automatiquement le mois le plus ancien impayé (algorithme FIFO)
+- **Fichier** : `js/paiements.js`
+
 ---
 
 ## Erreurs à surveiller (non encore rencontrées mais risquées)
