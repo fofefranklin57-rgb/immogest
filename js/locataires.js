@@ -475,21 +475,19 @@ window.IG.locataires = (function() {
     var wasOpen = dd.classList.contains('open');
     _closeMenus();
     if (!wasOpen) {
-      // Positionner en fixed pour éviter tout clipping
+      var btnRect = btn.getBoundingClientRect();
       dd.style.position = 'fixed';
-      dd.style.right = '';
-      dd.style.top = '';
+      dd.style.right = (window.innerWidth - btnRect.right) + 'px';
+      dd.style.top = (btnRect.bottom + 4) + 'px';
       dd.style.bottom = '';
       dd.classList.add('open');
-      var btnRect = btn.getBoundingClientRect();
-      var ddH = dd.offsetHeight;
-      var spaceBelow = window.innerHeight - btnRect.bottom - 8;
-      if (spaceBelow >= ddH) {
-        dd.style.top = (btnRect.bottom + 4) + 'px';
-      } else {
-        dd.style.top = Math.max(8, btnRect.top - ddH - 4) + 'px';
-      }
-      dd.style.right = (window.innerWidth - btnRect.right) + 'px';
+      // Après rendu : ajuster si dépasse le bas
+      requestAnimationFrame(function() {
+        var ddH = dd.offsetHeight;
+        if (btnRect.bottom + 4 + ddH > window.innerHeight - 8) {
+          dd.style.top = Math.max(8, btnRect.top - ddH - 4) + 'px';
+        }
+      });
     }
   }
 
