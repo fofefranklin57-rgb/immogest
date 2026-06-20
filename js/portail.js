@@ -214,6 +214,8 @@ window.IG.portail = (function() {
       } catch(e) {
         window.IG.utils.showToast('Erreur: ' + e.message, 'red');
       }
+    });
+
     // Afficher le numéro du 1er opérateur configuré par défaut
     setTimeout(function() {
       var sel = modal.box.querySelector('#decl-mode');
