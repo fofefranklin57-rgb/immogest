@@ -81,6 +81,7 @@ window.IG.owner = (function() {
       '<div style="display:flex;gap:10px">' +
       '<button onclick="window.IG.owner._refreshStats()" style="padding:8px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:#fff;cursor:pointer;font-size:13px">↻ Refresh</button>' +
       '<button onclick="window.IG.owner.afficherPromos()" style="padding:8px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;cursor:pointer;font-size:13px">🎁 Promos</button>' +
+      '<button id="owner-msg-btn" onclick="window.IG.owner.afficherMessages()" style="padding:8px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;cursor:pointer;font-size:13px">📬 Messages <span id="owner-msg-badge" style="display:none;background:#E05A5A;color:#fff;border-radius:99px;font-size:10px;padding:1px 6px;margin-left:4px">0</span></button>' +
       '<button onclick="window.location.href=\'/\'" style="padding:8px 14px;border-radius:8px;border:none;background:rgba(255,255,255,0.1);color:#fff;cursor:pointer;font-size:13px">← App</button>' +
       '</div></div>' +
       '<div id="owner-content"><div style="text-align:center;padding:60px;color:rgba(255,255,255,0.4)">⏳ Chargement...</div></div>' +
@@ -147,6 +148,7 @@ window.IG.owner = (function() {
         '</tbody></table></div></div>';
 
       zone.innerHTML = html;
+      _chargerBadgeMessages();
     } catch(e) {
       zone.innerHTML = '<div style="text-align:center;padding:40px;color:#E05A5A">Erreur: ' + esc(e.message) + '</div>';
     }
@@ -296,10 +298,88 @@ window.IG.owner = (function() {
     });
   }
 
-  // ── Injection bouton promos dans le dashboard owner ───────────
-  function _btnPromos() {
-    return '<button onclick="window.IG.owner.afficherPromos()" ' +
-      'style="padding:8px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;cursor:pointer;font-size:13px">🎁 Promos</button>';
+  // ── Messages reçus par le owner ──────────────────────────────
+  async function _chargerBadgeMessages() {
+    try {
+      var d = await _call('owner_messages');
+      var nonLus = (d.messages || []).filter(function(m) {
+        return !Array.isArray(m.lu_par) || !m.lu_par.includes('__OWNER__');
+      }).length;
+      var badge = document.getElementById('owner-msg-badge');
+      if (badge) {
+        badge.textContent = nonLus;
+        badge.style.display = nonLus > 0 ? 'inline' : 'none';
+      }
+    } catch(_) {}
+  }
+
+  async function afficherMessages() {
+    var zone = document.getElementById('owner-content');
+    if (!zone) return;
+    zone.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.4)">⏳ Chargement messages...</div>';
+    try {
+      var d = await _call('owner_messages');
+      var msgs = d.messages || [];
+      if (!msgs.length) {
+        zone.innerHTML = '<div style="text-align:center;padding:60px;color:rgba(255,255,255,0.35);font-size:14px">📬 Aucun message reçu</div>';
+        return;
+      }
+      var html = '<div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">' +
+        '<div style="font-size:15px;font-weight:700">📬 Messages reçus (' + msgs.length + ')</div>' +
+        '<button onclick="window.IG.owner._refreshStats()" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:#fff;cursor:pointer;font-size:12px">↩ Retour stats</button>' +
+        '</div>';
+      html += msgs.map(function(m) {
+        var lu = Array.isArray(m.lu_par) && m.lu_par.includes('__OWNER__');
+        var date = new Date(m.created_at).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+        return '<div style="background:rgba(255,255,255,' + (lu ? '0.04' : '0.08') + ');border:1px solid rgba(255,255,255,' + (lu ? '0.07' : '0.18') + ');border-radius:12px;padding:16px 18px;margin-bottom:10px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px">' +
+          '<div>' +
+          '<div style="font-size:13px;font-weight:700;color:#fff' + (lu ? '' : ';color:#63B3F7') + '">' + esc(m.sujet || '(sans sujet)') + (!lu ? ' <span style="font-size:10px;background:#E05A5A;color:#fff;padding:1px 6px;border-radius:99px">Nouveau</span>' : '') + '</div>' +
+          '<div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:3px">De : <strong style="color:rgba(255,255,255,0.7)">' + esc(m.de_nom || '?') + '</strong> · ' + date + '</div>' +
+          '</div>' +
+          '</div>' +
+          '<div style="font-size:13px;color:rgba(255,255,255,0.75);white-space:pre-wrap;line-height:1.6;margin-bottom:12px">' + esc(m.contenu || '') + '</div>' +
+          '<div style="display:flex;gap:8px">' +
+          '<button onclick="window.IG.owner._ouvrirReponse(' + m.id + ',\'' + esc(m.de_user_id) + '\',\'' + esc(m.de_nom) + '\',\'' + esc(m.tenant_id || '') + '\',\'' + esc(m.sujet || '') + '\')" ' +
+            'style="padding:5px 14px;border-radius:7px;border:none;background:#0E6AAF;color:#fff;cursor:pointer;font-size:12px;font-weight:600">↩ Répondre</button>' +
+          (!lu ? '<button onclick="window.IG.owner._marquerLuOwner(' + m.id + ')" style="padding:5px 14px;border-radius:7px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:rgba(255,255,255,0.6);cursor:pointer;font-size:12px">✓ Marquer lu</button>' : '') +
+          '</div></div>';
+      }).join('');
+      zone.innerHTML = html;
+    } catch(e) {
+      zone.innerHTML = '<div style="color:#E05A5A;padding:20px">Erreur : ' + esc(e.message) + '</div>';
+    }
+  }
+
+  async function _marquerLuOwner(msgId) {
+    try {
+      await _call('owner_mark_read', { msgId });
+      afficherMessages();
+      _chargerBadgeMessages();
+    } catch(_) {}
+  }
+
+  function _ouvrirReponse(msgId, pourUserId, pourNom, tenantId, sujetOriginal) {
+    var modal = window.IG.utils.showModal(
+      '<h3 style="font-size:15px;font-weight:700;margin-bottom:14px">↩ Répondre à ' + esc(pourNom) + '</h3>' +
+      '<textarea id="owner-reply-txt" rows="5" placeholder="Votre réponse..." style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;box-sizing:border-box;resize:vertical"></textarea>' +
+      '<div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">' +
+      '<button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Annuler</button>' +
+      '<button id="owner-reply-send" style="padding:8px 16px;border-radius:8px;border:none;background:#0E6AAF;color:#fff;cursor:pointer;font-size:13px;font-weight:600">Envoyer</button>' +
+      '</div>', { width: '480px' }
+    );
+    modal.box.querySelector('#owner-reply-send').addEventListener('click', async function() {
+      var txt = modal.box.querySelector('#owner-reply-txt').value.trim();
+      if (!txt) return;
+      try {
+        await _call('owner_reply', { tenant_id: tenantId, pour_user_id: pourUserId, pour_nom: pourNom, sujet: sujetOriginal, contenu: txt });
+        await _call('owner_mark_read', { msgId });
+        window.IG.utils.showToast('Réponse envoyée ✓', 'green');
+        modal.close();
+        afficherMessages();
+        _chargerBadgeMessages();
+      } catch(e) { window.IG.utils.showToast('Erreur: ' + e.message, 'red'); }
+    });
   }
 
   // ── Point d'entrée externe (URL ?owner=1) ─────────────────────
@@ -311,6 +391,6 @@ window.IG.owner = (function() {
     return false;
   }
 
-  return { renderLogin, renderDashboard, upgraderPlan, afficherPromos, _refreshStats, checkAutoOpen };
+  return { renderLogin, renderDashboard, upgraderPlan, afficherPromos, afficherMessages, _marquerLuOwner, _ouvrirReponse, _refreshStats, checkAutoOpen };
 
 })();

@@ -860,9 +860,8 @@ async function locMsgNouveauModal() {
         .forEach(u => dests.push({ id: u.id, nom: u.nom, label: u.nom + ' — Propriétaire' }));
     }
   }
-  if (!dests.length) {
-    if (typeof showToast === 'function') showToast('Aucun gestionnaire disponible', 'red'); return;
-  }
+  // ImmoGest toujours disponible comme destinataire (support / personnalisation)
+  dests.unshift({ id: '__OWNER__', nom: 'ImmoGest', label: '📬 ImmoGest — Support & Personnalisation' });
   const opts = dests.map(d => `<option value="${d.id}|||${d.nom.replace(/"/g,'&quot;')}">${d.label}</option>`).join('');
   if (typeof showModal === 'function') {
     showModal(`<div style="max-width:480px;">
@@ -897,21 +896,13 @@ async function locMsgEnvoyer() {
     const { error } = await _sb.from('messages_internes').insert([{
       de_user_id: SESSION.userId, de_nom: SESSION.nom,
       pour_user_id: pourId, pour_nom: pourNom,
-      sujet: sujet||'(sans sujet)', corps, lu: false
+      sujet: sujet||'(sans sujet)', contenu: corps, lu_par: [],
+      tenant_id: SESSION.tenantId || null
     }]);
     if (error) throw error;
     if (typeof closeModals === 'function') closeModals();
     if (typeof showToast === 'function') showToast(t('Message envoyé ✓'), 'green');
     locMsgCharger();
-    // Notification email au destinataire
-    try {
-      var _workerUrl = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || 'https://immogest1.fofefranklin57.workers.dev';
-      fetch(_workerUrl + '/notify-message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pour_user_id: pourId, de_nom: SESSION.nom, sujet: sujet, corps: corps, tenant_id: SESSION.tenantId })
-      }).catch(function() {});
-    } catch(_) {}
   } catch(e) {
     if (typeof showToast === 'function') showToast('Erreur : ' + e.message, 'red');
   }

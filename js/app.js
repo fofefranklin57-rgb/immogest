@@ -1845,7 +1845,9 @@ window.IG.app = (function() {
   function _nouveauMessage() {
     var session = window.IG.auth ? window.IG.auth.getSession() : {};
     var locs = (_data.locataires || []).filter(function(l) { return l.statut !== 'libre'; });
-    var destOptions = '<option value="">— ' + t('Tous (broadcast)') + ' —</option>' +
+    var destOptions =
+      '<option value="__OWNER__" data-nom="ImmoGest">📬 ImmoGest — Support & Personnalisation</option>' +
+      '<option value="">— ' + t('Tous locataires (broadcast)') + ' —</option>' +
       locs.map(function(l) { return '<option value="loc_' + l.id + '" data-nom="' + esc(l.nom) + '">' + esc(l.nom) + ' (' + esc(l.appt || '') + ')</option>'; }).join('');
 
     var html = '<h3 style="font-size:15px;font-weight:700;margin-bottom:14px">✉️ ' + t('Nouveau message interne') + '</h3>' +
@@ -1869,19 +1871,17 @@ window.IG.app = (function() {
       if (!contenu) { window.IG.utils.showToast(t('Message vide'), 'red'); return; }
       try {
         await window.IG.db.insert('messages_internes', [{
-          sujet:      sujet || t('Sans sujet'),
-          contenu:    contenu,
-          de_user_id: session.userId || '',
-          de_nom:     session.nom || session.nomCabinet || '',
-          pour_id:    destVal || null,
-          pour_nom:   destNom || null,
-          lu_par:     []
+          sujet:        sujet || t('Sans sujet'),
+          contenu:      contenu,
+          de_user_id:   session.userId || '',
+          de_nom:       session.nom || session.nomCabinet || '',
+          pour_user_id: destVal || null,
+          pour_nom:     destNom || null,
+          tenant_id:    session.tenantId || null,
+          lu_par:       []
         }]);
-        // Notif push si destinataire locataire identifié
         if (destVal && destVal.startsWith('loc_') && typeof sendOneSignalNotif === 'function') {
-          var locId = destVal.replace('loc_', '');
-          sendOneSignalNotif(destVal, '💬 ' + t('Nouveau message'),
-            (session.nom || '') + ': ' + sujet, { type: 'message' });
+          sendOneSignalNotif(destVal, '💬 ' + t('Nouveau message'), (session.nom || '') + ': ' + sujet, { type: 'message' });
         }
         window.IG.utils.showToast(t('Message envoyé ✓'), 'green');
         modal.close();

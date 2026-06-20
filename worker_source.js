@@ -678,6 +678,42 @@ ${_footer()}</body></html>`;
           return json({ success: true, promos: r.ok ? await r.json() : [] });
         }
 
+        if (action === 'owner_messages') {
+          // Tous les messages destinés au owner (__OWNER__) toutes tenants confondues
+          const r = await fetch(sbBase + '/rest/v1/messages_internes?pour_user_id=eq.__OWNER__&order=created_at.desc&limit=100&select=*', { headers: sbHdrs() });
+          const msgs = r.ok ? await r.json() : [];
+          return json({ success: true, messages: msgs });
+        }
+
+        if (action === 'owner_reply') {
+          // Réponse du owner : insertion d'un message retour dans messages_internes
+          const { tenant_id, pour_user_id, pour_nom, sujet, contenu } = body;
+          if (!pour_user_id || !contenu) return json({ error: 'pour_user_id + contenu requis' }, 400);
+          const r = await fetch(sbBase + '/rest/v1/messages_internes', {
+            method: 'POST',
+            headers: { ...sbHdrs(), 'Prefer': 'return=minimal' },
+            body: JSON.stringify({
+              tenant_id: tenant_id || null,
+              de_user_id: '__OWNER__', de_nom: 'ImmoGest',
+              pour_user_id, pour_nom: pour_nom || '',
+              sujet: 'Ré: ' + (sujet || ''),
+              contenu, lu_par: []
+            })
+          });
+          return json({ success: r.ok });
+        }
+
+        if (action === 'owner_mark_read') {
+          const { msgId } = body;
+          if (!msgId) return json({ error: 'msgId requis' }, 400);
+          await fetch(sbBase + '/rest/v1/messages_internes?id=eq.' + msgId, {
+            method: 'PATCH',
+            headers: { ...sbHdrs(), 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ lu_par: ['__OWNER__'] })
+          });
+          return json({ success: true });
+        }
+
         return json({ error: 'Action inconnue' }, 400);
       }
 
