@@ -153,8 +153,8 @@ window.IG.paiements = (function() {
     var cabSignataire= params.signataire   || '';
     var cabRccm      = params.rccm         || '';
 
-    // Lignes de l'année affichée
-    var lignes = toutesLignes.filter(function(lg) { return lg.annee === annee; });
+    // Toutes les lignes depuis l'entrée
+    var lignes = toutesLignes;
 
     // Statistiques
     var now        = new Date();
@@ -187,11 +187,7 @@ window.IG.paiements = (function() {
     // ── Barre actions ─────────────────────────────────────────
     var html = '<div id="fiche-print-zone">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap">' +
-      '<div style="display:flex;align-items:center;gap:8px">' +
-      '<label style="font-size:12px;color:var(--text2);font-weight:600">Année :</label>' +
-      '<select id="fiche-annee-sel" style="padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)" onchange="window.IG.locataires.rafraichirFiche(' + loc.id + ')">' +
-      years.map(function(y) { return '<option value="' + y + '"' + (y === annee ? ' selected' : '') + '>' + y + '</option>'; }).join('') +
-      '</select></div>' +
+      '<div></div>' +
       '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
       '<button onclick="window.IG.paiements.afficherFormulaireFiche(' + loc.id + ')" style="padding:7px 13px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:12px;font-weight:600;cursor:pointer">+ Paiement</button>' +
       '<button onclick="window.IG.paiements.imprimerFiche()" style="padding:7px 13px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;cursor:pointer">🖨️ PDF</button>' +

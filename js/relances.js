@@ -11,19 +11,34 @@ window.IG.relances = (function() {
   function fmt(n) { return window.IG.utils.formatMontant(n); }
 
   // ── Calculer retard en mois ───────────────────────────────────
+  function _ficheDepuisPremierPaiement(loc, paiements) {
+    if (!paiements || !paiements.length) return [];
+    var sorted = paiements.slice().sort(function(a, b) { return new Date(a.date_paiement) - new Date(b.date_paiement); });
+    var first = new Date(sorted[0].date_paiement);
+    var locProxy = Object.assign({}, loc, {
+      entree: first.getFullYear() + '-' + String(first.getMonth() + 1).padStart(2, '0') + '-01'
+    });
+    return window.IG.paiements ? window.IG.paiements.calculerFiche(locProxy, paiements) : [];
+  }
+
   function calculerRetard(loc, paiements) {
     if (!loc.entree || loc.statut === 'libre') return 0;
-    if (!paiements || paiements.length === 0) return parseInt(loc.mois_arrieres) || 0;
-    var fiche = window.IG.paiements ? window.IG.paiements.calculerFiche(loc, paiements) : [];
-    var impayes = fiche.filter(function(l) { return !l.futur && l.statut !== 'Payé'; });
-    return impayes.length;
+    var base = parseInt(loc.mois_arrieres) || 0;
+    if (!paiements || paiements.length === 0) return base;
+    var fiche = _ficheDepuisPremierPaiement(loc, paiements);
+    var payes = fiche.filter(function(l) { return !l.futur && l.statut === 'Payé'; }).length;
+    var impayesNouveaux = fiche.filter(function(l) { return !l.futur && l.statut !== 'Payé'; }).length;
+    return Math.max(0, base - payes) + impayesNouveaux;
   }
 
   function montantDu(loc, paiements) {
-    if (!paiements || paiements.length === 0) return parseFloat(loc.arrieres) || 0;
-    var fiche = window.IG.paiements ? window.IG.paiements.calculerFiche(loc, paiements) : [];
-    var duFiche = fiche.filter(function(l) { return !l.futur; }).reduce(function(s, l) { return s + (l.reste || 0); }, 0);
-    return duFiche;
+    var loyer = parseFloat(loc.loyer) || 0;
+    var baseArrieres = parseFloat(loc.arrieres) || 0;
+    if (!paiements || paiements.length === 0) return baseArrieres;
+    var fiche = _ficheDepuisPremierPaiement(loc, paiements);
+    var payes = fiche.filter(function(l) { return !l.futur && l.statut === 'Payé'; }).length;
+    var duNouv = fiche.filter(function(l) { return !l.futur; }).reduce(function(s, l) { return s + (l.reste || 0); }, 0);
+    return Math.max(0, baseArrieres - payes * loyer) + duNouv;
   }
 
   // ── Niveaux de relance ────────────────────────────────────────

@@ -154,6 +154,19 @@ Format : `[DATE] FICHIER — Erreur → Solution`
 - **Logique** : un paiement enregistré couvre automatiquement le mois le plus ancien impayé (algorithme FIFO)
 - **Fichier** : `js/paiements.js`
 
+### [2026-06-20] relances.js + locataires.js — FIFO depuis l'entrée gonfle les mois après 1er paiement
+- **Erreur** : enregistrer 1 paiement faisait passer RFFA de 0 à 33 mois dus (discontinuité)
+- **Cause** : FIFO partait de `loc.entree` (Sep 2023) → générait 34 mois → 1 payé = 33
+- **Solution** : FIFO part depuis la date du PREMIER paiement enregistré. Base = `mois_arrieres`. Formule : `max(0, mois_arrieres - payes_depuis_premier_pay) + impayes_nouveaux`
+- **Fichiers** : `js/relances.js`, `js/locataires.js`, `js/dashboard.js`
+- **Règle** : pour la liste/relances, ne jamais générer l'historique depuis `entree` quand des paiements existent — partir du premier paiement
+
+### [2026-06-20] paiements.js — Fiche filtrée par année uniquement
+- **Erreur** : la fiche de suivi ne montrait que les mois de l'année sélectionnée (2026 par défaut)
+- **Cause** : `lignes = toutesLignes.filter(lg.annee === annee)` ligne 157
+- **Solution** : `lignes = toutesLignes` — afficher tous les mois depuis l'entrée. Sélecteur d'année supprimé.
+- **Fichier** : `js/paiements.js`
+
 ---
 
 ## Erreurs à surveiller (non encore rencontrées mais risquées)

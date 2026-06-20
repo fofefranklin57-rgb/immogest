@@ -413,16 +413,28 @@ window.IG.locataires = (function() {
   }
 
   // Calcule le cumul total dû (toute la fiche depuis date entrée, pas seulement le mois courant)
+  function _ficheDepuisPremierPay(loc, pays) {
+    if (!pays.length) return [];
+    var sorted = pays.slice().sort(function(a, b) { return new Date(a.date_paiement) - new Date(b.date_paiement); });
+    var first = new Date(sorted[0].date_paiement);
+    var locProxy = Object.assign({}, loc, {
+      entree: first.getFullYear() + '-' + String(first.getMonth() + 1).padStart(2, '0') + '-01'
+    });
+    return window.IG.paiements ? window.IG.paiements.calculerFiche(locProxy, pays) : [];
+  }
+
   function _resteCalc(loc, paiements) {
     if (loc.statut === 'libre') return 0;
     if (!loc.entree || !loc.loyer) return 0;
     var pays = (paiements || []).filter(function(p) { return p.locataire_id == loc.id; });
-    // Sans paiements enregistrés : utiliser uniquement les arriérés explicites
-    if (pays.length === 0) return parseFloat(loc.arrieres) || 0;
+    var loyer = parseFloat(loc.loyer) || 0;
+    var baseArrieres = parseFloat(loc.arrieres) || 0;
+    if (pays.length === 0) return baseArrieres;
     if (window.IG.paiements && window.IG.paiements.calculerFiche) {
-      var fiche = window.IG.paiements.calculerFiche(loc, pays);
-      var duFiche = fiche.filter(function(l) { return !l.futur; }).reduce(function(s, l) { return s + (l.reste || 0); }, 0);
-      return duFiche;
+      var fiche = _ficheDepuisPremierPay(loc, pays);
+      var payes = fiche.filter(function(l) { return !l.futur && l.statut === 'Payé'; }).length;
+      var duNouv = fiche.filter(function(l) { return !l.futur; }).reduce(function(s, l) { return s + (l.reste || 0); }, 0);
+      return Math.max(0, baseArrieres - payes * loyer) + duNouv;
     }
     // Fallback mois courant si paiements module non chargé
     var now = new Date();
@@ -439,11 +451,14 @@ window.IG.locataires = (function() {
     if (!loc.entree) return '';
     var pays = (paiements || []).filter(function(p) { return p.locataire_id == loc.id; });
     var moisDus = 0;
+    var base = parseInt(loc.mois_arrieres) || 0;
     if (pays.length === 0) {
-      moisDus = parseInt(loc.mois_arrieres) || 0;
+      moisDus = base;
     } else if (window.IG.paiements && window.IG.paiements.calculerFiche) {
-      var fiche = window.IG.paiements.calculerFiche(loc, pays);
-      moisDus = fiche.filter(function(l) { return !l.futur && l.statut !== 'Payé'; }).length;
+      var fiche = _ficheDepuisPremierPay(loc, pays);
+      var payesCnt = fiche.filter(function(l) { return !l.futur && l.statut === 'Payé'; }).length;
+      var impayesNouveaux = fiche.filter(function(l) { return !l.futur && l.statut !== 'Payé'; }).length;
+      moisDus = Math.max(0, base - payesCnt) + impayesNouveaux;
     } else {
       var reste = _resteCalc(loc, paiements);
       if (reste <= 0) return '';
