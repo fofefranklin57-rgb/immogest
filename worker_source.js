@@ -1,6 +1,3 @@
---63dd3698b441cb0c2e9dd9fdf1b2f3a501d6fb3dd0e008809283471ea410
-Content-Disposition: form-data; name="worker.js"
-
 // ═══════════════════════════════════════════════════════════════
 // IMMOGEST v2 — Cloudflare Worker complet
 // Routes : /health /register /login-tenant /login-user
@@ -1422,6 +1419,3 @@ ${_footer()}
     }
   }
 };
-
---63dd3698b441cb0c2e9dd9fdf1b2f3a501d6fb3dd0e008809283471ea410--
-
