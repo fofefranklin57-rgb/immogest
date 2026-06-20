@@ -176,6 +176,7 @@ window.IG.immeubles = (function() {
       try {
         var estNouveau = !imm;
         await sauvegarder(data);
+        await _creerLocauxManquants(data);
         modal.close();
         if (window.IG.app && window.IG.app.refresh) window.IG.app.refresh();
         if (estNouveau && data.nom_proprio && data.tel_proprio) {
@@ -231,6 +232,53 @@ window.IG.immeubles = (function() {
     } catch(e) {
       toast(t('Immeuble sauvegardé') + ' — ' + t('Erreur génération code') + ': ' + e.message, 'orange');
     }
+  }
+
+  // ── Création automatique des locaux après sauvegarde immeuble ──
+  async function _creerLocauxManquants(imm) {
+    if (!window.IG.locataires) return;
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+
+    // Récupérer les locaux déjà existants pour cet immeuble
+    var existants = window.IG.app ? window.IG.app.getData().locataires : [];
+    var locauxExistants = existants
+      .filter(function(l) { return String(l.immeuble_id) === String(imm.id); })
+      .map(function(l) { return (l.appt || '').toUpperCase(); });
+
+    // Ordre : Duplex → Appartement → Studio → Chambre
+    var types = [
+      { key: 'duplex',   prefixe: 'D', label: 'duplex',       count: parseInt(imm.duplex)   || 0 },
+      { key: 'apparts',  prefixe: 'A', label: 'appartement',  count: parseInt(imm.apparts)  || 0 },
+      { key: 'studios',  prefixe: 'S', label: 'studio',       count: parseInt(imm.studios)  || 0 },
+      { key: 'chambres', prefixe: 'C', label: 'chambre',      count: parseInt(imm.chambres) || 0 }
+    ];
+
+    var crees = 0;
+    for (var t2 = 0; t2 < types.length; t2++) {
+      var tp = types[t2];
+      for (var n = 1; n <= tp.count; n++) {
+        var appt = tp.prefixe + n;
+        if (locauxExistants.indexOf(appt) === -1) {
+          var local = {
+            id:          window.IG.utils.uid(),
+            tenant_id:   session.tenantId,
+            immeuble_id: imm.id,
+            nom:         'Local ' + appt,
+            appt:        appt,
+            type_local:  tp.label,
+            statut:      'libre',
+            loyer:       0,
+            arrieres:    0,
+            mois_arrieres: 0
+          };
+          try {
+            await db().upsert('locataires', [local]);
+            crees++;
+          } catch(_) {}
+        }
+      }
+    }
+    if (crees > 0) toast(crees + ' local(aux) créé(s) automatiquement', 'blue');
   }
 
   function _field(name, label, val, required, type) {

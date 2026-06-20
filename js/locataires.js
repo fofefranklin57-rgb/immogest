@@ -98,6 +98,19 @@ window.IG.locataires = (function() {
       return;
     }
 
+    // Trier : Duplex → Appartement → Studio → Chambre → autres, puis par numéro
+    var _ordreType = { 'd': 0, 'a': 1, 's': 2, 'c': 3 };
+    liste = liste.slice().sort(function(a, b) {
+      var pa = (a.appt || '').toLowerCase();
+      var pb = (b.appt || '').toLowerCase();
+      var oa = _ordreType[pa[0]] !== undefined ? _ordreType[pa[0]] : 9;
+      var ob = _ordreType[pb[0]] !== undefined ? _ordreType[pb[0]] : 9;
+      if (oa !== ob) return oa - ob;
+      var na = parseInt((pa.match(/\d+/) || [0])[0]);
+      var nb = parseInt((pb.match(/\d+/) || [0])[0]);
+      return na - nb;
+    });
+
     // Filtrer par recherche
     var q = (document.getElementById('loc-search') && document.getElementById('loc-search').value || '').toLowerCase();
     if (q) liste = liste.filter(function(l) {
