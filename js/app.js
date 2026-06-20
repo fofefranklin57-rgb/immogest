@@ -528,6 +528,11 @@ window.IG.app = (function() {
         var params = await window.IG.db.select('parametres');
         var settings = (params && params[0] && params[0].settings) || {};
         _data.settings = { momo_numeros: settings.momo_numeros || {} };
+        // Injecter infos cabinet dans session.parametres pour les en-têtes de docs
+        if (settings.cabinet && Object.keys(settings.cabinet).length) {
+          var sess = window.IG.auth.getSession();
+          sess.parametres = Object.assign(sess.parametres || {}, settings.cabinet);
+        }
       } catch(_) {}
       _setSyncStatus('ok');
       _updateSidebarImmeubles();
@@ -907,37 +912,75 @@ window.IG.app = (function() {
   }
 
   // ── Paramètres ────────────────────────────────────────────────
+  function _sectionTitle(icon, label) {
+    return '<div style="display:flex;align-items:center;gap:8px;margin:24px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border)">' +
+      '<span style="font-size:16px">' + icon + '</span>' +
+      '<span style="font-size:14px;font-weight:700;color:var(--text)">' + label + '</span>' +
+      '</div>';
+  }
+  function _fieldInput(id, label, placeholder, type) {
+    return '<div style="margin-bottom:10px">' +
+      '<label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">' + label + '</label>' +
+      '<input id="' + id + '" type="' + (type || 'text') + '" placeholder="' + placeholder + '" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;box-sizing:border-box"></div>';
+  }
+
   function _renderParametres() {
     var content = document.getElementById('page-content');
     if (!content) return;
     var session = window.IG.auth.getSession();
-    var planColor = { gratuit: '#888', starter: '#0E6AAF', pro: '#0E7A45', cabinet: '#7B2FBE' }[session.plan || 'gratuit'] || '#888';
+    var isAdmin = session.role === 'admin';
+    var isFinance = ['admin','comptable'].includes(session.role);
+    var planColor = { gratuit: '#888', trial: '#E07B00', starter: '#0E6AAF', pro: '#0E7A45', cabinet: '#7B2FBE' }[session.plan || 'gratuit'] || '#888';
 
     var html = '<div class="content">' +
-      '<h2 style="font-size:17px;font-weight:700;margin-bottom:20px">⚙️ ' + t('Paramètres') + '</h2>' +
+      '<h2 style="font-size:17px;font-weight:700;margin-bottom:4px">⚙️ ' + t('Paramètres') + '</h2>' +
+      '<p style="font-size:12px;color:var(--text3);margin-bottom:16px">Gérez les informations de votre cabinet, votre équipe et vos préférences.</p>' +
 
-      // Bloc plan
-      '<div id="plans-bloc" style="margin-bottom:14px"></div>' +
+      // ── Plan ──
+      '<div id="plans-bloc" style="margin-bottom:0"></div>' +
 
-      // Mon compte
-      '<div class="card" style="margin-bottom:14px">' +
-      '<div class="card-header"><div class="card-title">👤 Mon compte</div></div>' +
-      '<div style="font-size:13px;display:flex;flex-direction:column;gap:12px;padding-top:4px">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center">' +
-      '<span style="color:var(--text3)">Nom</span><strong>' + esc(session.nom) + '</strong></div>' +
-      '<div style="display:flex;justify-content:space-between;align-items:center">' +
-      '<span style="color:var(--text3)">Téléphone</span><strong>' + esc(session.telephone || '—') + '</strong></div>' +
-      '<div style="display:flex;justify-content:space-between;align-items:center">' +
-      '<span style="color:var(--text3)">Cabinet</span><strong>' + esc(session.nomCabinet || '—') + '</strong></div>' +
-      '<div style="display:flex;justify-content:space-between;align-items:center">' +
-      '<span style="color:var(--text3)">Plan</span>' +
+      // ── SECTION 1 : Mon cabinet ──
+      (isAdmin ? (
+        _sectionTitle('🏢', 'Informations du cabinet') +
+        '<div class="card" style="margin-bottom:0">' +
+        '<div style="font-size:12px;color:var(--text3);margin-bottom:14px">Ces informations apparaissent dans les en-têtes de vos fiches de suivi, reçus et rapports.</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">' +
+        _fieldInput('cab-nom',       'Nom du cabinet',  'Ex: Cabinet CRAA') +
+        _fieldInput('cab-signataire','Signataire',       'Prénom Nom du responsable') +
+        _fieldInput('cab-adresse',   'Adresse',          'Rue, quartier') +
+        _fieldInput('cab-ville',     'Ville',            'Ex: Yaoundé') +
+        _fieldInput('cab-tel',       'Téléphone',        'Ex: +237 6XX XX XX XX', 'tel') +
+        _fieldInput('cab-email',     'Email professionnel','contact@cabinet.cm', 'email') +
+        _fieldInput('cab-rccm',      'RCCM / Numéro fiscal','Ex: RC/YAE/2020/B/XXX') +
+        _fieldInput('cab-logo',      'URL du logo',      'https://... (lien image)') +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-top:4px">' +
+        '<button onclick="window.IG.app._sauvegarderCabinet()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Enregistrer</button>' +
+        '<span id="cab-saved" style="font-size:12px;color:var(--green);display:none">✓ Sauvegardé</span>' +
+        '</div></div>'
+      ) : '') +
+
+      // ── SECTION 2 : Mon compte ──
+      _sectionTitle('👤', 'Mon compte') +
+      '<div class="card" style="margin-bottom:0">' +
+      '<div style="font-size:13px;display:flex;flex-direction:column;gap:10px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Nom</span><strong>' + esc(session.nom) + '</strong></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Téléphone</span><strong>' + esc(session.telephone || '—') + '</strong></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Rôle</span><strong>' + esc(session.role || '—') + '</strong></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Plan</span>' +
       '<span style="background:' + planColor + ';color:#fff;padding:3px 12px;border-radius:99px;font-size:11px;font-weight:700">' + (session.plan || 'GRATUIT').toUpperCase() + '</span></div>' +
-      (session.planExpire ? '<div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">Expire</span><span>' + new Date(session.planExpire).toLocaleDateString('fr-FR') + '</span></div>' : '') +
-      '</div></div>' +
+      (session.plan_expire ? '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0"><span style="color:var(--text3)">Expire le</span><span>' + new Date(session.plan_expire).toLocaleDateString('fr-FR') + '</span></div>' : '') +
+      '</div>' +
+      '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap">' +
+      '<div style="display:flex;gap:8px;flex:1">' +
+      '<input id="promo-input" type="text" placeholder="Code promotionnel" style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px">' +
+      '<button onclick="window.IG.app._appliquerPromo()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Appliquer</button>' +
+      '</div></div><div id="promo-msg" style="margin-top:6px;font-size:12px"></div>' +
+      '</div>' +
 
-      // Équipe / Invitations
-      (session.role === 'admin' ? (
-        '<div class="card" style="margin-bottom:14px">' +
+      // Équipe / Invitations (admin)
+      (isAdmin ? (
+        '<div class="card" style="margin-top:12px;margin-bottom:0">' +
         '<div class="card-header"><div class="card-title">👥 Équipe & Invitations</div>' +
         '<button onclick="window.IG.app._genererInvitation()" style="padding:6px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:12px;font-weight:600">＋ Inviter</button>' +
         '</div>' +
@@ -945,78 +988,73 @@ window.IG.app = (function() {
         '</div>'
       ) : '') +
 
-      // Code promo
-      '<div class="card" style="margin-bottom:14px">' +
-      '<div class="card-header"><div class="card-title">🎟️ Code promotionnel</div></div>' +
-      '<div style="display:flex;gap:8px;margin-top:4px">' +
-      '<input id="promo-input" type="text" placeholder="Entrer votre code promo" style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px">' +
-      '<button onclick="window.IG.app._appliquerPromo()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Appliquer</button>' +
-      '</div><div id="promo-msg" style="margin-top:8px;font-size:12px"></div></div>' +
+      // ── SECTION 3 : Préférences ──
+      _sectionTitle('🎛️', 'Préférences') +
+      '<div class="card" style="margin-bottom:0">' +
+      '<div style="display:flex;flex-direction:column;gap:14px">' +
 
       // Langue
-      '<div class="card" style="margin-bottom:14px">' +
-      '<div class="card-header"><div class="card-title">🌐 Langue</div></div>' +
-      '<select onchange="window.IG.i18n.setLang(this.value)" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
+      '<div><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">🌐 Langue de l\'interface</label>' +
+      '<select onchange="window.IG.i18n.setLang(this.value)" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);width:100%">' +
       [['fr','Français'],['en','English'],['pt','Português'],['es','Español'],['ha','Hausa'],['ar','العربية'],['sw','Kiswahili'],['zh','中文'],['hi','हिन्दी'],['id','Bahasa Indonesia'],['yo','Yorùbá'],['ln','Lingála'],['am','አማርኛ']].map(function(l) {
         return '<option value="' + l[0] + '"' + (window.IG.i18n && window.IG.i18n.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>';
       }).join('') + '</select></div>' +
 
       // Publication Marketplace
-      '<div class="card" id="card-publication" style="margin-bottom:14px">' +
-      '<div class="card-header"><div class="card-title">🏠 Publication Marketplace</div></div>' +
-      '<div style="font-size:13px;color:var(--text3);margin-bottom:12px">Quand un local est libéré, ImmoGest crée automatiquement une pré-annonce.</div>' +
-      '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">Mode de publication</label>' +
+      '<div id="card-publication"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">🏠 Publication Marketplace</label>' +
+      '<div style="font-size:12px;color:var(--text3);margin-bottom:8px">Quand un local est libéré, ImmoGest crée automatiquement une pré-annonce.</div>' +
       '<select id="select-mode-publication" onchange="window.IG.app._sauvegarderModePublication(this.value)" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);width:100%">' +
       '<option value="manuel">📝 Manuel — le gestionnaire valide avant publication</option>' +
       '<option value="auto">⚡ Automatique — publié immédiatement à la libération</option>' +
       '<option value="proprio">👤 Validation propriétaire — notification envoyée au proprio</option>' +
-      '</select></div>' +
-      '<div id="mode-publication-saved" style="font-size:11px;color:var(--green);display:none">✓ Sauvegardé</div>' +
-      '</div>' +
+      '</select>' +
+      '<div id="mode-publication-saved" style="font-size:11px;color:var(--green);margin-top:4px;display:none">✓ Sauvegardé</div></div>' +
 
-      // Mobile Money (admin + comptable)
-      (['admin','comptable'].includes(session.role) ?
-        '<div class="card" style="margin-bottom:14px">' +
-        '<div class="card-header"><div class="card-title">📱 Numéros Mobile Money</div></div>' +
-        '<div style="font-size:13px;color:var(--text3);margin-bottom:14px">Ces numéros seront affichés aux locataires quand ils déclarent un paiement. Laissez vide les opérateurs non utilisés.</div>' +
+      '</div></div>' +
+
+      // ── SECTION 4 : Finances & Intégrations (admin + comptable) ──
+      (isFinance ? (
+        _sectionTitle('💼', 'Finances & Intégrations') +
+        '<div class="card" style="margin-bottom:0">' +
+        '<div style="font-size:12px;color:var(--text3);margin-bottom:14px">Numéros affichés aux locataires pour le paiement des loyers. Laissez vide les opérateurs non utilisés.</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">' +
         [
-          { key:'orange_money', label:'Orange Money 🟠', placeholder:'Ex: 699 00 00 00' },
-          { key:'mtn_momo',     label:'MTN MoMo 💛',    placeholder:'Ex: 677 00 00 00' },
-          { key:'wave',         label:'Wave 🌊',         placeholder:'Ex: 70 00 00 00' },
-          { key:'airtel',       label:'Airtel Money 🔴', placeholder:'Ex: 666 00 00 00' },
-          { key:'moov',         label:'Moov Money 🔵',  placeholder:'Ex: 668 00 00 00' },
+          { key:'orange_money', label:'Orange Money 🟠', placeholder:'699 00 00 00' },
+          { key:'mtn_momo',     label:'MTN MoMo 💛',    placeholder:'677 00 00 00' },
+          { key:'wave',         label:'Wave 🌊',         placeholder:'70 00 00 00'  },
+          { key:'airtel',       label:'Airtel Money 🔴', placeholder:'666 00 00 00' },
+          { key:'moov',         label:'Moov Money 🔵',  placeholder:'668 00 00 00' },
         ].map(function(op) {
           return '<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">' + op.label + '</label>' +
-            '<input id="momo-' + op.key + '" type="tel" placeholder="' + op.placeholder + '" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px"></div>';
+            '<input id="momo-' + op.key + '" type="tel" placeholder="' + op.placeholder + '" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;box-sizing:border-box"></div>';
         }).join('') +
-        '<div style="display:flex;align-items:center;gap:10px;margin-top:4px">' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">' +
         '<button onclick="window.IG.app._sauvegarderMomo()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Enregistrer</button>' +
         '<span id="momo-saved" style="font-size:12px;color:var(--green);display:none">✓ Sauvegardé</span>' +
-        '</div></div>'
-      : '') +
-
-      // Clé IA personnelle (admin uniquement)
-      (session.role === 'admin' ?
-        '<div class="card" style="margin-bottom:14px">' +
-        '<div class="card-header"><div class="card-title">🤖 Intelligence Artificielle</div></div>' +
-        '<div style="font-size:13px;color:var(--text3);margin-bottom:12px">Ajoutez votre propre clé Anthropic pour que l\'IA fonctionne sur votre compte. Chaque admin gère ses propres coûts IA.</div>' +
-        '<label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">Clé API Anthropic</label>' +
-        '<div style="display:flex;gap:8px">' +
-        '<input id="ai-api-key-input" type="password" placeholder="sk-ant-api03-..." id="ai-api-key-input" style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;font-family:monospace">' +
-        '<button onclick="window.IG.app._sauvegarderCleIA()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Enregistrer</button>' +
         '</div>' +
-        '<div id="ai-key-status" style="margin-top:8px;font-size:12px"></div>' +
+        (isAdmin ? (
+          '<div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">' +
+          '<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">🤖 Clé API Anthropic (IA)</div>' +
+          '<div style="font-size:12px;color:var(--text3);margin-bottom:8px">Chaque admin intègre et paie sa propre clé. Vos données IA restent privées.</div>' +
+          '<div style="display:flex;gap:8px">' +
+          '<input id="ai-api-key-input" type="password" placeholder="sk-ant-api03-..." style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;font-family:monospace">' +
+          '<button onclick="window.IG.app._sauvegarderCleIA()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Enregistrer</button>' +
+          '</div><div id="ai-key-status" style="margin-top:6px;font-size:12px"></div></div>'
+        ) : '') +
         '</div>'
-      : '') +
+      ) : '') +
 
-      // Déconnexion
-      '<button onclick="window.IG.auth.logout()" style="padding:10px 20px;border-radius:10px;border:1px solid var(--red);color:var(--red);background:transparent;cursor:pointer;font-weight:600;font-size:13px;display:block;margin-bottom:30px">🚪 Se déconnecter</button>' +
+      // ── Déconnexion ──
+      '<div style="margin-top:28px;padding-top:16px;border-top:1px solid var(--border);margin-bottom:30px">' +
+      '<button onclick="window.IG.auth.logout()" style="padding:10px 20px;border-radius:10px;border:1px solid var(--red);color:var(--red);background:transparent;cursor:pointer;font-weight:600;font-size:13px">🚪 Se déconnecter</button>' +
+      '</div>' +
       '</div>';
 
     content.innerHTML = html;
     if (window.IG.plans) window.IG.plans.renderBlocPlan('plans-bloc');
-    if (session.role === 'admin') { _chargerEquipe(); _chargerCleIA(); }
-    if (['admin','comptable'].includes(session.role)) _chargerMomo();
+    if (isAdmin) { _chargerEquipe(); _chargerCleIA(); _chargerCabinet(); }
+    if (isFinance) _chargerMomo();
     _chargerModePublication();
   }
 
@@ -1068,9 +1106,56 @@ window.IG.app = (function() {
         var el = document.getElementById('momo-' + k);
         if (el) el.value = momo[k] || '';
       });
-      // Mise à jour cache _data pour portail
       _data.settings = _data.settings || {};
       _data.settings.momo_numeros = momo;
+    } catch(e) {}
+  }
+
+  async function _sauvegarderCabinet() {
+    var fields = ['nom','adresse','ville','tel','email','rccm','signataire','logo'];
+    var cab = {};
+    fields.forEach(function(f) {
+      var el = document.getElementById('cab-' + f);
+      if (el && el.value.trim()) cab[f === 'logo' ? 'logo_url' : f] = el.value.trim();
+    });
+    // Ajout de la clé nom_cabinet séparément (alias attendu par paiements.js)
+    if (cab.nom) cab.nom_cabinet = cab.nom;
+    try {
+      var params = await window.IG.db.select('parametres');
+      var row = params && params[0];
+      var settings = (row && row.settings) || {};
+      settings.cabinet = cab;
+      if (row) {
+        await window.IG.db.update('parametres', row.id, { settings });
+      } else {
+        var session = window.IG.auth.getSession();
+        await window.IG.db.insert('parametres', [{ tenant_id: session.tenantId, settings }]);
+      }
+      // Injecter dans session.parametres pour que les docs l'utilisent immédiatement
+      var sess = window.IG.auth.getSession();
+      sess.parametres = Object.assign(sess.parametres || {}, cab);
+      var msg = document.getElementById('cab-saved');
+      if (msg) { msg.style.display = 'inline'; setTimeout(function() { msg.style.display = 'none'; }, 2500); }
+    } catch(e) {
+      window.IG.utils.showToast('Erreur : ' + e.message, 'red');
+    }
+  }
+
+  async function _chargerCabinet() {
+    try {
+      var params = await window.IG.db.select('parametres');
+      var settings = (params && params[0] && params[0].settings) || {};
+      var cab = settings.cabinet || {};
+      var map = { nom: 'nom', adresse: 'adresse', ville: 'ville', tel: 'tel', email: 'email', rccm: 'rccm', signataire: 'signataire', logo: 'logo_url' };
+      Object.keys(map).forEach(function(f) {
+        var el = document.getElementById('cab-' + f);
+        if (el) el.value = cab[map[f]] || '';
+      });
+      // Injecter dans session.parametres pour les docs
+      if (Object.keys(cab).length) {
+        var sess = window.IG.auth.getSession();
+        sess.parametres = Object.assign(sess.parametres || {}, cab);
+      }
     } catch(e) {}
   }
 
