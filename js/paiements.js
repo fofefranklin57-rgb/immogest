@@ -317,7 +317,7 @@ window.IG.paiements = (function() {
         versCell = '<span style="color:#888;font-style:italic;font-size:9px">Couvert par avance</span>';
       }
 
-      var resteCell = lg.reste > 0
+      var resteCell = (lg.reste > 0 && lg.cumul > 0)
         ? '<span style="color:#c0392b;font-weight:700">' + fmt(lg.reste) + ' F</span>'
         : (lg.statut === 'Payé' ? '—' : '');
 
