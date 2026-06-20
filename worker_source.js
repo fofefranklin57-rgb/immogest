@@ -1100,6 +1100,10 @@ ${_footer()}</body></html>`;
       }
 
       // ── /robots.txt ───────────────────────────────────────────────
+      if (path === '/google2b271b99f6333bb0.html') {
+        return new Response('google-site-verification: google2b271b99f6333bb0.html', { headers: { ...cors, 'Content-Type': 'text/html; charset=utf-8' } });
+      }
+
       if (path === '/robots.txt') {
         const txt = `User-agent: *\nAllow: /\n\nSitemap: ${BASE_URL}/sitemap.xml\n`;
         return new Response(txt, { headers: { ...cors, 'Content-Type': 'text/plain; charset=utf-8' } });
