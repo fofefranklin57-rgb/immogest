@@ -147,8 +147,13 @@ window.IG.paiements = (function() {
 
   // ── Rendu fiche de suivi V2 ──────────────────────────────────
   function renderFiche(loc, versements, anneeParam) {
-    var annee      = anneeParam || new Date().getFullYear();
-    var toutesLignes = calculerFiche(loc, versements, annee);
+    // Calculer d'abord toutes les lignes jusqu'à l'année courante
+    var toutesLignes = calculerFiche(loc, versements, new Date().getFullYear());
+    // Année par défaut = année du premier mois impayé (là où les paiements s'arrêtent)
+    var annee = anneeParam || (function() {
+      var firstUnpaid = toutesLignes.filter(function(l) { return !l.futur && l.statut !== 'Payé'; })[0];
+      return firstUnpaid ? firstUnpaid.annee : new Date().getFullYear();
+    })();
     var imm        = window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null;
     var session    = window.IG.auth ? window.IG.auth.getSession() : {};
     var params     = session.parametres || {};
