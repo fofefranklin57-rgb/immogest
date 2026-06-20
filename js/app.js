@@ -320,10 +320,12 @@ window.IG.app = (function() {
 
     try {
       var workerUrl = (window.IG.config && (window.IG.config.workerUrl || window.IG.config.WORKER_URL)) || 'https://immogest1.fofefranklin57.workers.dev';
+      var session = window.IG.auth ? window.IG.auth.getSession() : {};
+      var userKey = (session.parametres && session.parametres.anthropic_key) || '';
       var res = await fetch(workerUrl + '/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: _aiHistory, system: systemPrompt })
+        body: JSON.stringify({ messages: _aiHistory, system: systemPrompt, user_key: userKey || undefined })
       });
       var data = await res.json();
       var reply = data.text || 'Désolé, je n\'ai pas pu répondre.';
@@ -925,13 +927,27 @@ window.IG.app = (function() {
       '<div id="mode-publication-saved" style="font-size:11px;color:var(--green);display:none">✓ Sauvegardé</div>' +
       '</div>' +
 
+      // Clé IA personnelle (admin uniquement)
+      (session.role === 'admin' ?
+        '<div class="card" style="margin-bottom:14px">' +
+        '<div class="card-header"><div class="card-title">🤖 Intelligence Artificielle</div></div>' +
+        '<div style="font-size:13px;color:var(--text3);margin-bottom:12px">Ajoutez votre propre clé Anthropic pour que l\'IA fonctionne sur votre compte. Chaque admin gère ses propres coûts IA.</div>' +
+        '<label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">Clé API Anthropic</label>' +
+        '<div style="display:flex;gap:8px">' +
+        '<input id="ai-api-key-input" type="password" placeholder="sk-ant-api03-..." id="ai-api-key-input" style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;font-family:monospace">' +
+        '<button onclick="window.IG.app._sauvegarderCleIA()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Enregistrer</button>' +
+        '</div>' +
+        '<div id="ai-key-status" style="margin-top:8px;font-size:12px"></div>' +
+        '</div>'
+      : '') +
+
       // Déconnexion
       '<button onclick="window.IG.auth.logout()" style="padding:10px 20px;border-radius:10px;border:1px solid var(--red);color:var(--red);background:transparent;cursor:pointer;font-weight:600;font-size:13px;display:block;margin-bottom:30px">🚪 Se déconnecter</button>' +
       '</div>';
 
     content.innerHTML = html;
     if (window.IG.plans) window.IG.plans.renderBlocPlan('plans-bloc');
-    if (session.role === 'admin') _chargerEquipe();
+    if (session.role === 'admin') { _chargerEquipe(); _chargerCleIA(); }
     _chargerModePublication();
   }
 
@@ -943,6 +959,52 @@ window.IG.app = (function() {
       var settings = (params && params[0] && params[0].settings) || {};
       sel.value = settings.mode_publication || 'manuel';
     } catch(_) {}
+  }
+
+  async function _sauvegarderCleIA() {
+    var input = document.getElementById('ai-api-key-input');
+    var status = document.getElementById('ai-key-status');
+    if (!input) return;
+    var key = input.value.trim();
+    try {
+      var params = await window.IG.db.select('parametres');
+      var row = params && params[0];
+      var settings = (row && row.settings) || {};
+      settings.anthropic_key = key;
+      if (row) {
+        await window.IG.db.update('parametres', row.id, { settings });
+      } else {
+        var session = window.IG.auth.getSession();
+        await window.IG.db.insert('parametres', [{ tenant_id: session.tenantId, settings }]);
+      }
+      // Mettre à jour la session en mémoire
+      if (window.IG.auth && window.IG.auth.getSession) {
+        window.IG.auth.getSession().parametres = window.IG.auth.getSession().parametres || {};
+        window.IG.auth.getSession().parametres.anthropic_key = key;
+      }
+      input.value = key ? '••••••••••••••••••••' : '';
+      if (status) { status.style.color = 'var(--green)'; status.textContent = key ? '✓ Clé enregistrée — l\'IA utilisera votre compte Anthropic' : '✓ Clé supprimée — retour à la clé partagée'; }
+    } catch(e) {
+      if (status) { status.style.color = 'var(--red)'; status.textContent = 'Erreur : ' + e.message; }
+    }
+  }
+
+  async function _chargerCleIA() {
+    var input = document.getElementById('ai-api-key-input');
+    var status = document.getElementById('ai-key-status');
+    if (!input) return;
+    try {
+      var params = await window.IG.db.select('parametres');
+      var settings = (params && params[0] && params[0].settings) || {};
+      var key = settings.anthropic_key || '';
+      input.value = key ? '••••••••••••••••••••' : '';
+      if (status && key) { status.style.color = 'var(--green)'; status.textContent = '✓ Clé active — l\'IA utilise votre compte Anthropic'; }
+      // Stocker en session pour les appels
+      if (key && window.IG.auth) {
+        var s = window.IG.auth.getSession();
+        if (s) { s.parametres = s.parametres || {}; s.parametres.anthropic_key = key; }
+      }
+    } catch(e) {}
   }
 
   async function _sauvegarderModePublication(mode) {
@@ -1760,7 +1822,7 @@ window.IG.app = (function() {
     _genererInvitation, _toggleUser, _appliquerPromo,
     _loadDeclarations, _validerDeclaration,
     _loadMessages, _nouveauMessage, _marquerLu,
-    _sauvegarderModePublication, _chargerModePublication,
+    _sauvegarderModePublication, _chargerModePublication, _sauvegarderCleIA, _chargerCleIA,
     getData: function() { return _data; },
     topbarAction, _showMobileNav,
     reloadShell
