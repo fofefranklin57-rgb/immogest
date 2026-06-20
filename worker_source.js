@@ -371,18 +371,25 @@ ${_footer()}</body></html>`;
       if (path === '/join' && request.method === 'POST') {
         const { code, nom, password, pin } = await request.json();
 
+        // Helper : fetch tenant et construire la réponse complète
+        async function joinSuccess(userId, tenantId, role) {
+          const tRes = await sbFetch('tenants', '?id=eq.' + tenantId + '&select=*');
+          const tenants = tRes.ok ? await tRes.json() : [];
+          const tenant = tenants[0] || { id: tenantId };
+          return json({ success: true, userId, role, tenant });
+        }
+
         // 1) Chercher dans users_app.code_invitation (locataire / bailleur)
         const uaRes = await sbFetch('users_app', '?code_invitation=eq.' + encodeURIComponent(code) + '&actif=eq.true&select=*');
         const uaList = uaRes.ok ? await uaRes.json() : [];
         if (uaList.length) {
           const u = uaList[0];
-          // Mettre à jour nom + password, effacer le code pour éviter réutilisation
           await sbFetch('users_app', '?id=eq.' + u.id, 'PATCH', {
             nom: nom || u.nom,
             password: password || null,
             code_invitation: null
           });
-          return json({ success: true, userId: u.id, tenantId: u.tenant_id, role: u.role });
+          return joinSuccess(u.id, u.tenant_id, u.role);
         }
 
         // 2) Fallback : invite_codes (collaborateurs)
@@ -401,7 +408,7 @@ ${_footer()}</body></html>`;
         await fetch(sbBase + '/rest/v1/invite_codes?id=eq.' + inv.id, {
           method: 'PATCH', headers: sbHdrs(), body: JSON.stringify({ used: true })
         });
-        return json({ success: true, userId, tenantId: inv.tenant_id, role: inv.role });
+        return joinSuccess(userId, inv.tenant_id, inv.role);
       }
 
       // ── /db — CRUD proxy ──────────────────────────────────────
