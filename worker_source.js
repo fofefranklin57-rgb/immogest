@@ -326,11 +326,42 @@ ${_footer()}</body></html>`;
 
       // ── /generate-invite ──────────────────────────────────────
       if (path === '/generate-invite' && request.method === 'POST') {
-        const { tenantId, role, immeubles } = await request.json();
+        const { tenantId, role, immeubles, nom, telephone, locataire_id } = await request.json();
         if (!tenantId) return json({ error: 'tenantId requis' }, 400);
-        const code = crypto.randomUUID().replace(/-/g,'').substring(0,12).toUpperCase();
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const code = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        const finalRole = role || 'gestionnaire';
+
+        // Pour locataire et bailleur : créer/mettre à jour directement users_app
+        if (finalRole === 'locataire' || finalRole === 'bailleur') {
+          const userId = 'u_' + crypto.randomUUID().replace(/-/g,'').substring(0, 10);
+          // Chercher si un users_app existe déjà pour ce tenant + telephone + role
+          let existingId = null;
+          if (telephone) {
+            const chkRes = await sbFetch('users_app', '?tenant_id=eq.' + tenantId + '&telephone=eq.' + encodeURIComponent(telephone) + '&role=eq.' + finalRole + '&select=id');
+            if (chkRes.ok) {
+              const existing = await chkRes.json();
+              if (existing.length) existingId = existing[0].id;
+            }
+          }
+          if (existingId) {
+            // Mettre à jour le code uniquement
+            await sbFetch('users_app', '?id=eq.' + existingId, 'PATCH', { code_invitation: code, actif: true, date_blocage_auto: null, motif_blocage: null });
+          } else {
+            // Créer le compte portail
+            await sbFetch('users_app', '', 'POST', {
+              id: userId, tenant_id: tenantId, role: finalRole,
+              nom: nom || '', telephone: telephone || '',
+              code_invitation: code, actif: true,
+              permissions: {}, immeubles_assignes: []
+            });
+          }
+          return json({ success: true, code });
+        }
+
+        // Pour les collaborateurs : flux invite_codes classique
         await sbFetch('invite_codes', '', 'POST', {
-          code, tenant_id: tenantId, role: role || 'gestionnaire',
+          code, tenant_id: tenantId, role: finalRole,
           immeubles: immeubles || []
         });
         return json({ success: true, code });
