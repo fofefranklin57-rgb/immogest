@@ -324,6 +324,42 @@ ${_footer()}</body></html>`;
         return json({ success: true, user });
       }
 
+      // ── /login-portal — connexion locataire / bailleur ────────
+      if (path === '/login-portal' && request.method === 'POST') {
+        const { telephone, passwordHash } = await request.json();
+        if (!telephone) return json({ error: 'Téléphone requis' }, 400);
+
+        // Chercher dans users_app par téléphone (rôle locataire ou bailleur)
+        const uRes = await sbFetch('users_app',
+          '?telephone=eq.' + encodeURIComponent(telephone) +
+          '&actif=eq.true&select=*');
+        const users = uRes.ok ? await uRes.json() : [];
+        const portal = users.find(u => u.role === 'locataire' || u.role === 'bailleur');
+        if (!portal) return json({ error: 'Aucun compte locataire ou bailleur trouvé pour ce numéro' }, 404);
+        if (portal.actif === false) return json({ error: 'Compte désactivé' }, 403);
+
+        // Vérifier mot de passe
+        const storedPwd = portal.password || '';
+        if (storedPwd !== passwordHash) return json({ error: 'Mot de passe incorrect' }, 401);
+
+        // Charger le tenant
+        const tRes = await sbFetch('tenants', '?id=eq.' + portal.tenant_id + '&select=*');
+        const tenants = tRes.ok ? await tRes.json() : [];
+        const tenant = tenants[0] || { id: portal.tenant_id };
+
+        // Pour locataire : retrouver l'ID dans la table locataires
+        let locataireId = null;
+        if (portal.role === 'locataire') {
+          const lRes = await sbFetch('locataires',
+            '?tenant_id=eq.' + portal.tenant_id +
+            '&telephone=eq.' + encodeURIComponent(telephone) + '&select=id');
+          const locs = lRes.ok ? await lRes.json() : [];
+          if (locs.length) locataireId = locs[0].id;
+        }
+
+        return json({ success: true, userId: portal.id, role: portal.role, nom: portal.nom, tenant, locataireId });
+      }
+
       // ── /generate-invite ──────────────────────────────────────
       if (path === '/generate-invite' && request.method === 'POST') {
         const { tenantId, role, immeubles, nom, telephone, locataire_id } = await request.json();

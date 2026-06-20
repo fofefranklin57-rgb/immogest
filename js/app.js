@@ -2257,11 +2257,19 @@ window.IG.app = (function() {
       '<div style="font-size:14px;font-weight:700;color:#e8f0fe;">Rejoindre un espace</div>' +
       '<div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:2px;">Locataire ou employé — code d\'invitation</div>' +
       '</div></button>' +
-      // Bouton 3 — Se connecter
-      '<button onclick="window.IG.app.authGoStep(\'login\')" style="width:100%;display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:16px 18px;cursor:pointer;margin-bottom:20px;transition:background .15s;" onmouseover="this.style.background=\'rgba(255,255,255,0.09)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.05)\'">' +
+      // Bouton 3 — Se connecter (admin / cabinet)
+      '<button onclick="window.IG.app.authGoStep(\'login\')" style="width:100%;display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:16px 18px;cursor:pointer;margin-bottom:10px;transition:background .15s;" onmouseover="this.style.background=\'rgba(255,255,255,0.09)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.05)\'">' +
       '<span style="font-size:22px;flex-shrink:0;">🔑</span>' +
       '<div style="text-align:left;">' +
-      '<div style="font-size:14px;font-weight:700;color:#e8f0fe;">Se connecter à un espace existant</div>' +
+      '<div style="font-size:14px;font-weight:700;color:#e8f0fe;">Se connecter — Admin / Cabinet</div>' +
+      '<div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:2px;">Gestionnaire, comptable, agent</div>' +
+      '</div></button>' +
+      // Bouton 4 — Locataire / Bailleur
+      '<button onclick="window.IG.app.authGoStep(\'portal\')" style="width:100%;display:flex;align-items:center;gap:14px;background:rgba(14,122,69,0.15);border:1px solid rgba(14,122,69,0.35);border-radius:12px;padding:16px 18px;cursor:pointer;margin-bottom:20px;transition:background .15s;" onmouseover="this.style.background=\'rgba(14,122,69,0.25)\'" onmouseout="this.style.background=\'rgba(14,122,69,0.15)\'">' +
+      '<span style="font-size:22px;flex-shrink:0;">🏠</span>' +
+      '<div style="text-align:left;">' +
+      '<div style="font-size:14px;font-weight:700;color:#6ee7b7;">Mon espace — Locataire / Bailleur</div>' +
+      '<div style="font-size:11px;color:rgba(110,231,183,0.6);margin-top:2px;">Téléphone + mot de passe</div>' +
       '</div></button>' +
       // Lien marketplace
       '<div style="text-align:center;">' +
@@ -2303,6 +2311,24 @@ window.IG.app = (function() {
       '<button class="auth-btn-primary" onclick="window.IG.app.registerV2()">🚀 Créer mon espace</button>' +
       '<div id="err-register" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>' +
       '</div>' +
+
+      // ─── PORTAIL LOCATAIRE / BAILLEUR ───
+      '<div id="auth-step-portal" class="auth-step">' +
+      '<button class="auth-back-btn" onclick="window.IG.app.authGoStep(\'home\')">&#8592; Retour</button>' +
+      '<div style="text-align:center;margin-bottom:22px;">' +
+      '<div style="font-size:32px;margin-bottom:8px;">🏠</div>' +
+      '<div style="font-size:17px;font-weight:800;color:#6ee7b7;">Mon espace</div>' +
+      '<div style="font-size:11px;color:rgba(110,231,183,0.5);margin-top:4px;">Locataire ou Propriétaire bailleur</div>' +
+      '</div>' +
+      '<label class="auth-label">NUMÉRO DE TÉLÉPHONE</label>' +
+      '<input type="tel" id="portal-tel" class="auth-input" placeholder="Ex: 699 00 00 00" autocomplete="tel" style="margin-bottom:14px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'portal-pwd\').focus()">' +
+      '<label class="auth-label">MOT DE PASSE</label>' +
+      '<input type="password" id="portal-pwd" class="auth-input" placeholder="Mot de passe" autocomplete="current-password" style="margin-bottom:20px;" onkeydown="if(event.key===\'Enter\')window.IG.app.doLoginPortal()">' +
+      '<button class="auth-btn-primary" style="background:linear-gradient(135deg,#0E7A45,#065f34);" onclick="window.IG.app.doLoginPortal()">🏠 Accéder à mon espace</button>' +
+      '<div id="err-portal" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>' +
+      '<div style="text-align:center;margin-top:14px;">' +
+      '<button onclick="window.IG.app.authGoStep(\'join\')" style="background:none;border:none;color:rgba(110,231,183,0.6);font-size:12px;cursor:pointer;font-family:inherit;">Première connexion ? Utiliser un code d\'invitation →</button>' +
+      '</div></div>' +
 
       // ─── REJOINDRE ───
       '<div id="auth-step-join" class="auth-step">' +
@@ -2348,6 +2374,29 @@ window.IG.app = (function() {
   function browseMarketplace() {
     var base = (window.APP_CONFIG && window.APP_CONFIG.APP_URL) || '';
     window.open(base + '/marketplace.html', '_blank');
+  }
+
+  async function doLoginPortal() {
+    var tel   = (document.getElementById('portal-tel') || {}).value || '';
+    var pwd   = (document.getElementById('portal-pwd') || {}).value || '';
+    var errEl = document.getElementById('err-portal');
+    var btn   = document.querySelector('#auth-step-portal .auth-btn-primary');
+    var orig  = btn ? btn.textContent : 'Accéder à mon espace';
+    if (btn) { btn.textContent = '⏳...'; btn.disabled = true; }
+    if (errEl) errEl.style.display = 'none';
+    if (!tel.trim() || !pwd) {
+      if (errEl) { errEl.textContent = 'Téléphone et mot de passe requis'; errEl.style.display = 'block'; }
+      if (btn) { btn.textContent = orig; btn.disabled = false; }
+      return;
+    }
+    try {
+      var session = await window.IG.auth.loginPortal(tel.trim(), pwd);
+      _showAppShell(); await _loadData();
+      showPage(session.role === 'bailleur' ? 'dashboard' : 'portail');
+    } catch(ex) {
+      if (errEl) { errEl.textContent = ex.message || 'Identifiants incorrects'; errEl.style.display = 'block'; }
+      if (btn) { btn.textContent = orig; btn.disabled = false; }
+    }
   }
 
   async function doLogin() {
@@ -2414,7 +2463,7 @@ window.IG.app = (function() {
   return {
     init, showPage, refresh, renderCurrentPage,
     _renderLogin, renderLogin: _renderLogin,
-    authGoStep, doLogin, joinV2, registerV2, browseMarketplace,
+    authGoStep, doLogin, doLoginPortal, joinV2, registerV2, browseMarketplace,
     toggleSidebar, closeSidebar, toggleSidebarSection, toggleDarkMode, lockScreen, openGuide,
     toggleAIChat, sendAIMessage, aiQuickAction,
     _refreshPaiements, _restaurer, _supprimerDefinitivement, _viderCorbeille, _loadCorbeille,

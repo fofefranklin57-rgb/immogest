@@ -123,6 +123,37 @@ window.IG.auth = (function() {
     return SESSION;
   }
 
+  // ── Connexion locataire / bailleur (téléphone + mot de passe) ─
+  async function loginPortal(telephone, password) {
+    var passwordHash = await _hash(password);
+    var wUrl = window.IG.config.workerUrl;
+    var res = await fetch(wUrl + '/login-portal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telephone, passwordHash })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Identifiants incorrects');
+
+    var session = {
+      tenantId:    data.tenant.id,
+      userId:      data.userId,
+      role:        data.role,
+      type_profil: data.tenant.type_profil || 'gestionnaire',
+      nom:         data.nom || data.userId,
+      nomCabinet:  data.tenant.nom_cabinet || data.tenant.nom,
+      plan:        data.tenant.plan || 'gratuit',
+      plan_expire: data.tenant.plan_expire || null,
+      telephone:   telephone,
+      parametres:  data.tenant.parametres || {},
+      loginAt:     Date.now(),
+      locale:      data.tenant.locale || null,
+      locataireId: data.locataireId || null
+    };
+    _saveSession(session);
+    return session;
+  }
+
   // ── Rejoindre un espace avec code d'invitation ───────────────
   async function join(code, nom, password) {
     var passwordHash = await _hash(password);
@@ -184,7 +215,7 @@ window.IG.auth = (function() {
   }
 
   return {
-    register, login, loginUser, join, logout,
+    register, login, loginUser, loginPortal, join, logout,
     getSession, getTenantId, isLoggedIn, hasRole,
     init, ROLES
   };
