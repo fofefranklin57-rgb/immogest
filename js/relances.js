@@ -13,15 +13,14 @@ window.IG.relances = (function() {
   // ── Calculer retard en mois ───────────────────────────────────
   function calculerRetard(loc, paiements) {
     if (!loc.entree || loc.statut === 'libre') return 0;
-    var moisList = window.IG.utils.getMoisDepuisEntree(loc.entree);
     var fiche = window.IG.paiements ? window.IG.paiements.calculerFiche(loc, paiements) : [];
-    var impayes = fiche.filter(function(l) { return l.statut !== 'Payé'; });
+    var impayes = fiche.filter(function(l) { return !l.futur && l.statut !== 'Payé'; });
     return impayes.length;
   }
 
   function montantDu(loc, paiements) {
     var fiche = window.IG.paiements ? window.IG.paiements.calculerFiche(loc, paiements) : [];
-    var duFiche = fiche.reduce(function(s, l) { return s + (l.reste || 0); }, 0);
+    var duFiche = fiche.filter(function(l) { return !l.futur; }).reduce(function(s, l) { return s + (l.reste || 0); }, 0);
     return duFiche + (parseFloat(loc.arrieres) || 0);
   }
 
