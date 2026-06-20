@@ -425,7 +425,7 @@ ${_footer()}</body></html>`;
             }
           }
           if (existingId) {
-            await sbFetch('users_app', '?id=eq.' + existingId, 'PATCH', { password: code, actif: true, date_blocage_auto: null, motif_bocage: null });
+            await sbFetch('users_app', '?id=eq.' + existingId, 'PATCH', { password: code, actif: true, date_blocage_auto: null, motif_blocage: null });
           } else {
             await sbFetch('users_app', '', 'POST', {
               id: userId, tenant_id: tenantId, role: finalRole,
