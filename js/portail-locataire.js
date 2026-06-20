@@ -903,6 +903,15 @@ async function locMsgEnvoyer() {
     if (typeof closeModals === 'function') closeModals();
     if (typeof showToast === 'function') showToast(t('Message envoyé ✓'), 'green');
     locMsgCharger();
+    // Notification email au destinataire
+    try {
+      var _workerUrl = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || 'https://immogest1.fofefranklin57.workers.dev';
+      fetch(_workerUrl + '/notify-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pour_user_id: pourId, de_nom: SESSION.nom, sujet: sujet, corps: corps, tenant_id: SESSION.tenantId })
+      }).catch(function() {});
+    } catch(_) {}
   } catch(e) {
     if (typeof showToast === 'function') showToast('Erreur : ' + e.message, 'red');
   }

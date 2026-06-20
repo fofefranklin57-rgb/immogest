@@ -310,13 +310,54 @@ window.IG.app = (function() {
 
     _aiHistory.push({ role: 'user', content: text });
 
-    // Contexte données
+    // Contexte données — filtré selon le rôle
     var d = _data;
-    var systemPrompt = 'Tu es l\'assistant IA d\'ImmoGest, un logiciel de gestion immobilière. ' +
-      'Réponds en français, de façon concise et pratique. ' +
-      'Données actuelles: ' + d.immeubles.length + ' immeuble(s), ' + d.locataires.length + ' locataire(s), ' +
-      d.paiements.length + ' paiement(s) enregistrés. ' +
-      'Impayés: ' + d.locataires.filter(function(l){ return l.statut === 'actif'; }).length + ' locataires actifs.';
+    var session2 = window.IG.auth ? window.IG.auth.getSession() : {};
+    var role = session2.role || 'locataire';
+    var systemPrompt;
+
+    if (role === 'locataire') {
+      // Locataire : uniquement ses propres données
+      var monLoc = d.locataires.find(function(l) { return l.userId == session2.userId || l.nom === session2.nom; }) || {};
+      var mesPays = d.paiements.filter(function(p) { return p.locataire_id == monLoc.id; });
+      systemPrompt = 'Tu es l\'assistant personnel du locataire ' + (session2.nom || '') + '. ' +
+        'Tu réponds UNIQUEMENT aux questions concernant SON loyer, SES paiements et SES droits en tant que locataire. ' +
+        'Informations disponibles: loyer=' + (monLoc.loyer || 'inconnu') + ' FCFA, ' +
+        'statut=' + (monLoc.statut || 'actif') + ', ' + mesPays.length + ' paiement(s) enregistré(s). ' +
+        'NE COMMUNIQUE JAMAIS d\'informations sur d\'autres locataires, les finances du cabinet, les honoraires, ou les données de gestion. ' +
+        'Si une question sort de ce périmètre, réponds que tu n\'as pas accès à cette information.';
+
+    } else if (role === 'bailleur' || role === 'proprietaire') {
+      // Bailleur : ses immeubles seulement
+      var mesImm = d.immeubles.filter(function(i) { return i.proprietaire_id == session2.userId; });
+      var mesLoc = d.locataires.filter(function(l) { return mesImm.some(function(i) { return i.id == l.immeuble_id; }); });
+      systemPrompt = 'Tu es l\'assistant du propriétaire/bailleur ' + (session2.nom || '') + '. ' +
+        'Tu l\'aides à comprendre ses revenus locatifs et la situation de ses biens. ' +
+        'Ses données: ' + mesImm.length + ' immeuble(s), ' + mesLoc.length + ' locataire(s). ' +
+        'NE COMMUNIQUE PAS les informations confidentielles du cabinet (honoraires internes, autres bailleurs, données d\'autres propriétaires).';
+
+    } else if (role === 'agent') {
+      // Agent : vue immeubles et locataires, pas les finances
+      systemPrompt = 'Tu es l\'assistant de l\'agent commercial ' + (session2.nom || '') + '. ' +
+        'Tu l\'aides avec les annonces, les visites et la prospection de locataires. ' +
+        'Données: ' + d.immeubles.length + ' immeuble(s), ' + d.locataires.length + ' locataire(s). ' +
+        'Pas d\'accès aux données financières détaillées ni aux honoraires du cabinet.';
+
+    } else {
+      // Admin / gestionnaire / comptable / coordinateur : accès complet
+      var actifs = d.locataires.filter(function(l) { return l.statut === 'actif'; });
+      var impayes = actifs.filter(function(l) {
+        var pays = d.paiements.filter(function(p) { return p.locataire_id == l.id; });
+        return pays.length === 0 ? (parseInt(l.mois_arrieres) || 0) > 0 : true;
+      });
+      systemPrompt = 'Tu es l\'assistant IA d\'ImmoGest pour ' + (session2.nom || 'le gestionnaire') +
+        ' (rôle: ' + role + '). ' +
+        'Réponds en français, de façon concise et pratique. ' +
+        'Données: ' + d.immeubles.length + ' immeuble(s), ' + actifs.length + ' locataire(s) actifs, ' +
+        d.paiements.length + ' paiement(s). ' +
+        'Locataires avec retard: ' + impayes.length + '. ' +
+        'Tu as accès à toutes les données de gestion du cabinet.';
+    }
 
     try {
       var workerUrl = (window.IG.config && (window.IG.config.workerUrl || window.IG.config.WORKER_URL)) || 'https://immogest1.fofefranklin57.workers.dev';
