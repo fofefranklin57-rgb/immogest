@@ -161,6 +161,19 @@ Format : `[DATE] FICHIER — Erreur → Solution`
 - **Fichiers** : `js/relances.js`, `js/locataires.js`, `js/dashboard.js`
 - **Règle** : pour la liste/relances, ne jamais générer l'historique depuis `entree` quand des paiements existent — partir du premier paiement
 
+### [2026-06-20] paiements.js — Sélecteur année supprimé par erreur
+- **Erreur** : sélecteur d'année retiré de la fiche — l'utilisateur ne pouvait plus voir les fiches des années précédentes
+- **Solution** : sélecteur restauré, fiche s'ouvre sur l'année en cours par défaut
+- **Fichier** : `js/paiements.js`
+
+### [2026-06-20] paiements.js calculerFiche — Paiement FIFO part de entree, pas de la période due
+- **Erreur** : locataire entré en Sep 2023 avec mois_arrieres=9 → 1er paiement allait couvrir Sep 2023 au lieu de Oct 2025
+- **Cause** : FIFO génère tous les mois depuis `loc.entree` sans tenir compte des mois antérieurs non dus
+- **Solution** : crédit implicite = `max(0, totalPasse - mois_arrieres) * loyer` ajouté à cumulAvance avant le FIFO
+- **Formule** : totalPasse = nb mois écoulés depuis entree ; creditMois = totalPasse - mois_arrieres → FIFO démarre au bon mois
+- **Fichier** : `js/paiements.js`
+- **Règle** : `mois_arrieres` doit toujours être pris en compte dans calculerFiche pour calibrer le point de départ FIFO
+
 ### [2026-06-20] paiements.js — Fiche filtrée par année uniquement
 - **Erreur** : la fiche de suivi ne montrait que les mois de l'année sélectionnée (2026 par défaut)
 - **Cause** : `lignes = toutesLignes.filter(lg.annee === annee)` ligne 157
