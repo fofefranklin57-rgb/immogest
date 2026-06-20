@@ -555,8 +555,10 @@ window.IG.locataires = (function() {
         (imm ? '🏢 Immeuble : ' + (imm.nom_immeuble || imm.nom) + '\n' : '') +
         '🏠 Local : ' + (loc.appt || '') + '\n' +
         '💰 Loyer : ' + (loc.loyer || 0) + ' FCFA/mois\n\n' +
-        '📲 Votre code d\'accès : *' + code + '*\n' +
-        'Téléchargez ImmoGest et entrez ce code à l\'inscription.';
+        '📲 Connexion portail locataire :\n' +
+        '• Login : *' + (loc.telephone || '') + '*\n' +
+        '• Mot de passe : *' + code + '*\n' +
+        'Téléchargez ImmoGest et connectez-vous avec votre numéro + ce mot de passe.';
       var waUrl = 'https://wa.me/' + (tel.startsWith('+') ? tel.slice(1) : '237' + tel) + '?text=' + encodeURIComponent(msg);
 
       window.IG.utils.showModal(
@@ -565,9 +567,13 @@ window.IG.locataires = (function() {
         '<h3 style="font-size:15px;margin-bottom:6px">' + t('Locataire ajouté !') + '</h3>' +
         '<p style="font-size:13px;color:var(--text3);margin-bottom:16px">' + esc(loc.nom) + ' — Local ' + esc(loc.appt || '?') + '</p>' +
         '<div style="background:var(--bg3);border-radius:12px;padding:16px;margin-bottom:16px">' +
-        '<div style="font-size:11px;color:var(--text3);margin-bottom:6px">CODE D\'ACCÈS LOCATAIRE</div>' +
-        '<div style="font-size:32px;font-weight:900;letter-spacing:4px;color:var(--accent)">' + code + '</div>' +
-        '<div style="font-size:11px;color:var(--text3);margin-top:6px">Valable 7 jours</div>' +
+        '<div style="font-size:11px;color:var(--text3);margin-bottom:8px">ACCÈS PORTAIL LOCATAIRE</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+        '<span style="font-size:11px;color:var(--text3);min-width:50px">📱 Login</span>' +
+        '<span style="font-family:monospace;font-size:13px;font-weight:700;color:var(--text)">' + esc(loc.telephone || '—') + '</span></div>' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+        '<span style="font-size:11px;color:var(--text3);min-width:50px">🔑 MP</span>' +
+        '<span style="font-family:monospace;font-size:26px;font-weight:900;letter-spacing:4px;color:var(--accent)">' + code + '</span></div>' +
         '</div>' +
         '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">' +
         (tel ? '<a href="' + waUrl + '" target="_blank" style="padding:10px 16px;border-radius:8px;border:none;background:#25D366;color:#fff;font-weight:700;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px">📱 Envoyer par WhatsApp</a>' : '') +

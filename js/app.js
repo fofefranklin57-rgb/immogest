@@ -1405,6 +1405,8 @@ window.IG.app = (function() {
       locUsers.forEach(function(u) {
         var loc = locatairesData.find(function(l) { return l.nom && u.nom && l.nom.trim().toLowerCase() === u.nom.trim().toLowerCase(); })
                 || locatairesData.find(function(l) { return l.telephone && u.telephone && l.telephone === u.telephone; });
+        // Enrichir le téléphone depuis locataires si users_app ne l'a pas
+        if (loc && loc.telephone && !u.telephone) u.telephone = loc.telephone;
         var immId = (loc && loc.immeuble_id) ? String(loc.immeuble_id) : '__sans_immeuble';
         grouped[immId] = grouped[immId] || { imm: null, users: [] };
         if (!grouped[immId].imm && loc) {
