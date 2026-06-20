@@ -370,6 +370,22 @@ ${_footer()}</body></html>`;
       // ── /join ─────────────────────────────────────────────────
       if (path === '/join' && request.method === 'POST') {
         const { code, nom, password, pin } = await request.json();
+
+        // 1) Chercher dans users_app.code_invitation (locataire / bailleur)
+        const uaRes = await sbFetch('users_app', '?code_invitation=eq.' + encodeURIComponent(code) + '&actif=eq.true&select=*');
+        const uaList = uaRes.ok ? await uaRes.json() : [];
+        if (uaList.length) {
+          const u = uaList[0];
+          // Mettre à jour nom + password, effacer le code pour éviter réutilisation
+          await sbFetch('users_app', '?id=eq.' + u.id, 'PATCH', {
+            nom: nom || u.nom,
+            password: password || null,
+            code_invitation: null
+          });
+          return json({ success: true, userId: u.id, tenantId: u.tenant_id, role: u.role });
+        }
+
+        // 2) Fallback : invite_codes (collaborateurs)
         const res = await sbFetch('invite_codes', '?code=eq.' + code + '&used=eq.false&select=*');
         const codes = res.ok ? await res.json() : [];
         if (!codes.length) return json({ error: 'Code invalide ou déjà utilisé' }, 404);
