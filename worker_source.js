@@ -371,12 +371,19 @@ ${_footer()}</body></html>`;
       if (path === '/join' && request.method === 'POST') {
         const { code, nom, password, pin } = await request.json();
 
-        // Helper : fetch tenant et construire la réponse complète
-        async function joinSuccess(userId, tenantId, role) {
+        // Helper : fetch tenant + locataireId et construire la réponse complète
+        async function joinSuccess(userId, tenantId, role, telephone) {
           const tRes = await sbFetch('tenants', '?id=eq.' + tenantId + '&select=*');
           const tenants = tRes.ok ? await tRes.json() : [];
           const tenant = tenants[0] || { id: tenantId };
-          return json({ success: true, userId, role, tenant });
+          // Pour les locataires : retrouver leur ID dans la table locataires par téléphone
+          let locataireId = null;
+          if (role === 'locataire' && telephone) {
+            const lRes = await sbFetch('locataires', '?tenant_id=eq.' + tenantId + '&telephone=eq.' + encodeURIComponent(telephone) + '&select=id');
+            const locs = lRes.ok ? await lRes.json() : [];
+            if (locs.length) locataireId = locs[0].id;
+          }
+          return json({ success: true, userId, role, tenant, locataireId });
         }
 
         // 1) Chercher dans users_app.code_invitation (locataire / bailleur)
@@ -389,7 +396,7 @@ ${_footer()}</body></html>`;
             password: password || null,
             code_invitation: null
           });
-          return joinSuccess(u.id, u.tenant_id, u.role);
+          return joinSuccess(u.id, u.tenant_id, u.role, u.telephone);
         }
 
         // 2) Fallback : invite_codes (collaborateurs)
