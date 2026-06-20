@@ -1010,7 +1010,7 @@ window.IG.app = (function() {
     var tabEquipe = isAdmin ? (
       '<div class="card">' +
       '<div class="card-header"><div class="card-title">👥 Équipe & Invitations</div>' +
-      '<button onclick="window.IG.app._genererInvitation()" style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:12px;font-weight:600">＋ Inviter</button>' +
+      '<button onclick="window.IG.app._genererInvitation()" style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:12px;font-weight:600">＋ Inviter collaborateur</button>' +
       '</div>' +
       '<div id="equipe-body"><div style="text-align:center;padding:24px"><div class="spinner" style="margin:0 auto"></div></div></div>' +
       '</div>'
@@ -1334,17 +1334,19 @@ window.IG.app = (function() {
         var hasImmeubles = u.immeubles_assignes && u.immeubles_assignes.length > 0;
         var droitsBadge = (hasOverrides || hasImmeubles)
           ? '<span style="font-size:10px;background:var(--accent);color:#fff;padding:1px 5px;border-radius:4px;margin-left:5px">⚙</span>' : '';
-        var code = u.code_invitation || u.code || null;
+        var code = u.password || null;
 
         if (showCode) {
-          // Carte étendue pour proprio / locataire
+          // Carte étendue pour proprio / locataire — affiche le mot de passe portail
           var codeHtml = code
-            ? '<div style="display:flex;align-items:center;gap:8px;margin-top:6px">' +
+            ? '<div style="margin-top:6px">' +
+              '<div style="font-size:10px;color:var(--text3);margin-bottom:3px">🔑 Mot de passe portail</div>' +
+              '<div style="display:flex;align-items:center;gap:8px">' +
               '<span style="font-family:monospace;font-size:15px;font-weight:800;letter-spacing:3px;color:var(--accent);background:var(--bg3);padding:5px 12px;border-radius:8px;cursor:pointer" ' +
-              'onclick="navigator.clipboard.writeText(\'' + esc(code) + '\');window.IG.utils.showToast(\'Code copié ✓\',\'green\')" title="Cliquer pour copier">' +
+              'onclick="navigator.clipboard.writeText(\'' + esc(code) + '\');window.IG.utils.showToast(\'MP copié ✓\',\'green\')" title="Cliquer pour copier">' +
               esc(code) + '</span>' +
-              '<span style="font-size:10px;color:var(--text3)">📋 copier</span></div>'
-            : '<div style="margin-top:6px;font-size:11px;color:var(--text3);font-style:italic">Connecté · aucun code actif</div>';
+              '<span style="font-size:10px;color:var(--text3)">📋 copier</span></div></div>'
+            : '<div style="margin-top:6px;font-size:11px;color:var(--text3);font-style:italic">Aucun mot de passe défini</div>';
 
           return '<div style="padding:12px 0;border-bottom:1px solid var(--border)">' +
             // Ligne principale : nom + badges + actions
@@ -1356,7 +1358,7 @@ window.IG.app = (function() {
             '</div>' +
             '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">' +
             '<button onclick="window.IG.app._ouvrirDroits(\'' + u.id + '\')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--accent);color:var(--accent);background:var(--bg4);cursor:pointer;font-size:11px">⚙️ Droits</button>' +
-            '<button onclick="window.IG.app._resetCodeUser(\'' + u.id + '\',\'' + esc(u.nom) + '\')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:11px">🔄 Réinit. code</button>' +
+            '<button onclick="window.IG.app._resetCodeUser(\'' + u.id + '\',\'' + esc(u.nom) + '\')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:11px">🔄 Réinit. MP</button>' +
             _actionsExtra(u) +
             '</div></div></div>';
         }
@@ -1465,11 +1467,11 @@ window.IG.app = (function() {
 
   async function _resetCodeUser(userId, nom) {
     var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    var newCode = Array.from({ length: 8 }, function() { return chars[Math.floor(Math.random() * chars.length)]; }).join('');
+    var newCode = Array.from({ length: 6 }, function() { return chars[Math.floor(Math.random() * chars.length)]; }).join('');
     try {
-      await window.IG.db.update('users_app', userId, { code_invitation: newCode, actif: true });
-      var html = '<h3 style="font-size:15px;margin-bottom:14px">🔄 Nouveau mot de passe</h3>' +
-        '<p style="font-size:13px;color:var(--text3);margin-bottom:14px">Communiquez ce code à <strong>' + esc(nom) + '</strong>. Il servira de mot de passe à la prochaine connexion.</p>' +
+      await window.IG.db.update('users_app', userId, { password: newCode, actif: true, date_blocage_auto: null, motif_blocage: null });
+      var html = '<h3 style="font-size:15px;margin-bottom:14px">🔄 Nouveau mot de passe portail</h3>' +
+        '<p style="font-size:13px;color:var(--text3);margin-bottom:14px">Communiquez ce MP à <strong>' + esc(nom) + '</strong>. Il se connecte avec son téléphone + ce code.</p>' +
         '<div style="text-align:center;background:var(--bg3);border-radius:10px;padding:20px">' +
         '<div style="font-size:26px;font-weight:900;letter-spacing:4px;color:var(--accent);font-family:monospace">' + newCode + '</div>' +
         '</div>' +
