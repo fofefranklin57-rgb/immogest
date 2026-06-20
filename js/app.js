@@ -2187,6 +2187,7 @@ window.IG.app = (function() {
     _genererInvitation, _toggleUser, _equipeTab, _resetCodeUser, _appliquerPromo,
     _loadDeclarations, _validerDeclaration,
     _loadMessages, _nouveauMessage, _marquerLu,
+    _paramTab,
     _sauvegarderModePublication, _chargerModePublication, _sauvegarderCleIA, _chargerCleIA, _sauvegarderMomo, _chargerMomo, _sauvegarderCabinet, _chargerCabinet,
     getData: function() { return _data; },
     topbarAction, _showMobileNav,
