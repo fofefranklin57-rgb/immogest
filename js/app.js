@@ -319,7 +319,7 @@ window.IG.app = (function() {
       'Impayés: ' + d.locataires.filter(function(l){ return l.statut === 'actif'; }).length + ' locataires actifs.';
 
     try {
-      var workerUrl = (window.IG.config && window.IG.config.WORKER_URL) || 'https://immogest1.fofefranklin57.workers.dev';
+      var workerUrl = (window.IG.config && (window.IG.config.workerUrl || window.IG.config.WORKER_URL)) || 'https://immogest1.fofefranklin57.workers.dev';
       var res = await fetch(workerUrl + '/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

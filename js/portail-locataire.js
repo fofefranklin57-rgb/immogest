@@ -35,11 +35,13 @@ function initPortailAds() {
 }
 
 // Navigation
-function showTab(tab) {
-  document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-  document.getElementById('tab-' + tab).style.display = 'block';
-  document.querySelectorAll('.tenant-nav button').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
+function showTab(tab, ev) {
+  document.querySelectorAll('.tab-content').forEach(function(t) { t.style.display = 'none'; });
+  var tabEl = document.getElementById('tab-' + tab);
+  if (tabEl) tabEl.style.display = 'block';
+  document.querySelectorAll('.tenant-nav button').forEach(function(b) { b.classList.remove('active'); });
+  var btn = ev && ev.target ? ev.target : null;
+  if (btn) btn.classList.add('active');
   currentTab = tab;
   if (tab === 'maintenance') loadMaintHistory();
   if (tab === 'documents') loadDocumentsLocataire();
@@ -54,7 +56,8 @@ function selectMomo(btn, provider) {
   selectedMomo = provider;
 
   // Show cabinet number
-  const momo = (DATA.settings && DATA.settings.momo) ? DATA.settings.momo : {};
+  var _settings = window.IG && window.IG.app ? (window.IG.app.getData().settings || {}) : {};
+  const momo = (_settings.momo) ? _settings.momo : {};
   const numero = momo[provider] || '';
   const infoDiv = document.getElementById('momo-cabinet-info');
   const numDiv  = document.getElementById('momo-cabinet-number');
@@ -89,25 +92,24 @@ async function processPayment() {
     const ref = 'PAY-' + Date.now();
     const now = new Date();
 
-    // Enregistrer dans DATA.paiements
-    if (l) {
-      const newPay = {
-        id: DATA.nextPayId++,
-        locId: l.id,
-        date: now.toISOString().split('T')[0],
-        montant: amount,
-        moisC: now.getMonth(),
-        anneeC: now.getFullYear(),
-        type: 'loyer',
-        mode: selectedMomo === 'mtn' ? 'mtn' : selectedMomo === 'orange' ? 'orange' : 'wave',
-        note: 'Déclaré via portail locataire · Réf: ' + ref,
-        statut: 'en_attente' // attente validation comptable
+    if (l && window.IG && window.IG.supabase) {
+      var db = window.IG.supabase;
+      var session = window.SESSION || {};
+      var newPay = {
+        tenant_id:    session.tenantId,
+        locataire_id: l.id,
+        immeuble_id:  l.immeuble_id,
+        date_paiement: now.toISOString().split('T')[0],
+        montant:      amount,
+        mois:         now.getMonth() + 1,
+        annee:        now.getFullYear(),
+        type:         'loyer',
+        mode_paiement: selectedMomo,
+        notes:        'Déclaré via portail locataire · Réf: ' + ref,
+        statut:       'en_attente',
+        remisAuBailleur: false
       };
-      DATA.paiements.push(newPay);
-      // Ajouter en déclaration pour validation
-      if (!DATA.declarations) DATA.declarations = [];
-      DATA.declarations.push({ ...newPay, declId: DATA.nextDeclId++ });
-      saveData();
+      await db.insert('paiements', newPay);
     }
 
     alert('✅ Paiement de ' + amount.toLocaleString('fr-FR') + ' FCFA déclaré !\nRéférence: ' + ref + '\n\nVotre gestionnaire validera le paiement après vérification.');
@@ -160,7 +162,7 @@ async function submitMaintenance(e) {
 
   const loc = _getLocataireConnecte();
   const locId = loc ? loc.id : null;
-  const immId = loc ? loc.iid : null;
+  const immId = loc ? (loc.immeuble_id || loc.iid) : null;
 
   const row = {
     locataire_id: locId,

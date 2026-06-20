@@ -428,7 +428,7 @@ window.IG.rapports = (function() {
 
     function _paysDansPeriode(paiements) {
       return paiements.filter(function(p) {
-        var pd = new Date(p.date || (p.annee + '-' + String(p.mois).padStart(2,'0') + '-01'));
+        var pd = new Date(p.date_paiement || (p.annee + '-' + String(p.mois).padStart(2,'0') + '-01'));
         return pd >= debD && pd <= finD;
       });
     }
@@ -950,7 +950,7 @@ window.IG.rapports = (function() {
     var fin   = new Date(dateFin);
     var locs  = allLocs.filter(function(l) { return l.immeuble_id == iid; });
     var pays  = allPays.filter(function(p) {
-      var pd = new Date(p.date || (p.annee + '-' + String(p.mois).padStart(2,'0') + '-01'));
+      var pd = new Date(p.date_paiement || (p.annee + '-' + String(p.mois).padStart(2,'0') + '-01'));
       return p.locataire_id && locs.some(function(l){ return l.id == p.locataire_id; }) &&
              pd >= deb && pd <= fin;
     });

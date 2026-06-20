@@ -205,7 +205,7 @@ window.IG.ads = (function() {
     existing.style.cssText = 'margin-bottom:10px;padding:10px 12px;background:' + urgColor + '22;border-radius:8px;border:1px solid ' + urgColor + '55;';
     existing.innerHTML =
       '<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">🎁 Période d\'essai</div>' +
-      '<div style="font-size:16px;font-weight:900;color:' + urgColor.replace('#','').length === 6 ? urgColor : '#c4b5fd' + ';margin-bottom:2px">' + joursRestants + ' jour' + (joursRestants > 1 ? 's' : '') + ' restant' + (joursRestants > 1 ? 's' : '') + '</div>' +
+      '<div style="font-size:16px;font-weight:900;color:' + (urgColor.replace('#','').length === 6 ? urgColor : '#c4b5fd') + ';margin-bottom:2px">' + joursRestants + ' jour' + (joursRestants > 1 ? 's' : '') + ' restant' + (joursRestants > 1 ? 's' : '') + '</div>' +
       '<div style="font-size:10px;color:rgba(255,255,255,0.55);margin-bottom:8px">' + urgMsg + '</div>' +
       '<button onclick="window.IG.plans.afficherUpgrade()" style="width:100%;padding:7px;background:' + urgColor + ';color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">' + ctaText + '</button>';
     return;

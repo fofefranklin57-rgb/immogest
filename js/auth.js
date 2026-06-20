@@ -11,12 +11,14 @@ window.IG.auth = (function() {
 
   // ── Rôles & permissions ───────────────────────────────────────
   var ROLES = {
-    admin:        { niveau: 6, label: 'Administrateur' },
-    proprietaire: { niveau: 5, label: 'Propriétaire' },
-    gestionnaire: { niveau: 4, label: 'Gestionnaire' },
-    comptable:    { niveau: 3, label: 'Comptable' },
-    agent:        { niveau: 2, label: 'Agent' },
-    locataire:    { niveau: 1, label: 'Locataire' }
+    admin:         { niveau: 6, label: 'Administrateur' },
+    proprietaire:  { niveau: 5, label: 'Propriétaire' },
+    coordinateur:  { niveau: 5, label: 'Coordinateur' },
+    gestionnaire:  { niveau: 4, label: 'Gestionnaire' },
+    comptable:     { niveau: 3, label: 'Comptable' },
+    agent:         { niveau: 2, label: 'Agent' },
+    bailleur:      { niveau: 2, label: 'Bailleur' },
+    locataire:     { niveau: 1, label: 'Locataire' }
   };
 
   function hasRole(minRole) {
@@ -81,11 +83,13 @@ window.IG.auth = (function() {
       tenantId:    data.tenant.id,
       userId:      data.userId,
       role:        data.role || 'admin',
+      type_profil: data.tenant.type_profil || data.type_profil || 'gestionnaire',
       nom:         data.tenant.nom,
       nomCabinet:  data.tenant.nom_cabinet,
       plan:        data.tenant.plan || 'gratuit',
       plan_expire: data.tenant.plan_expire || null,
       telephone:   data.tenant.telephone,
+      parametres:  data.tenant.parametres || {},
       loginAt:     Date.now(),
       locale:      data.tenant.locale || null
     };
@@ -135,10 +139,13 @@ window.IG.auth = (function() {
       tenantId:    data.tenant.id,
       userId:      data.userId,
       role:        data.role || 'agent',
+      type_profil: data.tenant.type_profil || data.type_profil || 'gestionnaire',
       nom:         nom,
       nomCabinet:  data.tenant.nom_cabinet || data.tenant.nom,
       plan:        data.tenant.plan || 'gratuit',
+      plan_expire: data.tenant.plan_expire || null,
       telephone:   data.tenant.telephone,
+      parametres:  data.tenant.parametres || {},
       loginAt:     Date.now(),
       locale:      data.tenant.locale || null,
       locataireId: data.locataireId || null

@@ -147,10 +147,10 @@ window.IG.paiements = (function() {
     var cabNom       = params.nom_cabinet  || session.nomCabinet || session.nom || 'Cabinet';
     var cabAdresse   = params.adresse      || session.adresse    || '';
     var cabTel       = params.tel          || session.telephone  || '';
-    var cabEmail     = params.email        || session.email      || '';
+    var cabEmail     = params.email        || (params && params.email) || '';
     var cabVille     = params.ville        || (imm && imm.ville) || 'Yaoundé';
     var cabLogo      = params.logo_url     || null;
-    var cabSignataire= params.signataire   || session.signataire || '';
+    var cabSignataire= params.signataire   || '';
     var cabRccm      = params.rccm         || '';
 
     // Lignes de l'année affichée

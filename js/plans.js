@@ -358,8 +358,6 @@ window.IG.plans = (function() {
     var m = window.IG.utils.showModal(html, { width: '620px' });
     m.overlay.id = 'ig-upgrade-modal';
 
-    var _dureeSelectionnee = 1;
-
     function _renderCards(duree) {
       var grid = m.box.querySelector('#ig-plans-grid');
       var cardsHtml = '';
