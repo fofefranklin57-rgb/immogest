@@ -149,18 +149,8 @@ window.IG.locataires = (function() {
         '<td>' + statut + '</td>' +
         '<td>' + resteHtml + '</td>' +
         '<td style="white-space:nowrap">' +
-        '<div class="action-menu">' +
-        '<button class="action-menu-btn" onclick="window.IG.locataires._toggleMenu(this)">···</button>' +
-        '<div class="action-dropdown">' +
-        '<div class="action-dropdown-item" onclick="window.IG.paiements.afficherFormulaire(' + loc.id + ');window.IG.locataires._closeMenus()">💳 Paiement</div>' +
-        '<div class="action-dropdown-item" onclick="window.IG.locataires.afficherFormulaire(' + loc.id + ');window.IG.locataires._closeMenus()">📝 Modifier</div>' +
-        '<div class="action-dropdown-item" onclick="window.IG.locataires.afficherFiche(' + loc.id + ');window.IG.locataires._closeMenus()">📊 Fiche de suivi</div>' +
-        (loc.telephone ? '<div class="action-dropdown-item" onclick="window.IG.locataires.envoyerAccesWA(' + loc.id + ');window.IG.locataires._closeMenus()">📲 Envoyer accès WhatsApp</div>' : '') +
-        '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.genererDocument(' + loc.id + ');window.IG.locataires._closeMenus()">📄 Documents</div>' +
-        '<div class="action-dropdown-sep"></div>' +
-        '<div class="action-dropdown-item danger" onclick="window.IG.locataires.liberer(' + loc.id + ');window.IG.locataires._closeMenus()">🔓 Libérer</div>' +
-        '<div class="action-dropdown-item danger" onclick="window.IG.locataires.supprimer(' + loc.id + ');window.IG.locataires._closeMenus()">🗑️ Supprimer</div>' +
-        '</div></div></td></tr>';
+        '<button class="action-menu-btn" onclick="window.IG.locataires._toggleMenu(this,' + loc.id + ',' + (loc.telephone ? 1 : 0) + ')">···</button>' +
+        '</td></tr>';
     });
     html += '</tbody></table></div>';
     container.innerHTML = html;
@@ -470,29 +460,53 @@ window.IG.locataires = (function() {
     return '<span style="font-size:10px;font-weight:700;color:#CA8A04">🟡 À surveiller</span>';
   }
 
-  function _toggleMenu(btn) {
-    var dd = btn.nextElementSibling;
-    var wasOpen = dd.classList.contains('open');
-    _closeMenus();
-    if (!wasOpen) {
-      var btnRect = btn.getBoundingClientRect();
-      dd.style.position = 'fixed';
-      dd.style.right = (window.innerWidth - btnRect.right) + 'px';
-      dd.style.top = (btnRect.bottom + 4) + 'px';
-      dd.style.bottom = '';
-      dd.classList.add('open');
-      // Après rendu : ajuster si dépasse le bas
-      requestAnimationFrame(function() {
-        var ddH = dd.offsetHeight;
-        if (btnRect.bottom + 4 + ddH > window.innerHeight - 8) {
-          dd.style.top = Math.max(8, btnRect.top - ddH - 4) + 'px';
+  function _getGlobalMenu() {
+    var el = document.getElementById('loc-global-menu');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'loc-global-menu';
+      el.className = 'action-dropdown';
+      el.style.cssText = 'position:fixed;z-index:99999;display:none;flex-direction:column;min-width:200px;';
+      document.body.appendChild(el);
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('#loc-global-menu') && !e.target.closest('.action-menu-btn')) {
+          _closeMenus();
         }
       });
     }
+    return el;
+  }
+
+  function _toggleMenu(btn, locId, hasTel) {
+    var menu = _getGlobalMenu();
+    var isOpen = menu.style.display === 'flex';
+    _closeMenus();
+    if (isOpen && menu._locId === locId) return;
+    menu._locId = locId;
+    menu.innerHTML =
+      '<div class="action-dropdown-item" onclick="window.IG.paiements.afficherFormulaire(' + locId + ');window.IG.locataires._closeMenus()">💳 Paiement</div>' +
+      '<div class="action-dropdown-item" onclick="window.IG.locataires.afficherFormulaire(' + locId + ');window.IG.locataires._closeMenus()">📝 Modifier</div>' +
+      '<div class="action-dropdown-item" onclick="window.IG.locataires.afficherFiche(' + locId + ');window.IG.locataires._closeMenus()">📊 Fiche de suivi</div>' +
+      (hasTel ? '<div class="action-dropdown-item" onclick="window.IG.locataires.envoyerAccesWA(' + locId + ');window.IG.locataires._closeMenus()">📲 Envoyer accès WhatsApp</div>' : '') +
+      '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.genererDocument(' + locId + ');window.IG.locataires._closeMenus()">📄 Documents</div>' +
+      '<div class="action-dropdown-sep"></div>' +
+      '<div class="action-dropdown-item danger" onclick="window.IG.locataires.liberer(' + locId + ');window.IG.locataires._closeMenus()">🔓 Libérer</div>' +
+      '<div class="action-dropdown-item danger" onclick="window.IG.locataires.supprimer(' + locId + ');window.IG.locataires._closeMenus()">🗑️ Supprimer</div>';
+    menu.style.display = 'flex';
+    var btnRect = btn.getBoundingClientRect();
+    menu.style.right = (window.innerWidth - btnRect.right) + 'px';
+    menu.style.top = (btnRect.bottom + 4) + 'px';
+    requestAnimationFrame(function() {
+      var mH = menu.offsetHeight;
+      if (btnRect.bottom + 4 + mH > window.innerHeight - 8) {
+        menu.style.top = Math.max(8, btnRect.top - mH - 4) + 'px';
+      }
+    });
   }
 
   function _closeMenus() {
-    document.querySelectorAll('.action-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    var menu = document.getElementById('loc-global-menu');
+    if (menu) menu.style.display = 'none';
   }
 
   function envoyerAccesWA(locId) {
@@ -505,9 +519,6 @@ window.IG.locataires = (function() {
     window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(msg), '_blank');
   }
 
-  document.addEventListener('click', function(e) {
-    if (!e.target.closest('.action-menu')) _closeMenus();
-  });
 
   // ── Invitation automatique à la création d'un locataire ───────
   async function _genererInvitationLocataire(loc) {
