@@ -57,6 +57,21 @@ window.IG.locataires = (function() {
     } catch(_) {}
     await window.IG.db.remove('locataires', id);
     _cache = _cache.filter(function(l) { return l.id != id; });
+    // ── Programmer le blocage d'accès portail à J+15 ──
+    try {
+      var session = window.IG.auth.getSession();
+      if (loc.telephone && session && session.tenantId) {
+        var usersApp = await window.IG.db.select('users_app', { tenant_id: session.tenantId, telephone: loc.telephone, role: 'locataire' });
+        if (usersApp && usersApp.length) {
+          var blocDate = new Date();
+          blocDate.setDate(blocDate.getDate() + 15);
+          await window.IG.db.update('users_app', usersApp[0].id, {
+            date_blocage_auto: blocDate.toISOString(),
+            motif_blocage: 'liberation'
+          });
+        }
+      }
+    } catch(_) {}
     toast(t('Locataire libéré et archivé'), 'green');
   }
 

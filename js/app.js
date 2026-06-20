@@ -1294,18 +1294,35 @@ window.IG.app = (function() {
 
       var ROLE_ICONS = { admin:'👑', coordinateur:'🎯', gestionnaire:'🏘️', comptable:'📊', agent:'🤝', bailleur:'🏠', locataire:'🔑' };
 
-      function _badgeActif(actif) {
-        return actif === false ? '<span style="font-size:10px;color:var(--red);font-weight:600;margin-left:6px">BLOQUÉ</span>' : '';
+      function _jRestants(dateStr) {
+        if (!dateStr) return null;
+        var diff = Math.ceil((new Date(dateStr) - Date.now()) / 86400000);
+        return diff;
+      }
+      function _badgeActif(u) {
+        if (u.actif === false) return '<span style="font-size:10px;color:#fff;background:var(--red);padding:1px 7px;border-radius:4px;font-weight:700;margin-left:6px">BLOQUÉ</span>';
+        if (u.date_blocage_auto) {
+          var j = _jRestants(u.date_blocage_auto);
+          if (j !== null && j <= 0) return '<span style="font-size:10px;color:#fff;background:var(--red);padding:1px 7px;border-radius:4px;font-weight:700;margin-left:6px">BLOQUÉ</span>';
+          var motifs = { liberation:'libéré', contrat_rompu:'contrat rompu', manuel:'manuel' };
+          return '<span style="font-size:10px;color:#fff;background:#E07B00;padding:1px 7px;border-radius:4px;font-weight:700;margin-left:6px">⏳ ' + (j !== null ? j + 'j' : '') + '</span>' +
+            '<span style="font-size:10px;color:var(--text3);margin-left:4px">' + (motifs[u.motif_blocage] || '') + '</span>';
+        }
+        return '';
       }
       function _actions(u, showCode) {
         var btns = '';
         if (showCode) {
           var code = esc(u.code_invitation || u.code || '—');
-          btns += '<span style="font-family:monospace;font-size:12px;background:var(--bg3);padding:3px 8px;border-radius:6px;margin-right:6px">' + code + '</span>';
-          btns += '<button onclick="window.IG.app._resetCodeUser(\'' + u.id + '\',\'' + esc(u.nom) + '\')" style="padding:3px 9px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:11px;margin-right:4px" title="Réinitialiser le mot de passe">🔄 Réinit.</button>';
+          btns += '<span style="font-family:monospace;font-size:12px;background:var(--bg3);padding:3px 8px;border-radius:6px;margin-right:4px;cursor:pointer" onclick="navigator.clipboard.writeText(\'' + code + '\');window.IG.utils.showToast(\'Code copié ✓\',\'green\')" title="Cliquer pour copier">' + code + ' 📋</span>';
+          btns += '<button onclick="window.IG.app._resetCodeUser(\'' + u.id + '\',\'' + esc(u.nom) + '\')" style="padding:3px 9px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:11px;margin-right:4px">🔄 Réinit.</button>';
         }
         if (u.role !== 'admin') {
           var active = u.actif !== false;
+          // Si blocage planifié ou déjà bloqué → proposer Réintégrer
+          if (!active || u.date_blocage_auto) {
+            btns += '<button onclick="window.IG.app._reintegrerUser(\'' + u.id + '\',\'' + esc(u.nom) + '\')" style="padding:3px 9px;border-radius:6px;border:1px solid var(--green);color:var(--green);background:var(--bg4);cursor:pointer;font-size:11px;margin-right:4px">🔓 Réintégrer</button>';
+          }
           btns += '<button onclick="window.IG.app._toggleUser(\'' + u.id + '\',' + active + ')" style="padding:3px 9px;border-radius:6px;border:1px solid ' + (active ? 'var(--red)' : 'var(--green)') + ';color:' + (active ? 'var(--red)' : 'var(--green)') + ';background:var(--bg4);cursor:pointer;font-size:11px">' + (active ? '🔒 Bloquer' : '✓ Débloquer') + '</button>';
         }
         return btns;
@@ -1317,10 +1334,10 @@ window.IG.app = (function() {
         var droitsBadge = (hasOverrides || hasImmeubles)
           ? '<span style="font-size:10px;background:var(--accent);color:#fff;padding:1px 5px;border-radius:4px;margin-left:5px">⚙</span>' : '';
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">' +
-          '<div><div style="font-size:13px;font-weight:600">' + (ROLE_ICONS[u.role] || '👤') + ' ' + esc(u.nom || u.id) + _badgeActif(u.actif) + droitsBadge + '</div>' +
+          '<div style="min-width:0"><div style="font-size:13px;font-weight:600">' + (ROLE_ICONS[u.role] || '👤') + ' ' + esc(u.nom || u.id) + _badgeActif(u) + droitsBadge + '</div>' +
           '<div style="font-size:11px;color:var(--text3);margin-top:2px">' + esc(u.role || '') + (u.telephone ? ' · ' + esc(u.telephone) : '') +
-          (hasImmeubles ? ' · <span style="color:var(--accent)">' + u.immeubles_assignes.length + ' imm. assigné(s)</span>' : '') + '</div></div>' +
-          '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">' +
+          (hasImmeubles ? ' · <span style="color:var(--accent)">' + u.immeubles_assignes.length + ' imm.</span>' : '') + '</div></div>' +
+          '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">' +
           '<button onclick="window.IG.app._ouvrirDroits(\'' + u.id + '\')" style="padding:3px 9px;border-radius:6px;border:1px solid var(--accent);color:var(--accent);background:var(--bg4);cursor:pointer;font-size:11px">⚙️ Droits</button>' +
           _actions(u, showCode) + '</div></div>';
       }
@@ -1625,6 +1642,26 @@ window.IG.app = (function() {
     } catch(e) {
       window.IG.utils.showToast('Erreur : ' + e.message, 'red');
     }
+  }
+
+  function _reintegrerUser(userId, nom) {
+    var html = '<div style="text-align:center;padding:8px 0">' +
+      '<div style="font-size:32px;margin-bottom:12px">🔓</div>' +
+      '<h3 style="font-size:15px;margin-bottom:10px">Réintégrer ' + esc(nom) + ' ?</h3>' +
+      '<p style="font-size:13px;color:var(--text3);margin-bottom:20px">Son accès portail sera rétabli immédiatement<br>et le blocage automatique annulé.</p>' +
+      '<div style="display:flex;gap:10px">' +
+      '<button id="btn-reint-ok" style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--green);color:#fff;cursor:pointer;font-size:13px;font-weight:600">✓ Confirmer</button>' +
+      '<button data-modal-close style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Annuler</button>' +
+      '</div></div>';
+    var modal = window.IG.utils.showModal(html, { width: '340px' });
+    modal.box.querySelector('#btn-reint-ok').addEventListener('click', async function() {
+      try {
+        await window.IG.db.update('users_app', userId, { actif: true, date_blocage_auto: null, motif_blocage: null });
+        window.IG.utils.showToast('✓ ' + nom + ' réintégré — accès rétabli', 'green');
+        if (modal.close) modal.close();
+        _chargerEquipe();
+      } catch(e) { window.IG.utils.showToast('Erreur : ' + e.message, 'red'); }
+    });
   }
 
   async function _toggleUser(userId, currentlyActive) {
@@ -2345,7 +2382,7 @@ window.IG.app = (function() {
     _loadDeclarations, _validerDeclaration,
     _loadMessages, _nouveauMessage, _marquerLu,
     _paramTab,
-    _ouvrirDroits, _sauvegarderDroits,
+    _ouvrirDroits, _sauvegarderDroits, _reintegrerUser,
     _sauvegarderModePublication, _chargerModePublication, _sauvegarderCleIA, _chargerCleIA, _sauvegarderMomo, _chargerMomo, _sauvegarderCabinet, _chargerCabinet,
     getData: function() { return _data; },
     topbarAction, _showMobileNav,

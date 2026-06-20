@@ -1363,6 +1363,27 @@ ${_footer()}
     const appId = env.ONESIGNAL_APP_ID;
     const restKey = env.ONESIGNAL_REST_KEY;
 
+    // ── Cron quotidien (0 7 * * *) : blocage auto accès expirés ──
+    if (event.cron === '0 7 * * *') {
+      const now = new Date().toISOString();
+      // Récupérer tous les users dont date_blocage_auto est passée et encore actifs
+      const bRes = await fetch(
+        sbBase + '/rest/v1/users_app?date_blocage_auto=lt.' + encodeURIComponent(now) + '&actif=eq.true&select=id,nom,role,telephone,motif_blocage',
+        { headers: sbHdrs() }
+      );
+      if (bRes.ok) {
+        const toBlock = await bRes.json();
+        for (const u of toBlock) {
+          await fetch(sbBase + '/rest/v1/users_app?id=eq.' + u.id, {
+            method: 'PATCH',
+            headers: { ...sbHdrs(), 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ actif: false })
+          });
+          console.log('Blocage auto:', u.nom, '(' + u.role + ') —', u.motif_blocage);
+        }
+      }
+    }
+
     // ── Cron quotidien (0 7 * * *) : relances impayés ──────────
     if (event.cron === '0 7 * * *' && appId && restKey) {
       // Charger tous les tenants actifs

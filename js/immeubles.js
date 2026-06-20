@@ -42,6 +42,38 @@ window.IG.immeubles = (function() {
   }
 
   async function supprimer(id) {
+    // ── Programmer J+15 pour tous les locataires de l'immeuble ──
+    try {
+      var session = window.IG.auth.getSession();
+      if (session && session.tenantId) {
+        var locs = await window.IG.db.select('locataires', { tenant_id: session.tenantId, immeuble_id: id });
+        if (locs && locs.length) {
+          var tels = locs.map(function(l) { return l.telephone; }).filter(Boolean);
+          var usersApp = await window.IG.db.select('users_app', { tenant_id: session.tenantId, role: 'locataire' });
+          var blocDate = new Date();
+          blocDate.setDate(blocDate.getDate() + 15);
+          var cibles = (usersApp || []).filter(function(u) { return tels.includes(u.telephone); });
+          for (var i = 0; i < cibles.length; i++) {
+            await window.IG.db.update('users_app', cibles[i].id, {
+              date_blocage_auto: blocDate.toISOString(),
+              motif_blocage: 'contrat_rompu'
+            });
+          }
+        }
+        // Programmer J+15 pour le proprio (bailleur) de l'immeuble
+        var imm = _cache.find(function(x) { return String(x.id) === String(id); });
+        if (imm && imm.tel_proprio) {
+          var proprios = await window.IG.db.select('users_app', { tenant_id: session.tenantId, role: 'bailleur', telephone: imm.tel_proprio });
+          if (proprios && proprios.length) {
+            var bd2 = new Date(); bd2.setDate(bd2.getDate() + 15);
+            await window.IG.db.update('users_app', proprios[0].id, {
+              date_blocage_auto: bd2.toISOString(),
+              motif_blocage: 'contrat_rompu'
+            });
+          }
+        }
+      }
+    } catch(_) {}
     await db().remove('immeubles', id);
     _cache = _cache.filter(function(i) { return i.id != id; });
   }
