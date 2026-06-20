@@ -1,0 +1,32 @@
+{
+  "name": "immogest_v2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "docx.bundle.js",
+  "scripts": {
+    "test": "echo no test",
+    "cap:init": "npx cap init ImmoGest com.immogest.app --web-dir .",
+    "cap:add": "npx cap add android",
+    "cap:sync": "npx cap sync android",
+    "cap:open": "npx cap open android",
+    "build:apk": "cd android && gradlew assembleDebug"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fofefranklin57-rgb/immogest.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/fofefranklin57-rgb/immogest/issues"
+  },
+  "homepage": "https://github.com/fofefranklin57-rgb/immogest#readme",
+  "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
+    "pg": "^8.21.0"
+  }
+}

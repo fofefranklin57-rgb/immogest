@@ -1,3 +1,9 @@
 ﻿index.html.bak
 supabase_migration.sql
 .claude/
+
+www/
+android/.gradle/
+android/app/build/
+android/build/
+*.apk
