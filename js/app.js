@@ -2257,19 +2257,11 @@ window.IG.app = (function() {
       '<div style="font-size:14px;font-weight:700;color:#e8f0fe;">Rejoindre un espace</div>' +
       '<div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:2px;">Locataire ou employé — code d\'invitation</div>' +
       '</div></button>' +
-      // Bouton 3 — Se connecter (admin / cabinet)
-      '<button onclick="window.IG.app.authGoStep(\'login\')" style="width:100%;display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:16px 18px;cursor:pointer;margin-bottom:10px;transition:background .15s;" onmouseover="this.style.background=\'rgba(255,255,255,0.09)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.05)\'">' +
+      // Bouton 3 — Se connecter
+      '<button onclick="window.IG.app.authGoStep(\'login\')" style="width:100%;display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:16px 18px;cursor:pointer;margin-bottom:20px;transition:background .15s;" onmouseover="this.style.background=\'rgba(255,255,255,0.09)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.05)\'">' +
       '<span style="font-size:22px;flex-shrink:0;">🔑</span>' +
       '<div style="text-align:left;">' +
-      '<div style="font-size:14px;font-weight:700;color:#e8f0fe;">Se connecter — Admin / Cabinet</div>' +
-      '<div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:2px;">Gestionnaire, comptable, agent</div>' +
-      '</div></button>' +
-      // Bouton 4 — Locataire / Bailleur
-      '<button onclick="window.IG.app.authGoStep(\'portal\')" style="width:100%;display:flex;align-items:center;gap:14px;background:rgba(14,122,69,0.15);border:1px solid rgba(14,122,69,0.35);border-radius:12px;padding:16px 18px;cursor:pointer;margin-bottom:20px;transition:background .15s;" onmouseover="this.style.background=\'rgba(14,122,69,0.25)\'" onmouseout="this.style.background=\'rgba(14,122,69,0.15)\'">' +
-      '<span style="font-size:22px;flex-shrink:0;">🏠</span>' +
-      '<div style="text-align:left;">' +
-      '<div style="font-size:14px;font-weight:700;color:#6ee7b7;">Mon espace — Locataire / Bailleur</div>' +
-      '<div style="font-size:11px;color:rgba(110,231,183,0.6);margin-top:2px;">Téléphone + mot de passe</div>' +
+      '<div style="font-size:14px;font-weight:700;color:#e8f0fe;">Se connecter à un espace existant</div>' +
       '</div></button>' +
       // Lien marketplace
       '<div style="text-align:center;">' +
