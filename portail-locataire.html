@@ -276,10 +276,14 @@ tr:hover td{background:#fafcff;}
       <span class="auth-badge">🔑 Espace Locataire</span>
     </div>
     <div class="auth-title">Accéder à mon espace</div>
-    <div class="auth-sub">Entrez votre numéro de téléphone enregistré par votre gestionnaire.</div>
+    <div class="auth-sub">Téléphone + mot de passe fourni par votre gestionnaire.</div>
     <div class="form-group">
       <label>Numéro de téléphone</label>
-      <input type="tel" id="auth-phone" placeholder="Ex: 690000000" autocomplete="tel">
+      <input type="tel" id="auth-phone" placeholder="Ex: 690000000" autocomplete="tel" onkeydown="if(event.key==='Enter')document.getElementById('auth-pwd').focus()">
+    </div>
+    <div class="form-group">
+      <label>Mot de passe</label>
+      <input type="password" id="auth-pwd" placeholder="Mot de passe" autocomplete="current-password" onkeydown="if(event.key==='Enter')doAuth()">
     </div>
     <button class="btn-primary" id="auth-btn" onclick="doAuth()">Accéder à mon espace →</button>
     <div class="auth-error" id="auth-error"></div>
@@ -653,29 +657,45 @@ function toast(msg, type){
 // ── AUTH ────────────────────────────────────────────────────────
 async function doAuth(){
   var phone = document.getElementById('auth-phone').value.trim();
+  var pwd   = document.getElementById('auth-pwd').value;
   var errEl = document.getElementById('auth-error');
   var btn   = document.getElementById('auth-btn');
   errEl.style.display = 'none';
-  if (!phone) { errEl.textContent='Veuillez entrer votre numéro.'; errEl.style.display='block'; return; }
-  btn.disabled = true; btn.textContent = '⏳ Recherche…';
+  if (!phone || !pwd) { errEl.textContent='Téléphone et mot de passe requis.'; errEl.style.display='block'; return; }
+  btn.disabled = true; btn.textContent = '⏳ Connexion…';
   try {
-    // Normaliser: enlever espaces et tirets
     var clean = phone.replace(/[\s\-]/g,'');
-    var r = await fetch(SUPABASE_URL+'/rest/v1/locataires?telephone=eq.'+encodeURIComponent(clean)+'&select=*', { headers: SB_HDRS });
-    var rows = await r.json();
-    // Essai alternatif si rien trouvé
-    if (!rows.length) {
-      var r2 = await fetch(SUPABASE_URL+'/rest/v1/locataires?whatsapp=eq.'+encodeURIComponent(clean)+'&select=*', { headers: SB_HDRS });
-      rows = await r2.json();
-    }
-    if (!rows.length) {
-      errEl.textContent = '❌ Aucun locataire trouvé avec ce numéro. Vérifiez avec votre gestionnaire.';
+    // Hash mot de passe (SHA-256 hex)
+    var enc = new TextEncoder().encode(pwd);
+    var hashBuf = await crypto.subtle.digest('SHA-256', enc);
+    var pwdHash = Array.from(new Uint8Array(hashBuf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+
+    var res = await fetch(WORKER + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telephone: clean, passwordHash: pwdHash })
+    });
+    var data = await res.json();
+    if (!res.ok) {
+      errEl.textContent = '❌ ' + (data.error || 'Identifiants incorrects');
       errEl.style.display = 'block';
       return;
     }
-    // Si plusieurs résultats, prendre le locataire actif en premier
+    if (data.role !== 'locataire') {
+      errEl.textContent = '❌ Ce compte n\'est pas un compte locataire.';
+      errEl.style.display = 'block';
+      return;
+    }
+    // Charger le locataire depuis la table locataires par téléphone
+    var r = await fetch(SUPABASE_URL+'/rest/v1/locataires?telephone=eq.'+encodeURIComponent(clean)+'&select=*', { headers: SB_HDRS });
+    var rows = await r.json();
+    if (!rows.length) {
+      errEl.textContent = '❌ Locataire introuvable pour ce numéro.';
+      errEl.style.display = 'block';
+      return;
+    }
     LOC = rows.find(r=>r.statut==='actif') || rows[0];
-    localStorage.setItem('ig_portail_loc', JSON.stringify(LOC));
+    localStorage.setItem('ig_portail_loc', JSON.stringify({ ...LOC, _userId: data.userId, _tenantId: data.tenant.id }));
     await loadPortal();
   } catch(e) {
     errEl.textContent = '❌ Erreur réseau: ' + e.message;
@@ -684,9 +704,6 @@ async function doAuth(){
     btn.disabled = false; btn.textContent = 'Accéder à mon espace →';
   }
 }
-
-// Allow enter key on auth
-document.getElementById('auth-phone').addEventListener('keydown', function(e){ if(e.key==='Enter') doAuth(); });
 
 function doLogout(){
   localStorage.removeItem('ig_portail_loc');

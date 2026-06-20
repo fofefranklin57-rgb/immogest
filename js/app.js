@@ -2239,42 +2239,37 @@ window.IG.app = (function() {
 
       // ─── ÉCRAN ACCUEIL : 3 boutons d'action ───
       '<div id="auth-step-home" class="auth-step active">' +
-      '<div style="text-align:center;margin-bottom:24px;">' +
+      '<div style="text-align:center;margin-bottom:28px;">' +
       '<div style="font-size:40px;margin-bottom:12px;">🏢</div>' +
       '<div style="font-size:19px;font-weight:800;color:#e8f0fe;">Bienvenue sur ImmoGest</div>' +
-      '<div style="font-size:12px;color:rgba(232,240,254,0.45);margin-top:6px;">Comment allez-vous utiliser l\'application ?</div>' +
+      '<div style="font-size:12px;color:rgba(232,240,254,0.45);margin-top:6px;">Gérez vos biens immobiliers simplement</div>' +
       '</div>' +
-      // Bouton 1 — Créer (bleu, primaire)
-      '<button onclick="window.IG.app.authGoStep(\'register\')" style="width:100%;display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;border-radius:12px;padding:16px 18px;cursor:pointer;margin-bottom:10px;transition:opacity .15s;" onmouseover="this.style.opacity=\'.9\'" onmouseout="this.style.opacity=\'1\'">' +
-      '<span style="font-size:22px;flex-shrink:0;">🏠</span>' +
+      // Bouton 1 — Créer (nouveau cabinet uniquement)
+      '<button onclick="window.IG.app.authGoStep(\'register\')" style="width:100%;display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;border-radius:12px;padding:18px 18px;cursor:pointer;margin-bottom:12px;transition:opacity .15s;" onmouseover="this.style.opacity=\'.9\'" onmouseout="this.style.opacity=\'1\'">' +
+      '<span style="font-size:24px;flex-shrink:0;">🏠</span>' +
       '<div style="text-align:left;">' +
-      '<div style="font-size:14px;font-weight:700;color:#fff;">Créer mon espace</div>' +
+      '<div style="font-size:15px;font-weight:700;color:#fff;">Créer mon espace</div>' +
+      '<div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:3px;">Nouveau cabinet / gestionnaire</div>' +
       '</div></button>' +
-      // Bouton 2 — Rejoindre
-      '<button onclick="window.IG.app.authGoStep(\'join\')" style="width:100%;display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:16px 18px;cursor:pointer;margin-bottom:10px;transition:background .15s;" onmouseover="this.style.background=\'rgba(255,255,255,0.09)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.05)\'">' +
-      '<span style="font-size:22px;flex-shrink:0;">🔗</span>' +
+      // Bouton 2 — Se connecter (TOUS les utilisateurs)
+      '<button onclick="window.IG.app.authGoStep(\'login\')" style="width:100%;display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:18px 18px;cursor:pointer;margin-bottom:20px;transition:background .15s;" onmouseover="this.style.background=\'rgba(255,255,255,0.12)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.07)\'">' +
+      '<span style="font-size:24px;flex-shrink:0;">🔑</span>' +
       '<div style="text-align:left;">' +
-      '<div style="font-size:14px;font-weight:700;color:#e8f0fe;">Rejoindre un espace</div>' +
-      '<div style="font-size:11px;color:rgba(232,240,254,0.45);margin-top:2px;">Locataire ou employé — code d\'invitation</div>' +
-      '</div></button>' +
-      // Bouton 3 — Se connecter
-      '<button onclick="window.IG.app.authGoStep(\'login\')" style="width:100%;display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:16px 18px;cursor:pointer;margin-bottom:20px;transition:background .15s;" onmouseover="this.style.background=\'rgba(255,255,255,0.09)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.05)\'">' +
-      '<span style="font-size:22px;flex-shrink:0;">🔑</span>' +
-      '<div style="text-align:left;">' +
-      '<div style="font-size:14px;font-weight:700;color:#e8f0fe;">Se connecter à un espace existant</div>' +
+      '<div style="font-size:15px;font-weight:700;color:#e8f0fe;">Se connecter</div>' +
+      '<div style="font-size:11px;color:rgba(232,240,254,0.5);margin-top:3px;">Admin · Gestionnaire · Locataire · Bailleur</div>' +
       '</div></button>' +
       // Lien marketplace
       '<div style="text-align:center;">' +
       '<button onclick="window.IG.app.browseMarketplace()" style="background:none;border:none;color:#4f8ef7;font-size:12px;cursor:pointer;font-family:inherit;">🏪 Parcourir la marketplace →</button>' +
       '</div></div>' +
 
-      // ─── CONNEXION ───
+      // ─── CONNEXION UNIFIÉE ───
       '<div id="auth-step-login" class="auth-step">' +
       '<button class="auth-back-btn" onclick="window.IG.app.authGoStep(\'home\')">&#8592; Retour</button>' +
       '<div style="text-align:center;margin-bottom:22px;">' +
       '<div style="font-size:32px;margin-bottom:8px;">🔑</div>' +
       '<div style="font-size:17px;font-weight:800;color:#e8f0fe;">Se connecter</div>' +
-      '<div style="font-size:11px;color:rgba(232,240,254,0.4);margin-top:4px;">Téléphone + mot de passe</div>' +
+      '<div style="font-size:11px;color:rgba(232,240,254,0.4);margin-top:4px;">Admin · Gestionnaire · Locataire · Bailleur</div>' +
       '</div>' +
       '<label class="auth-label">NUMÉRO DE TÉLÉPHONE</label>' +
       '<input type="tel" id="login-tel" class="auth-input" placeholder="Ex: 699 00 00 00" autocomplete="tel" style="margin-bottom:14px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'login-pwd\').focus()">' +
@@ -2282,7 +2277,9 @@ window.IG.app = (function() {
       '<input type="password" id="login-pwd" class="auth-input" placeholder="Mot de passe" autocomplete="current-password" style="margin-bottom:20px;" onkeydown="if(event.key===\'Enter\')window.IG.app.doLogin()">' +
       '<button class="auth-btn-primary" onclick="window.IG.app.doLogin()">🔐 Se connecter</button>' +
       '<div id="err-login" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>' +
-      '</div>' +
+      '<div style="text-align:center;margin-top:16px;">' +
+      '<button onclick="window.IG.app.authGoStep(\'join\')" style="background:none;border:none;color:rgba(232,240,254,0.4);font-size:12px;cursor:pointer;font-family:inherit;">Première connexion avec un code ? →</button>' +
+      '</div></div>' +
 
       // ─── CRÉER UN ESPACE ───
       '<div id="auth-step-register" class="auth-step">' +
@@ -2365,8 +2362,11 @@ window.IG.app = (function() {
       return;
     }
     try {
-      await window.IG.auth.login(tel.trim(), pwd);
-      _showAppShell(); await _loadData(); showPage('dashboard');
+      var session = await window.IG.auth.loginUnified(tel.trim(), pwd);
+      _showAppShell(); await _loadData();
+      // Router selon le rôle
+      if (session.role === 'locataire') showPage('portail');
+      else showPage('dashboard');
     } catch(ex) {
       if (errEl) { errEl.textContent = ex.message || 'Identifiants incorrects'; errEl.style.display = 'block'; }
       if (btn) { btn.textContent = orig; btn.disabled = false; }

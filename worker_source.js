@@ -360,18 +360,62 @@ ${_footer()}</body></html>`;
         return json({ success: true, userId: portal.id, role: portal.role, nom: portal.nom, tenant, locataireId });
       }
 
+      // ── /login — connexion unifiée (tous rôles, par téléphone) ──
+      if (path === '/login' && request.method === 'POST') {
+        if (_rateLimit(clientIp, 'login', 8, 900000))
+          return json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' }, 429);
+        const { telephone, passwordHash } = await request.json();
+        if (!telephone || !passwordHash) return json({ error: 'Téléphone et mot de passe requis' }, 400);
+        const tel = encodeURIComponent(telephone);
+
+        // 1) Chercher dans tenants (admin cabinet)
+        const tRes = await sbFetch('tenants', '?telephone=eq.' + tel + '&select=*');
+        const tenants = tRes.ok ? await tRes.json() : [];
+        if (tenants.length && tenants[0].password_hash === passwordHash) {
+          const tenant = tenants[0];
+          const uRes = await sbFetch('users_app', '?tenant_id=eq.' + tenant.id + '&role=eq.admin&select=*&limit=1');
+          const adminUser = (uRes.ok ? await uRes.json() : [])[0] || { id: 'admin_' + tenant.id, role: 'admin', nom: tenant.nom };
+          await logEvent(tenant.id, 'info', 'tenant.login', 'Connexion', { telephone });
+          return json({ success: true, userId: adminUser.id, role: 'admin', nom: adminUser.nom, tenant, locataireId: null });
+        }
+
+        // 2) Chercher dans users_app (collaborateurs, locataires, bailleurs)
+        const uRes = await sbFetch('users_app', '?telephone=eq.' + tel + '&actif=eq.true&select=*');
+        const uList = uRes.ok ? await uRes.json() : [];
+        if (!uList.length) return json({ error: 'Aucun compte trouvé pour ce numéro' }, 404);
+        const u = uList[0];
+        if (u.actif === false) return json({ error: 'Compte désactivé' }, 403);
+        if ((u.password || '') !== passwordHash) return json({ error: 'Mot de passe incorrect' }, 401);
+
+        // Charger le tenant
+        const ttRes = await sbFetch('tenants', '?id=eq.' + u.tenant_id + '&select=*');
+        const tenant = (ttRes.ok ? await ttRes.json() : [])[0] || { id: u.tenant_id };
+
+        // Pour locataire : retrouver l'ID dans la table locataires
+        let locataireId = null;
+        if (u.role === 'locataire') {
+          const lRes = await sbFetch('locataires', '?tenant_id=eq.' + u.tenant_id + '&telephone=eq.' + tel + '&select=id,immeuble_id');
+          const locs = lRes.ok ? await lRes.json() : [];
+          if (locs.length) locataireId = locs[0].id;
+        }
+
+        return json({ success: true, userId: u.id, role: u.role, nom: u.nom, tenant, locataireId });
+      }
+
       // ── /generate-invite ──────────────────────────────────────
       if (path === '/generate-invite' && request.method === 'POST') {
         const { tenantId, role, immeubles, nom, telephone, locataire_id } = await request.json();
         if (!tenantId) return json({ error: 'tenantId requis' }, 400);
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-        const code = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        // Mot de passe lisible 6 chars (locataire/bailleur) ou code 10 chars (collaborateurs)
         const finalRole = role || 'gestionnaire';
+        const isPortal = finalRole === 'locataire' || finalRole === 'bailleur';
+        const pwdChars = isPortal ? 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' : 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const pwdLen  = isPortal ? 6 : 10;
+        const code = Array.from({ length: pwdLen }, () => pwdChars[Math.floor(Math.random() * pwdChars.length)]).join('');
 
-        // Pour locataire et bailleur : créer/mettre à jour directement users_app
-        if (finalRole === 'locataire' || finalRole === 'bailleur') {
+        // Pour locataire et bailleur : upsert users_app avec password = code
+        if (isPortal) {
           const userId = 'u_' + crypto.randomUUID().replace(/-/g,'').substring(0, 10);
-          // Chercher si un users_app existe déjà pour ce tenant + telephone + role
           let existingId = null;
           if (telephone) {
             const chkRes = await sbFetch('users_app', '?tenant_id=eq.' + tenantId + '&telephone=eq.' + encodeURIComponent(telephone) + '&role=eq.' + finalRole + '&select=id');
@@ -381,14 +425,12 @@ ${_footer()}</body></html>`;
             }
           }
           if (existingId) {
-            // Mettre à jour le code uniquement
-            await sbFetch('users_app', '?id=eq.' + existingId, 'PATCH', { code_invitation: code, actif: true, date_blocage_auto: null, motif_blocage: null });
+            await sbFetch('users_app', '?id=eq.' + existingId, 'PATCH', { password: code, actif: true, date_blocage_auto: null, motif_bocage: null });
           } else {
-            // Créer le compte portail
             await sbFetch('users_app', '', 'POST', {
               id: userId, tenant_id: tenantId, role: finalRole,
               nom: nom || '', telephone: telephone || '',
-              code_invitation: code, actif: true,
+              password: code, actif: true,
               permissions: {}, immeubles_assignes: []
             });
           }

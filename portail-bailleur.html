@@ -203,10 +203,14 @@ tr:hover td{background:#fafcff;}
       <span class="auth-badge">🏠 Espace Propriétaire</span>
     </div>
     <div class="auth-title">Accéder à mon espace</div>
-    <div class="auth-sub">Entrez le numéro de téléphone associé à votre (vos) immeuble(s).</div>
+    <div class="auth-sub">Téléphone + mot de passe fourni par votre gestionnaire.</div>
     <div class="form-group">
-      <label>Numéro de téléphone du propriétaire</label>
-      <input type="tel" id="auth-phone" placeholder="Ex: 690000000" autocomplete="tel">
+      <label>Numéro de téléphone</label>
+      <input type="tel" id="auth-phone" placeholder="Ex: 690000000" autocomplete="tel" onkeydown="if(event.key==='Enter')document.getElementById('auth-pwd').focus()">
+    </div>
+    <div class="form-group">
+      <label>Mot de passe</label>
+      <input type="password" id="auth-pwd" placeholder="Mot de passe" autocomplete="current-password" onkeydown="if(event.key==='Enter')doAuth()">
     </div>
     <button class="btn-primary" id="auth-btn" onclick="doAuth()">Accéder à mon espace →</button>
     <div class="auth-error" id="auth-error"></div>
@@ -489,23 +493,35 @@ function toast(msg, type){
 }
 
 // AUTH
+const WORKER = 'https://immogest1.fofefranklin57.workers.dev';
+
 async function doAuth(){
   var phone = document.getElementById('auth-phone').value.trim().replace(/[\s\-]/g,'');
+  var pwd   = document.getElementById('auth-pwd').value;
   var errEl = document.getElementById('auth-error');
   var btn   = document.getElementById('auth-btn');
   errEl.style.display = 'none';
-  if (!phone) { errEl.textContent='Veuillez entrer votre numéro.'; errEl.style.display='block'; return; }
-  btn.disabled = true; btn.textContent = '⏳ Recherche…';
+  if (!phone || !pwd) { errEl.textContent='Téléphone et mot de passe requis.'; errEl.style.display='block'; return; }
+  btn.disabled = true; btn.textContent = '⏳ Connexion…';
   try {
-    // Query immeubles by tel_proprio
-    var r = await fetch(SUPABASE_URL+'/rest/v1/immeubles?tel_proprio=eq.'+encodeURIComponent(phone)+'&select=*', { headers: SB_HDRS });
+    var enc = new TextEncoder().encode(pwd);
+    var hashBuf = await crypto.subtle.digest('SHA-256', enc);
+    var pwdHash = Array.from(new Uint8Array(hashBuf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+
+    var res = await fetch(WORKER + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telephone: phone, passwordHash: pwdHash })
+    });
+    var data = await res.json();
+    if (!res.ok) { errEl.textContent = '❌ ' + (data.error || 'Identifiants incorrects'); errEl.style.display='block'; return; }
+    if (data.role !== 'bailleur') { errEl.textContent = '❌ Ce compte n\'est pas un compte bailleur.'; errEl.style.display='block'; return; }
+
+    // Charger les immeubles du proprio par téléphone
+    var r = await fetch(SUPABASE_URL+'/rest/v1/immeubles?tel_proprio=eq.'+encodeURIComponent(phone)+'&tenant_id=eq.'+data.tenant.id+'&select=*', { headers: SB_HDRS });
     var rows = await r.json();
-    if (!rows.length) {
-      // Essai avec le nom du proprio
-      errEl.textContent = '❌ Aucun immeuble trouvé avec ce numéro. Vérifiez avec votre gestionnaire.';
-      errEl.style.display = 'block';
-      return;
-    }
+    if (!rows.length) { errEl.textContent = '❌ Aucun immeuble trouvé pour ce compte.'; errEl.style.display='block'; return; }
+
     OWNER_PHONE = phone;
     IMMEUBLES   = rows;
     localStorage.setItem('ig_portail_bail_phone', phone);
