@@ -12,6 +12,8 @@ window.IG.app = (function() {
 
   function t(k) { return window.IG.i18n ? window.IG.i18n.t(k) : k; }
   function esc(s) { return window.IG.utils ? window.IG.utils.esc(s) : s; }
+  // _p(perm) — raccourci permissions pour la session courante
+  function _p(perm) { return window.IG.perms ? window.IG.perms.canDo(perm) : true; }
 
   // ── Init ──────────────────────────────────────────────────────
   async function init() {
@@ -59,28 +61,32 @@ window.IG.app = (function() {
       '<div class="sidebar-nav" id="sidebar-nav">' +
       _navSection(t('Principal')) +
       _navItem('dashboard', '📊', t('Tableau de bord')) +
-      _navSectionToggle('immeubles', t('Immeubles')) +
-      '<div id="sb-body-immeubles" class="nav-section-body">' +
-      _navItem('immeubles', '🏢', t('Tous les immeubles')) +
-      '<div id="sidebar-immeubles-list"></div>' +
-      '</div>' +
-      _navSectionToggle('gestion', t('Gestion')) +
-      '<div id="sb-body-gestion" class="nav-section-body">' +
-      _navItem('locataires', '👥', t('Locataires')) +
-      _navItem('paiements', '💰', t('Encaissements')) +
-      _navItem('relances', '⚠️', t('Relances'), true) +
-      _navItem('rapports', '📄', t('Rapports')) +
-      _navItem('statistiques', '📈', t('Statistiques')) +
-      _navItem('juridique', '⚖️', t('Juridique')) +
-      '</div>' +
-      _navSection(t('Réseau')) +
-      _navItem('marketplace', '🌍', t('Marketplace')) +
-      (session.role !== 'locataire' ? _navItem('leads', '📬', t('Leads')) : '') +
+      (_p('immeubles') ? (
+        _navSectionToggle('immeubles', t('Immeubles')) +
+        '<div id="sb-body-immeubles" class="nav-section-body">' +
+        _navItem('immeubles', '🏢', t('Tous les immeubles')) +
+        '<div id="sidebar-immeubles-list"></div>' +
+        '</div>'
+      ) : '') +
+      (_p('locataires') || _p('paiements') || _p('rapports') || _p('statistiques') || _p('juridique') ? (
+        _navSectionToggle('gestion', t('Gestion')) +
+        '<div id="sb-body-gestion" class="nav-section-body">' +
+        (_p('locataires')   ? _navItem('locataires',  '👥', t('Locataires'))   : '') +
+        (_p('paiements')    ? _navItem('paiements',   '💰', t('Encaissements')) : '') +
+        (_p('locataires')   ? _navItem('relances',    '⚠️', t('Relances'), true) : '') +
+        (_p('rapports')     ? _navItem('rapports',    '📄', t('Rapports'))      : '') +
+        (_p('statistiques') ? _navItem('statistiques','📈', t('Statistiques'))  : '') +
+        (_p('juridique')    ? _navItem('juridique',   '⚖️', t('Juridique'))     : '') +
+        '</div>'
+      ) : '') +
+      (_p('marketplace') || _p('leads') ? _navSection(t('Réseau')) : '') +
+      (_p('marketplace') ? _navItem('marketplace', '🌍', t('Marketplace')) : '') +
+      (_p('leads') ? _navItem('leads', '📬', t('Leads')) : '') +
       (session.role === 'locataire' ? _navItem('portail', '🏠', t('Mon espace')) : '') +
       _navSection(t('Interne')) +
-      (session.role === 'admin' || session.role === 'gestionnaire' ? '<div class="nav-item" data-page="declarations"><span class="nav-icon">📨</span><span>' + t('Déclarations') + '</span><span class="nav-badge" id="badge-declarations" style="display:none">0</span></div>' : '') +
-      _navItem('messages', '💬', t('Messages')) +
-      _navItem('signatures', '✍️', t('Signatures')) +
+      (_p('declarations') ? '<div class="nav-item" data-page="declarations"><span class="nav-icon">📨</span><span>' + t('Déclarations') + '</span><span class="nav-badge" id="badge-declarations" style="display:none">0</span></div>' : '') +
+      (_p('messages')    ? _navItem('messages',   '💬', t('Messages'))   : '') +
+      (_p('signatures')  ? _navItem('signatures', '✍️', t('Signatures')) : '') +
       _navItem('parametres', '⚙️', t('Paramètres')) +
       '</div>' +
       '<div class="sidebar-footer">' +
@@ -1306,10 +1312,17 @@ window.IG.app = (function() {
       }
 
       function _userRow(u, showCode) {
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">' +
-          '<div><div style="font-size:13px;font-weight:600">' + (ROLE_ICONS[u.role] || '👤') + ' ' + esc(u.nom || u.id) + _badgeActif(u.actif) + '</div>' +
-          '<div style="font-size:11px;color:var(--text3);margin-top:2px">' + esc(u.role || '') + (u.telephone ? ' · ' + esc(u.telephone) : '') + '</div></div>' +
-          '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">' + _actions(u, showCode) + '</div></div>';
+        var hasOverrides = u.permissions && Object.keys(u.permissions).length > 0;
+        var hasImmeubles = u.immeubles_assignes && u.immeubles_assignes.length > 0;
+        var droitsBadge = (hasOverrides || hasImmeubles)
+          ? '<span style="font-size:10px;background:var(--accent);color:#fff;padding:1px 5px;border-radius:4px;margin-left:5px">⚙</span>' : '';
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">' +
+          '<div><div style="font-size:13px;font-weight:600">' + (ROLE_ICONS[u.role] || '👤') + ' ' + esc(u.nom || u.id) + _badgeActif(u.actif) + droitsBadge + '</div>' +
+          '<div style="font-size:11px;color:var(--text3);margin-top:2px">' + esc(u.role || '') + (u.telephone ? ' · ' + esc(u.telephone) : '') +
+          (hasImmeubles ? ' · <span style="color:var(--accent)">' + u.immeubles_assignes.length + ' imm. assigné(s)</span>' : '') + '</div></div>' +
+          '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">' +
+          '<button onclick="window.IG.app._ouvrirDroits(\'' + u.id + '\')" style="padding:3px 9px;border-radius:6px;border:1px solid var(--accent);color:var(--accent);background:var(--bg4);cursor:pointer;font-size:11px">⚙️ Droits</button>' +
+          _actions(u, showCode) + '</div></div>';
       }
 
       // ── Tab : Collaborateurs
@@ -1468,6 +1481,150 @@ window.IG.app = (function() {
     };
     var el = document.getElementById('inv-role-desc');
     if (el) el.textContent = ROLES_INFO[role] || '';
+  }
+
+  async function _ouvrirDroits(userId) {
+    // Charger l'utilisateur
+    var users = await window.IG.db.select('users_app');
+    var u = (users || []).find(function(x) { return x.id === userId; });
+    if (!u) return;
+
+    var perms = window.IG.perms;
+    var overrides = u.permissions || {};
+    var immAssignes = u.immeubles_assignes || [];
+    var immeubles = _data.immeubles || [];
+
+    var COLLAB_ROLES = ['coordinateur','gestionnaire','comptable','agent'];
+    var BAILLEUR_ROLES = ['bailleur'];
+    var LOC_ROLES = ['locataire'];
+
+    // ── Sélecteur de rôle ──
+    var roleHtml = '';
+    if (!['admin','locataire','bailleur'].includes(u.role)) {
+      roleHtml = '<div style="margin-bottom:18px">' +
+        '<label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">🎭 Rôle</label>' +
+        '<select id="dr-role" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px">' +
+        ['coordinateur','gestionnaire','comptable','agent'].map(function(r) {
+          return '<option value="' + r + '"' + (u.role === r ? ' selected' : '') + '>' +
+            {coordinateur:'🎯 Coordinateur',gestionnaire:'🏘️ Gestionnaire',comptable:'📊 Comptable',agent:'🤝 Agent'}[r] + '</option>';
+        }).join('') + '</select></div>';
+    } else {
+      roleHtml = '<input type="hidden" id="dr-role" value="' + u.role + '">';
+    }
+
+    // ── Immeubles assignés (gestionnaire / agent uniquement) ──
+    var immeublesHtml = '';
+    if (['gestionnaire','agent'].includes(u.role)) {
+      immeublesHtml = '<div style="margin-bottom:18px">' +
+        '<label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">🏢 Immeubles accessibles</label>' +
+        '<p style="font-size:11px;color:var(--text3);margin-bottom:8px">Si aucun coché : accès à tous les immeubles.</p>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px">' +
+        (immeubles.length
+          ? immeubles.map(function(imm) {
+              var checked = immAssignes.includes(String(imm.id));
+              return '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">' +
+                '<input type="checkbox" class="dr-imm" value="' + imm.id + '"' + (checked ? ' checked' : '') + ' style="width:15px;height:15px;accent-color:var(--accent)">' +
+                esc(imm.nom_immeuble || imm.nom || imm.id) + '</label>';
+            }).join('')
+          : '<span style="font-size:12px;color:var(--text3)">Aucun immeuble</span>'
+        ) + '</div></div>';
+    }
+
+    // ── Groupes de permissions filtrés selon le rôle ──
+    var permsHtml = perms.PERM_GROUPS
+      .filter(function(g) {
+        // Sections réservées à certains rôles
+        if (g.roles && !g.roles.includes(u.role)) return false;
+        if (!g.roles && (u.role === 'locataire' || u.role === 'bailleur')) {
+          // Pour loc/bailleur, n'afficher que les sections sans roles[] restriction sauf les leurs
+          return false;
+        }
+        return true;
+      })
+      .map(function(g) {
+        var defaults = perms.getDefaults(u.role);
+        var rows = g.perms.map(function(p) {
+          var defVal = defaults[p.key] !== undefined ? defaults[p.key] : false;
+          var override = overrides[p.key] !== undefined ? overrides[p.key] : null;
+          var currentVal = override !== null ? override : defVal;
+          var isOverridden = override !== null && override !== defVal;
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">' +
+            '<div>' +
+            '<span style="font-size:13px">' + p.label + '</span>' +
+            (isOverridden ? '<span style="font-size:10px;color:var(--accent);margin-left:6px">personnalisé</span>' : '') +
+            '<div style="font-size:10px;color:var(--text3)">défaut rôle : ' + (defVal ? '✅ oui' : '❌ non') + '</div>' +
+            '</div>' +
+            '<label style="display:flex;align-items:center;gap:6px;cursor:pointer">' +
+            '<input type="checkbox" class="dr-perm" data-key="' + p.key + '" data-default="' + defVal + '"' +
+            (currentVal ? ' checked' : '') + ' style="width:16px;height:16px;accent-color:var(--accent)">' +
+            '</label></div>';
+        }).join('');
+        return '<div style="margin-bottom:14px">' +
+          '<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid var(--border)">' + g.label + '</div>' +
+          rows + '</div>';
+      }).join('');
+
+    // ── Assemblage modale ──
+    var html =
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">' +
+      '<div style="width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">' +
+      ({admin:'👑',coordinateur:'🎯',gestionnaire:'🏘️',comptable:'📊',agent:'🤝',bailleur:'🏠',locataire:'🔑'}[u.role]||'👤') + '</div>' +
+      '<div><div style="font-size:15px;font-weight:700">' + esc(u.nom || u.id) + '</div>' +
+      '<div style="font-size:12px;color:var(--text3)">' + esc(u.telephone || '') + '</div></div></div>' +
+
+      roleHtml + immeublesHtml +
+
+      (permsHtml
+        ? '<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px">🔐 Permissions</div>' + permsHtml
+        : '') +
+
+      '<div style="display:flex;gap:10px;margin-top:20px;position:sticky;bottom:0;background:var(--bg2);padding:8px 0">' +
+      '<button id="btn-save-droits" style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">💾 Enregistrer</button>' +
+      '<button data-modal-close style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Annuler</button>' +
+      '</div>';
+
+    var modal = window.IG.utils.showModal(html, { width: '480px', maxHeight: '85vh' });
+
+    modal.box.querySelector('#btn-save-droits').addEventListener('click', async function() {
+      var btn = this;
+      btn.textContent = '⏳...'; btn.disabled = true;
+
+      // Collecter le nouveau rôle
+      var newRole = modal.box.querySelector('#dr-role').value;
+
+      // Collecter immeubles cochés
+      var newImm = Array.from(modal.box.querySelectorAll('.dr-imm:checked')).map(function(cb) { return cb.value; });
+
+      // Collecter permissions — ne sauvegarder que les overrides (différences vs défaut du rôle)
+      var newPerms = {};
+      var roleForDefaults = newRole || u.role;
+      var defaults = perms.getDefaults(roleForDefaults);
+      modal.box.querySelectorAll('.dr-perm').forEach(function(cb) {
+        var key = cb.dataset.key;
+        var defVal = defaults[key] !== undefined ? defaults[key] : false;
+        var val = cb.checked;
+        if (val !== defVal) newPerms[key] = val;
+      });
+
+      await _sauvegarderDroits(userId, newRole, newImm, newPerms, modal);
+      btn.textContent = '💾 Enregistrer'; btn.disabled = false;
+    });
+  }
+
+  async function _sauvegarderDroits(userId, newRole, newImm, newPerms, modal) {
+    try {
+      var patch = {
+        permissions: newPerms,
+        immeubles_assignes: newImm
+      };
+      if (newRole) patch.role = newRole;
+      await window.IG.db.update('users_app', userId, patch);
+      window.IG.utils.showToast('Droits mis à jour ✓', 'green');
+      if (modal && modal.close) modal.close();
+      _chargerEquipe();
+    } catch(e) {
+      window.IG.utils.showToast('Erreur : ' + e.message, 'red');
+    }
   }
 
   async function _toggleUser(userId, currentlyActive) {
@@ -2188,6 +2345,7 @@ window.IG.app = (function() {
     _loadDeclarations, _validerDeclaration,
     _loadMessages, _nouveauMessage, _marquerLu,
     _paramTab,
+    _ouvrirDroits, _sauvegarderDroits,
     _sauvegarderModePublication, _chargerModePublication, _sauvegarderCleIA, _chargerCleIA, _sauvegarderMomo, _chargerMomo, _sauvegarderCabinet, _chargerCabinet,
     getData: function() { return _data; },
     topbarAction, _showMobileNav,
