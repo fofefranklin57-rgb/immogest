@@ -13,15 +13,17 @@ window.IG.relances = (function() {
   // ── Calculer retard en mois ───────────────────────────────────
   function calculerRetard(loc, paiements) {
     if (!loc.entree || loc.statut === 'libre') return 0;
+    if (!paiements || paiements.length === 0) return parseInt(loc.mois_arrieres) || 0;
     var fiche = window.IG.paiements ? window.IG.paiements.calculerFiche(loc, paiements) : [];
     var impayes = fiche.filter(function(l) { return !l.futur && l.statut !== 'Payé'; });
     return impayes.length;
   }
 
   function montantDu(loc, paiements) {
+    if (!paiements || paiements.length === 0) return parseFloat(loc.arrieres) || 0;
     var fiche = window.IG.paiements ? window.IG.paiements.calculerFiche(loc, paiements) : [];
     var duFiche = fiche.filter(function(l) { return !l.futur; }).reduce(function(s, l) { return s + (l.reste || 0); }, 0);
-    return duFiche + (parseFloat(loc.arrieres) || 0);
+    return duFiche;
   }
 
   // ── Niveaux de relance ────────────────────────────────────────

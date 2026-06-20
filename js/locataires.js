@@ -404,9 +404,12 @@ window.IG.locataires = (function() {
     if (loc.statut === 'libre') return 0;
     if (!loc.entree || !loc.loyer) return 0;
     var pays = (paiements || []).filter(function(p) { return p.locataire_id == loc.id; });
+    // Sans paiements enregistrés : utiliser uniquement les arriérés explicites
+    if (pays.length === 0) return parseFloat(loc.arrieres) || 0;
     if (window.IG.paiements && window.IG.paiements.calculerFiche) {
       var fiche = window.IG.paiements.calculerFiche(loc, pays);
-      return fiche.reduce(function(s, l) { return s + (l.reste || 0); }, 0);
+      var duFiche = fiche.filter(function(l) { return !l.futur; }).reduce(function(s, l) { return s + (l.reste || 0); }, 0);
+      return duFiche;
     }
     // Fallback mois courant si paiements module non chargé
     var now = new Date();
@@ -423,9 +426,11 @@ window.IG.locataires = (function() {
     if (!loc.entree) return '';
     var pays = (paiements || []).filter(function(p) { return p.locataire_id == loc.id; });
     var moisDus = 0;
-    if (window.IG.paiements && window.IG.paiements.calculerFiche) {
+    if (pays.length === 0) {
+      moisDus = parseInt(loc.mois_arrieres) || 0;
+    } else if (window.IG.paiements && window.IG.paiements.calculerFiche) {
       var fiche = window.IG.paiements.calculerFiche(loc, pays);
-      moisDus = fiche.filter(function(l) { return l.statut !== 'Payé'; }).length;
+      moisDus = fiche.filter(function(l) { return !l.futur && l.statut !== 'Payé'; }).length;
     } else {
       var reste = _resteCalc(loc, paiements);
       if (reste <= 0) return '';

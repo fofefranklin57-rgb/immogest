@@ -39,8 +39,12 @@ window.IG.dashboard = (function() {
     var totalDu = 0;
     actifs.forEach(function(loc) {
       var pays = paiements.filter(function(p) { return p.locataire_id == loc.id; });
-      var fiche = window.IG.paiements ? window.IG.paiements.calculerFiche(loc, pays) : [];
-      totalDu += fiche.filter(function(l) { return !l.futur; }).reduce(function(s, l) { return s + (l.reste || 0); }, 0);
+      if (pays.length === 0) {
+        totalDu += parseFloat(loc.arrieres) || 0;
+      } else {
+        var fiche = window.IG.paiements ? window.IG.paiements.calculerFiche(loc, pays) : [];
+        totalDu += fiche.filter(function(l) { return !l.futur; }).reduce(function(s, l) { return s + (l.reste || 0); }, 0);
+      }
     });
 
     return {
