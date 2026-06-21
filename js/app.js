@@ -292,6 +292,57 @@ window.IG.app = (function() {
     }
   }
 
+  function _aiReponseLocale(question, data) {
+    var q = (question || '').toLowerCase();
+    var d = data || {};
+    var imm = d.immeubles || [];
+    var loc = d.locataires || [];
+    var pay = d.paiements || [];
+    var actifs = loc.filter(function(l) { return l.statut === 'occupe' || l.statut === 'actif'; });
+    var impayes = actifs.filter(function(l) { return (parseInt(l.mois_arrieres) || 0) > 0 || (parseInt(l.arrieres) || 0) > 0; });
+    var totalLoyers = actifs.reduce(function(s, l) { return s + (parseFloat(l.loyer) || 0); }, 0);
+    var encaisse = pay.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
+
+    if (q.match(/impay|arri[eè]r|retard|relance/)) {
+      if (impayes.length === 0) return '✅ Aucun locataire en retard de paiement. Tout est à jour !';
+      return '⚠️ **' + impayes.length + ' locataire(s) avec arriérés :**\n' +
+        impayes.slice(0, 5).map(function(l) {
+          return '• ' + l.nom + ' — ' + (l.mois_arrieres || 1) + ' mois (' + (parseInt(l.arrieres) || 0).toLocaleString('fr-FR') + ' FCFA)';
+        }).join('\n') +
+        (impayes.length > 5 ? '\n...et ' + (impayes.length - 5) + ' autres.' : '');
+    }
+    if (q.match(/performance|portef|r[eé]sum[eé]|bilan|statistique/)) {
+      var taux = actifs.length > 0 ? Math.round((actifs.filter(function(l){return !impayes.includes(l);}).length / actifs.length) * 100) : 100;
+      return '📊 **Résumé de votre portefeuille :**\n' +
+        '• ' + imm.length + ' immeuble(s)\n' +
+        '• ' + actifs.length + ' locataire(s) actifs\n' +
+        '• Loyers attendus : ' + totalLoyers.toLocaleString('fr-FR') + ' FCFA/mois\n' +
+        '• Encaissé total : ' + encaisse.toLocaleString('fr-FR') + ' FCFA\n' +
+        '• Taux de paiement : ' + taux + '%\n' +
+        '• Impayés : ' + impayes.length + ' locataire(s)';
+    }
+    if (q.match(/locataire|liste|qui|combien/)) {
+      if (actifs.length === 0) return 'Aucun locataire actif pour le moment.';
+      return '👥 **' + actifs.length + ' locataire(s) actifs :**\n' +
+        actifs.slice(0, 8).map(function(l) { return '• ' + l.nom + ' — ' + (parseInt(l.loyer)||0).toLocaleString('fr-FR') + ' FCFA'; }).join('\n') +
+        (actifs.length > 8 ? '\n...et ' + (actifs.length - 8) + ' autres.' : '');
+    }
+    if (q.match(/immeuble|b[aâ]timent|propri[eé]t[eé]/)) {
+      if (imm.length === 0) return 'Aucun immeuble enregistré.';
+      return '🏢 **' + imm.length + ' immeuble(s) :**\n' +
+        imm.map(function(i) { return '• ' + (i.nom_immeuble || i.nom) + ' — ' + (i.ville || '') + ' (' + (i.nb_appts || '?') + ' appts)'; }).join('\n');
+    }
+    if (q.match(/paiement|encaiss|reçu|historique/)) {
+      return '💰 **Paiements enregistrés :** ' + pay.length + '\n' +
+        '• Total encaissé : ' + encaisse.toLocaleString('fr-FR') + ' FCFA\n' +
+        '• Loyers attendus/mois : ' + totalLoyers.toLocaleString('fr-FR') + ' FCFA';
+    }
+    if (q.match(/bonjour|salut|hello|aide|help|que.*faire|comment/)) {
+      return 'Bonjour ! 👋 Je suis votre assistant ImmoGest.\n\nJe peux vous aider avec :\n• 📋 Résumé de votre portefeuille\n• ⚠️ Liste des impayés\n• 👥 Informations sur vos locataires\n• 🏢 État de vos immeubles\n• 💰 Suivi des paiements\n\nPosez-moi votre question !';
+    }
+    return 'Je ne dispose pas d\'une clé IA configurée pour répondre à cette question précise.\n\nJe peux analyser vos données locales : impayés, locataires, paiements, immeubles.\n\nPour des réponses plus avancées, configurez votre clé API dans **Paramètres → Mon compte → Clé API IA**.';
+  }
+
   async function sendAIMessage() {
     var input = document.getElementById('ai-input');
     var msgs = document.getElementById('ai-chat-messages');
@@ -375,7 +426,7 @@ window.IG.app = (function() {
         body: JSON.stringify({ messages: _aiHistory, system: systemPrompt, user_key: userKey || undefined })
       });
       var data = await res.json();
-      var reply = data.text || 'Désolé, je n\'ai pas pu répondre.';
+      var reply = data.text || _aiReponseLocale(_aiHistory[_aiHistory.length - 1].content, window.IG.app ? window.IG.app.getData() : {});
       _aiHistory.push({ role: 'assistant', content: reply });
 
       typing.remove();

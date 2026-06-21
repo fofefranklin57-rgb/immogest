@@ -582,6 +582,7 @@ ${_footer()}</body></html>`;
           })
         });
         const d = await res.json();
+        if (!res.ok || d.error) return json({ error: d.error?.message || d.error || 'Erreur Anthropic', detail: d }, res.status || 500);
         return json({ ok: true, success: true, content: d.content || [], text: d.content?.[0]?.text || '' });
       }
 
