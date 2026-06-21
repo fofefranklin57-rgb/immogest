@@ -11,30 +11,76 @@ window.IG.juridique = (function() {
   function esc(s) { return window.IG.utils.esc(s); }
   function fmt(n) { return window.IG.utils.formatMontant(n); }
 
-  // Vérifie accès plan — affiche modal upgrade si gratuit
-  function _checkPlan() {
+  // ── Quotas mensuels de documents juridiques par plan ─────────
+  var QUOTAS = { gratuit: 5, trial: 20, starter: 30, pro: 100, cabinet: Infinity };
+
+  function _quotaKey(tenantId) {
+    var ym = new Date().toISOString().slice(0, 7); // "2026-06"
+    return 'ig_jur_' + tenantId + '_' + ym;
+  }
+
+  function _getUsage(tenantId) {
+    return parseInt(localStorage.getItem(_quotaKey(tenantId)) || '0', 10);
+  }
+
+  function _incUsage(tenantId) {
+    var key = _quotaKey(tenantId);
+    localStorage.setItem(key, String(_getUsage(tenantId) + 1));
+  }
+
+  // Retourne true si ok, affiche modal upgrade et retourne false si quota dépassé
+  function _checkQuota() {
     var session = window.IG.auth ? window.IG.auth.getSession() : {};
     var plan = session.plan || 'gratuit';
-    var payants = ['trial', 'starter', 'pro', 'cabinet'];
-    if (payants.indexOf(plan) !== -1) return true;
+    var quota = QUOTAS[plan] !== undefined ? QUOTAS[plan] : 5;
+    if (quota === Infinity) return true;
+    var usage = _getUsage(session.tenantId || 'default');
+    if (usage < quota) return true;
+
+    var PLANS = [
+      { id: 'starter', label: 'Starter', docs: 30 },
+      { id: 'pro',     label: 'Pro',     docs: 100 },
+      { id: 'cabinet', label: 'Cabinet', docs: '∞' }
+    ];
+    var nextPlan = PLANS.find(function(p) { return (QUOTAS[p.id] || 0) > quota; }) || PLANS[PLANS.length - 1];
+
     window.IG.utils.showModal(
-      '<div style="text-align:center;padding:10px 0">' +
-      '<div style="font-size:40px;margin-bottom:12px">⚖️</div>' +
-      '<h3 style="font-size:16px;font-weight:800;margin-bottom:8px">Module Juridique</h3>' +
-      '<p style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6">' +
-      'Les documents juridiques (bail, MED, commandement, plainte, état des lieux)<br>sont disponibles à partir du plan <strong>Starter</strong>.</p>' +
-      '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;text-align:left;background:var(--bg3);border-radius:10px;padding:14px">' +
-      '<div style="font-size:12px;color:var(--text3);font-weight:700;margin-bottom:4px">INCLUS DÈS STARTER</div>' +
-      ['📄 Contrats de bail', '⚠️ Mises en demeure', '🔴 Commandements de payer', '📋 Dépôts de plainte', '🏠 États des lieux entrée / sortie', '✍️ Signatures électroniques'].map(function(f) {
-        return '<div style="display:flex;align-items:center;gap:8px;font-size:13px">' + f + '</div>';
+      '<div style="text-align:center;padding:8px 0">' +
+      '<div style="font-size:38px;margin-bottom:10px">📋</div>' +
+      '<h3 style="font-size:16px;font-weight:800;margin-bottom:6px">Quota mensuel atteint</h3>' +
+      '<p style="font-size:13px;color:var(--text2);margin-bottom:4px;line-height:1.6">' +
+      'Vous avez généré <strong>' + usage + ' / ' + quota + ' documents</strong> ce mois-ci<br>' +
+      'sur votre plan <strong style="text-transform:capitalize">' + plan + '</strong>.</p>' +
+      '<p style="font-size:12px;color:var(--text3);margin-bottom:20px">Le compteur se remet à zéro le 1er du mois prochain.</p>' +
+      '<div style="background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:16px;text-align:left">' +
+      '<div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:10px;text-transform:uppercase">Limites par plan</div>' +
+      [
+        { id: 'gratuit', label: 'Gratuit', docs: 5 },
+        { id: 'trial',   label: 'Essai',   docs: 20 },
+        { id: 'starter', label: 'Starter', docs: 30 },
+        { id: 'pro',     label: 'Pro',     docs: 100 },
+        { id: 'cabinet', label: 'Cabinet', docs: '∞' }
+      ].map(function(p) {
+        var isCurrent = p.id === plan;
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);' +
+          (isCurrent ? 'font-weight:700;color:var(--accent)' : 'color:var(--text2)') + '">' +
+          '<span>' + (isCurrent ? '▶ ' : '') + p.label + '</span>' +
+          '<span>' + p.docs + ' docs / mois</span></div>';
       }).join('') +
       '</div>' +
-      '<button onclick="this.closest(\'.ig-modal-overlay\').click()" style="padding:11px 24px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;width:100%">Passer à Starter →</button>' +
-      '<button data-modal-close style="margin-top:8px;background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer">Fermer</button>' +
+      '<button onclick="this.closest(\'.ig-modal-overlay\').click()" style="padding:11px 24px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-bottom:8px">' +
+      'Passer à ' + nextPlan.label + ' (' + nextPlan.docs + ' docs/mois) →</button>' +
+      '<button data-modal-close style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer">Fermer</button>' +
       '</div>',
       { width: '400px' }
     );
     return false;
+  }
+
+  // Consomme 1 quota et génère le doc — appelé avant d'afficher
+  function _useQuota() {
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    _incUsage(session.tenantId || 'default');
   }
 
   // ── Générer et afficher un document juridique ─────────────────
@@ -130,6 +176,7 @@ window.IG.juridique = (function() {
 
   // ── Afficher document dans modal ──────────────────────────────
   function afficherDocument(titre, contenu, onTelecharger) {
+    _useQuota();
     var modal = window.IG.utils.showModal(
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
       '<h3 style="font-size:15px;font-weight:700">' + esc(titre) + '</h3>' +
@@ -175,7 +222,7 @@ window.IG.juridique = (function() {
   // ── Actions rapides par locataire ─────────────────────────────
 
   async function envoyerRelance(loc) {
-    if (!_checkPlan()) return;
+    if (!_checkQuota()) return;
     var paiements = _getPaiementsLoc(loc.id);
     var analyse = window.IG.legal.analyseIA(loc, paiements);
     var result = await genererDoc('relance_1', loc, {
@@ -187,7 +234,7 @@ window.IG.juridique = (function() {
   }
 
   async function mettreEnDemeure(loc) {
-    if (!_checkPlan()) return;
+    if (!_checkQuota()) return;
     var paiements = _getPaiementsLoc(loc.id);
     var analyse = window.IG.legal.analyseIA(loc, paiements);
     var result = await genererDoc('mise_en_demeure', loc, {
@@ -198,7 +245,7 @@ window.IG.juridique = (function() {
   }
 
   async function commanderPayer(loc) {
-    if (!_checkPlan()) return;
+    if (!_checkQuota()) return;
     var paiements = _getPaiementsLoc(loc.id);
     var analyse = window.IG.legal.analyseIA(loc, paiements);
     var result = await genererDoc('commandement_payer', loc, {
@@ -212,7 +259,7 @@ window.IG.juridique = (function() {
 
   // ── Analyse IA ─────────────────────────────────────────────────
   function afficherAnalyseIA(loc) {
-    if (!_checkPlan()) return;
+    if (!_checkQuota()) return;
     var paiements = _getPaiementsLoc(loc.id);
     var analyse = window.IG.legal.analyseIA(loc, paiements);
     var score   = window.IG.legal.calculerScore(loc, paiements);
@@ -266,7 +313,7 @@ window.IG.juridique = (function() {
 
   // ── Plainte / Dépôt de plainte ───────────────────────────────
   function deposerPlainte(loc) {
-    if (!_checkPlan()) return;
+    if (!_checkQuota()) return;
     var session = window.IG.auth ? window.IG.auth.getSession() : {};
     var paiements = _getPaiementsLoc(loc.id);
     var analyse = window.IG.legal.analyseIA(loc, paiements);
@@ -372,7 +419,7 @@ window.IG.juridique = (function() {
 
   // ── État des lieux entrée / sortie ───────────────────────────
   function afficherEtatDesLieux(loc, type) {
-    if (!_checkPlan()) return;
+    if (!_checkQuota()) return;
     var session = window.IG.auth ? window.IG.auth.getSession() : {};
     var imms = window.IG.immeubles ? window.IG.immeubles.getCache() : [];
     var imm = imms.find(function(i) { return i.id == loc.immeuble_id; }) || {};
@@ -438,6 +485,7 @@ window.IG.juridique = (function() {
       '</div>' +
       '</div>';
 
+    _useQuota();
     window.IG.utils.showModal(html, { width: '750px' });
   }
 
