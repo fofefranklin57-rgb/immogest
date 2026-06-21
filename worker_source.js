@@ -988,8 +988,18 @@ ${_footer()}</body></html>`;
 
         if (action === 'owner_reply') {
           // Réponse du owner : insertion d'un message retour dans messages_internes
-          const { tenant_id, pour_user_id, pour_nom, sujet, contenu } = body;
-          if (!pour_user_id || !contenu) return json({ error: 'pour_user_id + contenu requis' }, 400);
+          let { tenant_id, pour_user_id, pour_nom, sujet, contenu } = body;
+          if (!contenu) return json({ error: 'contenu requis' }, 400);
+          // Si pour_user_id = __ADMIN__{tenantId}, chercher l'admin du cabinet
+          if (pour_user_id && pour_user_id.startsWith('__ADMIN__')) {
+            const tid = pour_user_id.replace('__ADMIN__', '');
+            tenant_id = tenant_id || tid;
+            const uRes = await sbFetch('users_app', '?tenant_id=eq.' + tid + '&role=eq.admin&actif=eq.true&select=id,nom&limit=1');
+            const admins = uRes.ok ? await uRes.json() : [];
+            if (admins.length) { pour_user_id = admins[0].id; pour_nom = admins[0].nom; }
+            else { pour_user_id = 'admin_' + tid; }
+          }
+          if (!pour_user_id) return json({ error: 'pour_user_id requis' }, 400);
           const r = await fetch(sbBase + '/rest/v1/messages_internes', {
             method: 'POST',
             headers: { ...sbHdrs(), 'Prefer': 'return=minimal' },
@@ -997,7 +1007,7 @@ ${_footer()}</body></html>`;
               tenant_id: tenant_id || null,
               de_user_id: '__OWNER__', de_nom: 'ImmoGest',
               pour_user_id, pour_nom: pour_nom || '',
-              sujet: 'Ré: ' + (sujet || ''),
+              sujet: sujet || '',
               contenu, lu_par: []
             })
           });
@@ -1717,34 +1727,73 @@ ${_footer()}
         const nbImpayes = actifs.filter(l => !payesIds.has(l.id)).length;
 
         if (nbImpayes > 0) {
-          await fetch('https://onesignal.com/api/v1/notifications', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + restKey },
-            body: JSON.stringify({
-              app_id: appId,
-              headings: { fr: '⚠️ Relances impayés' },
-              contents: { fr: nbImpayes + ' locataire(s) n\'ont pas encore payé ce mois-ci.' },
-              url: 'https://immogest-34w.pages.dev/',
-              filters: [{ field: 'tag', key: 'tenant_id', relation: '=', value: tenant.id }]
-            })
-          }).catch(() => {});
+          const msgImpayes = nbImpayes + ' locataire(s) n\'ont pas encore payé ce mois-ci. Consultez l\'onglet Relances pour envoyer des rappels.';
+          // Message interne au(x) admin(s) du cabinet
+          const adminsRes = await fetch(sbBase + '/rest/v1/users_app?tenant_id=eq.' + tenant.id + '&role=in.(admin,coordinateur,gestionnaire)&actif=eq.true&select=id,nom', { headers: sbHdrs() });
+          const admins = adminsRes.ok ? await adminsRes.json() : [];
+          for (const admin of admins) {
+            await fetch(sbBase + '/rest/v1/messages_internes', {
+              method: 'POST', headers: { ...sbHdrs(), 'Prefer': 'return=minimal' },
+              body: JSON.stringify({
+                tenant_id: tenant.id,
+                de_user_id: '__SYSTEM__', de_nom: 'ImmoGest',
+                pour_user_id: admin.id, pour_nom: admin.nom,
+                sujet: '⚠️ ' + nbImpayes + ' impayé(s) ce mois',
+                contenu: msgImpayes, lu_par: []
+              })
+            }).catch(() => {});
+          }
+          // Push OneSignal en plus
+          if (appId && restKey) {
+            await fetch('https://onesignal.com/api/v1/notifications', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + restKey },
+              body: JSON.stringify({
+                app_id: appId,
+                headings: { fr: '⚠️ Relances impayés' },
+                contents: { fr: msgImpayes },
+                url: 'https://immogest-34w.pages.dev/',
+                filters: [{ field: 'tag', key: 'tenant_id', relation: '=', value: tenant.id }]
+              })
+            }).catch(() => {});
+          }
         }
       }
     }
 
     // ── Cron mensuel (0 7 1 * *) : rappel loyer ────────────────
-    if (event.cron === '0 7 1 * *' && appId && restKey) {
-      await fetch('https://onesignal.com/api/v1/notifications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + restKey },
-        body: JSON.stringify({
-          app_id: appId,
-          headings: { fr: '📅 Rappel loyers' },
-          contents: { fr: 'C\'est le 1er du mois — pensez à encaisser les loyers dans ImmoGest.' },
-          url: 'https://immogest-34w.pages.dev/',
-          included_segments: ['All']
-        })
-      }).catch(() => {});
+    if (event.cron === '0 7 1 * *') {
+      const tRes2 = await fetch(sbBase + '/rest/v1/tenants?select=id', { headers: sbHdrs() });
+      const tenants2 = tRes2.ok ? await tRes2.json() : [];
+      for (const tenant of tenants2) {
+        const adminsRes = await fetch(sbBase + '/rest/v1/users_app?tenant_id=eq.' + tenant.id + '&role=in.(admin,coordinateur,gestionnaire)&actif=eq.true&select=id,nom', { headers: sbHdrs() });
+        const admins = adminsRes.ok ? await adminsRes.json() : [];
+        for (const admin of admins) {
+          await fetch(sbBase + '/rest/v1/messages_internes', {
+            method: 'POST', headers: { ...sbHdrs(), 'Prefer': 'return=minimal' },
+            body: JSON.stringify({
+              tenant_id: tenant.id,
+              de_user_id: '__SYSTEM__', de_nom: 'ImmoGest',
+              pour_user_id: admin.id, pour_nom: admin.nom,
+              sujet: '📅 Rappel — encaissement des loyers',
+              contenu: 'C\'est le 1er du mois. Pensez à enregistrer les paiements reçus dans ImmoGest.', lu_par: []
+            })
+          }).catch(() => {});
+        }
+      }
+      if (appId && restKey) {
+        await fetch('https://onesignal.com/api/v1/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + restKey },
+          body: JSON.stringify({
+            app_id: appId,
+            headings: { fr: '📅 Rappel loyers' },
+            contents: { fr: 'C\'est le 1er du mois — pensez à encaisser les loyers dans ImmoGest.' },
+            url: 'https://immogest-34w.pages.dev/',
+            included_segments: ['All']
+          })
+        }).catch(() => {});
+      }
     }
   }
 };

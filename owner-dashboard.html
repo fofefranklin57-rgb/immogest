@@ -576,7 +576,11 @@ main{padding:24px;max-width:1400px;margin:0 auto;width:100%;flex:1}
               <label>Code personnalisé <span style="font-weight:400;color:var(--text3)">(optionnel)</span></label>
               <input type="text" id="promo-code-input" placeholder="Laissez vide pour générer automatiquement" style="text-transform:uppercase">
             </div>
-            <button class="btn-primary" onclick="genererCodePromo()">🏷️ Générer le code</button>
+            <div class="field">
+              <label>Envoyer à un cabinet <span style="font-weight:400;color:var(--text3)">(optionnel — Tenant ID)</span></label>
+              <input type="text" id="promo-tenant-id" placeholder="ex: abc123… — le cabinet recevra le code par message">
+            </div>
+            <button class="btn-primary" onclick="genererCodePromo()">🏷️ Générer et envoyer</button>
             <div class="form-alert ok" id="promo-ok" style="font-size:.85rem;word-break:break-all"></div>
             <div class="form-alert err" id="promo-err"></div>
           </div>
@@ -730,6 +734,7 @@ main{padding:24px;max-width:1400px;margin:0 auto;width:100%;flex:1}
 // ════════════════════════════════════════════════════════
 const OWNER_PWD    = 'Lastbender';
 const SUPABASE_URL = 'https://uggxfmwpttfsfcirmeqx.supabase.co';
+const _WORKER     = 'https://immogest1.fofefranklin57.workers.dev';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZ3hmbXdwdHRmc2ZjaXJtZXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNTA4MjIsImV4cCI6MjA5NDYyNjgyMn0.l8iYlJHOt6evNlBQ3zRskZasn_J2BjAUs1l2vKOZNvY';
 
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1257,11 +1262,12 @@ async function offrirPackage() {
 }
 
 async function genererCodePromo() {
-  const plan   = document.getElementById('promo-plan').value;
-  const duree  = parseInt(document.getElementById('promo-duree').value);
-  const maxUse = parseInt(document.getElementById('promo-max').value);
-  const custom = document.getElementById('promo-code-input').value.trim().toUpperCase();
-  const code   = custom || ('IMMO' + Math.random().toString(36).substring(2,7).toUpperCase());
+  const plan     = document.getElementById('promo-plan').value;
+  const duree    = parseInt(document.getElementById('promo-duree').value);
+  const maxUse   = parseInt(document.getElementById('promo-max').value);
+  const custom   = document.getElementById('promo-code-input').value.trim().toUpperCase();
+  const tenantId = document.getElementById('promo-tenant-id').value.trim();
+  const code     = custom || ('IMMO' + Math.random().toString(36).substring(2,7).toUpperCase());
 
   const expire = new Date();
   expire.setFullYear(expire.getFullYear() + 1);
@@ -1269,16 +1275,36 @@ async function genererCodePromo() {
   try {
     const { error } = await _sb.from('promo_codes').insert([{
       code, plan, duree_jours: duree * 30, max_uses: maxUse,
-      uses: 0, actif: true,
-      expire_at: expire.toISOString()
+      uses: 0, actif: true, expire_at: expire.toISOString()
     }]);
     if (error) throw error;
+
+    // Envoyer par message interne si un tenant est spécifié
+    if (tenantId) {
+      const planLabels = { starter: 'Starter', pro: 'Pro', cabinet: 'Cabinet' };
+      const contenu = `🎁 Vous bénéficiez d'un accès offert au plan ${planLabels[plan] || plan} pendant ${duree} mois.\n\nCode promo : ${code}\n\nRendez-vous dans Paramètres → Mon compte → Code promotionnel pour l'activer.`;
+      await fetch(_WORKER + '/owner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ownerToken: OWNER_PWD,
+          action: 'owner_reply',
+          tenant_id: tenantId,
+          pour_user_id: '__ADMIN__' + tenantId,
+          pour_nom: 'Administrateur',
+          sujet: '🎁 Code promo ' + plan + ' offert — ' + duree + ' mois',
+          contenu
+        })
+      }).catch(() => {});
+    }
+
     const ok = document.getElementById('promo-ok');
-    ok.textContent = '✅ Code créé : ' + code + ' — ' + plan + ' · ' + duree + ' mois · ' + (maxUse === 999 ? 'illimité' : maxUse + ' usage(s)');
+    ok.textContent = '✅ Code créé : ' + code + ' — ' + plan + ' · ' + duree + ' mois' + (tenantId ? ' · Message envoyé au cabinet' : '');
     ok.style.display = 'block';
     document.getElementById('promo-err').style.display = 'none';
     document.getElementById('promo-code-input').value = '';
-    setTimeout(() => ok.style.display = 'none', 8000);
+    document.getElementById('promo-tenant-id').value = '';
+    setTimeout(() => ok.style.display = 'none', 10000);
   } catch(e) {
     const err = document.getElementById('promo-err');
     err.textContent = '❌ ' + (e.message || 'Erreur');
