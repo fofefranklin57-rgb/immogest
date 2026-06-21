@@ -21,20 +21,7 @@ window.IG.ads = (function() {
   }
 
   function init() {
-    var plan = window.IG.plans ? window.IG.plans.getPlan() : 'gratuit';
-
-    _injecterVignette();  // Vignette Banner tous plans
-
-    if (plan === 'gratuit') {
-      _injecterScript();       // Monetag native
-      _injecterBanniereFixe(); // Adsterra bas de page
-      _injecterBanniereIA();   // IPP + promo IA
-    } else if (plan === 'trial') {
-      _injecterBanniereFixe();
-      _injecterPromoIA();
-    } else {
-      _injecterBanniereFixe();
-    }
+    // Publicités désactivées
   }
 
   function _injecterBanniereFixe() {
