@@ -1720,15 +1720,37 @@ ${_footer()}
         const moisCourant = now.getMonth() + 1;
         const anneeCourante = now.getFullYear();
 
-        // Compter paiements manquants ce mois
+        // Paiements de ce mois
         const pRes = await fetch(sbBase + '/rest/v1/paiements?tenant_id=eq.' + tenant.id + '&mois=eq.' + moisCourant + '&annee=eq.' + anneeCourante + '&select=locataire_id', { headers: sbHdrs() });
         const payes = pRes.ok ? await pRes.json() : [];
         const payesIds = new Set(payes.map(p => p.locataire_id));
-        const nbImpayes = actifs.filter(l => !payesIds.has(l.id)).length;
+        const impayes = actifs.filter(l => !payesIds.has(l.id));
+        const nbImpayes = impayes.length;
 
         if (nbImpayes > 0) {
+          // ── Relance individuelle à chaque locataire impayé ──
+          const usersRes = await fetch(sbBase + '/rest/v1/users_app?tenant_id=eq.' + tenant.id + '&role=eq.locataire&actif=eq.true&select=id,nom,locataire_id', { headers: sbHdrs() });
+          const locUsers = usersRes.ok ? await usersRes.json() : [];
+          const impayesIds = new Set(impayes.map(l => l.id));
+
+          for (const u of locUsers) {
+            if (!impayesIds.has(u.locataire_id)) continue;
+            const loc = impayes.find(l => l.id === u.locataire_id);
+            await fetch(sbBase + '/rest/v1/messages_internes', {
+              method: 'POST', headers: { ...sbHdrs(), 'Prefer': 'return=minimal' },
+              body: JSON.stringify({
+                tenant_id: tenant.id,
+                de_user_id: '__SYSTEM__', de_nom: 'ImmoGest',
+                pour_user_id: u.id, pour_nom: u.nom || (loc && loc.nom) || '',
+                sujet: '⚠️ Rappel — loyer du mois en attente',
+                contenu: 'Bonjour ' + (loc && loc.nom ? loc.nom.split(' ')[0] : '') + ',\n\nVotre loyer du mois de ' + new Date(anneeCourante, moisCourant - 1).toLocaleDateString('fr-FR', {month:'long', year:'numeric'}) + ' n\'a pas encore été enregistré.\n\nSi vous avez déjà effectué le paiement, déclarez-le dans votre espace locataire. En cas de difficulté, contactez votre gestionnaire.',
+                lu_par: []
+              })
+            }).catch(() => {});
+          }
+
+          // ── Message résumé aux admins/gestionnaires ──
           const msgImpayes = nbImpayes + ' locataire(s) n\'ont pas encore payé ce mois-ci. Consultez l\'onglet Relances pour envoyer des rappels.';
-          // Message interne au(x) admin(s) du cabinet
           const adminsRes = await fetch(sbBase + '/rest/v1/users_app?tenant_id=eq.' + tenant.id + '&role=in.(admin,coordinateur,gestionnaire)&actif=eq.true&select=id,nom', { headers: sbHdrs() });
           const admins = adminsRes.ok ? await adminsRes.json() : [];
           for (const admin of admins) {
