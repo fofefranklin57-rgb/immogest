@@ -312,19 +312,132 @@ window.IG.juridique = (function() {
   }
 
   // ── Plainte / Dépôt de plainte ───────────────────────────────
+  // ── Config légale par pays ────────────────────────────────────
+  var LEGAL_CONFIG = {
+    CM: {
+      // Autorités disponibles dans le formulaire
+      autorites: [
+        { id: 'procureur',    label: 'Monsieur/Madame le Procureur de la République',             entete: 'MONSIEUR LE PROCUREUR DE LA RÉPUBLIQUE' },
+        { id: 'gendarmerie',  label: 'Monsieur le Colonel / Commandant de Gendarmerie',           entete: 'MONSIEUR LE COLONEL,\nCOMMANDANT LE GROUPEMENT DE GENDARMERIE TERRITORIAL' },
+        { id: 'police',       label: 'Monsieur/Madame le Commissaire de Police',                  entete: 'MONSIEUR LE COMMISSAIRE DE POLICE' },
+        { id: 'tribunal',     label: 'Monsieur/Madame le Président du Tribunal de Grande Instance', entete: 'MONSIEUR LE PRÉSIDENT DU TRIBUNAL DE GRANDE INSTANCE' },
+      ],
+      defaultAutorite: 'procureur',
+      // Articles de loi par motif
+      articles: {
+        'Impayés de loyer':               'articles 318 (filouterie) et 319 du Code Pénal camerounais, ainsi qu\'à la loi n°77/01 du 13 juillet 1977 sur les baux à usage d\'habitation',
+        'Dégradation du logement':        'articles 310 et 311 du Code Pénal camerounais relatifs à la destruction de biens d\'autrui',
+        'Occupation illicite après congé': 'article 227 du Code Pénal camerounais relatif à la violation de domicile et à l\'occupation sans droit ni titre',
+        'Non-respect du contrat de bail': 'articles 1134 et 1741 du Code Civil applicable au Cameroun et à la loi n°77/01 sur les baux',
+        'Trouble de voisinage grave':      'articles 236 et 237 du Code Pénal camerounais relatifs aux troubles à l\'ordre public',
+        'Autre':                           'dispositions pertinentes du Code Pénal camerounais et du Code Civil applicable'
+      },
+      // Formule de clôture
+      cloture: 'C\'est pourquoi, nous sollicitons qu\'il vous plaise, de bien vouloir ouvrir une enquête urgente à la suite de cette plainte à l\'effet de rechercher et d\'interpeller le contrevenant pour qu\'il réponde de ses actes devant les juridictions compétentes et, en cas de besoin, le déférer devant Monsieur le Procureur de la République afin que justice soit rendue.',
+      salutation: 'Profond respect',
+      style: 'qu'  // style narratif camerounais
+    },
+    SN: {
+      autorites: [
+        { id: 'procureur',  label: 'Monsieur/Madame le Procureur de la République', entete: 'MONSIEUR LE PROCUREUR DE LA RÉPUBLIQUE' },
+        { id: 'police',     label: 'Monsieur/Madame le Commissaire de Police',       entete: 'MONSIEUR LE COMMISSAIRE DE POLICE' },
+        { id: 'tribunal',   label: 'Monsieur/Madame le Président du Tribunal',       entete: 'MONSIEUR LE PRÉSIDENT DU TRIBUNAL RÉGIONAL' },
+      ],
+      defaultAutorite: 'procureur',
+      articles: {
+        'Impayés de loyer':               'articles 388 et suivants du Code des Obligations Civiles et Commerciales (COCC) et la loi n°81-14 du 25 juin 1981 portant réglementation des baux à usage d\'habitation',
+        'Dégradation du logement':        'article 302 du Code Pénal sénégalais relatif à la destruction de biens d\'autrui',
+        'Occupation illicite après congé': 'article 259 du Code Pénal sénégalais relatif à l\'occupation sans droit ni titre',
+        'Non-respect du contrat de bail': 'articles 388 et suivants du COCC',
+        'Trouble de voisinage grave':      'articles 304 et 305 du Code Pénal sénégalais',
+        'Autre':                           'dispositions pertinentes du Code Pénal et du COCC sénégalais'
+      },
+      cloture: 'En conséquence, je vous demande de bien vouloir recevoir la présente plainte, d\'ouvrir une enquête et de prendre toutes mesures utiles pour que justice soit rendue.',
+      salutation: 'Veuillez agréer, Monsieur/Madame, l\'expression de mes salutations respectueuses',
+      style: 'je'
+    },
+    CI: {
+      autorites: [
+        { id: 'procureur',  label: 'Monsieur/Madame le Procureur de la République', entete: 'MONSIEUR LE PROCUREUR DE LA RÉPUBLIQUE' },
+        { id: 'police',     label: 'Monsieur/Madame le Commissaire de Police',       entete: 'MONSIEUR LE COMMISSAIRE DE POLICE' },
+        { id: 'tribunal',   label: 'Monsieur/Madame le Président du Tribunal',       entete: 'MONSIEUR LE PRÉSIDENT DU TRIBUNAL DE PREMIÈRE INSTANCE' },
+      ],
+      defaultAutorite: 'procureur',
+      articles: {
+        'Impayés de loyer':               'articles 26 et suivants de la loi n°2019-574 du 26 juin 2019 portant régime des baux à usage d\'habitation et l\'article 404 du Code Pénal ivoirien relatif à l\'abus de confiance',
+        'Dégradation du logement':        'article 450 du Code Pénal ivoirien relatif à la destruction de biens',
+        'Occupation illicite après congé': 'article 354 du Code Pénal ivoirien relatif à l\'occupation illégale de propriété',
+        'Non-respect du contrat de bail': 'loi n°2019-574 et articles 1134 du Code Civil',
+        'Trouble de voisinage grave':      'article 358 du Code Pénal ivoirien',
+        'Autre':                           'dispositions pertinentes du Code Pénal et du Code Civil ivoirien'
+      },
+      cloture: 'En conséquence, je vous prie de bien vouloir recevoir la présente plainte et d\'y donner la suite que de droit.',
+      salutation: 'Dans l\'attente de votre réponse, veuillez agréer, Monsieur/Madame, l\'expression de mes respectueuses salutations',
+      style: 'je'
+    },
+    FR: {
+      autorites: [
+        { id: 'procureur',  label: 'Monsieur/Madame le Procureur de la République', entete: 'MONSIEUR LE PROCUREUR DE LA RÉPUBLIQUE' },
+        { id: 'police',     label: 'Monsieur/Madame le Directeur / Commissaire',    entete: 'MONSIEUR LE DIRECTEUR DE LA POLICE NATIONALE' },
+        { id: 'juge',       label: 'Monsieur/Madame le Juge d\'instruction',        entete: 'MONSIEUR LE JUGE D\'INSTRUCTION' },
+      ],
+      defaultAutorite: 'procureur',
+      articles: {
+        'Impayés de loyer':               'articles 1728 et 1729 du Code Civil et loi n°89-462 du 6 juillet 1989 tendant à améliorer les rapports locatifs',
+        'Dégradation du logement':        'article 322-1 du Code Pénal français relatif à la destruction ou dégradation de biens',
+        'Occupation illicite après congé': 'article 226-4 du Code Pénal français relatif à la violation de domicile',
+        'Non-respect du contrat de bail': 'articles 1728 et suivants du Code Civil et loi du 6 juillet 1989 (loi ALUR)',
+        'Trouble de voisinage grave':      'article R. 1334-31 du Code de la santé publique et article 222-16 du Code Pénal',
+        'Autre':                           'dispositions pertinentes du Code Pénal et du Code Civil français'
+      },
+      cloture: 'En conséquence, je vous demande de bien vouloir recevoir ma plainte, d\'ouvrir une enquête et de poursuivre l\'auteur des faits devant les juridictions compétentes.',
+      salutation: 'Dans l\'attente d\'une suite favorable, je vous prie d\'agréer, Monsieur/Madame le Procureur, l\'expression de mes respectueuses salutations',
+      style: 'je'
+    },
+    // Défaut générique pour tous les autres pays
+    DEFAULT: {
+      autorites: [
+        { id: 'procureur',  label: 'Monsieur/Madame le Procureur / Ministère Public', entete: 'MONSIEUR/MADAME LE PROCUREUR DE LA RÉPUBLIQUE' },
+        { id: 'police',     label: 'Monsieur/Madame le Chef de la Police',             entete: 'MONSIEUR/MADAME LE CHEF DE LA POLICE' },
+        { id: 'tribunal',   label: 'Monsieur/Madame le Président du Tribunal',         entete: 'MONSIEUR/MADAME LE PRÉSIDENT DU TRIBUNAL' },
+      ],
+      defaultAutorite: 'procureur',
+      articles: {
+        'Impayés de loyer':               'dispositions légales applicables aux baux à usage d\'habitation et aux obligations du locataire',
+        'Dégradation du logement':        'dispositions pénales relatives à la destruction de biens d\'autrui',
+        'Occupation illicite après congé': 'dispositions légales relatives à l\'occupation sans droit ni titre',
+        'Non-respect du contrat de bail': 'dispositions contractuelles du bail et du droit civil applicable',
+        'Trouble de voisinage grave':      'dispositions légales relatives aux troubles à l\'ordre public',
+        'Autre':                           'dispositions légales pertinentes applicables'
+      },
+      cloture: 'En conséquence, je vous demande de bien vouloir recevoir la présente plainte, d\'ouvrir une enquête et de prendre toutes mesures utiles pour que justice soit rendue.',
+      salutation: 'Veuillez agréer, Monsieur/Madame, l\'expression de mes respectueuses salutations',
+      style: 'je'
+    }
+  };
+
+  function _getLegalConfig() {
+    var loc = window.IG._locale || {};
+    var PAYS_CODE = { 'Cameroun':'CM','Sénégal':'SN','Côte d\'Ivoire':'CI','France':'FR','Belgique':'BE','Maroc':'MA' };
+    var code = PAYS_CODE[loc.pays] || 'DEFAULT';
+    return LEGAL_CONFIG[code] || LEGAL_CONFIG.DEFAULT;
+  }
+
   function deposerPlainte(loc) {
     if (!_checkQuota()) return;
-    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var session  = window.IG.auth ? window.IG.auth.getSession() : {};
     var paiements = _getPaiementsLoc(loc.id);
-    var analyse = window.IG.legal.analyseIA(loc, paiements);
-    var imms = window.IG.immeubles ? window.IG.immeubles.getCache() : [];
-    var imm = imms.find(function(i) { return i.id == loc.immeuble_id; }) || {};
-    var dateAuj = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-    var signataire = session.nom || 'Le gestionnaire';
-    var cabinet = session.nomCabinet || 'Le cabinet';
+    var analyse  = window.IG.legal.analyseIA(loc, paiements);
+    var imms     = window.IG.immeubles ? window.IG.immeubles.getCache() : [];
+    var imm      = imms.find(function(i) { return i.id == loc.immeuble_id; }) || {};
+    var dateAuj  = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    var cfg      = _getLegalConfig();
 
-    // Formulaire de plainte
-    var modal = window.IG.utils.showModal(
+    var autoriteOpts = cfg.autorites.map(function(a) {
+      return '<option value="' + a.id + '"' + (a.id === cfg.defaultAutorite ? ' selected' : '') + '>' + a.label + '</option>';
+    }).join('');
+
+    window.IG.utils.showModal(
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
       '<h3 style="font-size:15px;font-weight:700">📋 Dépôt de plainte — ' + esc(loc.nom) + '</h3>' +
       '<button data-modal-close style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3)">✕</button>' +
@@ -339,82 +452,105 @@ window.IG.juridique = (function() {
       '<div><span style="color:var(--text3)">Mois impayés :</span> <strong style="color:var(--red)">' + analyse.moisRetard + ' mois</strong></div>' +
       '</div>' +
 
+      '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px">AUTORITÉ COMPÉTENTE</label>' +
+      '<select id="plainte-autorite" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
+      autoriteOpts + '</select></div>' +
+
       '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px">MOTIF DE LA PLAINTE</label>' +
       '<div style="display:flex;flex-direction:column;gap:6px">' +
-      ['Impayés de loyer', 'Dégradation du logement', 'Occupation illicite après congé', 'Non-respect du contrat de bail', 'Trouble de voisinage grave', 'Autre'].map(function(m) {
-        return '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="radio" name="plainte_motif" value="' + m + '"' + (m === 'Impayés de loyer' ? ' checked' : '') + '> ' + m + '</label>';
+      Object.keys(cfg.articles).map(function(m) {
+        return '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">' +
+          '<input type="radio" name="plainte_motif" value="' + m + '"' + (m === 'Impayés de loyer' ? ' checked' : '') + '> ' + m + '</label>';
       }).join('') +
       '</div></div>' +
 
-      '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px">FAITS DÉTAILLÉS <span style="font-weight:400;opacity:.6">(optionnel)</span></label>' +
-      '<textarea id="plainte-faits" rows="4" placeholder="Décrivez les faits en détail : dates, montants, tentatives de résolution amiable, refus du locataire…" style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg4);color:var(--text);font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit"></textarea></div>' +
+      '<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px">FAITS COMPLÉMENTAIRES <span style="font-weight:400;opacity:.6">(optionnel)</span></label>' +
+      '<textarea id="plainte-faits" rows="3" placeholder="Dates, montants, tentatives amiables, refus du locataire…" style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg4);color:var(--text);font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit"></textarea></div>' +
 
-      '<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px">AUTORITÉ COMPÉTENTE</label>' +
-      '<select id="plainte-autorite" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
-      '<option value="tribunal">Tribunal compétent</option>' +
-      '<option value="police">Commissariat / Brigade</option>' +
-      '<option value="maire">Mairie / Sous-préfecture</option>' +
-      '<option value="huissier">Huissier de justice</option>' +
-      '</select></div>' +
+      '<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px">VILLE DE RÉDACTION</label>' +
+      '<input id="plainte-ville" type="text" value="' + esc((window.IG._locale || {}).ville || '') + '" placeholder="Ex: Yaoundé" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);box-sizing:border-box"></div>' +
 
       '<div style="display:flex;gap:8px;justify-content:flex-end">' +
       '<button data-modal-close style="padding:9px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Annuler</button>' +
       '<button onclick="window.IG.juridique._previewPlainte(window._jur_loc)" style="padding:9px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">👁️ Prévisualiser</button>' +
       '</div>',
-      { width: '600px' }
+      { width: '580px' }
     );
-    window._jur_loc = loc;
-    window._jur_loc_analyse = analyse;
-    window._jur_loc_imm = imm;
-    window._jur_session = session;
-    window._jur_date = dateAuj;
+    window._jur_loc          = loc;
+    window._jur_loc_analyse  = analyse;
+    window._jur_loc_imm      = imm;
+    window._jur_session      = session;
+    window._jur_date         = dateAuj;
+    window._jur_cfg          = cfg;
   }
 
   function _previewPlainte(loc) {
-    var analyse = window._jur_loc_analyse || {};
-    var imm = window._jur_loc_imm || {};
-    var session = window._jur_session || {};
-    var dateAuj = window._jur_date || new Date().toLocaleDateString('fr-FR');
-    var motif = (document.querySelector('[name="plainte_motif"]:checked') || {}).value || 'Impayés de loyer';
-    var faits = (document.getElementById('plainte-faits') || {}).value || '';
-    var autorite = (document.getElementById('plainte-autorite') || {}).value || 'tribunal';
-    var autoriteLabel = { tribunal: 'Monsieur/Madame le Juge,', police: 'Monsieur/Madame le Commissaire / Commandant de Brigade,', maire: 'Monsieur/Madame le Maire / Sous-Préfet(e),', huissier: 'Maître,' }[autorite] || 'Monsieur/Madame,';
+    var analyse  = window._jur_loc_analyse || {};
+    var imm      = window._jur_loc_imm || {};
+    var session  = window._jur_session || {};
+    var dateAuj  = window._jur_date || new Date().toLocaleDateString('fr-FR');
+    var cfg      = window._jur_cfg || _getLegalConfig();
+
+    var motif    = (document.querySelector('[name="plainte_motif"]:checked') || {}).value || 'Impayés de loyer';
+    var faits    = (document.getElementById('plainte-faits') || {}).value || '';
+    var autoriteId = (document.getElementById('plainte-autorite') || {}).value || cfg.defaultAutorite;
+    var ville    = (document.getElementById('plainte-ville') || {}).value || '…………………';
+    var autorite = cfg.autorites.find(function(a) { return a.id === autoriteId; }) || cfg.autorites[0];
+    var articles = cfg.articles[motif] || cfg.articles['Autre'];
+
+    // Construire corps en style "Qu'..." (CM) ou "Je" (autres pays)
+    var plaignant = session.nom || '…';
+    var cabinet   = session.nomCabinet || '…';
+
+    var intro, corps, requete;
+    if (cfg.style === 'qu\'') {
+      // Style camerounais
+      intro = plaignant + ', gérant(e) / représentant(e) du ' + cabinet + ', a l\'honneur de vous exposer :';
+      corps =
+        'Qu\'il est propriétaire / gestionnaire du bien immobilier dénommé « ' + (imm.nom_immeuble || imm.nom || '…') + ' », sis à ' + ville + ', et qu\'il a consenti un bail à usage d\'habitation à ' + loc.nom + ' (tél. : ' + (loc.telephone || '—') + '), occupant le local N° ' + (loc.appt || '…') + ', moyennant un loyer mensuel de ' + fmt(loc.loyer || 0) + '.\n\n' +
+        'Que depuis ' + analyse.moisRetard + ' mois, le locataire sus-cité n\'a pas honoré ses obligations locatives, accumulant ainsi un arriéré de loyer s\'élevant à la somme de ' + fmt(analyse.montant) + ' (en lettres : ……………………………).\n\n' +
+        'Que malgré les mises en demeure et relances amiables effectuées, ledit locataire s\'est obstinément refusé à régulariser sa situation.\n\n' +
+        (faits ? 'Que ' + faits + '\n\n' : '') +
+        'Que ces agissements sont constitutifs de l\'infraction de ' + (motif === 'Impayés de loyer' ? 'filouterie de loyer' : motif.toLowerCase()) + ', prévue et réprimée par les ' + articles + '.';
+      requete = cfg.cloture;
+    } else {
+      // Style international
+      intro = 'Je soussigné(e) ' + plaignant + ', gérant(e) / représentant(e) de ' + cabinet + ', ai l\'honneur de porter à votre connaissance les faits suivants :';
+      corps =
+        'Je suis propriétaire / gestionnaire du bien immobilier dénommé « ' + (imm.nom_immeuble || imm.nom || '…') + ' » et j\'ai consenti un bail à usage d\'habitation à ' + loc.nom + ' (tél. : ' + (loc.telephone || '—') + '), occupant le local N° ' + (loc.appt || '…') + ', moyennant un loyer mensuel de ' + fmt(loc.loyer || 0) + '.\n\n' +
+        'Depuis ' + analyse.moisRetard + ' mois, ce locataire n\'a pas honoré ses obligations locatives, accumulant un arriéré total de ' + fmt(analyse.montant) + '.\n\n' +
+        'Malgré les mises en demeure et relances amiables effectuées, la situation n\'a pas été régularisée.\n\n' +
+        (faits ? faits + '\n\n' : '') +
+        'Ces agissements sont constitutifs d\'une infraction visée par les ' + articles + '.';
+      requete = cfg.cloture;
+    }
 
     var contenu =
-      'PLAINTE AVEC CONSTITUTION DE PARTIE CIVILE\n' +
+      plaignant + '                                        ' + ville + ', le ' + dateAuj + '\n' +
+      cabinet + '\n' +
+      'Tél. : ' + (session.telephone || '…') + '\n\n' +
+      autorite.entete + '\n\n' +
+      'Objet : Plainte contre ' + loc.nom + ' pour ' + (motif === 'Impayés de loyer' ? 'filouterie de loyer' : motif.toLowerCase()) + '\n\n' +
       '─────────────────────────────────────────────────\n\n' +
-      'À ' + autoriteLabel + '\n\n' +
-      'Je soussigné(e) ' + (session.nom || '…') + ', gérant(e) / représentant(e) de ' + (session.nomCabinet || '…') + ', domicilié(e) audit cabinet,\n\n' +
-      'AI L\'HONNEUR DE PORTER À VOTRE CONNAISSANCE LES FAITS SUIVANTS :\n\n' +
-      'Locataire mis en cause : ' + loc.nom + '\n' +
-      'Téléphone              : ' + (loc.telephone || '—') + '\n' +
-      'Bien loué              : ' + (imm.nom_immeuble || imm.nom || '—') + ', Local ' + (loc.appt || '—') + '\n' +
-      'Loyer mensuel          : ' + fmt(loc.loyer || 0) + '\n\n' +
-      'MOTIF : ' + motif + '\n\n' +
-      (motif === 'Impayés de loyer'
-        ? 'Depuis ' + analyse.moisRetard + ' mois, le locataire sus-cité n\'a pas honoré ses obligations locatives.\n' +
-          'Le montant total des loyers impayés s\'élève à ' + fmt(analyse.montant) + '.\n' +
-          'Malgré les relances amiables effectuées, le locataire n\'a pas régularisé sa situation.\n\n'
+      (autorite.entete.split('\n')[0].replace(/^MONSIEUR|^MADAME/i, '').trim()
+        ? 'Monsieur/Madame,\n\n'
         : '') +
-      (faits ? 'FAITS DÉTAILLÉS :\n' + faits + '\n\n' : '') +
-      'EN CONSÉQUENCE, je vous demande de bien vouloir :\n' +
-      '1. Prendre acte de la présente plainte ;\n' +
-      '2. Procéder aux enquêtes et vérifications d\'usage ;\n' +
-      '3. Poursuivre l\'auteur des faits devant la juridiction compétente.\n\n' +
+      intro + '\n\n' +
+      corps + '\n\n' +
+      requete + '\n\n' +
       'Pièces jointes :\n' +
-      '- Copie du contrat de bail\n' +
-      '- Quittances de loyer non payées\n' +
-      '- Copie de la mise en demeure envoyée le ……………\n\n' +
-      'Fait à …………………, le ' + dateAuj + '\n\n' +
-      'Signature :\n\n' +
+      '  — Copie du contrat de bail\n' +
+      '  — État des loyers impayés\n' +
+      '  — Copie de la mise en demeure du ……………………\n\n' +
+      cfg.salutation + '.\n\n\n' +
       '______________________________\n' +
-      (session.nom || '…') + '\n' +
-      (session.nomCabinet || '');
+      plaignant + '\n' +
+      cabinet;
 
-    // Fermer la modal de formulaire
-    document.querySelector('.ig-modal-overlay[style*="z-index"]') && document.querySelector('.ig-modal-overlay').click();
-
-    afficherDocument('Plainte — ' + loc.nom, contenu);
+    document.querySelector('.ig-modal-overlay') && document.querySelector('.ig-modal-overlay').click();
+    setTimeout(function() {
+      afficherDocument('Plainte — ' + loc.nom, contenu);
+    }, 150);
   }
 
   // ── État des lieux entrée / sortie ───────────────────────────
