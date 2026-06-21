@@ -248,47 +248,6 @@ main{padding:24px;max-width:1400px;margin:0 auto;width:100%;flex:1}
       <div class="auth-err" id="auth-err">❌ Mot de passe incorrect</div>
     </div>
 
-    <!-- Divider -->
-    <div class="divider">ou contacter l'équipe</div>
-
-    <!-- Formulaire contact public -->
-    <div class="glass-card" id="contact-card">
-      <div style="font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:16px">✉️ Contacter ImmoGest</div>
-      <div style="font-size:.78rem;color:var(--text3);margin-bottom:16px">Support · Partenariat · Devis · Abonnement</div>
-      <div class="field">
-        <label>Nom complet *</label>
-        <input type="text" id="c-nom" placeholder="Jean Dupont">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="field">
-          <label>Email *</label>
-          <input type="email" id="c-email" placeholder="vous@exemple.com">
-        </div>
-        <div class="field">
-          <label>Sujet</label>
-          <select id="c-sujet">
-            <option value="Support technique">Support technique</option>
-            <option value="Abonnement">Abonnement / Tarif</option>
-            <option value="Partenariat">Partenariat</option>
-            <option value="Devis">Devis personnalisé</option>
-            <option value="Bug">Signaler un bug</option>
-            <option value="Autre">Autre</option>
-          </select>
-        </div>
-      </div>
-      <div class="field">
-        <label>Message *</label>
-        <textarea id="c-message" placeholder="Décrivez votre besoin en détail…"></textarea>
-      </div>
-      <div class="field">
-        <label>ID espace <span style="font-weight:400;color:var(--text3)">(optionnel)</span></label>
-        <input type="text" id="c-tenant" placeholder="Paramètres → Mon espace → ID espace">
-        <div class="field-note">Permet de vous identifier plus rapidement si vous êtes déjà client</div>
-      </div>
-      <button class="btn-primary" id="btn-contact" onclick="sendContact()">📨 Envoyer</button>
-      <div class="form-alert ok" id="c-ok">✅ Message envoyé ! Réponse sous 24h.</div>
-      <div class="form-alert err" id="c-err">❌ Erreur d'envoi. Vérifiez votre connexion.</div>
-    </div>
 
   </div>
 </div>
