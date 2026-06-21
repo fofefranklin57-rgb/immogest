@@ -171,6 +171,7 @@ window.IG.app = (function() {
       '</div>' +
       // Langue + plan (avant les sélecteurs pour accessibilité mobile)
       '<div id="topbar-lang-plan" style="display:flex;align-items:center;gap:4px;flex-shrink:0;"></div>' +
+      '<button class="pwa-install-btn" onclick="installPWA()" title="Installer l\'app" style="display:none;padding:5px 10px;border-radius:8px;border:1px solid rgba(14,106,175,0.3);background:rgba(14,106,175,0.1);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;">⬇ ' + t('Installer') + '</button>' +
       '<button class="topbar-deconnexion" onclick="window.IG.auth.logout()" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(185,48,32,0.3);background:var(--red-bg);color:var(--red);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0;">⏻ ' + t('Déco') + '</button>' +
       // Sélecteurs mois/année
       '<select id="sel-mois" onchange="window.IG.app.refresh()" style="background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:6px 10px;font-family:var(--font);">' +
@@ -2400,6 +2401,10 @@ window.IG.app = (function() {
 
       '</div>' + // fin auth-form-box
       '</div>' + // fin auth-main-layout
+      // Bouton PWA install (visible seulement si navigateur propose l'install)
+      '<div style="position:absolute;bottom:16px;right:16px;">' +
+      '<button class="pwa-install-btn" onclick="installPWA()" style="display:none;padding:8px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.15);color:#fff;font-size:13px;font-weight:600;cursor:pointer;backdrop-filter:blur(8px);align-items:center;gap:6px;">⬇ Installer l\'app</button>' +
+      '</div>' +
       '</div>';  // fin auth-screen
 
     // Slideshow

@@ -40,6 +40,27 @@
 <script src="js/onesignal.js" defer></script>
 <script src="js/perms.js" defer></script>
 <script src="js/app.js" defer></script>
+<script>
+// ── PWA Install prompt ──
+var _pwaPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  _pwaPrompt = e;
+  // Afficher bouton install partout
+  document.querySelectorAll('.pwa-install-btn').forEach(function(b) { b.style.display = 'flex'; });
+});
+window.addEventListener('appinstalled', function() {
+  _pwaPrompt = null;
+  document.querySelectorAll('.pwa-install-btn').forEach(function(b) { b.style.display = 'none'; });
+});
+function installPWA() {
+  if (!_pwaPrompt) return;
+  _pwaPrompt.prompt();
+  _pwaPrompt.userChoice.then(function(r) {
+    if (r.outcome === 'accepted') _pwaPrompt = null;
+  });
+}
+</script>
 
 <style>
 /* ── Spinner ── */

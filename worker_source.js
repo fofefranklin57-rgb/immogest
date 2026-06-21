@@ -62,6 +62,10 @@ export default {
 
     const clientIp = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Real-IP') || 'unknown';
 
+    // ── Rate limiting léger par IP (KV optionnel, sinon skip) ─────
+    // Note : pour un vrai rate limit, activer Cloudflare Rate Limiting Rules
+    // dans le dashboard (gratuit jusqu'à 10k req/min)
+
     const json = (data, status = 200) =>
       new Response(JSON.stringify(data), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 
@@ -530,10 +534,18 @@ ${_footer()}</body></html>`;
 
         if (action === 'select') {
           let qs = '?tenant_id=eq.' + tenantId;
-          if (filters) Object.entries(filters).forEach(([k,v]) => { qs += '&' + k + '=eq.' + encodeURIComponent(v); });
+          // Whitelist les clés de filtre pour éviter l'injection d'opérateurs PostgREST
+          const SAFE_KEY = /^[a-zA-Z_][a-zA-Z0-9_]{0,63}$/;
+          if (filters) Object.entries(filters).forEach(([k,v]) => {
+            if (SAFE_KEY.test(k)) qs += '&' + k + '=eq.' + encodeURIComponent(v);
+          });
           // Tables sans created_at : order by id
           const NO_CREATED_AT = ['declarations','corbeille'];
-          qs += '&select=*&order=' + (NO_CREATED_AT.includes(table) ? 'id.asc' : 'created_at.asc');
+          // users_app : exclure password/pin des selects pour éviter fuite en clair
+          const selectFields = table === 'users_app'
+            ? 'id,tenant_id,role,nom,telephone,actif,immeubles_assignes,permissions,date_blocage_auto,motif_blocage,locataire_id,immeuble_id,code_invitation,email,created_at'
+            : '*';
+          qs += '&select=' + selectFields + '&order=' + (NO_CREATED_AT.includes(table) ? 'id.asc' : 'created_at.asc');
           endpoint += qs;
 
         } else if (action === 'upsert') {
@@ -573,8 +585,8 @@ ${_footer()}</body></html>`;
 
       // ── /ai ───────────────────────────────────────────────────
       if (path === '/ai' && request.method === 'POST') {
-        const { messages, system, tenantId, user_key } = await request.json();
-        const apiKey = user_key || env.ANTHROPIC_API_KEY;
+        const { messages, system, tenantId } = await request.json();
+        const apiKey = env.ANTHROPIC_API_KEY;
         if (!apiKey) return json({ error: 'Clé API manquante' }, 400);
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
