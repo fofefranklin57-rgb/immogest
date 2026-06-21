@@ -105,8 +105,8 @@ export default {
     const SESSION_SECRET = env.SESSION_SECRET || 'immogest-session-v2-change-in-prod';
 
     // Émet un token signé (24h)
-    const makeToken = (tenantId, userId, role) =>
-      _signToken({ tenantId, userId, role, exp: Date.now() + 86400000 }, SESSION_SECRET);
+    const makeToken = (tenantId, userId, role, extra = {}) =>
+      _signToken({ tenantId, userId, role, ...extra, exp: Date.now() + 86400000 }, SESSION_SECRET);
 
     const sbBase = env.SUPABASE_URL || SUPABASE_URL_DEFAULT;
 
@@ -403,15 +403,21 @@ ${_footer()}</body></html>`;
 
         // Pour locataire : retrouver l'ID dans la table locataires
         let locataireId = null;
+        let immeubleIdPortal = portal.immeuble_id || null;
         if (portal.role === 'locataire') {
           const lRes = await sbFetch('locataires',
             '?tenant_id=eq.' + portal.tenant_id +
-            '&telephone=eq.' + encodeURIComponent(telephone) + '&select=id');
+            '&telephone=eq.' + encodeURIComponent(telephone) + '&select=id,immeuble_id');
           const locs = lRes.ok ? await lRes.json() : [];
-          if (locs.length) locataireId = locs[0].id;
+          if (locs.length) { locataireId = locs[0].id; immeubleIdPortal = locs[0].immeuble_id; }
         }
 
-        const tokP = await makeToken(portal.tenant_id, portal.id, portal.role);
+        const tokExtra = portal.role === 'locataire'
+          ? { locId: locataireId, immId: immeubleIdPortal }
+          : portal.role === 'bailleur'
+            ? { immeubles: portal.immeubles_assignes || (portal.immeuble_id ? [portal.immeuble_id] : []) }
+            : {};
+        const tokP = await makeToken(portal.tenant_id, portal.id, portal.role, tokExtra);
         return json({ success: true, userId: portal.id, role: portal.role, nom: portal.nom, tenant, locataireId, sessionToken: tokP });
       }
 
@@ -453,13 +459,21 @@ ${_footer()}</body></html>`;
 
         // Pour locataire : retrouver l'ID dans la table locataires
         let locataireId = null;
+        let immId2 = u.immeuble_id || null;
         if (u.role === 'locataire') {
           const lRes = await sbFetch('locataires', '?tenant_id=eq.' + u.tenant_id + '&telephone=eq.' + tel + '&select=id,immeuble_id');
           const locs = lRes.ok ? await lRes.json() : [];
-          if (locs.length) locataireId = locs[0].id;
+          if (locs.length) { locataireId = locs[0].id; immId2 = locs[0].immeuble_id; }
         }
 
-        const tok2 = await makeToken(u.tenant_id, u.id, u.role);
+        const tok2Extra = u.role === 'locataire'
+          ? { locId: locataireId, immId: immId2 }
+          : u.role === 'bailleur'
+            ? { immeubles: u.immeubles_assignes || (u.immeuble_id ? [u.immeuble_id] : []) }
+            : u.role === 'agent'
+              ? { immeubles: u.immeubles_assignes || [] }
+              : {};
+        const tok2 = await makeToken(u.tenant_id, u.id, u.role, tok2Extra);
         return json({ success: true, userId: u.id, role: u.role, nom: u.nom, tenant, locataireId, sessionToken: tok2 });
       }
 
@@ -579,8 +593,9 @@ ${_footer()}</body></html>`;
         if (!ALLOWED_TABLES.includes(table)) return json({ error: 'Table non autorisée: ' + table }, 403);
 
         // Vérifier le token de session signé si présent
+        let payload = null;
         if (sessionToken) {
-          const payload = await _verifyToken(sessionToken, SESSION_SECRET);
+          payload = await _verifyToken(sessionToken, SESSION_SECRET);
           if (!payload || payload.tenantId !== tenantId)
             return json({ error: 'Token invalide ou expiré' }, 401);
         } else {
@@ -597,6 +612,55 @@ ${_footer()}</body></html>`;
 
         if (action === 'select') {
           let qs = '?tenant_id=eq.' + tenantId;
+
+          // ── Filtrage par rôle (sécurité serveur) ─────────────────
+          const FULL_ACCESS_ROLES = ['admin','coordinateur','gestionnaire','comptable'];
+          if (payload && !FULL_ACCESS_ROLES.includes(payload.role)) {
+
+            if (payload.role === 'locataire') {
+              // Tables autorisées et filtrées pour le locataire
+              const LOC_TABLES = {
+                locataires:   'id=eq.' + payload.locId,
+                paiements:    'locataire_id=eq.' + payload.locId,
+                declarations: 'locataire_id=eq.' + payload.locId,
+                immeubles:    payload.immId ? 'id=eq.' + payload.immId : null,
+                parametres:   null, // lecture seule, pas de filtre supplémentaire
+                messages:     null,
+              };
+              if (!LOC_TABLES.hasOwnProperty(table))
+                return json({ success: true, data: [] }); // table non autorisée → vide
+              if (LOC_TABLES[table]) qs += '&' + LOC_TABLES[table];
+
+            } else if (payload.role === 'bailleur') {
+              const immIds = (payload.immeubles || []).map(String);
+              const BAIL_TABLES = {
+                immeubles:  immIds.length ? 'id=in.(' + immIds.join(',') + ')' : 'id=eq.0',
+                locataires: immIds.length ? 'immeuble_id=in.(' + immIds.join(',') + ')' : 'id=eq.0',
+                paiements:  immIds.length ? 'immeuble_id=in.(' + immIds.join(',') + ')' : 'id=eq.0',
+                parametres: null,
+                messages:   null,
+              };
+              if (!BAIL_TABLES.hasOwnProperty(table))
+                return json({ success: true, data: [] });
+              if (BAIL_TABLES[table]) qs += '&' + BAIL_TABLES[table];
+
+            } else if (payload.role === 'agent') {
+              const immIds = (payload.immeubles || []).map(String);
+              const AGENT_TABLES = {
+                immeubles:   immIds.length ? 'id=in.(' + immIds.join(',') + ')' : 'id=eq.0',
+                locataires:  immIds.length ? 'immeuble_id=in.(' + immIds.join(',') + ')' : 'id=eq.0',
+                paiements:   immIds.length ? 'immeuble_id=in.(' + immIds.join(',') + ')' : 'id=eq.0',
+                marketplace: null,
+                leads:       null,
+                messages:    null,
+                parametres:  null,
+              };
+              if (!AGENT_TABLES.hasOwnProperty(table))
+                return json({ success: true, data: [] });
+              if (AGENT_TABLES[table]) qs += '&' + AGENT_TABLES[table];
+            }
+          }
+
           // Whitelist les clés de filtre pour éviter l'injection d'opérateurs PostgREST
           const SAFE_KEY = /^[a-zA-Z_][a-zA-Z0-9_]{0,63}$/;
           if (filters) Object.entries(filters).forEach(([k,v]) => {
@@ -611,29 +675,42 @@ ${_footer()}</body></html>`;
           qs += '&select=' + selectFields + '&order=' + (NO_CREATED_AT.includes(table) ? 'id.asc' : 'created_at.asc');
           endpoint += qs;
 
-        } else if (action === 'upsert') {
-          const rows = Array.isArray(data) ? data : [data];
-          const withTenant = rows.map(r => ({ ...r, tenant_id: tenantId }));
-          endpoint += '?on_conflict=id';
-          method = 'POST';
-          sbBody = JSON.stringify(withTenant);
-          hdrs['Prefer'] = 'resolution=merge-duplicates,return=representation';
+        } else if (action === 'upsert' || action === 'insert' || action === 'delete' || action === 'update' || action === 'patch') {
+          // Vérifier que le rôle a le droit d'écriture sur cette table
+          if (payload) {
+            const WRITE_ALLOWED = {
+              locataire: ['paiements','declarations','messages','maintenance'],
+              bailleur:  ['messages'],
+              agent:     ['locataires','paiements','marketplace','leads','messages'],
+            };
+            if (WRITE_ALLOWED[payload.role] && !WRITE_ALLOWED[payload.role].includes(table))
+              return json({ error: 'Accès refusé' }, 403);
+          }
 
-        } else if (action === 'insert') {
-          const rows = Array.isArray(data) ? data : [data];
-          method = 'POST';
-          sbBody = JSON.stringify(rows.map(r => ({ ...r, tenant_id: tenantId })));
+          if (action === 'upsert') {
+            const rows = Array.isArray(data) ? data : [data];
+            const withTenant = rows.map(r => ({ ...r, tenant_id: tenantId }));
+            endpoint += '?on_conflict=id';
+            method = 'POST';
+            sbBody = JSON.stringify(withTenant);
+            hdrs['Prefer'] = 'resolution=merge-duplicates,return=representation';
 
-        } else if (action === 'delete') {
-          const delId = filters?.id;
-          endpoint += '?tenant_id=eq.' + tenantId + '&id=eq.' + delId;
-          method = 'DELETE';
+          } else if (action === 'insert') {
+            const rows = Array.isArray(data) ? data : [data];
+            method = 'POST';
+            sbBody = JSON.stringify(rows.map(r => ({ ...r, tenant_id: tenantId })));
 
-        } else if (action === 'update' || action === 'patch') {
-          endpoint += '?tenant_id=eq.' + tenantId + '&id=eq.' + filters.id;
-          method = 'PATCH';
-          sbBody = JSON.stringify(data);
-          hdrs['Prefer'] = 'return=representation';
+          } else if (action === 'delete') {
+            const delId = filters?.id;
+            endpoint += '?tenant_id=eq.' + tenantId + '&id=eq.' + delId;
+            method = 'DELETE';
+
+          } else if (action === 'update' || action === 'patch') {
+            endpoint += '?tenant_id=eq.' + tenantId + '&id=eq.' + filters.id;
+            method = 'PATCH';
+            sbBody = JSON.stringify(data);
+            hdrs['Prefer'] = 'return=representation';
+          }
 
         } else {
           return json({ error: 'Action non reconnue: ' + action }, 400);
