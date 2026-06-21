@@ -62,6 +62,7 @@ window.IG.rapports = (function() {
     var params   = session.parametres || {};
     var typeProfil = session.type_profil || 'gestionnaire';
     var isCab    = (typeProfil === 'gestionnaire' || typeProfil === 'cabinet');
+    var devise   = (window.IG._locale && window.IG._locale.devise) || 'FCFA';
 
     var imm = immeubles.filter(function(i) { return i.id == immeubleId; })[0];
     if (!imm) return '<p style="padding:20px;color:var(--text3)">Sélectionnez un immeuble.</p>';
@@ -110,7 +111,7 @@ window.IG.rapports = (function() {
       });
       var dernierPay = lPays.length ? lPays[lPays.length - 1] : null;
       var dernierStr = dernierPay
-        ? _fmtD(dernierPay.date_paiement) + '<br><span style="color:#555">' + fmt(dernierPay.montant) + ' F</span>'
+        ? _fmtD(dernierPay.date_paiement) + '<br><span style="color:#555">' + fmt(dernierPay.montant) + '</span>'
         : '—';
       var totalPaye = lPays.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
       var reste     = Math.max(0, loyer - totalPaye);
@@ -128,15 +129,15 @@ window.IG.rapports = (function() {
       s1Rows += '<tr style="'+(i%2?'background:#f9fafb;':'')+'">' +
         '<td style="'+TD+'font-weight:700">'+esc(loc.appt||'—')+'</td>' +
         '<td style="'+TD+'">'+esc(loc.nom)+(loc.telephone?'<br><span style="font-size:10px;color:#888">'+esc(loc.telephone)+'</span>':'')+'</td>' +
-        '<td style="'+TD+'text-align:right">'+fmt(loyer)+' F</td>' +
+        '<td style="'+TD+'text-align:right">'+fmt(loyer)+'</td>' +
         '<td style="'+TD+'font-size:10.5px">'+dernierStr+'</td>' +
         '<td style="'+TD+'font-size:10px;color:#555">'+obs.join('<br>')+'</td>' +
-        '<td style="'+TD+'text-align:right;font-weight:700;color:'+(reste>0?'#c62828':'#aaa')+'">'+( reste>0?fmt(reste)+' F':'—')+'</td>' +
+        '<td style="'+TD+'text-align:right;font-weight:700;color:'+(reste>0?'#c62828':'#aaa')+'">'+( reste>0?fmt(reste):'—')+'</td>' +
       '</tr>';
     });
     s1Rows += '<tr style="background:#1a2e4a;color:#fff;font-weight:700">' +
       '<td style="padding:7px 9px;border:1px solid #2d4a6e" colspan="5">TOTAL RESTE À PAYER</td>' +
-      '<td style="padding:7px 9px;border:1px solid #2d4a6e;text-align:right;color:#f1948a">'+fmt(totalResteS1)+' F</td>' +
+      '<td style="padding:7px 9px;border:1px solid #2d4a6e;text-align:right;color:#f1948a">'+fmt(totalResteS1)+'</td>' +
     '</tr>';
 
     // ── Section 2 : encaissements ────────────────────────────────
@@ -187,16 +188,16 @@ window.IG.rapports = (function() {
       _rl('Loyers encaissés', totalLoyers) +
       _rl('Cautions reçues', totalCautions) +
       '<tr style="background:#e8f4fd"><td style="padding:6px 10px;font-size:11px;font-weight:800">TOTAL LOYER</td>' +
-      '<td style="padding:6px 10px;text-align:right;font-size:12px;font-weight:800">'+fmt(totalBrut)+' FCFA</td></tr>';
+      '<td style="padding:6px 10px;text-align:right;font-size:12px;font-weight:800">'+fmt(totalBrut)+'</td></tr>';
     if (isCab) {
       recapHtml += _rl('Loyer reçu par le bailleur', totalRemis, { neg: true, color: '#c62828' }) +
         _rl('Total collecté au cabinet', totalCab, { bold: true }) +
         _rl('Paiement cabinet (honoraires)', honoraires, { neg: true, color: '#c62828' });
       recapHtml += '<tr style="background:#1a2e4a"><td style="padding:8px 10px;font-size:13px;font-weight:900;color:#fff">NET À PERCEVOIR</td>' +
-        '<td style="padding:8px 10px;text-align:right;font-size:14px;font-weight:900;color:#7ecba0">'+fmt(netAPer)+' FCFA</td></tr>';
+        '<td style="padding:8px 10px;text-align:right;font-size:14px;font-weight:900;color:#7ecba0">'+fmt(netAPer)+'</td></tr>';
     } else {
       recapHtml += '<tr style="background:#e8f5e9"><td style="padding:8px 10px;font-size:13px;font-weight:900">NET ENCAISSÉ</td>' +
-        '<td style="padding:8px 10px;text-align:right;font-size:14px;font-weight:900;color:#1a6b3a">'+fmt(totalBrut)+' FCFA</td></tr>';
+        '<td style="padding:8px 10px;text-align:right;font-size:14px;font-weight:900;color:#1a6b3a">'+fmt(totalBrut)+'</td></tr>';
     }
     recapHtml += '</table>';
 
@@ -1061,7 +1062,7 @@ window.IG.rapports = (function() {
           '<th style="' + TH + '">Référence</th>' +
           '<th style="' + TH + '">Type</th>' +
           (profShow ? '<th style="' + TH + '">Remis à</th>' : '') +
-          '<th style="' + TH + '">Montant (FCFA)</th>' +
+          '<th style="' + TH + '">Montant (' + devise() + ')</th>' +
           '<th style="' + TH + '">Note</th>' +
         '</tr></thead>' +
         '<tbody>' + lignes + '</tbody>' +
@@ -1160,14 +1161,14 @@ window.IG.rapports = (function() {
       // Bilan financier
       '<h3>III — BILAN FINANCIER</h3>' +
       '<table class="bilan-table" style="width:55%;min-width:320px">' +
-        '<tr><td>Loyers attendus (période)</td><td style="text-align:right;font-weight:700">' + fmt(totAttendu) + ' FCFA</td></tr>' +
-        '<tr><td>Total encaissé</td><td style="text-align:right;font-weight:700;color:#1a5276">' + fmt(totVerse) + ' FCFA</td></tr>' +
+        '<tr><td>Loyers attendus (période)</td><td style="text-align:right;font-weight:700">' + fmt(totAttendu) + '</td></tr>' +
+        '<tr><td>Total encaissé</td><td style="text-align:right;font-weight:700;color:#1a5276">' + fmt(totVerse) + '</td></tr>' +
         '<tr><td>Total arriérés</td><td style="text-align:right;font-weight:700;color:' + (totArrieres > 0 ? '#c0392b' : '#27ae60') + '">' +
           (totArrieres > 0 ? fmt(totArrieres) : '✓ Néant') + '</td></tr>' +
         (profShow && honoraires > 0 ? '<tr><td>Honoraires ' + (im.type_honoraires === 'pourcentage' ? '(' + im.valeur_honoraires + '%)' : 'forfait') + '</td>' +
-          '<td style="text-align:right;font-weight:700">' + fmt(honoraires) + ' FCFA</td></tr>' +
+          '<td style="text-align:right;font-weight:700">' + fmt(honoraires) + '</td></tr>' +
           '<tr style="background:#e8f5e9"><td><strong>NET À PERCEVOIR</strong></td>' +
-          '<td style="text-align:right;font-weight:800;color:#1a5276">' + fmt(netCabinet) + ' FCFA</td></tr>' : '') +
+          '<td style="text-align:right;font-weight:800;color:#1a5276">' + fmt(netCabinet) + '</td></tr>' : '') +
         '<tr><td>Taux de recouvrement</td><td style="text-align:right;font-weight:800;color:' + tauxColor + '">' + tauxRecouv + ' %</td></tr>' +
       '</table>' +
 
@@ -1302,11 +1303,11 @@ window.IG.rapports = (function() {
     var comGlob = showCom ? (typeHon==='pourcentage'?Math.round(totVerse*valHon/100):typeHon==='forfait'?valHon*locs.length:0) : 0;
     var netBailleur = totVerse - comGlob;
     var recapRows =
-      '<tr><td style="padding:5px 14px;border:1px solid #e8e8e8;color:#555">Total versements locataires</td><td style="padding:5px 14px;border:1px solid #e8e8e8;text-align:right;font-weight:500">'+fmt(totVerse)+' FCFA</td></tr>' +
-      (showCom&&comGlob>0?'<tr style="background:#fafafa"><td style="padding:5px 14px;border:1px solid #e8e8e8;color:#555">Commission cabinet'+(typeHon==='pourcentage'?' ('+valHon+'%)':' (forfait)')+'</td><td style="padding:5px 14px;border:1px solid #e8e8e8;text-align:right;color:#a32d2d;font-weight:500">− '+fmt(comGlob)+' FCFA</td></tr>':'') +
-      '<tr><td style="padding:6px 14px;border:1px solid #e8e8e8;font-weight:500;color:#1a2e4a">Net remis au bailleur</td><td style="padding:6px 14px;border:1px solid #e8e8e8;text-align:right;font-weight:500;color:#1a2e4a">'+fmt(netBailleur)+' FCFA</td></tr>' +
-      '<tr style="background:#fff6f6"><td style="padding:5px 14px;border:1px solid #e8e8e8;color:#a32d2d">Total passif (arriérés)</td><td style="padding:5px 14px;border:1px solid #e8e8e8;text-align:right;color:#a32d2d;font-weight:500">'+fmt(totPassif)+' FCFA</td></tr>' +
-      '<tr style="background:#fafafa"><td style="padding:5px 14px;border:1px solid #e8e8e8;color:#555">Total cautions perçues</td><td style="padding:5px 14px;border:1px solid #e8e8e8;text-align:right;font-weight:500">'+fmt(totCaution)+' FCFA</td></tr>';
+      '<tr><td style="padding:5px 14px;border:1px solid #e8e8e8;color:#555">Total versements locataires</td><td style="padding:5px 14px;border:1px solid #e8e8e8;text-align:right;font-weight:500">'+fmt(totVerse)+'</td></tr>' +
+      (showCom&&comGlob>0?'<tr style="background:#fafafa"><td style="padding:5px 14px;border:1px solid #e8e8e8;color:#555">Commission cabinet'+(typeHon==='pourcentage'?' ('+valHon+'%)':' (forfait)')+'</td><td style="padding:5px 14px;border:1px solid #e8e8e8;text-align:right;color:#a32d2d;font-weight:500">− '+fmt(comGlob)+'</td></tr>':'') +
+      '<tr><td style="padding:6px 14px;border:1px solid #e8e8e8;font-weight:500;color:#1a2e4a">Net remis au bailleur</td><td style="padding:6px 14px;border:1px solid #e8e8e8;text-align:right;font-weight:500;color:#1a2e4a">'+fmt(netBailleur)+'</td></tr>' +
+      '<tr style="background:#fff6f6"><td style="padding:5px 14px;border:1px solid #e8e8e8;color:#a32d2d">Total passif (arriérés)</td><td style="padding:5px 14px;border:1px solid #e8e8e8;text-align:right;color:#a32d2d;font-weight:500">'+fmt(totPassif)+'</td></tr>' +
+      '<tr style="background:#fafafa"><td style="padding:5px 14px;border:1px solid #e8e8e8;color:#555">Total cautions perçues</td><td style="padding:5px 14px;border:1px solid #e8e8e8;text-align:right;font-weight:500">'+fmt(totCaution)+'</td></tr>';
 
     var lettres = _enLettres(Math.round(netBailleur));
 
