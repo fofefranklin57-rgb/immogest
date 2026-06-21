@@ -557,7 +557,7 @@ window.IG.locataires = (function() {
         'Votre espace locataire ImmoGest est prêt.\n' +
         (imm ? '🏢 Immeuble : ' + (imm.nom_immeuble || imm.nom) + '\n' : '') +
         '🏠 Local : ' + (loc.appt || '') + '\n' +
-        '💰 Loyer : ' + (loc.loyer || 0) + ' FCFA/mois\n\n' +
+        '💰 Loyer : ' + window.IG.utils.formatMontant(loc.loyer || 0) + '/mois\n\n' +
         '📲 Connexion portail locataire :\n' +
         '• Login : *' + (loc.telephone || '') + '*\n' +
         '• Mot de passe : *' + code + '*\n' +

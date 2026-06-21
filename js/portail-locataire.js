@@ -1,7 +1,10 @@
-﻿// ==================== PORTAIL LOCATAIRE JS ====================
+// ==================== PORTAIL LOCATAIRE JS ====================
 
 let currentTab = 'dashboard';
 let selectedMomo = null;
+
+function _devise() { return (window.IG._locale && window.IG._locale.devise) || 'FCFA'; }
+function _fmtPortail(n) { return Number(n||0).toLocaleString('fr-FR') + ' ' + _devise(); }
 
 // ═══════════════════════════════════════════════════════════
 // SYSTÈME PUBLICITAIRE — Monetag
@@ -112,7 +115,8 @@ async function processPayment() {
       await db.insert('paiements', newPay);
     }
 
-    alert('✅ Paiement de ' + amount.toLocaleString('fr-FR') + ' FCFA déclaré !\nRéférence: ' + ref + '\n\nVotre gestionnaire validera le paiement après vérification.');
+    var _dev = (window.IG._locale && window.IG._locale.devise) || 'FCFA';
+    alert('✅ Paiement de ' + amount.toLocaleString('fr-FR') + ' ' + _dev + ' déclaré !\nRéférence: ' + ref + '\n\nVotre gestionnaire validera le paiement après vérification.');
     selectedMomo = null;
     document.querySelectorAll('.momo-btn').forEach(b => b.classList.remove('selected'));
     loadDashboard();
@@ -415,7 +419,7 @@ async function loadDashboard() {
 
   // ── KPI Loyer ──
   const rentEl = document.getElementById('dashboard-rent');
-  if (rentEl) rentEl.textContent = Number(l.loyer||0).toLocaleString('fr-FR') + ' FCFA';
+  if (rentEl) rentEl.textContent = _fmtPortail(l.loyer||0);
   const rentTrend = document.getElementById('dashboard-rent-trend');
   if (rentTrend) {
     const solde = l.reste || 0;
@@ -436,7 +440,7 @@ async function loadDashboard() {
   const solde = l.reste || 0;
   const balEl = document.getElementById('dashboard-balance');
   if (balEl) {
-    balEl.textContent = (solde > 0 ? '' : '') + Number(Math.abs(solde)).toLocaleString('fr-FR') + ' FCFA';
+    balEl.textContent = (solde > 0 ? '' : '') + Number(Math.abs(solde)).toLocaleString('fr-FR') + ' ' + _devise();
     balEl.style.color = solde > 0 ? 'var(--red)' : 'var(--green)';
   }
   const balTrend = document.getElementById('dashboard-balance-trend');
@@ -486,7 +490,7 @@ async function loadDashboard() {
       const pct = Math.round((t / maxVal) * 100);
       const color = t === 0 ? 'var(--red-bg)' : t >= loyer ? 'var(--green)' : 'var(--yellow)';
       const border = t === 0 ? '1px solid var(--red)' : 'none';
-      return `<div title="${months[i].label} ${months[i].y} : ${t.toLocaleString('fr-FR')} FCFA" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+      return `<div title="${months[i].label} ${months[i].y} : ${t.toLocaleString('fr-FR')} ${_devise()}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
         <div style="width:100%;background:${color};border:${border};border-radius:4px 4px 0 0;height:${Math.max(pct,2)}%;min-height:${t>0?'4px':'2px'};transition:height .3s;"></div>
       </div>`;
     }).join('');
@@ -495,7 +499,7 @@ async function loadDashboard() {
       return `<div style="flex:1;text-align:center;font-size:9px;color:${isCurrent?'var(--accent)':'var(--text3)'};font-weight:${isCurrent?'700':'400'};">${mo.label}</div>`;
     }).join('');
     const totalAnnee = totals.reduce((s,t)=>s+t,0);
-    if (chartLegend) chartLegend.textContent = 'Total : ' + totalAnnee.toLocaleString('fr-FR') + ' FCFA';
+    if (chartLegend) chartLegend.textContent = 'Total : ' + _fmtPortail(totalAnnee);
   }
 
   // ── Historique paiements ──
@@ -517,7 +521,7 @@ async function loadDashboard() {
               <div style="font-size:11px;color:var(--text3);">${new Date(p.date).toLocaleDateString('fr-FR')}${p.note?' · '+p.note:''}</div>
             </div>
           </div>
-          <div style="font-weight:600;color:var(--green);font-family:var(--mono);">${Number(p.montant).toLocaleString('fr-FR')} FCFA</div>
+          <div style="font-weight:600;color:var(--green);font-family:var(--mono);">${Number(p.montant).toLocaleString('fr-FR')} ${_devise()}</div>
         </div>`;
       }).join('');
     }
@@ -554,7 +558,7 @@ async function loadDashboard() {
         <div class="icon">🧾</div>
         <div class="info">
           <div class="name">${label}</div>
-          <div class="date">${new Date(p.date).toLocaleDateString('fr-FR')} · ${Number(p.montant).toLocaleString('fr-FR')} FCFA</div>
+          <div class="date">${new Date(p.date).toLocaleDateString('fr-FR')} · ${Number(p.montant).toLocaleString('fr-FR')} ${_devise()}</div>
         </div>
         <div style="color:var(--accent);font-size:18px;">⬇</div>
       </div>`;
@@ -564,7 +568,7 @@ async function loadDashboard() {
         <div class="icon">💰</div>
         <div class="info">
           <div class="name">${t('Reçu caution')}</div>
-          <div class="date">${new Date(cautionPay.date).toLocaleDateString('fr-FR')} · ${Number(cautionPay.montant).toLocaleString('fr-FR')} FCFA</div>
+          <div class="date">${new Date(cautionPay.date).toLocaleDateString('fr-FR')} · ${Number(cautionPay.montant).toLocaleString('fr-FR')} ${_devise()}</div>
         </div>
         <div style="color:var(--accent);font-size:18px;">⬇</div>
       </div>`;
@@ -592,7 +596,7 @@ async function loadDashboard() {
           <div style="font-weight:700;color:var(--yellow);font-size:13px;margin-bottom:8px;">⏳ ${pending.length} ${t('paiement(s) en attente de validation')}</div>`;
         pending.forEach(d => {
           dhtml += `<div style="font-size:12px;color:var(--text2);display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-top:1px solid rgba(0,0,0,.05);">
-            <span>${tMois(d.moisC)||''} ${d.anneeC||''} — ${Number(d.montant).toLocaleString('fr-FR')} FCFA (${d.mode||''})</span>
+            <span>${tMois(d.moisC)||''} ${d.anneeC||''} — ${Number(d.montant).toLocaleString('fr-FR')} ${_devise()} (${d.mode||''})</span>
             <span style="font-size:11px;color:var(--text3);">${t('Déclaré le')} ${new Date(d.dateDeclaration).toLocaleDateString('fr-FR')}</span>
           </div>`;
           if (d.photoUrl) {
@@ -608,7 +612,7 @@ async function loadDashboard() {
         rejected.forEach(d => {
           dhtml += `<div style="font-size:12px;color:var(--text2);padding:4px 0;border-top:1px solid rgba(0,0,0,.05);">
             <div style="display:flex;justify-content:space-between;">
-              <span>${MNOMS[d.moisC]||''} ${d.anneeC||''} — ${Number(d.montant).toLocaleString('fr-FR')} FCFA</span>
+              <span>${MNOMS[d.moisC]||''} ${d.anneeC||''} — ${Number(d.montant).toLocaleString('fr-FR')} ${_devise()}</span>
               <span style="font-size:11px;color:var(--text3);">${d.dateValidation||''}</span>
             </div>
             ${d.noteComptable ? `<div style="font-size:11px;color:var(--red);margin-top:2px;">${t('Motif :')} ${d.noteComptable}</div>` : ''}
@@ -631,7 +635,7 @@ async function loadDashboard() {
       notifList.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">' + t('Aucune notification') + '</div>';
     } else {
       notifList.innerHTML = recents.map(p => {
-        const label = (p.type==='caution'?'Caution reçue':'Paiement confirmé') + ' — ' + Number(p.montant).toLocaleString('fr-FR') + ' FCFA';
+        const label = (p.type==='caution'?'Caution reçue':'Paiement confirmé') + ' — ' + _fmtPortail(p.montant);
         const ago = Math.round((Date.now() - new Date(p.date)) / (1000*60*60*24));
         return `<div class="notif-item">
           <div class="icon">💳</div>
@@ -923,8 +927,8 @@ function loadMaFiche() {
   const statutColor  = statutColors[l.s] || 'var(--text3)';
   const solde = l.reste || 0;
   const soldeColor = solde > 0 ? 'var(--red)' : 'var(--green)';
-  const soldeLabel = solde > 0 ? '⚠️ Arriéré de ' + Number(solde).toLocaleString('fr-FR') + ' FCFA'
-                   : solde < 0 ? '✅ Avance de ' + Number(Math.abs(solde)).toLocaleString('fr-FR') + ' FCFA'
+  const soldeLabel = solde > 0 ? '⚠️ Arriéré de ' + _fmtPortail(solde)
+                   : solde < 0 ? '✅ Avance de ' + _fmtPortail(Math.abs(solde))
                    : '✅ À jour';
 
   const histo = pays.slice(0, 10).map(p => {
@@ -932,7 +936,7 @@ function loadMaFiche() {
     return `<tr>
       <td style="font-size:12px;">${new Date(p.date).toLocaleDateString('fr-FR')}</td>
       <td style="font-size:12px;">${mLabel}</td>
-      <td style="font-size:12px;font-weight:600;color:var(--green);">${Number(p.montant||0).toLocaleString('fr-FR')} FCFA</td>
+      <td style="font-size:12px;font-weight:600;color:var(--green);">${Number(p.montant||0).toLocaleString('fr-FR')} ${_devise()}</td>
       <td style="font-size:11px;color:var(--text3);">${p.mode||'—'}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px;font-style:italic;">Aucun paiement enregistré</td></tr>';
@@ -949,8 +953,8 @@ function loadMaFiche() {
         ${ficheRow('🚪 ' + t('Local / Appt'), l.appt || '—')}
         ${ficheRow('📦 ' + t('Type'), l.type || '—')}
         ${ficheRow('📅 ' + t('Date d\'entrée'), l.entree ? new Date(l.entree).toLocaleDateString('fr-FR') : '—')}
-        ${ficheRow('💰 ' + t('Loyer mensuel'), Number(l.loyer||0).toLocaleString('fr-FR') + ' FCFA')}
-        ${ficheRow('🔐 ' + t('Caution versée (FCFA)').replace(' (FCFA)',''), Number(l.caution||0).toLocaleString('fr-FR') + ' FCFA')}
+        ${ficheRow('💰 ' + t('Loyer mensuel'), _fmtPortail(l.loyer||0))}
+        ${ficheRow('🔐 ' + t('Caution versée (FCFA)').replace(' (FCFA)',''), _fmtPortail(l.caution||0))}
         ${ficheRow('📊 ' + t('Statut'), '<span style="color:'+statutColor+';font-weight:700;">' + t(l.s||'—') + '</span>')}
         ${ficheRow('💳 ' + t('Solde'), '<span style="color:'+soldeColor+';font-weight:700;">'+soldeLabel+'</span>')}
         ${l.obs ? ficheRow('📝 ' + t('Observations'), l.obs) : ''}
@@ -978,3 +982,5 @@ function ficheRow(label, val) {
     + '<div style="font-size:13px;font-weight:600;color:var(--text1);">'+val+'</div>'
     + '</div>';
 }
+
+

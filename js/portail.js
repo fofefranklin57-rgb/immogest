@@ -153,7 +153,7 @@ window.IG.portail = (function() {
       '<h3 style="margin-bottom:16px;font-size:15px;font-weight:700">💵 Déclarer un paiement</h3>' +
       '<div style="display:flex;flex-direction:column;gap:12px">' +
 
-      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">Montant (FCFA) *</label>' +
+      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">Montant (' + ((window.IG._locale && window.IG._locale.devise) || 'FCFA') + ') *</label>' +
       '<input id="decl-montant" type="number" value="' + (loc ? loc.loyer : '') + '" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px"></div>' +
 
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +

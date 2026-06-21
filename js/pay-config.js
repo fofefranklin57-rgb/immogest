@@ -54,7 +54,7 @@ function renderPaymentBlock(locId, containerId) {
 
   var montantDu = l.reste > 0 ? l.reste : l.loyer;
   var montantLabel = montantDu > 0
-    ? '<span style="font-size:13px;font-weight:700;color:var(--accent);">' + fmt(montantDu) + ' FCFA</span>'
+    ? '<span style="font-size:13px;font-weight:700;color:var(--accent);">' + fmt(montantDu) + '</span>'
     : '';
 
   var rows = '';
@@ -85,7 +85,7 @@ function renderPaymentBlock(locId, containerId) {
     plateformeBtn =
       '<button class="btn btn-primary" style="width:100%;margin-top:12px;" ' +
         'onclick="_openPlatformePay(' + locId + ',' + montantDu + ')">' +
-        '🔗 ' + label + (montantDu > 0 ? ' — ' + fmt(montantDu) + ' FCFA' : '') +
+        '🔗 ' + label + (montantDu > 0 ? ' — ' + fmt(montantDu) : '') +
       '</button>';
   }
 

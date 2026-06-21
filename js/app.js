@@ -399,7 +399,7 @@ window.IG.app = (function() {
       var mesPays = d.paiements.filter(function(p) { return p.locataire_id == monLoc.id; });
       systemPrompt = 'Tu es l\'assistant personnel du locataire ' + (session2.nom || '') + '. ' +
         'Tu réponds UNIQUEMENT aux questions concernant SON loyer, SES paiements et SES droits en tant que locataire. ' +
-        'Informations disponibles: loyer=' + (monLoc.loyer || 'inconnu') + ' FCFA, ' +
+        'Informations disponibles: loyer=' + (monLoc.loyer || 'inconnu') + ' ' + ((window.IG._locale && window.IG._locale.devise) || 'FCFA') + ', ' +
         'statut=' + (monLoc.statut || 'actif') + ', ' + mesPays.length + ' paiement(s) enregistré(s). ' +
         'NE COMMUNIQUE JAMAIS d\'informations sur d\'autres locataires, les finances du cabinet, les honoraires, ou les données de gestion. ' +
         'Si une question sort de ce périmètre, réponds que tu n\'as pas accès à cette information.';
@@ -1082,7 +1082,7 @@ window.IG.app = (function() {
       _fieldInput('cab-signataire', 'Signataire',             'Prénom Nom du responsable') +
       _fieldInput('cab-adresse',    'Adresse',                'Rue, quartier') +
       _fieldInput('cab-ville',      'Ville',                  'Ex: Yaoundé') +
-      _fieldInput('cab-tel',        'Téléphone',              'Ex: +1 555 000 0000', 'tel') +
+      window.IG.utils.phoneField('cab-tel', 'Téléphone', '', false) +
       _fieldInput('cab-email',      'Email professionnel',    'contact@votrecabinet.com', 'email') +
       _fieldInput('cab-rccm',       t('Registre / Numéro fiscal'),   t('Ex: RC/YAE/2020/B/XXX')) +
       _fieldInput('cab-logo',       'URL du logo',            'https://... (lien image)') +
@@ -1257,12 +1257,14 @@ window.IG.app = (function() {
   }
 
   async function _sauvegarderCabinet() {
-    var fields = ['nom','adresse','ville','tel','email','rccm','signataire','logo'];
+    var fields = ['nom','adresse','ville','email','rccm','signataire','logo'];
     var cab = {};
     fields.forEach(function(f) {
       var el = document.getElementById('cab-' + f);
       if (el && el.value.trim()) cab[f === 'logo' ? 'logo_url' : f] = el.value.trim();
     });
+    var telVal = window.IG.utils.phoneFieldValue('cab-tel');
+    if (telVal) cab.tel = telVal;
     // Ajout de la clé nom_cabinet séparément (alias attendu par paiements.js)
     if (cab.nom) cab.nom_cabinet = cab.nom;
     try {
@@ -1291,11 +1293,27 @@ window.IG.app = (function() {
       var params = await window.IG.db.select('parametres');
       var settings = (params && params[0] && params[0].settings) || {};
       var cab = settings.cabinet || {};
-      var map = { nom: 'nom', adresse: 'adresse', ville: 'ville', tel: 'tel', email: 'email', rccm: 'rccm', signataire: 'signataire', logo: 'logo_url' };
+      var map = { nom: 'nom', adresse: 'adresse', ville: 'ville', email: 'email', rccm: 'rccm', signataire: 'signataire', logo: 'logo_url' };
       Object.keys(map).forEach(function(f) {
         var el = document.getElementById('cab-' + f);
         if (el) el.value = cab[map[f]] || '';
       });
+      // Pré-remplir le phoneField du téléphone cabinet
+      if (cab.tel) {
+        var hidden = document.getElementById('cab-tel');
+        var numEl = document.getElementById('cab-tel_num');
+        if (hidden) hidden.value = cab.tel;
+        if (numEl) {
+          var parts = cab.tel.match(/^(\+\d+)\s*(.*)$/);
+          if (parts) {
+            var sel = document.getElementById('cab-tel_code');
+            if (sel) sel.value = parts[1];
+            numEl.value = parts[2];
+          } else {
+            numEl.value = cab.tel;
+          }
+        }
+      }
       // Injecter dans session.parametres pour les docs
       if (Object.keys(cab).length) {
         var sess = window.IG.auth.getSession();

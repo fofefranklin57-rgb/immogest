@@ -244,7 +244,7 @@ window.IG.marketplace = (function() {
       '<div style="font-size:24px;font-weight:700;color:var(--accent);margin-bottom:12px">' + fmt(a.loyer) + t('/mois') + '</div>' +
       (a.description ? '<p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px">' + esc(a.description) + '</p>' : '') +
       '<div style="display:flex;gap:8px">' +
-      '<a href="https://wa.me/?text=' + encodeURIComponent('Je suis intéressé par cette annonce : ' + a.titre + ' — ' + (a.loyer || '') + ' FCFA') + '" target="_blank" ' +
+      '<a href="https://wa.me/?text=' + encodeURIComponent('Je suis intéressé par cette annonce : ' + a.titre + ' — ' + window.IG.utils.formatMontant(a.loyer || 0)) + '" target="_blank" ' +
       'style="flex:1;padding:10px;border-radius:8px;background:#25D366;color:#fff;font-weight:700;font-size:13px;text-align:center;text-decoration:none">📱 ' + t('Contacter') + '</a>' +
       '</div>',
       { width: '560px' }

@@ -166,7 +166,7 @@ function notifRappelLoyer(locataire) {
   return sendOneSignalNotif(
     'loc_' + locataire.id,
     '🏠 Rappel de loyer',
-    'Votre loyer de ' + montant + ' FCFA est dû' + nomImm + '.',
+    'Votre loyer de ' + montant + ' ' + ((window.IG._locale && window.IG._locale.devise) || 'FCFA') + ' est dû' + nomImm + '.',
     { type: 'loyer', loc_id: String(locataire.id) }
   );
 }
@@ -176,7 +176,7 @@ function notifPaiementRecu(locataire, montant) {
   return sendOneSignalNotif(
     'loc_' + locataire.id,
     '✅ Paiement confirmé',
-    'Votre paiement de ' + montant.toLocaleString('fr-FR') + ' FCFA a bien été enregistré.',
+    'Votre paiement de ' + montant.toLocaleString('fr-FR') + ' ' + ((window.IG._locale && window.IG._locale.devise) || 'FCFA') + ' a bien été enregistré.',
     { type: 'paiement', loc_id: String(locataire.id) }
   );
 }
