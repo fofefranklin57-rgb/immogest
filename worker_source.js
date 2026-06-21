@@ -10,6 +10,41 @@
 
 const SUPABASE_URL_DEFAULT = 'https://uggxfmwpttfsfcirmeqx.supabase.co';
 
+// ── SHA-256 (Web Crypto natif Workers) ────────────────────────
+async function _sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// ── Token session signé (HMAC-SHA256) ─────────────────────────
+async function _signToken(payload, secret) {
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const data = JSON.stringify(payload);
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data));
+  const sigHex = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2,'0')).join('');
+  return btoa(data) + '.' + sigHex;
+}
+async function _verifyToken(token, secret) {
+  try {
+    const [b64, sig] = token.split('.');
+    if (!b64 || !sig) return null;
+    const data = atob(b64);
+    const key = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    );
+    const expected = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data));
+    const expectedHex = Array.from(new Uint8Array(expected)).map(b => b.toString(16).padStart(2,'0')).join('');
+    if (expectedHex !== sig) return null;
+    const payload = JSON.parse(data);
+    if (payload.exp && Date.now() > payload.exp) return null;
+    return payload;
+  } catch { return null; }
+}
+
 // ── Rate limiting (mémoire Worker, reset à chaque cold start) ──
 const _rl = new Map();
 function _rateLimit(ip, route, max = 10, windowMs = 900000) {
@@ -25,9 +60,6 @@ function _rateLimit(ip, route, max = 10, windowMs = 900000) {
 // ── CORS restrictif ────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
   'https://immogest-34w.pages.dev',
-  'http://localhost:5500',
-  'http://127.0.0.1:5500',
-  'http://localhost:3000',
   'https://localhost',
   'capacitor://localhost',
   'ionic://localhost',
@@ -68,6 +100,13 @@ export default {
 
     const json = (data, status = 200) =>
       new Response(JSON.stringify(data), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
+
+    // Secret de signature session (depuis env ou fallback fixe)
+    const SESSION_SECRET = env.SESSION_SECRET || 'immogest-session-v2-change-in-prod';
+
+    // Émet un token signé (24h)
+    const makeToken = (tenantId, userId, role) =>
+      _signToken({ tenantId, userId, role, exp: Date.now() + 86400000 }, SESSION_SECRET);
 
     const sbBase = env.SUPABASE_URL || SUPABASE_URL_DEFAULT;
 
@@ -333,6 +372,8 @@ ${_footer()}</body></html>`;
 
       // ── /login-portal — connexion locataire / bailleur ────────
       if (path === '/login-portal' && request.method === 'POST') {
+        if (_rateLimit(clientIp, 'login-portal', 8, 900000))
+          return json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' }, 429);
         const { telephone, passwordHash } = await request.json();
         if (!telephone) return json({ error: 'Téléphone requis' }, 400);
 
@@ -345,9 +386,15 @@ ${_footer()}</body></html>`;
         if (!portal) return json({ error: 'Aucun compte locataire ou bailleur trouvé pour ce numéro' }, 404);
         if (portal.actif === false) return json({ error: 'Compte désactivé' }, 403);
 
-        // Vérifier mot de passe
+        // Vérifier mot de passe (hash SHA-256 — fallback plaintext pour anciens comptes)
         const storedPwd = portal.password || '';
-        if (storedPwd !== passwordHash) return json({ error: 'Mot de passe incorrect' }, 401);
+        const codeHashFallback = storedPwd.length === 6 ? await _sha256(storedPwd) : null;
+        const pwdOk = storedPwd === passwordHash || (codeHashFallback && codeHashFallback === passwordHash);
+        if (!pwdOk) return json({ error: 'Mot de passe incorrect' }, 401);
+        // Migrer l'ancien code plaintext vers hash
+        if (storedPwd.length === 6) {
+          await sbFetch('users_app', '?id=eq.' + portal.id, 'PATCH', { password: codeHashFallback });
+        }
 
         // Charger le tenant
         const tRes = await sbFetch('tenants', '?id=eq.' + portal.tenant_id + '&select=*');
@@ -364,7 +411,8 @@ ${_footer()}</body></html>`;
           if (locs.length) locataireId = locs[0].id;
         }
 
-        return json({ success: true, userId: portal.id, role: portal.role, nom: portal.nom, tenant, locataireId });
+        const tokP = await makeToken(portal.tenant_id, portal.id, portal.role);
+        return json({ success: true, userId: portal.id, role: portal.role, nom: portal.nom, tenant, locataireId, sessionToken: tokP });
       }
 
       // ── /login — connexion unifiée (tous rôles, par téléphone) ──
@@ -383,7 +431,8 @@ ${_footer()}</body></html>`;
           const uRes = await sbFetch('users_app', '?tenant_id=eq.' + tenant.id + '&role=eq.admin&select=*&limit=1');
           const adminUser = (uRes.ok ? await uRes.json() : [])[0] || { id: 'admin_' + tenant.id, role: 'admin', nom: tenant.nom };
           await logEvent(tenant.id, 'info', 'tenant.login', 'Connexion', { telephone });
-          return json({ success: true, userId: adminUser.id, role: 'admin', nom: adminUser.nom, tenant, locataireId: null });
+          const tok1 = await makeToken(tenant.id, adminUser.id, 'admin');
+          return json({ success: true, userId: adminUser.id, role: 'admin', nom: adminUser.nom, tenant, locataireId: null, sessionToken: tok1 });
         }
 
         // 2) Chercher dans users_app (collaborateurs, locataires, bailleurs)
@@ -392,7 +441,11 @@ ${_footer()}</body></html>`;
         if (!uList.length) return json({ error: 'Aucun compte trouvé pour ce numéro' }, 404);
         const u = uList[0];
         if (u.actif === false) return json({ error: 'Compte désactivé' }, 403);
-        if ((u.password || '') !== passwordHash) return json({ error: 'Mot de passe incorrect' }, 401);
+        const uStored = u.password || '';
+        const uFallback = uStored.length === 6 ? await _sha256(uStored) : null;
+        const uPwdOk = uStored === passwordHash || (uFallback && uFallback === passwordHash);
+        if (!uPwdOk) return json({ error: 'Mot de passe incorrect' }, 401);
+        if (uStored.length === 6) await sbFetch('users_app', '?id=eq.' + u.id, 'PATCH', { password: uFallback });
 
         // Charger le tenant
         const ttRes = await sbFetch('tenants', '?id=eq.' + u.tenant_id + '&select=*');
@@ -406,7 +459,8 @@ ${_footer()}</body></html>`;
           if (locs.length) locataireId = locs[0].id;
         }
 
-        return json({ success: true, userId: u.id, role: u.role, nom: u.nom, tenant, locataireId });
+        const tok2 = await makeToken(u.tenant_id, u.id, u.role);
+        return json({ success: true, userId: u.id, role: u.role, nom: u.nom, tenant, locataireId, sessionToken: tok2 });
       }
 
       // ── /generate-invite ──────────────────────────────────────
@@ -430,7 +484,9 @@ ${_footer()}</body></html>`;
               if (existing.length) existingId = existing[0].id;
             }
           }
-          const portalData = { password: code, actif: true, date_blocage_auto: null, motif_blocage: null };
+          // Stocker le hash SHA-256 du code (jamais en clair)
+          const codeHash = await _sha256(code);
+          const portalData = { password: codeHash, actif: true, date_blocage_auto: null, motif_blocage: null };
           if (locataire_id) portalData.locataire_id = locataire_id;
           if (immeuble_id)  portalData.immeuble_id  = immeuble_id;
           if (existingId) {
@@ -516,16 +572,23 @@ ${_footer()}</body></html>`;
       if (path === '/db' && request.method === 'POST') {
         const body = await request.json();
         const action = body.action || body.op;  // v2: action, v1 legacy: op
-        const { table, data, tenantId } = body;
+        const { table, data, tenantId, sessionToken } = body;
         const filters = body.filters || body.filter;
 
         if (!tenantId) return json({ error: 'Session invalide' }, 401);
         if (!ALLOWED_TABLES.includes(table)) return json({ error: 'Table non autorisée: ' + table }, 403);
 
-        // Vérifier tenant
-        const tRes = await sbFetch('tenants', '?id=eq.' + tenantId + '&select=id');
-        const tData = tRes.ok ? await tRes.json() : [];
-        if (!tData.length) return json({ error: 'Session invalide' }, 401);
+        // Vérifier le token de session signé si présent
+        if (sessionToken) {
+          const payload = await _verifyToken(sessionToken, SESSION_SECRET);
+          if (!payload || payload.tenantId !== tenantId)
+            return json({ error: 'Token invalide ou expiré' }, 401);
+        } else {
+          // Fallback : vérifier que le tenant existe (rétrocompatibilité anciens clients)
+          const tRes = await sbFetch('tenants', '?id=eq.' + tenantId + '&select=id');
+          const tData = tRes.ok ? await tRes.json() : [];
+          if (!tData.length) return json({ error: 'Session invalide' }, 401);
+        }
 
         let endpoint = sbBase + '/rest/v1/' + table;
         let method = 'GET';

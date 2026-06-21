@@ -147,7 +147,8 @@ window.IG.auth = (function() {
       parametres:  data.tenant.parametres || {},
       loginAt:     Date.now(),
       locale:      data.tenant.locale || null,
-      locataireId: data.locataireId || null
+      locataireId: data.locataireId || null,
+      sessionToken: data.sessionToken || null
     };
     _saveSession(session);
     return session;
@@ -178,7 +179,8 @@ window.IG.auth = (function() {
       parametres:  data.tenant.parametres || {},
       loginAt:     Date.now(),
       locale:      data.tenant.locale || null,
-      locataireId: data.locataireId || null
+      locataireId: data.locataireId || null,
+      sessionToken: data.sessionToken || null
     };
     _saveSession(session);
     return session;

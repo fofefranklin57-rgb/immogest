@@ -47,7 +47,7 @@ window.IG.db = (function() {
       res = await fetch(_workerUrl() + '/db', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, table, tenantId: s.tenantId, data: data || null, filters: filters || null })
+        body: JSON.stringify({ action, table, tenantId: s.tenantId, sessionToken: s.sessionToken || null, data: data || null, filters: filters || null })
       });
     } catch(e) {
       throw e;
