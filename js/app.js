@@ -116,10 +116,7 @@ window.IG.app = (function() {
       '<div onclick="window.IG.app.openGuide()" class="sidebar-footer-btn"><span>📄 ' + t('Guide d\'utilisation') + '</span><span style="font-size:9px;background:#e74c3c;color:#fff;padding:1px 5px;border-radius:4px;font-weight:700;letter-spacing:.03em">PDF</span></div>' +
       '<div onclick="window.IG.app.showPage(\'archives\')" class="sidebar-footer-btn"><span>🗄️ ' + t('Archives') + '</span></div>' +
       '<div onclick="window.IG.app.showPage(\'corbeille\')" class="sidebar-footer-btn" style="margin-bottom:8px"><span>🗑️ ' + t('Corbeille') + '</span><span id="badge-corbeille" class="nav-badge" style="display:none">0</span></div>' +
-      '<div style="display:flex;gap:6px;margin-bottom:6px">' +
-      '<button id="btn-dark-mode" onclick="window.IG.app.toggleDarkMode()" title="Mode sombre" style="flex:1;padding:7px;border-radius:7px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85);font-size:16px;cursor:pointer;font-family:var(--font);">🌙</button>' +
-      '<button onclick="window.IG.app.lockScreen()" title="Verrouiller" style="flex:1;padding:7px;border-radius:7px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85);font-size:16px;cursor:pointer;font-family:var(--font);">🔒</button>' +
-      '</div>' +
+      '<button id="btn-dark-mode" onclick="window.IG.app.toggleDarkMode()" title="Mode sombre" style="width:100%;margin-bottom:6px;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85);font-size:16px;cursor:pointer;font-family:var(--font);">🌙 ' + t('Mode sombre') + '</button>' +
       '</div></nav>' +
       // Bouton IA flottant
       '<button id="ai-float-btn" onclick="window.IG.app.toggleAIChat()" title="Assistant IA ImmoGest">' +
