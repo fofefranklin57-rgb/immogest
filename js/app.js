@@ -2366,7 +2366,7 @@ window.IG.app = (function() {
       '<div style="font-size:11px;color:rgba(232,240,254,0.4);margin-top:4px;">Admin · Gestionnaire · Locataire · Bailleur</div>' +
       '</div>' +
       '<label class="auth-label">NUMÉRO DE TÉLÉPHONE</label>' +
-      '<input type="tel" id="login-tel" class="auth-input" placeholder="Ex: 699 00 00 00" autocomplete="tel" style="margin-bottom:14px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'login-pwd\').focus()">' +
+      window.IG.utils.phoneField('login-tel', '', '', true) +
       '<label class="auth-label">MOT DE PASSE</label>' +
       '<input type="password" id="login-pwd" class="auth-input" placeholder="Mot de passe" autocomplete="current-password" style="margin-bottom:20px;" onkeydown="if(event.key===\'Enter\')window.IG.app.doLogin()">' +
       '<button class="auth-btn-primary" onclick="window.IG.app.doLogin()">🔐 Se connecter</button>' +
@@ -2388,7 +2388,7 @@ window.IG.app = (function() {
       '<label class="auth-label">NOM DU CABINET <span style="opacity:.5;font-weight:400;">(optionnel)</span></label>' +
       '<input type="text" id="reg-cabinet" class="auth-input" placeholder="Mon Cabinet Immobilier" style="margin-bottom:12px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'reg-tel\').focus()">' +
       '<label class="auth-label">TÉLÉPHONE</label>' +
-      '<input type="tel" id="reg-tel" class="auth-input" placeholder="6XXXXXXXX" style="margin-bottom:12px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'reg-pwd\').focus()">' +
+      window.IG.utils.phoneField('reg-tel', '', '', true) +
       '<label class="auth-label">MOT DE PASSE</label>' +
       '<input type="password" id="reg-pwd" class="auth-input" placeholder="Min. 6 caractères" style="margin-bottom:18px;" onkeydown="if(event.key===\'Enter\')window.IG.app.registerV2()">' +
       '<button class="auth-btn-primary" onclick="window.IG.app.registerV2()">🚀 Créer mon espace</button>' +
@@ -2447,7 +2447,7 @@ window.IG.app = (function() {
   }
 
   async function doLogin() {
-    var tel = (document.getElementById('login-tel') || {}).value || '';
+    var tel = window.IG.utils.phoneFieldValue('login-tel') || (document.getElementById('login-tel') || {}).value || '';
     var pwd = (document.getElementById('login-pwd') || {}).value || '';
     var errEl = document.getElementById('err-login');
     var btn = document.querySelector('#auth-step-login .auth-btn-primary');
@@ -2493,7 +2493,7 @@ window.IG.app = (function() {
   async function registerV2() {
     var nom = (document.getElementById('reg-nom') || {}).value || '';
     var cabinet = (document.getElementById('reg-cabinet') || {}).value || '';
-    var tel = (document.getElementById('reg-tel') || {}).value || '';
+    var tel = window.IG.utils.phoneFieldValue('reg-tel') || (document.getElementById('reg-tel') || {}).value || '';
     var pwd = (document.getElementById('reg-pwd') || {}).value || '';
     var errEl = document.getElementById('err-register');
     var btn = document.querySelector('#auth-step-register .auth-btn-primary');

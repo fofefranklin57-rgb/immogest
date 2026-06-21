@@ -232,7 +232,7 @@ function showRegistrationForm(mode) {
     + '</div>'
     + (isEnt ? '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">NOM DU CABINET</label><input id="reg-cabinet" class="auth-input" placeholder="Ex: Cabinet Kamdem, Agence XYZ…" style="width:100%;"></div>' : '')
     + '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">VOTRE NOM COMPLET</label><input id="reg-nom" class="auth-input" placeholder="Jean Kamdem" style="width:100%;"></div>'
-    + '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">NUMÉRO DE TÉLÉPHONE</label><input id="reg-tel" class="auth-input" placeholder="699 00 00 00" type="tel" style="width:100%;"></div>'
+    + '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">NUMÉRO DE TÉLÉPHONE</label>' + window.IG.utils.phoneField('reg-tel','','',true) + '</div>'
     + '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">MOT DE PASSE</label><input id="reg-pwd" class="auth-input" type="password" placeholder="Minimum 6 caractères" style="width:100%;"></div>'
     + '<div style="margin-bottom:20px;"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">CONFIRMER LE MOT DE PASSE</label><input id="reg-pwd2" class="auth-input" type="password" placeholder="Répéter le mot de passe" style="width:100%;"></div>'
     + '<div id="reg-err" style="display:none;color:var(--red);font-size:12px;margin-bottom:12px;padding:8px;background:rgba(255,0,0,0.08);border-radius:8px;"></div>'
@@ -363,7 +363,7 @@ function showLoginTenantScreen() {
     + '<div style="font-size:17px;font-weight:800;margin-top:8px;">Connexion à mon espace</div>'
     + '<div style="font-size:12px;color:var(--text3);margin-top:4px;">Entrez vos identifiants de création de compte</div>'
     + '</div>'
-    + '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">NUMÉRO DE TÉLÉPHONE</label><input id="lt-tel" class="auth-input" placeholder="699 00 00 00" type="tel" style="width:100%;"></div>'
+    + '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">NUMÉRO DE TÉLÉPHONE</label>' + window.IG.utils.phoneField('lt-tel','','',true) + '</div>'
     + '<div style="margin-bottom:20px;"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">MOT DE PASSE</label><input id="lt-pwd" class="auth-input" type="password" placeholder="Votre mot de passe" style="width:100%;"></div>'
     + '<div id="lt-err" style="display:none;color:var(--red);font-size:12px;margin-bottom:12px;padding:8px;background:rgba(255,0,0,0.08);border-radius:8px;"></div>'
     + '<button id="lt-btn" class="btn btn-primary" style="width:100%;padding:14px;" onclick="submitLoginTenant()">Se connecter →</button>'

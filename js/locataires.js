@@ -204,8 +204,8 @@ window.IG.locataires = (function() {
       '<form id="form-locataire">' +
       _field('nom', t('Nom complet'), loc ? loc.nom : '', true) +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-      _field('telephone', t('Téléphone'), loc ? (loc.telephone || '') : '', false, 'tel') +
-      _field('whatsapp', 'WhatsApp', loc ? (loc.whatsapp || '') : '', false, 'tel') +
+      window.IG.utils.phoneField('telephone', t('Téléphone'), loc ? (loc.telephone || '') : '') +
+      window.IG.utils.phoneField('whatsapp', 'WhatsApp', loc ? (loc.whatsapp || '') : '') +
       '</div>' +
       '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Immeuble') + ' *</label>' +
       '<select name="immeuble_id" required style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
