@@ -407,16 +407,15 @@ ${_footer()}</body></html>`;
 
       // ── /generate-invite ──────────────────────────────────────
       if (path === '/generate-invite' && request.method === 'POST') {
-        const { tenantId, role, immeubles, nom, telephone, locataire_id } = await request.json();
+        const { tenantId, role, immeubles, nom, telephone, locataire_id, immeuble_id } = await request.json();
         if (!tenantId) return json({ error: 'tenantId requis' }, 400);
-        // Mot de passe lisible 6 chars (locataire/bailleur) ou code 10 chars (collaborateurs)
         const finalRole = role || 'gestionnaire';
         const isPortal = finalRole === 'locataire' || finalRole === 'bailleur';
-        const pwdChars = isPortal ? 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' : 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const pwdChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         const pwdLen  = isPortal ? 6 : 10;
         const code = Array.from({ length: pwdLen }, () => pwdChars[Math.floor(Math.random() * pwdChars.length)]).join('');
 
-        // Pour locataire et bailleur : upsert users_app avec password = code
+        // Pour locataire et bailleur : upsert users_app avec password + locataire_id/immeuble_id
         if (isPortal) {
           const userId = 'u_' + crypto.randomUUID().replace(/-/g,'').substring(0, 10);
           let existingId = null;
@@ -427,20 +426,23 @@ ${_footer()}</body></html>`;
               if (existing.length) existingId = existing[0].id;
             }
           }
+          const portalData = { password: code, actif: true, date_blocage_auto: null, motif_blocage: null };
+          if (locataire_id) portalData.locataire_id = locataire_id;
+          if (immeuble_id)  portalData.immeuble_id  = immeuble_id;
           if (existingId) {
-            await sbFetch('users_app', '?id=eq.' + existingId, 'PATCH', { password: code, actif: true, date_blocage_auto: null, motif_blocage: null });
+            await sbFetch('users_app', '?id=eq.' + existingId, 'PATCH', portalData);
           } else {
             await sbFetch('users_app', '', 'POST', {
               id: userId, tenant_id: tenantId, role: finalRole,
               nom: nom || '', telephone: telephone || '',
-              password: code, actif: true,
-              permissions: {}, immeubles_assignes: []
+              ...portalData,
+              permissions: {}, immeubles_assignes: immeuble_id ? [immeuble_id] : []
             });
           }
           return json({ success: true, code });
         }
 
-        // Pour les collaborateurs : flux invite_codes classique
+        // Pour les collaborateurs (coordinateur inclus) : flux invite_codes classique
         await sbFetch('invite_codes', '', 'POST', {
           code, tenant_id: tenantId, role: finalRole,
           immeubles: immeubles || []
@@ -488,11 +490,18 @@ ${_footer()}</body></html>`;
         if (new Date(inv.expire_at) < new Date()) return json({ error: 'Code expiré' }, 410);
 
         const userId = 'u_' + crypto.randomUUID().replace(/-/g,'').substring(0,10);
-        await sbFetch('users_app', '', 'POST', {
+        const newUser = {
           id: userId, tenant_id: inv.tenant_id, role: inv.role,
           nom, password: password || null, pin: pin || null,
-          immeubles: inv.immeubles || [], actif: true
-        });
+          actif: true, permissions: {}
+        };
+        // Coordinateur et bailleur : stocker immeubles_assignes depuis l'invitation
+        if (inv.role === 'coordinateur' || inv.role === 'bailleur') {
+          newUser.immeubles_assignes = inv.immeubles || [];
+        } else {
+          newUser.immeubles = inv.immeubles || [];
+        }
+        await sbFetch('users_app', '', 'POST', newUser);
         await fetch(sbBase + '/rest/v1/invite_codes?id=eq.' + inv.id, {
           method: 'PATCH', headers: sbHdrs(), body: JSON.stringify({ used: true })
         });
