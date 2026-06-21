@@ -506,6 +506,7 @@ window.IG.locataires = (function() {
       '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.genererDocument(' + locId + ');window.IG.locataires._closeMenus()">📄 Documents</div>' +
       '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.afficherEtatDesLieux(window.IG.locataires.getById(' + locId + '),\'entree\');window.IG.locataires._closeMenus()">🏠 État des lieux entrée</div>' +
       '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.afficherEtatDesLieux(window.IG.locataires.getById(' + locId + '),\'sortie\');window.IG.locataires._closeMenus()">🔑 État des lieux sortie</div>' +
+      '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.deposerPlainte(window.IG.locataires.getById(' + locId + '));window.IG.locataires._closeMenus()">📋 Déposer une plainte</div>' +
       '<div class="action-dropdown-sep"></div>' +
       '<div class="action-dropdown-item danger" onclick="window.IG.locataires.liberer(' + locId + ');window.IG.locataires._closeMenus()">🔓 Libérer</div>' +
       '<div class="action-dropdown-item danger" onclick="window.IG.locataires.supprimer(' + locId + ');window.IG.locataires._closeMenus()">🗑️ Supprimer</div>';

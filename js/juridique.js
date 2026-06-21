@@ -224,6 +224,7 @@ window.IG.juridique = (function() {
       (analyse.moisRetard >= 1 ? '<button onclick="window.IG.juridique.envoyerRelance(window._jur_loc);this.closest(\'.ig-modal-overlay\')?.click()" style="flex:1;padding:9px;border-radius:8px;border:none;background:var(--yellow-bg);color:var(--yellow);cursor:pointer;font-size:12px;font-weight:600">📄 Relance</button>' : '') +
       (analyse.moisRetard >= 2 ? '<button onclick="window.IG.juridique.mettreEnDemeure(window._jur_loc);this.closest(\'.ig-modal-overlay\')?.click()" style="flex:1;padding:9px;border-radius:8px;border:none;background:rgba(224,90,0,.1);color:#E05A00;cursor:pointer;font-size:12px;font-weight:600">⚠️ MED</button>' : '') +
       (analyse.moisRetard >= 3 ? '<button onclick="window.IG.juridique.commanderPayer(window._jur_loc);this.closest(\'.ig-modal-overlay\')?.click()" style="flex:1;padding:9px;border-radius:8px;border:none;background:var(--red-bg);color:var(--red);cursor:pointer;font-size:12px;font-weight:600">🔴 Commandement</button>' : '') +
+      (analyse.moisRetard >= 3 ? '<button onclick="window.IG.juridique.deposerPlainte(window._jur_loc);this.closest(\'.ig-modal-overlay\')?.click()" style="flex:1;padding:9px;border-radius:8px;border:none;background:rgba(90,20,180,.12);color:#5A14B4;cursor:pointer;font-size:12px;font-weight:600">📋 Plainte</button>' : '') +
       '</div>'
     );
     window._jur_loc = loc;
@@ -231,6 +232,111 @@ window.IG.juridique = (function() {
     setTimeout(function() {
       if (window.IG.ads) window.IG.ads._injecterAdsterra('ig-score-ad');
     }, 100);
+  }
+
+  // ── Plainte / Dépôt de plainte ───────────────────────────────
+  function deposerPlainte(loc) {
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var paiements = _getPaiementsLoc(loc.id);
+    var analyse = window.IG.legal.analyseIA(loc, paiements);
+    var imms = window.IG.immeubles ? window.IG.immeubles.getCache() : [];
+    var imm = imms.find(function(i) { return i.id == loc.immeuble_id; }) || {};
+    var dateAuj = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    var signataire = session.nom || 'Le gestionnaire';
+    var cabinet = session.nomCabinet || 'Le cabinet';
+
+    // Formulaire de plainte
+    var modal = window.IG.utils.showModal(
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
+      '<h3 style="font-size:15px;font-weight:700">📋 Dépôt de plainte — ' + esc(loc.nom) + '</h3>' +
+      '<button data-modal-close style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3)">✕</button>' +
+      '</div>' +
+
+      '<div style="background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+      '<div><span style="color:var(--text3)">Locataire :</span> <strong>' + esc(loc.nom) + '</strong></div>' +
+      '<div><span style="color:var(--text3)">Téléphone :</span> <strong>' + esc(loc.telephone || '—') + '</strong></div>' +
+      '<div><span style="color:var(--text3)">Immeuble :</span> <strong>' + esc(imm.nom_immeuble || imm.nom || '—') + '</strong></div>' +
+      '<div><span style="color:var(--text3)">Local :</span> <strong>' + esc(loc.appt || '—') + '</strong></div>' +
+      '<div><span style="color:var(--text3)">Montant dû :</span> <strong style="color:var(--red)">' + fmt(analyse.montant) + '</strong></div>' +
+      '<div><span style="color:var(--text3)">Mois impayés :</span> <strong style="color:var(--red)">' + analyse.moisRetard + ' mois</strong></div>' +
+      '</div>' +
+
+      '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px">MOTIF DE LA PLAINTE</label>' +
+      '<div style="display:flex;flex-direction:column;gap:6px">' +
+      ['Impayés de loyer', 'Dégradation du logement', 'Occupation illicite après congé', 'Non-respect du contrat de bail', 'Trouble de voisinage grave', 'Autre'].map(function(m) {
+        return '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="radio" name="plainte_motif" value="' + m + '"' + (m === 'Impayés de loyer' ? ' checked' : '') + '> ' + m + '</label>';
+      }).join('') +
+      '</div></div>' +
+
+      '<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px">FAITS DÉTAILLÉS <span style="font-weight:400;opacity:.6">(optionnel)</span></label>' +
+      '<textarea id="plainte-faits" rows="4" placeholder="Décrivez les faits en détail : dates, montants, tentatives de résolution amiable, refus du locataire…" style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg4);color:var(--text);font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit"></textarea></div>' +
+
+      '<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px">AUTORITÉ COMPÉTENTE</label>' +
+      '<select id="plainte-autorite" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
+      '<option value="tribunal">Tribunal compétent</option>' +
+      '<option value="police">Commissariat / Brigade</option>' +
+      '<option value="maire">Mairie / Sous-préfecture</option>' +
+      '<option value="huissier">Huissier de justice</option>' +
+      '</select></div>' +
+
+      '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+      '<button data-modal-close style="padding:9px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Annuler</button>' +
+      '<button onclick="window.IG.juridique._previewPlainte(window._jur_loc)" style="padding:9px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">👁️ Prévisualiser</button>' +
+      '</div>',
+      { width: '600px' }
+    );
+    window._jur_loc = loc;
+    window._jur_loc_analyse = analyse;
+    window._jur_loc_imm = imm;
+    window._jur_session = session;
+    window._jur_date = dateAuj;
+  }
+
+  function _previewPlainte(loc) {
+    var analyse = window._jur_loc_analyse || {};
+    var imm = window._jur_loc_imm || {};
+    var session = window._jur_session || {};
+    var dateAuj = window._jur_date || new Date().toLocaleDateString('fr-FR');
+    var motif = (document.querySelector('[name="plainte_motif"]:checked') || {}).value || 'Impayés de loyer';
+    var faits = (document.getElementById('plainte-faits') || {}).value || '';
+    var autorite = (document.getElementById('plainte-autorite') || {}).value || 'tribunal';
+    var autoriteLabel = { tribunal: 'Monsieur/Madame le Juge,', police: 'Monsieur/Madame le Commissaire / Commandant de Brigade,', maire: 'Monsieur/Madame le Maire / Sous-Préfet(e),', huissier: 'Maître,' }[autorite] || 'Monsieur/Madame,';
+
+    var contenu =
+      'PLAINTE AVEC CONSTITUTION DE PARTIE CIVILE\n' +
+      '─────────────────────────────────────────────────\n\n' +
+      'À ' + autoriteLabel + '\n\n' +
+      'Je soussigné(e) ' + (session.nom || '…') + ', gérant(e) / représentant(e) de ' + (session.nomCabinet || '…') + ', domicilié(e) audit cabinet,\n\n' +
+      'AI L\'HONNEUR DE PORTER À VOTRE CONNAISSANCE LES FAITS SUIVANTS :\n\n' +
+      'Locataire mis en cause : ' + loc.nom + '\n' +
+      'Téléphone              : ' + (loc.telephone || '—') + '\n' +
+      'Bien loué              : ' + (imm.nom_immeuble || imm.nom || '—') + ', Local ' + (loc.appt || '—') + '\n' +
+      'Loyer mensuel          : ' + fmt(loc.loyer || 0) + '\n\n' +
+      'MOTIF : ' + motif + '\n\n' +
+      (motif === 'Impayés de loyer'
+        ? 'Depuis ' + analyse.moisRetard + ' mois, le locataire sus-cité n\'a pas honoré ses obligations locatives.\n' +
+          'Le montant total des loyers impayés s\'élève à ' + fmt(analyse.montant) + '.\n' +
+          'Malgré les relances amiables effectuées, le locataire n\'a pas régularisé sa situation.\n\n'
+        : '') +
+      (faits ? 'FAITS DÉTAILLÉS :\n' + faits + '\n\n' : '') +
+      'EN CONSÉQUENCE, je vous demande de bien vouloir :\n' +
+      '1. Prendre acte de la présente plainte ;\n' +
+      '2. Procéder aux enquêtes et vérifications d\'usage ;\n' +
+      '3. Poursuivre l\'auteur des faits devant la juridiction compétente.\n\n' +
+      'Pièces jointes :\n' +
+      '- Copie du contrat de bail\n' +
+      '- Quittances de loyer non payées\n' +
+      '- Copie de la mise en demeure envoyée le ……………\n\n' +
+      'Fait à …………………, le ' + dateAuj + '\n\n' +
+      'Signature :\n\n' +
+      '______________________________\n' +
+      (session.nom || '…') + '\n' +
+      (session.nomCabinet || '');
+
+    // Fermer la modal de formulaire
+    document.querySelector('.ig-modal-overlay[style*="z-index"]') && document.querySelector('.ig-modal-overlay').click();
+
+    afficherDocument('Plainte — ' + loc.nom, contenu);
   }
 
   // ── État des lieux entrée / sortie ───────────────────────────
@@ -307,6 +413,7 @@ window.IG.juridique = (function() {
   return {
     genererDoc, afficherDocument, telechargerTxt,
     envoyerRelance, mettreEnDemeure, commanderPayer,
+    deposerPlainte, _previewPlainte,
     afficherAnalyseIA, afficherEtatDesLieux,
     calculerScore, badgeScore
   };
