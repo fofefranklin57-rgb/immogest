@@ -49,8 +49,8 @@ Légende : ✅ Terminé | 🔄 En cours | 📋 Planifié | ❌ Annulé
 - ✅ Mois/année paiement auto-calculés depuis date
 - 📋 Worker: support locataire_id + immeuble_id dans /generate-invite
 - 📋 Worker: support rôles coordinateur + bailleur dans /join
-- 📋 Migration V010: champ photo_360 dans marketplace_annonces
-- 📋 Migration V010: champs arrieres + mois_arrieres dans locataires (V009 à appliquer)
+- ✅ Migration V009: champs arrieres + mois_arrieres dans locataires
+- ✅ Migration V010: champ photo_360 dans marketplace_annonces + email dans users_app
 
 ## PHASE 5 — Documents & Impression 📋
 - 📋 Fiche de suivi V2 — révision complète selon spec (à définir dans APP_SPEC.md)
