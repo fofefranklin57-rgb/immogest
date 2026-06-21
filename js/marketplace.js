@@ -140,10 +140,28 @@ window.IG.marketplace = (function() {
       // Slot pub entre premium et standard
       html += '<div id="ig-ad-marketplace" style="margin:8px 0 16px;text-align:center"></div>';
 
-      // Annonces standard
-      html += '<div class="mkt-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">' +
-        standard.map(function(a) { return _carteAnnonce(a, false); }).join('') +
-        '</div>';
+      // Annonces standard avec pubs toutes les 3 annonces
+      var standardHtml = '';
+      standard.forEach(function(a, i) {
+        standardHtml += _carteAnnonce(a, false);
+        // Pub après la 3e, 6e, 9e annonce...
+        if ((i + 1) % 3 === 0) {
+          var adId = 'ig-ad-mkt-' + i;
+          standardHtml += '</div><div id="' + adId + '" style="grid-column:1/-1;margin:4px 0;text-align:center;min-height:90px"></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">';
+          // Injection différée pour que le DOM existe
+          (function(id, idx) {
+            setTimeout(function() {
+              // Alterner Adsterra et Monetag
+              if (idx % 2 === 0) {
+                window.IG.ads && window.IG.ads.injecterSlot(id, 'ad2');
+              } else {
+                window.IG.ads && window.IG.ads.injecterMonetag(id, 29679261);
+              }
+            }, 300);
+          })(adId, Math.floor(i / 3));
+        }
+      });
+      html += '<div class="mkt-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">' + standardHtml + '</div>';
     }
 
     html += '</div>';
