@@ -165,9 +165,8 @@ window.IG.app = (function() {
       '</div>' +
       '<div class="topbar-actions">' +
       // Chip utilisateur + rôle
-      '<div class="topbar-user-chip" style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;background:var(--bg4);border:1px solid var(--border2);cursor:pointer;" onclick="window.IG.app.showPage(\'parametres\')">' +
-      '<div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#0e6aaf,#6b46c1);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' + esc((session.nom || 'U').charAt(0).toUpperCase()) + '</div>' +
-      '<span style="font-size:12px;font-weight:600;color:var(--text);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(session.nom || '') + '</span>' +
+      '<div class="topbar-user-chip" style="display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:8px;background:var(--bg4);border:1px solid var(--border2);cursor:pointer;flex-shrink:0;" onclick="window.IG.app.showPage(\'parametres\')">' +
+      '<div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#0e6aaf,#6b46c1);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' + esc((session.nom || 'U').charAt(0).toUpperCase()) + '</div>' +
       '<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;background:rgba(14,106,175,0.12);color:var(--accent);text-transform:capitalize;">' + esc(session.role || 'user') + '</span>' +
       '</div>' +
       // Langue + plan (avant les sélecteurs pour accessibilité mobile)
