@@ -61,8 +61,11 @@ Légende : ✅ Terminé | 🔄 En cours | 📋 Planifié | ❌ Annulé
 - 📋 Aperçu avant impression — rapport annuel
 
 ## PHASE 6 — Paiements & Mobile Money 📋
-- 📋 CamPay production (actuellement en mode demo)
-- 📋 NotchPay production
+- ✅ Fapshi (Mobile Money Cameroun) — retenu comme plateforme principale
+- ❌ CamPay — abandonné (Fapshi suffit)
+- ❌ NotchPay — abandonné (Fapshi suffit)
+- 📋 Fapshi — passer en mode production (vérifier clés prod)
+- 📋 Plateforme internationale (Stripe / Paddle / Lemonsqueezy) — à choisir
 - 📋 Paiement abonnement in-app
 - 📋 Reçu de paiement Mobile Money automatique
 

@@ -610,6 +610,21 @@ window.IG.app = (function() {
           var sess = window.IG.auth.getSession();
           sess.parametres = Object.assign(sess.parametres || {}, settings.cabinet);
         }
+        // Charger la locale (devise, pays) depuis parametres.cabinet.pays
+        var PAYS_DEVISE = {
+          'Cameroun':'XAF','Sénégal':'XOF','Côte d\'Ivoire':'XOF','Mali':'XOF',
+          'Burkina Faso':'XOF','Niger':'XOF','Togo':'XOF','Bénin':'XOF',
+          'Guinée':'GNF','Nigeria':'NGN','Ghana':'GHS','Kenya':'KES',
+          'Maroc':'MAD','Tunisie':'TND','Algérie':'DZD','Egypte':'EGP',
+          'France':'EUR','Belgique':'EUR','Suisse':'CHF','Canada':'CAD',
+          'USA':'USD','UK':'GBP','Gabon':'XAF','Congo':'XAF','Tchad':'XAF',
+          'RDC':'CDF','Mauritanie':'MRU','Sénégal':'XOF'
+        };
+        var pays = (settings.cabinet && settings.cabinet.pays) || '';
+        window.IG._locale = {
+          pays: pays,
+          devise: PAYS_DEVISE[pays] || (window.IG.auth.getSession() && window.IG.auth.getSession().locale) || 'XAF'
+        };
       } catch(_) {}
       _setSyncStatus('ok');
       _updateSidebarImmeubles();

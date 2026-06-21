@@ -157,7 +157,7 @@ window.IG.locataires = (function() {
       var isFree = loc.statut === 'libre';
       html += '<tr id="loc-row-' + loc.id + '" class="' + (isFree ? 'row-libre' : '') + '">' +
         '<td>' + _localBadge(loc.appt) + '</td>' +
-        '<td class="td-name">' + esc(loc.nom) + '</td>' +
+        '<td class="td-name">' + esc(loc.nom) + (window.IG.juridique ? '<br>' + window.IG.juridique.badgeScore(loc) : '') + '</td>' +
         '<td style="font-size:12px">' + esc(loc.telephone || '–') + '</td>' +
         '<td class="td-amount">' + fmt(loc.loyer) + '</td>' +
         '<td style="font-size:11px;max-width:180px">' + obsHtml + '</td>' +
@@ -504,6 +504,8 @@ window.IG.locataires = (function() {
       '<div class="action-dropdown-item" onclick="window.IG.locataires.afficherFiche(' + locId + ');window.IG.locataires._closeMenus()">📊 Fiche de suivi</div>' +
       (hasTel ? '<div class="action-dropdown-item" onclick="window.IG.locataires.envoyerAccesWA(' + locId + ');window.IG.locataires._closeMenus()">📲 Envoyer accès WhatsApp</div>' : '') +
       '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.genererDocument(' + locId + ');window.IG.locataires._closeMenus()">📄 Documents</div>' +
+      '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.afficherEtatDesLieux(window.IG.locataires.getById(' + locId + '),\'entree\');window.IG.locataires._closeMenus()">🏠 État des lieux entrée</div>' +
+      '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.afficherEtatDesLieux(window.IG.locataires.getById(' + locId + '),\'sortie\');window.IG.locataires._closeMenus()">🔑 État des lieux sortie</div>' +
       '<div class="action-dropdown-sep"></div>' +
       '<div class="action-dropdown-item danger" onclick="window.IG.locataires.liberer(' + locId + ');window.IG.locataires._closeMenus()">🔓 Libérer</div>' +
       '<div class="action-dropdown-item danger" onclick="window.IG.locataires.supprimer(' + locId + ');window.IG.locataires._closeMenus()">🗑️ Supprimer</div>';

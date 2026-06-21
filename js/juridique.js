@@ -14,8 +14,18 @@ window.IG.juridique = (function() {
   // ── Générer et afficher un document juridique ─────────────────
   async function genererDoc(codeTemplate, loc, variables) {
     var session = window.IG.auth ? window.IG.auth.getSession() : {};
-    var locale  = session.locale || {};
-    var pays    = locale.pays || 'CM';
+    var locale  = window.IG._locale || session.locale || {};
+    // Mapper pays complet → code ISO 2 lettres pour les templates
+    var PAYS_CODE = {
+      'Cameroun':'CM','Sénégal':'SN','Côte d\'Ivoire':'CI','Mali':'ML',
+      'Burkina Faso':'BF','Niger':'NE','Togo':'TG','Bénin':'BJ',
+      'Guinea':'GN','Nigeria':'NG','Ghana':'GH','Kenya':'KE',
+      'Maroc':'MA','Tunisie':'TN','Algérie':'DZ','Egypte':'EG',
+      'France':'FR','Belgique':'BE','Gabon':'GA','Congo':'CG','Tchad':'TD',
+      'RDC':'CD','Mauritanie':'MR'
+    };
+    var paysNom = locale.pays || 'Cameroun';
+    var pays    = PAYS_CODE[paysNom] || locale.pays || 'CM';
     var langue  = locale.langue || 'fr';
 
     var template = await window.IG.legal.getTemplate(codeTemplate, pays, langue);
@@ -50,6 +60,46 @@ window.IG.juridique = (function() {
     return window.IG.app ? (window.IG.app.getData().paiements || []).filter(function(p) {
       return p.locataire_id == locId;
     }) : [];
+  }
+
+  // ── Score de fiabilité locataire (0–100) ─────────────────────
+  function calculerScore(loc) {
+    var paiements = _getPaiementsLoc(loc.id);
+    if (!paiements.length) return { score: 50, label: 'Nouveau', color: 'var(--text3)', detail: 'Pas encore d\'historique' };
+
+    var now = new Date();
+    var entree = loc.entree ? new Date(loc.entree) : now;
+    var moisPresence = Math.max(1, Math.round((now - entree) / (30 * 86400000)));
+
+    // Points positifs : paiements à temps
+    var total = paiements.length;
+    var retards = paiements.filter(function(p) { return p.en_retard || (p.jours_retard && p.jours_retard > 5); }).length;
+    var tauxPonctualite = total > 0 ? (total - retards) / total : 0.5;
+
+    // Calcul score
+    var score = Math.round(
+      tauxPonctualite * 60 +                          // 60 pts ponctualité
+      Math.min(moisPresence / 12, 1) * 20 +           // 20 pts ancienneté (max 1 an)
+      (loc.arrieres === 0 || !loc.arrieres ? 20 : 0)  // 20 pts aucun arriéré actuel
+    );
+    score = Math.max(0, Math.min(100, score));
+
+    var label, color;
+    if (score >= 85)      { label = 'Excellent';    color = '#0E7A45'; }
+    else if (score >= 65) { label = 'Bon';          color = '#2E9E5B'; }
+    else if (score >= 45) { label = 'Moyen';        color = '#E08A00'; }
+    else if (score >= 25) { label = 'Risqué';       color = '#C84A20'; }
+    else                  { label = 'Critique';     color = 'var(--red)'; }
+
+    var detail = total + ' paiement(s), ' + retards + ' retard(s), ' + moisPresence + ' mois de présence';
+    return { score, label, color, detail };
+  }
+
+  function badgeScore(loc) {
+    var s = calculerScore(loc);
+    return '<span title="' + esc(s.detail) + '" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;background:' + s.color + '22;color:' + s.color + ';font-size:11px;font-weight:700;cursor:help">' +
+      '★ ' + s.score + ' — ' + esc(s.label) +
+      '</span>';
   }
 
   // ── Afficher document dans modal ──────────────────────────────
@@ -183,11 +233,82 @@ window.IG.juridique = (function() {
     }, 100);
   }
 
+  // ── État des lieux entrée / sortie ───────────────────────────
+  function afficherEtatDesLieux(loc, type) {
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var imms = window.IG.immeubles ? window.IG.immeubles.getCache() : [];
+    var imm = imms.find(function(i) { return i.id == loc.immeuble_id; }) || {};
+    var typeLabel = type === 'sortie' ? 'SORTIE' : 'ENTRÉE';
+    var dateAujourd = new Date().toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' });
+
+    var PIECES = ['Salon','Cuisine','Chambre 1','Chambre 2','Salle de bain','WC','Couloir','Balcon','Autre'];
+    var ETATS = ['Bon état','État moyen','Mauvais état'];
+
+    var lignes = PIECES.map(function(p) {
+      return '<tr style="border-bottom:1px solid var(--border)">' +
+        '<td style="padding:10px 12px;font-size:13px;font-weight:500">' + p + '</td>' +
+        ETATS.map(function(e) {
+          return '<td style="padding:10px 12px;text-align:center"><input type="radio" name="edl_' + p.replace(/\s/g,'_') + '" value="' + e + '"></td>';
+        }).join('') +
+        '<td style="padding:6px"><input type="text" placeholder="Observations…" style="width:100%;border:1px solid var(--border2);border-radius:6px;padding:5px 8px;font-size:12px;background:var(--bg4);color:var(--text)"></td>' +
+        '</tr>';
+    }).join('');
+
+    var html =
+      '<div style="max-width:700px">' +
+      '<div style="text-align:center;margin-bottom:16px">' +
+        '<div style="font-size:18px;font-weight:800;text-transform:uppercase;color:var(--accent)">ÉTAT DES LIEUX — ' + typeLabel + '</div>' +
+        '<div style="font-size:12px;color:var(--text3);margin-top:4px">' + esc(session.nomCabinet || session.nom || '') + '</div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;padding:14px;background:var(--bg3);border-radius:10px;font-size:13px">' +
+        '<div><span style="color:var(--text3)">Locataire :</span> <strong>' + esc(loc.nom) + '</strong></div>' +
+        '<div><span style="color:var(--text3)">Date :</span> <strong>' + dateAujourd + '</strong></div>' +
+        '<div><span style="color:var(--text3)">Immeuble :</span> <strong>' + esc(imm.nom_immeuble || imm.nom || '—') + '</strong></div>' +
+        '<div><span style="color:var(--text3)">Local N° :</span> <strong>' + esc(loc.appt || '—') + '</strong></div>' +
+        '<div><span style="color:var(--text3)">Loyer :</span> <strong>' + fmt(loc.loyer) + '</strong></div>' +
+        '<div><span style="color:var(--text3)">Téléphone :</span> <strong>' + esc(loc.telephone || '—') + '</strong></div>' +
+      '</div>' +
+      '<div style="overflow-x:auto;margin-bottom:16px">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+        '<thead><tr style="background:var(--bg3)">' +
+          '<th style="padding:8px 12px;text-align:left">Pièce</th>' +
+          ETATS.map(function(e) { return '<th style="padding:8px 12px;text-align:center;font-size:11px">' + e + '</th>'; }).join('') +
+          '<th style="padding:8px 12px;text-align:left">Observations</th>' +
+        '</tr></thead><tbody>' + lignes + '</tbody></table>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;padding:14px;background:var(--bg3);border-radius:10px;font-size:13px">' +
+        '<div><span style="color:var(--text3)">Compteur électricité :</span><input type="text" placeholder="Index…" style="margin-left:8px;border:1px solid var(--border2);border-radius:6px;padding:4px 8px;background:var(--bg4);color:var(--text);width:100px"></div>' +
+        '<div><span style="color:var(--text3)">Compteur eau :</span><input type="text" placeholder="Index…" style="margin-left:8px;border:1px solid var(--border2);border-radius:6px;padding:4px 8px;background:var(--bg4);color:var(--text);width:100px"></div>' +
+        '<div><span style="color:var(--text3)">Clés remises :</span><input type="number" placeholder="Nb" min="0" style="margin-left:8px;border:1px solid var(--border2);border-radius:6px;padding:4px 8px;background:var(--bg4);color:var(--text);width:60px"></div>' +
+        '<div><span style="color:var(--text3)">Caution :</span><input type="text" placeholder="Montant" style="margin-left:8px;border:1px solid var(--border2);border-radius:6px;padding:4px 8px;background:var(--bg4);color:var(--text);width:100px"></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">' +
+        '<div style="border:1px solid var(--border2);border-radius:8px;padding:12px">' +
+          '<div style="font-size:11px;color:var(--text3);margin-bottom:8px">SIGNATURE BAILLEUR / GESTIONNAIRE</div>' +
+          '<div style="height:60px;border-bottom:1px dashed var(--border2);margin-bottom:8px"></div>' +
+          '<div style="font-size:12px">' + esc(session.nom || '') + '</div>' +
+        '</div>' +
+        '<div style="border:1px solid var(--border2);border-radius:8px;padding:12px">' +
+          '<div style="font-size:11px;color:var(--text3);margin-bottom:8px">SIGNATURE LOCATAIRE</div>' +
+          '<div style="height:60px;border-bottom:1px dashed var(--border2);margin-bottom:8px"></div>' +
+          '<div style="font-size:12px">' + esc(loc.nom) + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+        '<button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Fermer</button>' +
+        '<button onclick="window.print()" style="padding:8px 16px;border-radius:8px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:600">🖨️ Imprimer</button>' +
+      '</div>' +
+      '</div>';
+
+    window.IG.utils.showModal(html, { width: '750px' });
+  }
+
   // ── node --check safe export ──────────────────────────────────
   return {
     genererDoc, afficherDocument, telechargerTxt,
     envoyerRelance, mettreEnDemeure, commanderPayer,
-    afficherAnalyseIA
+    afficherAnalyseIA, afficherEtatDesLieux,
+    calculerScore, badgeScore
   };
 
 })();
