@@ -753,7 +753,7 @@ ${_footer()}</body></html>`;
         const dureeLabel  = duree === 1 ? '1 mois' : duree === 12 ? '1 an' : duree + ' mois';
         const body = {
           amount,
-          email:       email || 'client@immogest.cm',
+          email:       email || 'client@immogest.app',
           redirectUrl: 'https://immogest-34w.pages.dev',
           userId:      tenantId || ref,
           externalId:  ref,

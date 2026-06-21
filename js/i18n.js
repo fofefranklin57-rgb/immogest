@@ -1904,9 +1904,17 @@ window.IG.i18n = (function() {
     }
   };
 
+  function _devise() {
+    var loc = window.IG && window.IG._locale;
+    return (loc && loc.devise) || 'FCFA';
+  }
+
   function translate(key) {
-    if (lang === 'fr') return key;
-    return (T[lang] && T[lang][key]) || (T.en && T.en[key]) || key;
+    var result = lang === 'fr' ? key : ((T[lang] && T[lang][key]) || (T.en && T.en[key]) || key);
+    // Remplacer (FCFA) par la devise courante du tenant
+    var d = _devise();
+    if (d !== 'FCFA') result = result.replace(/\(FCFA\)/g, '(' + d + ')');
+    return result;
   }
 
   function setLang(newLang) {

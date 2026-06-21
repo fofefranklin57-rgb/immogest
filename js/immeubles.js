@@ -242,7 +242,7 @@ window.IG.immeubles = (function() {
         (imm.ville ? '📍 ' + imm.ville + (imm.quartier ? ' / ' + imm.quartier : '') + '\n' : '') +
         '\n📲 Votre code d\'accès : *' + code + '*\n' +
         'Téléchargez ImmoGest et entrez ce code à l\'inscription pour suivre vos loyers.';
-      var waUrl = 'https://wa.me/' + (tel.startsWith('+') ? tel.slice(1) : '237' + tel) + '?text=' + encodeURIComponent(msg);
+      var waUrl = 'https://wa.me/' + (tel.startsWith('+') ? tel.slice(1) : tel.replace(/^0+/, '')) + '?text=' + encodeURIComponent(msg);
 
       window.IG.utils.showModal(
         '<div style="text-align:center;padding:8px 0 16px">' +

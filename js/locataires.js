@@ -396,7 +396,7 @@ window.IG.locataires = (function() {
   function lienWA(loc, message) {
     var tel = (loc.whatsapp || loc.telephone || '').replace(/\D/g,'');
     if (!tel) return null;
-    if (tel.startsWith('0')) tel = '237' + tel.substring(1);
+    if (tel.startsWith('0')) tel = tel.substring(1);
     return 'https://wa.me/' + tel + '?text=' + encodeURIComponent(message || '');
   }
 
@@ -531,7 +531,7 @@ window.IG.locataires = (function() {
     if (!loc) return;
     var tel = (loc.whatsapp || loc.telephone || '').replace(/\D/g,'');
     if (!tel) { window.IG.utils.showToast('Pas de numéro WhatsApp', 'red'); return; }
-    if (tel.startsWith('0')) tel = '237' + tel.substring(1);
+    if (tel.startsWith('0')) tel = tel.substring(1);
     var msg = 'Bonjour ' + loc.nom + ', voici votre accès au portail locataire ImmoGest : https://immogest-34w.pages.dev';
     window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(msg), '_blank');
   }
@@ -561,7 +561,7 @@ window.IG.locataires = (function() {
         '• Login : *' + (loc.telephone || '') + '*\n' +
         '• Mot de passe : *' + code + '*\n' +
         'Téléchargez ImmoGest et connectez-vous avec votre numéro + ce mot de passe.';
-      var waUrl = 'https://wa.me/' + (tel.startsWith('+') ? tel.slice(1) : '237' + tel) + '?text=' + encodeURIComponent(msg);
+      var waUrl = 'https://wa.me/' + (tel.startsWith('+') ? tel.slice(1) : tel.replace(/^0+/, '')) + '?text=' + encodeURIComponent(msg);
 
       window.IG.utils.showModal(
         '<div style="text-align:center;padding:8px 0 16px">' +

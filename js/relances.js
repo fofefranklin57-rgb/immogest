@@ -54,8 +54,8 @@ window.IG.relances = (function() {
     var cabinet = (session && (session.nomCabinet || session.nom)) || 'ImmoGest';
     var msgs = [
       'Bonjour ' + loc.nom + ', nous vous rappelons que votre loyer du mois en cours (' + fmt(loc.loyer) + ') n\'a pas encore été reçu. Merci de régulariser dès que possible. — ' + cabinet,
-      'Bonjour ' + loc.nom + ', ceci est une mise en demeure concernant ' + retard + ' mois de loyer impayé, soit ' + fmt(montant) + ' FCFA. Sans régularisation sous 8 jours, nous serons contraints de prendre des mesures légales. — ' + cabinet,
-      'Bonjour ' + loc.nom + ', malgré nos relances, ' + fmt(montant) + ' FCFA de loyer reste dû (' + retard + ' mois). Un commandement de payer sera émis sous 48h. — ' + cabinet
+      'Bonjour ' + loc.nom + ', ceci est une mise en demeure concernant ' + retard + ' mois de loyer impayé, soit ' + fmt(montant) + '. Sans régularisation sous 8 jours, nous serons contraints de prendre des mesures légales. — ' + cabinet,
+      'Bonjour ' + loc.nom + ', malgré nos relances, ' + fmt(montant) + ' de loyer reste dû (' + retard + ' mois). Un commandement de payer sera émis sous 48h. — ' + cabinet
     ];
     return msgs[Math.min(retard - 1, 2)];
   }

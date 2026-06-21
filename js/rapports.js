@@ -10,7 +10,9 @@ window.IG.rapports = (function() {
   function esc(s) { return window.IG.utils.esc(s); }
   function fmt(n) { return window.IG.utils.formatMontant(n); }
 
-  // ── Nombres en lettres (FCFA, français) ─────────────────────
+  function devise() { return (window.IG._locale && window.IG._locale.devise) || 'FCFA'; }
+
+  // ── Nombres en lettres ───────────────────────────────────────
   function _enLettres(n) {
     var u = ['','un','deux','trois','quatre','cinq','six','sept','huit','neuf',
              'dix','onze','douze','treize','quatorze','quinze','seize','dix-sept','dix-huit','dix-neuf'];
@@ -152,7 +154,7 @@ window.IG.rapports = (function() {
         '<td style="'+TD+'font-weight:700">'+esc(loc.appt||'—')+'</td>' +
         '<td style="'+TD+'">'+esc(loc.nom||'—')+'</td>' +
         '<td style="'+TD+'font-size:10px;color:#555">'+noteCell+'</td>' +
-        '<td style="'+TD+'text-align:right;font-weight:700">'+fmt(montant)+' FCFA</td>' +
+        '<td style="'+TD+'text-align:right;font-weight:700">'+fmt(montant)+'</td>' +
       '</tr>';
     });
     if (!paysP.length) {
@@ -175,7 +177,7 @@ window.IG.rapports = (function() {
     function _rl(lbl, val, opts) {
       var o = opts || {};
       var color = o.color || '#111';
-      var valStr = (o.neg ? '— ' : '') + fmt(val) + ' FCFA';
+      var valStr = (o.neg ? '— ' : '') + fmt(val);
       return '<tr style="border-bottom:1px solid #eee">' +
         '<td style="padding:5px 10px;font-size:11px;'+(o.bold?'font-weight:700':'')+'">'+lbl+'</td>' +
         '<td style="padding:5px 10px;text-align:right;font-size:11px;font-weight:700;color:'+color+'">'+valStr+'</td></tr>';
@@ -1161,7 +1163,7 @@ window.IG.rapports = (function() {
         '<tr><td>Loyers attendus (période)</td><td style="text-align:right;font-weight:700">' + fmt(totAttendu) + ' FCFA</td></tr>' +
         '<tr><td>Total encaissé</td><td style="text-align:right;font-weight:700;color:#1a5276">' + fmt(totVerse) + ' FCFA</td></tr>' +
         '<tr><td>Total arriérés</td><td style="text-align:right;font-weight:700;color:' + (totArrieres > 0 ? '#c0392b' : '#27ae60') + '">' +
-          (totArrieres > 0 ? fmt(totArrieres) + ' FCFA' : '✓ Néant') + '</td></tr>' +
+          (totArrieres > 0 ? fmt(totArrieres) : '✓ Néant') + '</td></tr>' +
         (profShow && honoraires > 0 ? '<tr><td>Honoraires ' + (im.type_honoraires === 'pourcentage' ? '(' + im.valeur_honoraires + '%)' : 'forfait') + '</td>' +
           '<td style="text-align:right;font-weight:700">' + fmt(honoraires) + ' FCFA</td></tr>' +
           '<tr style="background:#e8f5e9"><td><strong>NET À PERCEVOIR</strong></td>' +

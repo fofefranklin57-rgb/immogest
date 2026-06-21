@@ -48,7 +48,7 @@ window.IG.signature = (function() {
       '<span id="sig-status" style="font-size:11px;color:var(--text3)">Dessinez votre signature</span>' +
       '</div>' +
       '<div style="margin-top:14px;padding:10px 12px;background:rgba(255,184,0,0.1);border-radius:8px;font-size:11px;color:#E0A040;">' +
-      '⚖️ Valeur légale — loi camerounaise n°2010/021 sur le commerce électronique (OHADA).' +
+      '⚖️ Valeur légale — signature électronique conforme au droit local applicable.' +
       '</div>' +
       '<div style="display:flex;gap:10px;margin-top:16px;">' +
       '<button onclick="window.IG.signature.fermerModal()" style="flex:1;padding:11px;border:1px solid var(--border2);background:none;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text)">Annuler</button>' +

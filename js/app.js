@@ -327,7 +327,7 @@ window.IG.app = (function() {
       if (impayes.length === 0) return '✅ Aucun locataire en retard de paiement. Tout est à jour !';
       return '⚠️ **' + impayes.length + ' locataire(s) avec arriérés :**\n' +
         impayes.slice(0, 5).map(function(l) {
-          return '• ' + l.nom + ' — ' + (l.mois_arrieres || 1) + ' mois (' + (parseInt(l.arrieres) || 0).toLocaleString('fr-FR') + ' FCFA)';
+          return '• ' + l.nom + ' — ' + (l.mois_arrieres || 1) + ' mois (' + formatMontant(parseInt(l.arrieres) || 0) + ')';
         }).join('\n') +
         (impayes.length > 5 ? '\n...et ' + (impayes.length - 5) + ' autres.' : '');
     }
@@ -336,15 +336,15 @@ window.IG.app = (function() {
       return '📊 **Résumé de votre portefeuille :**\n' +
         '• ' + imm.length + ' immeuble(s)\n' +
         '• ' + actifs.length + ' locataire(s) actifs\n' +
-        '• Loyers attendus : ' + totalLoyers.toLocaleString('fr-FR') + ' FCFA/mois\n' +
-        '• Encaissé total : ' + encaisse.toLocaleString('fr-FR') + ' FCFA\n' +
+        '• Loyers attendus : ' + formatMontant(totalLoyers) + '/mois\n' +
+        '• Encaissé total : ' + formatMontant(encaisse) + '\n' +
         '• Taux de paiement : ' + taux + '%\n' +
         '• Impayés : ' + impayes.length + ' locataire(s)';
     }
     if (q.match(/locataire|liste|qui|combien/)) {
       if (actifs.length === 0) return 'Aucun locataire actif pour le moment.';
       return '👥 **' + actifs.length + ' locataire(s) actifs :**\n' +
-        actifs.slice(0, 8).map(function(l) { return '• ' + l.nom + ' — ' + (parseInt(l.loyer)||0).toLocaleString('fr-FR') + ' FCFA'; }).join('\n') +
+        actifs.slice(0, 8).map(function(l) { return '• ' + l.nom + ' — ' + formatMontant(parseInt(l.loyer)||0); }).join('\n') +
         (actifs.length > 8 ? '\n...et ' + (actifs.length - 8) + ' autres.' : '');
     }
     if (q.match(/immeuble|b[aâ]timent|propri[eé]t[eé]/)) {
@@ -354,8 +354,8 @@ window.IG.app = (function() {
     }
     if (q.match(/paiement|encaiss|reçu|historique/)) {
       return '💰 **Paiements enregistrés :** ' + pay.length + '\n' +
-        '• Total encaissé : ' + encaisse.toLocaleString('fr-FR') + ' FCFA\n' +
-        '• Loyers attendus/mois : ' + totalLoyers.toLocaleString('fr-FR') + ' FCFA';
+        '• Total encaissé : ' + formatMontant(encaisse) + '\n' +
+        '• Loyers attendus/mois : ' + formatMontant(totalLoyers);
     }
     if (q.match(/bonjour|salut|hello|aide|help|que.*faire|comment/)) {
       return 'Bonjour ! 👋 Je suis votre assistant ImmoGest.\n\nJe peux vous aider avec :\n• 📋 Résumé de votre portefeuille\n• ⚠️ Liste des impayés\n• 👥 Informations sur vos locataires\n• 🏢 État de vos immeubles\n• 💰 Suivi des paiements\n\nPosez-moi votre question !';
@@ -1082,9 +1082,9 @@ window.IG.app = (function() {
       _fieldInput('cab-signataire', 'Signataire',             'Prénom Nom du responsable') +
       _fieldInput('cab-adresse',    'Adresse',                'Rue, quartier') +
       _fieldInput('cab-ville',      'Ville',                  'Ex: Yaoundé') +
-      _fieldInput('cab-tel',        'Téléphone',              'Ex: +237 6XX XX XX XX', 'tel') +
-      _fieldInput('cab-email',      'Email professionnel',    'contact@cabinet.cm', 'email') +
-      _fieldInput('cab-rccm',       'RCCM / Numéro fiscal',   'Ex: RC/YAE/2020/B/XXX') +
+      _fieldInput('cab-tel',        'Téléphone',              'Ex: +1 555 000 0000', 'tel') +
+      _fieldInput('cab-email',      'Email professionnel',    'contact@votrecabinet.com', 'email') +
+      _fieldInput('cab-rccm',       t('Registre / Numéro fiscal'),   t('Ex: RC/YAE/2020/B/XXX')) +
       _fieldInput('cab-logo',       'URL du logo',            'https://... (lien image)') +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:10px;margin-top:8px">' +
@@ -2314,7 +2314,7 @@ window.IG.app = (function() {
       '<p style="font-size:16px;line-height:1.7;color:rgba(255,255,255,0.65);margin-bottom:30px;max-width:380px;">La plateforme complète de gestion immobilière.<br>Locataires, encaissements, rapports et bien plus.</p>' +
       // Badges fonctionnalités
       '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:36px;">' +
-      '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">✅ Droit OHADA</span>' +
+      '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">✅ ' + t('Droit local conforme') + '</span>' +
       '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">📶 Hors-ligne</span>' +
       '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">💳 Mobile Money</span>' +
       '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">📋 Documents juridiques</span>' +
