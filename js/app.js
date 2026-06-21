@@ -37,6 +37,26 @@ window.IG.app = (function() {
     if (window.IG.plans) window.IG.plans.verifierRetrogradation();
     // Badge essai + toast premier login
     _initEssai();
+
+    // Back button Android (Capacitor)
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+      window.Capacitor.Plugins.App.addListener('backButton', function(e) {
+        // Fermer modal ouvert
+        var modal = document.querySelector('.modal-overlay');
+        if (modal) { modal.remove(); return; }
+        // Fermer sidebar mobile
+        var sidebar = document.getElementById('sidebar');
+        if (sidebar && sidebar.classList.contains('open')) { window.IG.app.toggleSidebar(); return; }
+        // Fermer panneau IA
+        var ai = document.getElementById('ai-panel');
+        if (ai && ai.style.display !== 'none') { ai.style.display = 'none'; return; }
+        // Si pas sur dashboard → retour dashboard
+        var currentPage = window._currentPage || 'dashboard';
+        if (currentPage !== 'dashboard') { showPage('dashboard'); return; }
+        // Sur dashboard → quitter l'app
+        window.Capacitor.Plugins.App.exitApp();
+      });
+    }
   }
 
   function _showAppShell() {
@@ -150,9 +170,9 @@ window.IG.app = (function() {
       '<span style="font-size:12px;font-weight:600;color:var(--text);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(session.nom || '') + '</span>' +
       '<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;background:rgba(14,106,175,0.12);color:var(--accent);text-transform:capitalize;">' + esc(session.role || 'user') + '</span>' +
       '</div>' +
-      '<button class="topbar-deconnexion" onclick="window.IG.auth.logout()" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(185,48,32,0.3);background:var(--red-bg);color:var(--red);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:5px;white-space:nowrap;">⏻ ' + t('Déconnexion') + '</button>' +
-      // Langue + plan
-      '<div id="topbar-lang-plan" style="display:flex;align-items:center;gap:4px;"></div>' +
+      // Langue + plan (avant les sélecteurs pour accessibilité mobile)
+      '<div id="topbar-lang-plan" style="display:flex;align-items:center;gap:4px;flex-shrink:0;"></div>' +
+      '<button class="topbar-deconnexion" onclick="window.IG.auth.logout()" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(185,48,32,0.3);background:var(--red-bg);color:var(--red);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0;">⏻ ' + t('Déco') + '</button>' +
       // Sélecteurs mois/année
       '<select id="sel-mois" onchange="window.IG.app.refresh()" style="background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:6px 10px;font-family:var(--font);">' +
       Array.from({length:12}, function(_,i) { var mn = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'][i]; return '<option value="' + (i+1) + '"' + ((i+1) === mois ? ' selected' : '') + '>' + t(mn) + '</option>'; }).join('') +
@@ -629,6 +649,7 @@ window.IG.app = (function() {
   // ── Navigation ────────────────────────────────────────────────
   function showPage(page, opts) {
     _currentPage = page;
+    window._currentPage = page;
     opts = opts || {};
 
     document.querySelectorAll('.nav-item').forEach(function(el) {
