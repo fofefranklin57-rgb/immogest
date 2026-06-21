@@ -11,6 +11,32 @@ window.IG.juridique = (function() {
   function esc(s) { return window.IG.utils.esc(s); }
   function fmt(n) { return window.IG.utils.formatMontant(n); }
 
+  // Vérifie accès plan — affiche modal upgrade si gratuit
+  function _checkPlan() {
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var plan = session.plan || 'gratuit';
+    var payants = ['trial', 'starter', 'pro', 'cabinet'];
+    if (payants.indexOf(plan) !== -1) return true;
+    window.IG.utils.showModal(
+      '<div style="text-align:center;padding:10px 0">' +
+      '<div style="font-size:40px;margin-bottom:12px">⚖️</div>' +
+      '<h3 style="font-size:16px;font-weight:800;margin-bottom:8px">Module Juridique</h3>' +
+      '<p style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6">' +
+      'Les documents juridiques (bail, MED, commandement, plainte, état des lieux)<br>sont disponibles à partir du plan <strong>Starter</strong>.</p>' +
+      '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;text-align:left;background:var(--bg3);border-radius:10px;padding:14px">' +
+      '<div style="font-size:12px;color:var(--text3);font-weight:700;margin-bottom:4px">INCLUS DÈS STARTER</div>' +
+      ['📄 Contrats de bail', '⚠️ Mises en demeure', '🔴 Commandements de payer', '📋 Dépôts de plainte', '🏠 États des lieux entrée / sortie', '✍️ Signatures électroniques'].map(function(f) {
+        return '<div style="display:flex;align-items:center;gap:8px;font-size:13px">' + f + '</div>';
+      }).join('') +
+      '</div>' +
+      '<button onclick="this.closest(\'.ig-modal-overlay\').click()" style="padding:11px 24px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;width:100%">Passer à Starter →</button>' +
+      '<button data-modal-close style="margin-top:8px;background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer">Fermer</button>' +
+      '</div>',
+      { width: '400px' }
+    );
+    return false;
+  }
+
   // ── Générer et afficher un document juridique ─────────────────
   async function genererDoc(codeTemplate, loc, variables) {
     var session = window.IG.auth ? window.IG.auth.getSession() : {};
@@ -149,6 +175,7 @@ window.IG.juridique = (function() {
   // ── Actions rapides par locataire ─────────────────────────────
 
   async function envoyerRelance(loc) {
+    if (!_checkPlan()) return;
     var paiements = _getPaiementsLoc(loc.id);
     var analyse = window.IG.legal.analyseIA(loc, paiements);
     var result = await genererDoc('relance_1', loc, {
@@ -160,6 +187,7 @@ window.IG.juridique = (function() {
   }
 
   async function mettreEnDemeure(loc) {
+    if (!_checkPlan()) return;
     var paiements = _getPaiementsLoc(loc.id);
     var analyse = window.IG.legal.analyseIA(loc, paiements);
     var result = await genererDoc('mise_en_demeure', loc, {
@@ -170,6 +198,7 @@ window.IG.juridique = (function() {
   }
 
   async function commanderPayer(loc) {
+    if (!_checkPlan()) return;
     var paiements = _getPaiementsLoc(loc.id);
     var analyse = window.IG.legal.analyseIA(loc, paiements);
     var result = await genererDoc('commandement_payer', loc, {
@@ -183,6 +212,7 @@ window.IG.juridique = (function() {
 
   // ── Analyse IA ─────────────────────────────────────────────────
   function afficherAnalyseIA(loc) {
+    if (!_checkPlan()) return;
     var paiements = _getPaiementsLoc(loc.id);
     var analyse = window.IG.legal.analyseIA(loc, paiements);
     var score   = window.IG.legal.calculerScore(loc, paiements);
@@ -236,6 +266,7 @@ window.IG.juridique = (function() {
 
   // ── Plainte / Dépôt de plainte ───────────────────────────────
   function deposerPlainte(loc) {
+    if (!_checkPlan()) return;
     var session = window.IG.auth ? window.IG.auth.getSession() : {};
     var paiements = _getPaiementsLoc(loc.id);
     var analyse = window.IG.legal.analyseIA(loc, paiements);
@@ -341,6 +372,7 @@ window.IG.juridique = (function() {
 
   // ── État des lieux entrée / sortie ───────────────────────────
   function afficherEtatDesLieux(loc, type) {
+    if (!_checkPlan()) return;
     var session = window.IG.auth ? window.IG.auth.getSession() : {};
     var imms = window.IG.immeubles ? window.IG.immeubles.getCache() : [];
     var imm = imms.find(function(i) { return i.id == loc.immeuble_id; }) || {};

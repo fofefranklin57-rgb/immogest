@@ -72,7 +72,7 @@ window.IG.perms = (function() {
       locataires: true, locataires_edit: false,
       paiements: false, paiements_edit: false,
       rapports: false, statistiques: false,
-      juridique: true, signatures: true,
+      juridique: false, signatures: false,
       marketplace: false, marketplace_publie: false, leads: false,
       messages: true, declarations: false,
       parametres: false, equipe: false,
@@ -84,7 +84,7 @@ window.IG.perms = (function() {
       locataires: false, locataires_edit: false,
       paiements: false, paiements_edit: false,
       rapports: false, statistiques: false,
-      juridique: true, signatures: true,
+      juridique: false, signatures: false,
       marketplace: true, marketplace_publie: false, leads: false,
       messages: true, declarations: true,
       parametres: false, equipe: false,
@@ -158,6 +158,11 @@ window.IG.perms = (function() {
     }
   ];
 
+  // Fonctionnalités verrouillées en plan gratuit
+  var PLAN_PAID_FEATURES = ['juridique', 'signatures', 'rapports', 'statistiques'];
+  // Plans qui donnent accès aux fonctionnalités payantes
+  var PLANS_PAYANTS = ['trial', 'starter', 'pro', 'cabinet'];
+
   // ── canDo — vérifie si la session courante a une permission ──────
   function canDo(perm) {
     var session = window.IG.auth.getSession();
@@ -165,6 +170,11 @@ window.IG.perms = (function() {
     var role = session.role || 'locataire';
     // Admin a toujours tout
     if (role === 'admin') return true;
+    // Gate plan : fonctionnalités payantes bloquées en gratuit
+    if (PLAN_PAID_FEATURES.indexOf(perm) !== -1) {
+      var plan = session.plan || 'gratuit';
+      if (PLANS_PAYANTS.indexOf(plan) === -1) return false;
+    }
     // Défauts du rôle
     var defaults = DEFAULTS[role] || {};
     var base = defaults[perm] !== undefined ? defaults[perm] : false;
