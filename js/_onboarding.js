@@ -157,10 +157,8 @@ function showRegistrationForm(mode, typeProfil) {
         <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">VOTRE NOM COMPLET</label>
         <input id="reg-nom" class="auth-input" placeholder="Jean Kamdem" style="width:100%;">
       </div>
-      <div style="margin-bottom:14px;">
-        <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">NUMÉRO DE TÉLÉPHONE</label>
-        <input id="reg-tel" class="auth-input" placeholder="699 00 00 00" type="tel" style="width:100%;">
-      </div>
+      <div style="margin-bottom:14px;" id="reg-tel-wrap"></div>
+      <script>document.getElementById('reg-tel-wrap').innerHTML = window.IG.utils.phoneField('reg-tel', 'NUMÉRO DE TÉLÉPHONE', '', true);<\/script>
       <div style="margin-bottom:14px;">
         <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">MOT DE PASSE</label>
         <input id="reg-pwd" class="auth-input" type="password" placeholder="Minimum 6 caractères" style="width:100%;">
@@ -186,7 +184,7 @@ async function submitRegistration(mode, typeProfil) {
   const btn       = document.getElementById('reg-btn');
 
   const nom    = (nomEl?.value || '').trim();
-  const tel    = (telEl?.value || '').trim().replace(/\s/g,'');
+  const tel    = window.IG.utils.phoneFieldValue('reg-tel').replace(/\s/g,'');
   const pwd    = pwdEl?.value || '';
   const pwd2   = pwd2El?.value || '';
   const nomCab = cabinetEl ? (cabinetEl.value || '').trim() : '';
@@ -322,10 +320,8 @@ function showLoginTenantScreen() {
         <div style="font-size:17px;font-weight:800;margin-top:8px;">Connexion à mon espace</div>
         <div style="font-size:12px;color:var(--text3);margin-top:4px;">Entrez vos identifiants de création de compte</div>
       </div>
-      <div style="margin-bottom:14px;">
-        <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">NUMÉRO DE TÉLÉPHONE</label>
-        <input id="lt-tel" class="auth-input" placeholder="699 00 00 00" type="tel" style="width:100%;">
-      </div>
+      <div style="margin-bottom:14px;" id="lt-tel-wrap"></div>
+      <script>document.getElementById('lt-tel-wrap').innerHTML = window.IG.utils.phoneField('lt-tel', 'NUMÉRO DE TÉLÉPHONE', '', true);<\/script>
       <div style="margin-bottom:20px;">
         <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">MOT DE PASSE</label>
         <input id="lt-pwd" class="auth-input" type="password" placeholder="Votre mot de passe" style="width:100%;">
@@ -336,7 +332,7 @@ function showLoginTenantScreen() {
 }
 
 async function submitLoginTenant() {
-  const tel   = (document.getElementById('lt-tel')?.value||'').trim().replace(/\s/g,'');
+  const tel   = window.IG.utils.phoneFieldValue('lt-tel').replace(/\s/g,'');
   const pwd   = document.getElementById('lt-pwd')?.value||'';
   const errEl = document.getElementById('lt-err');
   const btn   = document.getElementById('lt-btn');

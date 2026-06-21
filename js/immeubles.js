@@ -141,7 +141,7 @@ window.IG.immeubles = (function() {
       '<form id="form-immeuble">' +
       _field('nom_immeuble', t('Nom immeuble'), imm ? (imm.nom_immeuble || imm.nom) : '', true) +
       _field('nom_proprio', t('Propriétaire'), imm ? (imm.nom_proprio || '') : '') +
-      _field('tel_proprio', t('Tél propriétaire'), imm ? (imm.tel_proprio || '') : '', false, 'tel') +
+      window.IG.utils.phoneField('tel_proprio', t('Tél propriétaire'), imm ? (imm.tel_proprio || '') : '') +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
       _field('ville', t('Ville'), imm ? (imm.ville || '') : '') +
       _field('quartier', t('Quartier'), imm ? (imm.quartier || '') : '') +
@@ -195,7 +195,7 @@ window.IG.immeubles = (function() {
       data.nom_immeuble = fd.get('nom_immeuble');
       data.nom          = fd.get('nom_immeuble');
       data.nom_proprio  = fd.get('nom_proprio');
-      data.tel_proprio  = fd.get('tel_proprio');
+      data.tel_proprio  = window.IG.utils.phoneFieldValue('tel_proprio');
       data.ville        = fd.get('ville');
       data.quartier     = fd.get('quartier');
       data.apparts      = parseInt(fd.get('apparts'))  || 0;
