@@ -2441,7 +2441,7 @@ window.IG.app = (function() {
     }
     try {
       var session = await window.IG.auth.loginUnified(tel.trim(), pwd);
-      _showAppShell(); await _loadData();
+      _showAppShell(); _renderLangPlan(); await _loadData();
       // Router selon le rôle
       if (session.role === 'locataire') showPage('portail');
       else showPage('dashboard');
@@ -2462,7 +2462,7 @@ window.IG.app = (function() {
     if (errEl) errEl.style.display = 'none';
     try {
       await window.IG.auth.join(code.trim(), nom.trim(), pwd);
-      _showAppShell(); await _loadData(); showPage('dashboard');
+      _showAppShell(); _renderLangPlan(); await _loadData(); showPage('dashboard');
     } catch(ex) {
       if (errEl) { errEl.textContent = ex.message || 'Code invalide'; errEl.style.display = 'block'; }
       if (btn) { btn.textContent = orig; btn.disabled = false; }
@@ -2483,7 +2483,7 @@ window.IG.app = (function() {
     try {
       await window.IG.auth.register(nom, tel.trim(), pwd, cabinet);
       await window.IG.auth.login(tel.trim(), pwd);
-      _showAppShell(); await _loadData(); showPage('dashboard');
+      _showAppShell(); _renderLangPlan(); await _loadData(); showPage('dashboard');
     } catch(ex) {
       if (errEl) { errEl.textContent = ex.message; errEl.style.display = 'block'; }
       if (btn) { btn.textContent = orig; btn.disabled = false; }
