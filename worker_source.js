@@ -45,6 +45,29 @@ async function _verifyToken(token, secret) {
   } catch { return null; }
 }
 
+// ── Normalisation numéro de téléphone (retire indicatif +XXX) ──
+// Retourne un filtre Supabase couvrant toutes les variantes du numéro (avec/sans indicatif)
+function _telFilter(telephone) {
+  const raw = telephone.toString().replace(/[\s\-\(\)]/g, '');
+  const variants = [raw];
+  if (raw.startsWith('+')) {
+    // Essayer code pays de 1, 2 et 3 chiffres après le +
+    for (let len = 1; len <= 3; len++) {
+      const stripped = raw.slice(1 + len);
+      if (stripped.length >= 7) variants.push(stripped);
+    }
+  } else if (/^\d{10,}$/.test(raw)) {
+    // Numéro sans + mais avec indicatif (ex: 237676528917) — essayer de retirer 1-3 chiffres
+    for (let len = 1; len <= 3; len++) {
+      const stripped = raw.slice(len);
+      if (stripped.length >= 7 && stripped.length < raw.length) variants.push(stripped);
+    }
+  }
+  const unique = [...new Set(variants)];
+  if (unique.length === 1) return 'telephone=eq.' + encodeURIComponent(unique[0]);
+  return 'or=(' + unique.map(function(v){ return 'telephone.eq.' + encodeURIComponent(v); }).join(',') + ')';
+}
+
 // ── Rate limiting (mémoire Worker, reset à chaque cold start) ──
 const _rl = new Map();
 function _rateLimit(ip, route, max = 10, windowMs = 900000) {
@@ -318,7 +341,7 @@ ${_footer()}</body></html>`;
           return json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' }, 429);
         const { telephone, passwordHash } = await request.json();
         if (!telephone || !passwordHash) return json({ error: 'Champs manquants' }, 400);
-        const res = await sbFetch('tenants', '?telephone=eq.' + encodeURIComponent(telephone) + '&select=*');
+        const res = await sbFetch('tenants', '?' + _telFilter(telephone) + '&select=*');
         const tenants = res.ok ? await res.json() : [];
         if (!tenants.length) return json({ error: 'Compte introuvable' }, 404);
         const tenant = tenants[0];
@@ -379,8 +402,7 @@ ${_footer()}</body></html>`;
 
         // Chercher dans users_app par téléphone (rôle locataire ou bailleur)
         const uRes = await sbFetch('users_app',
-          '?telephone=eq.' + encodeURIComponent(telephone) +
-          '&actif=eq.true&select=*');
+          '?' + _telFilter(telephone) + '&actif=eq.true&select=*');
         const users = uRes.ok ? await uRes.json() : [];
         const portal = users.find(u => u.role === 'locataire' || u.role === 'bailleur');
         if (!portal) return json({ error: 'Aucun compte locataire ou bailleur trouvé pour ce numéro' }, 404);
@@ -407,7 +429,7 @@ ${_footer()}</body></html>`;
         if (portal.role === 'locataire') {
           const lRes = await sbFetch('locataires',
             '?tenant_id=eq.' + portal.tenant_id +
-            '&telephone=eq.' + encodeURIComponent(telephone) + '&select=id,immeuble_id');
+            '&' + _telFilter(telephone) + '&select=id,immeuble_id');
           const locs = lRes.ok ? await lRes.json() : [];
           if (locs.length) { locataireId = locs[0].id; immeubleIdPortal = locs[0].immeuble_id; }
         }
@@ -427,13 +449,14 @@ ${_footer()}</body></html>`;
           return json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' }, 429);
         const { telephone, passwordHash } = await request.json();
         if (!telephone || !passwordHash) return json({ error: 'Téléphone et mot de passe requis' }, 400);
-        const tel = encodeURIComponent(telephone);
+        const telFilter = _telFilter(telephone);
 
         // 1) Chercher dans tenants (admin cabinet)
-        const tRes = await sbFetch('tenants', '?telephone=eq.' + tel + '&select=*');
+        const tRes = await sbFetch('tenants', '?' + telFilter + '&select=*');
         const tenants = tRes.ok ? await tRes.json() : [];
-        if (tenants.length && tenants[0].password_hash === passwordHash) {
+        if (tenants.length) {
           const tenant = tenants[0];
+          if (tenant.password_hash !== passwordHash) return json({ error: 'Mot de passe incorrect' }, 401);
           const uRes = await sbFetch('users_app', '?tenant_id=eq.' + tenant.id + '&role=eq.admin&select=*&limit=1');
           const adminUser = (uRes.ok ? await uRes.json() : [])[0] || { id: 'admin_' + tenant.id, role: 'admin', nom: tenant.nom };
           await logEvent(tenant.id, 'info', 'tenant.login', 'Connexion', { telephone });
@@ -442,8 +465,8 @@ ${_footer()}</body></html>`;
         }
 
         // 2) Chercher dans users_app (collaborateurs, locataires, bailleurs)
-        const uRes = await sbFetch('users_app', '?telephone=eq.' + tel + '&actif=eq.true&select=*');
-        const uList = uRes.ok ? await uRes.json() : [];
+        const uRes2 = await sbFetch('users_app', '?' + telFilter + '&actif=eq.true&select=*');
+        const uList = uRes2.ok ? await uRes2.json() : [];
         if (!uList.length) return json({ error: 'Aucun compte trouvé pour ce numéro' }, 404);
         const u = uList[0];
         if (u.actif === false) return json({ error: 'Compte désactivé' }, 403);
@@ -461,7 +484,7 @@ ${_footer()}</body></html>`;
         let locataireId = null;
         let immId2 = u.immeuble_id || null;
         if (u.role === 'locataire') {
-          const lRes = await sbFetch('locataires', '?tenant_id=eq.' + u.tenant_id + '&telephone=eq.' + tel + '&select=id,immeuble_id');
+          const lRes = await sbFetch('locataires', '?tenant_id=eq.' + u.tenant_id + '&' + telFilter + '&select=id,immeuble_id');
           const locs = lRes.ok ? await lRes.json() : [];
           if (locs.length) { locataireId = locs[0].id; immId2 = locs[0].immeuble_id; }
         }
