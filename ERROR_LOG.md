@@ -199,3 +199,22 @@ Format : `[DATE] FICHIER — Erreur → Solution`
 ### Upload photos Supabase Storage
 - Bucket `marketplace` doit être **Public** dans le dashboard Supabase
 - Sans ça, les URLs générées ne sont pas accessibles publiquement
+
+---
+## 2026-06-26 — Login bloqué + Erreur base de données
+
+### Symptômes
+- "Aucun compte trouvé pour ce numéro" à la connexion (même avec le bon numéro)
+- "Erreur base de données" à la création d'un immeuble
+
+### Causes
+1. Worker Cloudflare déployé était une vieille version → route `/login` absente
+2. PhoneField envoie `+237676528917` mais DB stocke `676528917` (sans indicatif) → aucun match
+3. Logique fallback incorrecte : tenant trouvé + mauvais mdp → fallback users_app au lieu de "Mot de passe incorrect"
+4. Colonnes `type_honoraires`/`valeur_honoraires` manquantes dans la table `immeubles`
+
+### Corrections
+- Worker redéployé avec route `/login` active
+- Fonction `_telFilter()` dans worker : génère toutes les variantes de numéro (1-3 chiffres d'indicatif) via filtre `or=()` Supabase
+- Logique login : si tenant trouvé → vérifier mdp immédiatement (pas de fallback)
+- Migration V014 : `ALTER TABLE immeubles ADD COLUMN IF NOT EXISTS type_honoraires/valeur_honoraires`
