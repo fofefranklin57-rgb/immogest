@@ -861,18 +861,42 @@ window.IG.app = (function() {
     var content = document.getElementById('page-content');
     if (!content) return;
     _syncCaches();
+    var imms = _data.immeubles || [];
+    var immOptions = '<option value="">' + t('Tous les immeubles') + '</option>' +
+      imms.map(function(i) {
+        var sel = _currentImmeubleId == i.id ? ' selected' : '';
+        return '<option value="' + i.id + '"' + sel + '>' + esc(i.nom_immeuble || i.nom) + '</option>';
+      }).join('');
+
     content.innerHTML = '<div class="content">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">' +
       '<h2 style="font-size:17px;font-weight:700">👥 ' + t('Locataires') + '</h2>' +
-      '<div style="display:flex;gap:8px">' +
-      '<input id="loc-search" placeholder="' + t('Rechercher...') + '" oninput="window.IG.locataires.renderListe(window.IG.paiements.getCache())" ' +
-        'style="padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;width:200px;color:var(--text)">' +
       '<button onclick="window.IG.locataires.afficherFormulaire()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">+ ' + t('Ajouter') + '</button>' +
-      '</div></div>' +
-      '<div class="card" style="padding:0;overflow:hidden"><div id="locataires-liste" style="overflow-x:auto"></div></div>' +
+      '</div>' +
+      // Filtres
+      '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">' +
+      '<select id="loc-filtre-imm" onchange="window.IG.app._locFiltrer()" style="padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' + immOptions + '</select>' +
+      '<select id="loc-filtre-statut" onchange="window.IG.app._locFiltrer()" style="padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
+        '<option value="">' + t('Tous les statuts') + '</option>' +
+        '<option value="actif">' + t('Actifs') + '</option>' +
+        '<option value="impaye">⚠️ ' + t('Impayés') + '</option>' +
+        '<option value="libre">🏠 ' + t('Libres') + '</option>' +
+      '</select>' +
+      '<input id="loc-search" placeholder="' + t('Rechercher...') + '" oninput="window.IG.app._locFiltrer()" ' +
+        'style="padding:7px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;flex:1;min-width:140px;max-width:220px;color:var(--text)">' +
+      '</div>' +
+      '<div id="locataires-liste" style="overflow-x:auto"></div>' +
       '<div id="ig-ad-locataires" style="margin-top:20px;text-align:center"></div></div>';
-    if (window.IG.locataires) window.IG.locataires.renderListe(_data.paiements, _currentImmeubleId);
+
+    if (window.IG.locataires) window.IG.locataires.renderListeFiltree(_data.paiements, _currentImmeubleId, '');
     if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-locataires', 'ad2');
+  }
+
+  function _locFiltrer() {
+    var immId = (document.getElementById('loc-filtre-imm') || {}).value || '';
+    var statut = (document.getElementById('loc-filtre-statut') || {}).value || '';
+    _currentImmeubleId = immId ? parseInt(immId) || immId : null;
+    if (window.IG.locataires) window.IG.locataires.renderListeFiltree(_data.paiements, _currentImmeubleId, statut);
   }
 
   // ── Paiements ─────────────────────────────────────────────────
@@ -2532,6 +2556,7 @@ window.IG.app = (function() {
     toggleSidebar, closeSidebar, toggleSidebarSection, toggleDarkMode, lockScreen, openGuide,
     toggleAIChat, sendAIMessage, aiQuickAction,
     _refreshPaiements, _restaurer, _supprimerDefinitivement, _viderCorbeille, _loadCorbeille,
+    _locFiltrer,
     _genererInvitation, _toggleUser, _equipeTab, _resetCodeUser, _appliquerPromo,
     _loadDeclarations, _validerDeclaration,
     _loadMessages, _nouveauMessage, _marquerLu,

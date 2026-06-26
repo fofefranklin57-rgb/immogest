@@ -171,6 +171,129 @@ window.IG.locataires = (function() {
     container.innerHTML = html;
   }
 
+  function renderListeFiltree(paiements, immeubleId, statutFiltre) {
+    var container = document.getElementById('locataires-liste');
+    if (!container) return;
+
+    var q = (document.getElementById('loc-search') && document.getElementById('loc-search').value || '').toLowerCase();
+    var imms = window.IG.immeubles ? window.IG.immeubles.getCache() : [];
+    var fmt = window.IG.utils.formatMontant;
+
+    var liste = immeubleId
+      ? _cache.filter(function(l) { return l.immeuble_id == immeubleId; })
+      : _cache.slice();
+
+    if (statutFiltre === 'actif') {
+      liste = liste.filter(function(l) { return l.statut !== 'libre'; });
+    } else if (statutFiltre === 'libre') {
+      liste = liste.filter(function(l) { return l.statut === 'libre'; });
+    } else if (statutFiltre === 'impaye') {
+      var now = new Date(); var mois = now.getMonth() + 1; var annee = now.getFullYear();
+      liste = liste.filter(function(l) {
+        if (l.statut === 'libre') return false;
+        var pays = (paiements || []).filter(function(p) { return p.locataire_id == l.id; });
+        return !pays.some(function(p) {
+          var d = new Date(p.date_paiement || p.created_at || '');
+          return d.getMonth() + 1 === mois && d.getFullYear() === annee;
+        });
+      });
+    }
+
+    if (q) liste = liste.filter(function(l) {
+      return (l.nom || '').toLowerCase().includes(q) ||
+             (l.appt || '').toLowerCase().includes(q) ||
+             (l.telephone || '').includes(q);
+    });
+
+    if (!liste.length) {
+      container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text3)">Aucun locataire trouvé pour ces filtres.</div>';
+      return;
+    }
+
+    if (immeubleId) {
+      _renderTableau(liste, paiements, container);
+      return;
+    }
+
+    // Groupement par immeuble
+    var groupes = {};
+    var ordre = [];
+    liste.forEach(function(l) {
+      var key = l.immeuble_id || 0;
+      if (!groupes[key]) { groupes[key] = []; ordre.push(key); }
+      groupes[key].push(l);
+    });
+
+    var html = '';
+    ordre.forEach(function(immId) {
+      var imm = imms.find(function(i) { return i.id == immId; });
+      var nomImm = imm ? esc(imm.nom_immeuble || imm.nom) : 'Sans immeuble';
+      var groupe = groupes[immId];
+      var actifs = groupe.filter(function(l) { return l.statut !== 'libre'; }).length;
+      html += '<div style="margin-bottom:20px">' +
+        '<div onclick="window.IG.app.showPage(\'locataires\',{immeubleId:' + immId + '})" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg3);border-radius:10px 10px 0 0;cursor:pointer;border-bottom:2px solid var(--accent)">' +
+        '<span style="font-size:15px">🏢</span>' +
+        '<span style="font-weight:700;font-size:14px;color:var(--text)">' + nomImm + '</span>' +
+        '<span style="margin-left:auto;font-size:12px;color:var(--text3)">' + actifs + '/' + groupe.length + '</span>' +
+        '<span style="font-size:11px;color:var(--accent);padding-left:4px">›</span>' +
+        '</div>' +
+        '<div class="table-wrap" style="border-radius:0 0 10px 10px;overflow:hidden"><table class="tbl"><thead><tr>' +
+        '<th>Local</th><th>Nom</th><th>Tél</th><th>Loyer</th><th>Statut</th><th>Reste dû</th><th></th>' +
+        '</tr></thead><tbody>';
+      groupe.forEach(function(loc) {
+        var statut = _statutBadge(loc, paiements);
+        var reste = _resteCalc(loc, paiements);
+        var resteHtml = reste > 0 ? '<span class="td-amount red">' + fmt(reste) + '</span>'
+          : reste < 0 ? '<span class="td-amount" style="color:var(--green)">+' + fmt(Math.abs(reste)) + '</span>' : '–';
+        html += '<tr id="loc-row-' + loc.id + '" class="' + (loc.statut === 'libre' ? 'row-libre' : '') + '">' +
+          '<td>' + _localBadge(loc.appt) + '</td>' +
+          '<td class="td-name">' + esc(loc.nom) + '</td>' +
+          '<td style="font-size:12px">' + esc(loc.telephone || '–') + '</td>' +
+          '<td class="td-amount">' + fmt(loc.loyer) + '</td>' +
+          '<td>' + statut + '</td><td>' + resteHtml + '</td>' +
+          '<td><button class="action-menu-btn" onclick="window.IG.locataires._toggleMenu(this,' + loc.id + ',' + (loc.telephone ? 1 : 0) + ')">···</button></td></tr>';
+      });
+      html += '</tbody></table></div></div>';
+    });
+    container.innerHTML = html;
+  }
+
+  function _renderTableau(liste, paiements, container) {
+    var fmt = window.IG.utils.formatMontant;
+    var _ordreType = { 'd': 0, 'a': 1, 's': 2, 'c': 3 };
+    liste = liste.slice().sort(function(a, b) {
+      var pa = (a.appt || '').toLowerCase(); var pb = (b.appt || '').toLowerCase();
+      var oa = _ordreType[pa[0]] !== undefined ? _ordreType[pa[0]] : 9;
+      var ob = _ordreType[pb[0]] !== undefined ? _ordreType[pb[0]] : 9;
+      if (oa !== ob) return oa - ob;
+      return parseInt((pa.match(/\d+/)||[0])[0]) - parseInt((pb.match(/\d+/)||[0])[0]);
+    });
+    var html = '<div class="table-wrap"><table class="tbl"><thead><tr>' +
+      '<th>Local</th><th>Nom</th><th>Tél</th><th>Loyer</th><th>Observations</th><th>Statut</th><th>Reste dû</th><th>Actions</th>' +
+      '</tr></thead><tbody>';
+    liste.forEach(function(loc) {
+      var statut = _statutBadge(loc, paiements);
+      var reste = _resteCalc(loc, paiements);
+      var resteHtml = reste > 0 ? '<span class="td-amount red">' + fmt(reste) + '</span>'
+        : reste < 0 ? '<span class="td-amount" style="color:var(--green)">+' + fmt(Math.abs(reste)) + '</span>' : '–';
+      var alerte = _alerteLabel(loc, paiements);
+      var obsHtml = esc(loc.observations || '');
+      if (obsHtml) obsHtml = '<span style="color:var(--text3);font-size:11px">' + obsHtml + '</span>';
+      if (alerte) obsHtml += (obsHtml ? '<br>' : '') + alerte;
+      if (reste > 0 && loc.loyer > 0) { var mDus = Math.floor(reste / loc.loyer); if (mDus >= 1) obsHtml += '<br><span style="font-size:10px;color:var(--red)">' + mDus + ' mois dus</span>'; }
+      html += '<tr id="loc-row-' + loc.id + '" class="' + (loc.statut === 'libre' ? 'row-libre' : '') + '">' +
+        '<td>' + _localBadge(loc.appt) + '</td>' +
+        '<td class="td-name">' + esc(loc.nom) + (window.IG.juridique ? '<br>' + window.IG.juridique.badgeScore(loc) : '') + '</td>' +
+        '<td style="font-size:12px">' + esc(loc.telephone || '–') + '</td>' +
+        '<td class="td-amount">' + fmt(loc.loyer) + '</td>' +
+        '<td style="font-size:11px;max-width:180px">' + obsHtml + '</td>' +
+        '<td>' + statut + '</td><td>' + resteHtml + '</td>' +
+        '<td style="white-space:nowrap"><button class="action-menu-btn" onclick="window.IG.locataires._toggleMenu(this,' + loc.id + ',' + (loc.telephone ? 1 : 0) + ')">···</button></td></tr>';
+    });
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+  }
+
   function _statutBadge(loc, paiements) {
     var pays = (paiements || []).filter(function(p) { return p.locataire_id == loc.id; });
     var now = new Date();
@@ -592,7 +715,7 @@ window.IG.locataires = (function() {
 
   return {
     charger, getCache, getById, getByImmeuble, sauvegarder,
-    liberer, supprimer, renderListe, afficherFormulaire, afficherFiche,
+    liberer, supprimer, renderListe, renderListeFiltree, afficherFormulaire, afficherFiche,
     lienWA, _libererConfirm, _toggleMenu, _closeMenus, envoyerAccesWA,
     _publierAnnonce, rafraichirFiche
   };
