@@ -961,7 +961,7 @@ window.IG.rapports = (function() {
     var nomCabinet = session.nomCabinet || session.nom || 'Cabinet ImmoGest';
     var typeProfil = session.type_profil || 'gestionnaire';
     var profShow   = typeProfil !== 'proprietaire';
-    var ville      = session.ville || im.ville || '';
+    var ville      = im.ville || '';
     var tel        = session.telephone || '';
     var nomImm     = im.nom_immeuble || im.nom || 'Immeuble';
     var now        = new Date();
@@ -972,8 +972,8 @@ window.IG.rapports = (function() {
       var cur = new Date(deb.getFullYear(), deb.getMonth(), 1);
       while (cur <= fin) {
         var mFin = new Date(cur.getFullYear(), cur.getMonth() + 1, 0);
-        var entree = l.date_entree ? new Date(l.date_entree) : null;
-        var sortie = l.date_sortie  ? new Date(l.date_sortie)  : null;
+        var entree = l.entree ? new Date(l.entree) : null;
+        var sortie = l.date_sortie ? new Date(l.date_sortie) : null;
         var actif  = (!entree || entree <= mFin) && (!sortie || sortie >= cur);
         if (actif) n++;
         cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
@@ -1663,11 +1663,231 @@ window.IG.rapports = (function() {
     } catch(e) { window.IG.utils.showToast('Erreur DOCX: ' + e.message, 'red'); }
   }
 
+  // ── Rapport caisse (synthèse encaissements sur période) ──────
+  function afficherRapportCaisse() {
+    var now = new Date();
+    var debutDef = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    var finDef   = now.toISOString().split('T')[0];
+
+    var formHtml =
+      '<h3 style="font-size:16px;margin-bottom:16px">💰 Rapport de caisse</h3>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">' +
+      '<div><label style="font-size:12px;font-weight:600;color:var(--text2)">Du</label>' +
+      '<input type="date" id="rc-debut" value="' + debutDef + '" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
+      '<div><label style="font-size:12px;font-weight:600;color:var(--text2)">Au</label>' +
+      '<input type="date" id="rc-fin" value="' + finDef + '" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+      '<button data-modal-close style="padding:9px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Annuler</button>' +
+      '<button id="rc-gen" style="padding:9px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:600;font-size:13px">Générer</button>' +
+      '</div>';
+
+    var modal = window.IG.utils.showModal(formHtml, { width: '420px' });
+    modal.box.querySelector('#rc-gen').addEventListener('click', function() {
+      var debut = modal.box.querySelector('#rc-debut').value;
+      var fin   = modal.box.querySelector('#rc-fin').value;
+      if (!debut || !fin) return;
+      modal.close();
+      _genererRapportCaisse(debut, fin);
+    });
+  }
+
+  function _genererRapportCaisse(debut, fin) {
+    var pay  = window.IG.paiements   ? window.IG.paiements.getCache()   : [];
+    var locs = window.IG.locataires  ? window.IG.locataires.getCache()  : [];
+    var imms = window.IG.immeubles   ? window.IG.immeubles.getCache()   : [];
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var params  = session.parametres || {};
+
+    var d1 = new Date(debut), d2 = new Date(fin + 'T23:59:59');
+    var filtered = pay.filter(function(p) {
+      var dp = new Date(p.date_paiement);
+      return dp >= d1 && dp <= d2;
+    });
+
+    // Regrouper par mode paiement
+    var parMode = {};
+    filtered.forEach(function(p) {
+      var m = p.mode_paiement || 'espèces';
+      parMode[m] = (parMode[m] || 0) + (parseFloat(p.montant) || 0);
+    });
+
+    // Regrouper par immeuble
+    var parImm = {};
+    filtered.forEach(function(p) {
+      var loc = locs.find(function(l) { return l.id == p.locataire_id; });
+      var immId = loc ? loc.immeuble_id : 'inconnu';
+      parImm[immId] = (parImm[immId] || 0) + (parseFloat(p.montant) || 0);
+    });
+
+    var total = filtered.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
+    var remis = filtered.filter(function(p) { return p.remisAuBailleur; }).reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
+    var encaisseNet = total - remis;
+    var dateEd = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    var cabNom = params.nom_cabinet || session.nomCabinet || session.nom || 'Cabinet';
+
+    // Tableau lignes détail
+    var lignes = filtered
+      .sort(function(a, b) { return new Date(a.date_paiement) - new Date(b.date_paiement); })
+      .map(function(p, i) {
+        var loc = locs.find(function(l) { return l.id == p.locataire_id; });
+        var imm = loc ? imms.find(function(x) { return x.id == loc.immeuble_id; }) : null;
+        var bg = i % 2 === 0 ? '' : 'background:#F5F9FD;';
+        return '<tr style="' + bg + '">' +
+          '<td style="padding:6px 10px;font-size:12px">' + _fmtD(p.date_paiement) + '</td>' +
+          '<td style="padding:6px 10px;font-size:12px;font-weight:600">' + esc(loc ? loc.nom : '—') + '</td>' +
+          '<td style="padding:6px 10px;font-size:12px;color:#555">' + esc(imm ? (imm.nom_immeuble || imm.nom) : '—') + '</td>' +
+          '<td style="padding:6px 10px;font-size:12px">' + esc(loc ? (loc.appt || '—') : '—') + '</td>' +
+          '<td style="padding:6px 10px;font-size:12px">' + esc(p.mode_paiement || 'espèces') + '</td>' +
+          '<td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:700">' + fmt(p.montant) + '</td>' +
+          '<td style="padding:6px 10px;font-size:12px;text-align:center">' + (p.remisAuBailleur ? '✓' : '') + '</td>' +
+          '</tr>';
+      }).join('');
+
+    // Synthèse modes
+    var synthMode = Object.keys(parMode).map(function(m) {
+      return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #eee;font-size:11px">' +
+        '<span>' + esc(m) + '</span><strong>' + fmt(parMode[m]) + '</strong></div>';
+    }).join('');
+
+    // Synthèse immeuble
+    var synthImm = Object.keys(parImm).map(function(id) {
+      var imm = imms.find(function(x) { return x.id == id; });
+      return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #eee;font-size:11px">' +
+        '<span>' + esc(imm ? (imm.nom_immeuble || imm.nom) : '—') + '</span><strong>' + fmt(parImm[id]) + '</strong></div>';
+    }).join('');
+
+    var TH = 'background:#0E6AAF;color:#fff;padding:6px 10px;font-size:10px;text-align:left;font-weight:700;';
+    var html =
+      '<div id="caisse-print-zone" style="font-family:\'Times New Roman\',serif;font-size:11px;background:#fff;color:#111;padding:20px">' +
+      '<div style="text-align:center;margin-bottom:16px">' +
+      '<div style="font-size:15px;font-weight:700;color:#0E6AAF">' + esc(cabNom) + '</div>' +
+      '<div style="font-size:13px;font-weight:700;text-transform:uppercase;text-decoration:underline;margin:8px 0 4px">Rapport de caisse</div>' +
+      '<div style="font-size:11px;color:#555">Période du ' + _fmtD(debut) + ' au ' + _fmtD(fin) + ' · Édité le ' + dateEd + '</div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">' +
+      _metricCard('💰', fmt(total), 'Total encaissé') +
+      _metricCard('🏦', fmt(encaisseNet), 'Net cabinet') +
+      _metricCard('📋', filtered.length + '', 'Opérations') +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">' +
+      '<div style="background:#F5F9FD;border-radius:8px;padding:12px"><div style="font-size:10px;font-weight:700;color:#0E6AAF;margin-bottom:8px;text-transform:uppercase">Par mode de paiement</div>' + synthMode + '</div>' +
+      '<div style="background:#F5F9FD;border-radius:8px;padding:12px"><div style="font-size:10px;font-weight:700;color:#0E6AAF;margin-bottom:8px;text-transform:uppercase">Par immeuble</div>' + synthImm + '</div>' +
+      '</div>' +
+      (remis > 0 ? '<div style="background:#FFF5E0;border:1px solid #E07B00;border-radius:6px;padding:8px 12px;margin-bottom:14px;font-size:11px">⚠️ <strong>' + fmt(remis) + '</strong> remis directement au bailleur (déduit du net cabinet)</div>' : '') +
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
+      '<thead><tr>' +
+      '<th style="' + TH + '">Date</th><th style="' + TH + '">Locataire</th><th style="' + TH + '">Immeuble</th>' +
+      '<th style="' + TH + '">Local</th><th style="' + TH + '">Mode</th><th style="' + TH + 'text-align:right">Montant</th>' +
+      '<th style="' + TH + 'text-align:center">Bailleur</th>' +
+      '</tr></thead><tbody>' + (lignes || '<tr><td colspan="7" style="padding:12px;text-align:center;color:#999;font-style:italic">Aucun encaissement sur cette période</td></tr>') + '</tbody>' +
+      '<tfoot><tr style="background:#0E6AAF;color:#fff"><td colspan="5" style="padding:6px 10px;font-weight:700;font-size:12px">TOTAL</td>' +
+      '<td style="padding:6px 10px;font-weight:700;font-size:12px;text-align:right">' + fmt(total) + '</td><td></td></tr></tfoot>' +
+      '</table></div></div>';
+
+    var modalHtml =
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+      '<h3 style="font-size:15px;font-weight:700">💰 Rapport de caisse</h3>' +
+      '<div style="display:flex;gap:8px">' +
+      '<button onclick="window.print()" style="padding:7px 13px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;cursor:pointer">🖨️ Imprimer</button>' +
+      '<button data-modal-close style="padding:7px 13px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;cursor:pointer">Fermer</button>' +
+      '</div></div>' + html;
+
+    window.IG.utils.showModal(modalHtml, { width: '760px' });
+  }
+
+  // ── Rapport portefeuille (vue consolidée multi-immeubles) ─────
+  function afficherRapportPortefeuille() {
+    var imms = window.IG.immeubles  ? window.IG.immeubles.getCache()  : [];
+    var locs = window.IG.locataires ? window.IG.locataires.getCache() : [];
+    var pay  = window.IG.paiements  ? window.IG.paiements.getCache()  : [];
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var params  = session.parametres || {};
+
+    var now = new Date();
+    var moisCur = now.getMonth() + 1;
+    var annCur  = now.getFullYear();
+    var dateEd  = now.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    var cabNom  = params.nom_cabinet || session.nomCabinet || session.nom || 'Cabinet';
+
+    // Totaux globaux
+    var totalLocaux    = imms.reduce(function(s, i) { return s + (i.apparts||0) + (i.studios||0) + (i.chambres||0) + (i.duplex||0); }, 0);
+    var totalOccupes   = locs.filter(function(l) { return l.statut !== 'libre'; }).length;
+    var totalLoyersMRC = locs.filter(function(l) { return l.statut !== 'libre'; }).reduce(function(s, l) { return s + (parseFloat(l.loyer)||0); }, 0);
+    var totalEncMois   = pay.filter(function(p) { return parseInt(p.mois) === moisCur && parseInt(p.annee) === annCur; }).reduce(function(s, p) { return s + (parseFloat(p.montant)||0); }, 0);
+    var totalArrieres  = locs.filter(function(l) { return l.statut !== 'libre'; }).reduce(function(s, l) { return s + (parseFloat(l.arrieres)||0); }, 0);
+    var tauxGlobal     = totalLocaux > 0 ? Math.round(totalOccupes / totalLocaux * 100) : 0;
+
+    // Lignes par immeuble
+    var rows = imms.map(function(imm, i) {
+      var locsImm  = locs.filter(function(l) { return l.immeuble_id == imm.id; });
+      var actifs   = locsImm.filter(function(l) { return l.statut !== 'libre'; });
+      var total    = (imm.apparts||0) + (imm.studios||0) + (imm.chambres||0) + (imm.duplex||0);
+      var taux     = total > 0 ? Math.round(actifs.length / total * 100) : 0;
+      var loyerMRC = actifs.reduce(function(s, l) { return s + (parseFloat(l.loyer)||0); }, 0);
+      var encMois  = pay.filter(function(p) {
+        var lid = actifs.map(function(l) { return l.id; });
+        return lid.includes(p.locataire_id) && parseInt(p.mois) === moisCur && parseInt(p.annee) === annCur;
+      }).reduce(function(s, p) { return s + (parseFloat(p.montant)||0); }, 0);
+      var recouvr  = loyerMRC > 0 ? Math.round(encMois / loyerMRC * 100) : 0;
+      var colTaux  = taux >= 80 ? '#1a7a3a' : taux >= 50 ? '#E07B00' : '#c0392b';
+      var colRec   = recouvr >= 80 ? '#1a7a3a' : recouvr >= 50 ? '#E07B00' : '#c0392b';
+      var bg = i % 2 === 0 ? '' : 'background:#F5F9FD;';
+      return '<tr style="' + bg + '">' +
+        '<td style="padding:7px 10px;font-size:12px;font-weight:700">' + esc(imm.nom_immeuble || imm.nom) + '</td>' +
+        '<td style="padding:7px 10px;font-size:12px;color:#555">' + esc(imm.ville || '—') + '</td>' +
+        '<td style="padding:7px 10px;font-size:12px;text-align:center">' + total + '</td>' +
+        '<td style="padding:7px 10px;font-size:12px;text-align:center;color:#1a7a3a;font-weight:700">' + actifs.length + '</td>' +
+        '<td style="padding:7px 10px;font-size:12px;text-align:center;font-weight:700;color:' + colTaux + '">' + taux + '%</td>' +
+        '<td style="padding:7px 10px;font-size:12px;text-align:right">' + fmt(loyerMRC) + '</td>' +
+        '<td style="padding:7px 10px;font-size:12px;text-align:right;font-weight:700;color:' + colRec + '">' + fmt(encMois) + ' <span style="font-weight:400;font-size:10px;color:#999">(' + recouvr + '%)</span></td>' +
+        '</tr>';
+    }).join('');
+
+    var TH = 'background:#0E6AAF;color:#fff;padding:7px 10px;font-size:10px;font-weight:700;text-align:left;';
+    var html =
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+      '<h3 style="font-size:15px;font-weight:700">🗂️ Rapport portefeuille</h3>' +
+      '<div style="display:flex;gap:8px">' +
+      '<button onclick="window.print()" style="padding:7px 13px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;cursor:pointer">🖨️ Imprimer</button>' +
+      '<button data-modal-close style="padding:7px 13px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;cursor:pointer">Fermer</button>' +
+      '</div></div>' +
+      '<div style="font-size:11px;color:var(--text3);margin-bottom:14px">Édité le ' + dateEd + ' · ' + esc(cabNom) + '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">' +
+      _metricCard('🏢', imms.length + '', 'Immeubles') +
+      _metricCard('🔑', totalOccupes + '/' + totalLocaux, 'Occupation') +
+      _metricCard('📈', tauxGlobal + '%', 'Taux global') +
+      _metricCard('💰', fmt(totalEncMois), 'Encaissé ce mois') +
+      '</div>' +
+      (totalArrieres > 0 ? '<div style="background:rgba(185,48,32,.08);border:1px solid var(--red);border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:12px">⚠️ Arriérés cumulés déclarés : <strong style="color:var(--red)">' + fmt(totalArrieres) + '</strong></div>' : '') +
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
+      '<thead><tr>' +
+      '<th style="' + TH + '">Immeuble</th>' +
+      '<th style="' + TH + '">Ville</th>' +
+      '<th style="' + TH + 'text-align:center">Locaux</th>' +
+      '<th style="' + TH + 'text-align:center">Actifs</th>' +
+      '<th style="' + TH + 'text-align:center">Occupation</th>' +
+      '<th style="' + TH + 'text-align:right">Loyers/mois</th>' +
+      '<th style="' + TH + 'text-align:right">Encaissé ce mois</th>' +
+      '</tr></thead><tbody>' + (rows || '<tr><td colspan="7" style="padding:14px;text-align:center;color:#999;font-style:italic">Aucun immeuble</td></tr>') + '</tbody>' +
+      '<tfoot><tr style="background:#0E6AAF;color:#fff">' +
+      '<td colspan="2" style="padding:7px 10px;font-weight:700;font-size:12px">TOTAUX PORTEFEUILLE</td>' +
+      '<td style="padding:7px 10px;text-align:center;font-weight:700">' + totalLocaux + '</td>' +
+      '<td style="padding:7px 10px;text-align:center;font-weight:700">' + totalOccupes + '</td>' +
+      '<td style="padding:7px 10px;text-align:center;font-weight:700">' + tauxGlobal + '%</td>' +
+      '<td style="padding:7px 10px;text-align:right;font-weight:700">' + fmt(totalLoyersMRC) + '</td>' +
+      '<td style="padding:7px 10px;text-align:right;font-weight:700">' + fmt(totalEncMois) + '</td>' +
+      '</tr></tfoot></table></div>';
+
+    window.IG.utils.showModal(html, { width: '800px' });
+  }
+
   return {
     genererRapportMensuelHTML, afficherRapportMensuel, exporterDocx,
     genererRapportAnnuelHTML,
     afficherRapportAnnuel, ouvrirDetailAnnuel, imprimerDetailAnnuel, exporterRapportAnnuelDocx,
-    afficherRapportRelances, afficherEtatLieux, _exportRelancesDocx
+    afficherRapportRelances, afficherEtatLieux, _exportRelancesDocx,
+    afficherRapportCaisse, afficherRapportPortefeuille
   };
 
 })();

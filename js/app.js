@@ -1329,6 +1329,8 @@ window.IG.app = (function() {
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px">' +
       _rcard('📅', t('Rapport mensuel'), t('Encaissements et impayés du mois — export DOCX'), 'window.IG.rapports.afficherRapportMensuel()') +
       _rcard('📆', t('Rapport annuel'), t('Synthèse de l\'année en cours par immeuble'), 'window.IG.rapports.afficherRapportAnnuel()') +
+      _rcard('💰', t('Rapport de caisse'), t('Encaissements sur une période — détail par mode et immeuble'), 'window.IG.rapports.afficherRapportCaisse()') +
+      _rcard('🗂️', t('Portefeuille'), t('Vue consolidée de tous les immeubles — taux d\'occupation et recouvrement'), 'window.IG.rapports.afficherRapportPortefeuille()') +
       _rcard('⚠️', t('Rapport relances'), t('Liste complète des impayés et retards'), 'window.IG.rapports.afficherRapportRelances()') +
       _rcard('🏢', t('État des lieux'), t('Occupation et vacance par immeuble'), 'window.IG.rapports.afficherEtatLieux()') +
       '</div></div>';
