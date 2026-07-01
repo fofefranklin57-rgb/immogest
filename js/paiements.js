@@ -210,6 +210,7 @@ window.IG.paiements = (function() {
       '</select></div>' +
       '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
       '<button onclick="window.IG.paiements.afficherFormulaireFiche(' + loc.id + ')" style="padding:7px 13px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:12px;font-weight:600;cursor:pointer">+ Paiement</button>' +
+      '<button onclick="window.IG.paiements.ajouterNote(' + loc.id + ')" style="padding:7px 13px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;cursor:pointer">📝 Note</button>' +
       '<button onclick="window.IG.paiements.imprimerFiche()" style="padding:7px 13px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;cursor:pointer">🖨️ PDF</button>' +
       (window.IG.ai ? '<button onclick="window.IG.ai.analyserLocataire(' + loc.id + ')" style="padding:7px 13px;border-radius:8px;border:none;background:linear-gradient(135deg,#7C3AED,#0E6AAF);color:#fff;font-size:12px;font-weight:600;cursor:pointer">✨ IA</button>' : '') +
       '</div></div>';
@@ -393,7 +394,69 @@ window.IG.paiements = (function() {
     html += '<div id="ig-ad-fiche" style="margin-top:14px;text-align:center"></div>';
     html += '</div>'; // fin fiche-print-zone
 
+    // ── Section observations gestionnaire (hors impression) ──────
+    var notes = []; try { notes = loc.observations_suivi ? JSON.parse(loc.observations_suivi) : []; } catch(_) {}
+    html += '<div id="fiche-notes-zone" style="margin-top:16px">';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📝 Observations gestionnaire</div>';
+    if (notes.length) {
+      notes.slice().reverse().forEach(function(n) {
+        html += '<div style="background:var(--bg3);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:6px;font-size:12px">' +
+          '<div style="color:var(--text3);font-size:10px;margin-bottom:3px">' + esc(n.date || '') + (n.auteur ? ' · ' + esc(n.auteur) : '') + '</div>' +
+          '<div style="color:var(--text)">' + esc(n.texte) + '</div>' +
+          '</div>';
+      });
+    } else {
+      html += '<div style="color:var(--text3);font-size:12px;font-style:italic;padding:8px 0">Aucune observation enregistrée.</div>';
+    }
+    html += '</div>';
+
     return html;
+  }
+
+  // ── Ajouter une note gestionnaire sur un locataire ───────────
+  function ajouterNote(locId) {
+    var loc = window.IG.locataires ? window.IG.locataires.getById(locId) : null;
+    if (!loc) return;
+    var modal = window.IG.utils.showModal(
+      '<h3 style="margin-bottom:14px;font-size:15px">📝 Ajouter une observation</h3>' +
+      '<textarea id="note-texte" rows="4" placeholder="Votre observation..." style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);resize:vertical"></textarea>' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">' +
+      '<button data-modal-close style="padding:9px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Annuler</button>' +
+      '<button id="note-save" style="padding:9px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:600;font-size:13px">Enregistrer</button>' +
+      '</div>',
+      { width: '420px' }
+    );
+    modal.box.querySelector('#note-save').addEventListener('click', async function() {
+      var texte = modal.box.querySelector('#note-texte').value.trim();
+      if (!texte) return;
+      var session = window.IG.auth ? window.IG.auth.getSession() : {};
+      var notes = [];
+      try { notes = loc.observations_suivi ? JSON.parse(loc.observations_suivi) : []; } catch(_) {}
+      notes.push({
+        texte: texte,
+        date: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }),
+        auteur: session.nom || ''
+      });
+      try {
+        await window.IG.locataires.sauvegarder(Object.assign({}, loc, { observations_suivi: JSON.stringify(notes) }));
+        modal.close();
+        window.IG.utils.showToast('Note enregistrée', 'green');
+        // Rafraîchir la zone notes sans fermer la fiche
+        var zone = document.getElementById('fiche-notes-zone');
+        if (zone) {
+          var newHtml = '<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📝 Observations gestionnaire</div>';
+          notes.slice().reverse().forEach(function(n) {
+            newHtml += '<div style="background:var(--bg3);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:6px;font-size:12px">' +
+              '<div style="color:var(--text3);font-size:10px;margin-bottom:3px">' + (window.IG.utils.esc(n.date || '')) + (n.auteur ? ' · ' + window.IG.utils.esc(n.auteur) : '') + '</div>' +
+              '<div style="color:var(--text)">' + window.IG.utils.esc(n.texte) + '</div>' +
+              '</div>';
+          });
+          zone.innerHTML = newHtml;
+        }
+      } catch(err) {
+        window.IG.utils.showToast('Erreur : ' + err.message, 'red');
+      }
+    });
   }
 
   // ── Aperçu avant impression (générique) ──────────────────────
@@ -676,7 +739,7 @@ window.IG.paiements = (function() {
   return {
     charger, getCache, getByLocataire, enregistrer, annuler,
     calculerFiche, renderFiche, afficherFormulaire, afficherFormulaireFiche,
-    imprimerFiche, imprimerRecu, calculerStats
+    imprimerFiche, imprimerRecu, calculerStats, ajouterNote
   };
 
 })();
