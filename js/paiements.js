@@ -484,13 +484,36 @@ window.IG.paiements = (function() {
     if (!loc) { toast(t('Locataire introuvable'), 'red'); return; }
 
     var now = new Date();
-    var html = '<h3 style="margin-bottom:18px;font-size:16px">💵 ' + t('Enregistrer un paiement') + '</h3>' +
-      '<p style="font-size:13px;color:var(--text2);margin-bottom:16px"><strong>' + esc(loc.nom) + '</strong> — Local ' + esc(loc.appt || '?') + ' — Loyer : ' + fmt(loc.loyer) + '</p>' +
+    var loyer = parseFloat(loc.loyer) || 0;
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var profil = session.type_profil || '';
+
+    var html = '<h3 style="margin-bottom:14px;font-size:16px">💵 ' + t('Enregistrer un paiement') + '</h3>' +
+      '<div style="background:var(--bg3);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px">' +
+      '<strong>' + esc(loc.nom) + '</strong> · Local <strong>' + esc(loc.appt || '?') + '</strong> · Loyer mensuel : <strong>' + fmt(loyer) + '</strong></div>' +
       '<form id="form-paiement">' +
       '<input type="hidden" name="locataire_id" value="' + loc.id + '">' +
+      // Nb mois
+      '<div style="background:var(--bg3);border-radius:10px;padding:12px 14px;margin-bottom:14px">' +
+      '<label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:8px">' + t('Nombre de mois à régler') + '</label>' +
+      '<div style="display:flex;align-items:center;gap:12px">' +
+      '<button type="button" onclick="window.IG.paiements._pNbMois(-1)" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">−</button>' +
+      '<div style="text-align:center;min-width:60px">' +
+      '<div id="p-nb-mois-val" style="font-size:22px;font-weight:700;color:var(--accent)">1</div>' +
+      '<div style="font-size:10px;color:var(--text3)">mois</div></div>' +
+      '<button type="button" onclick="window.IG.paiements._pNbMois(1)" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">+</button>' +
+      '<div id="p-total-preview" style="flex:1;text-align:right;font-size:13px;color:var(--green);font-weight:700">' + fmt(loyer) + '</div>' +
+      '</div></div>' +
+      // Montant custom (si différent du loyer × nb mois)
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-      _fieldNum('montant', t('Montant (FCFA)'), loc.loyer) +
+      '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Montant total (FCFA)') + ' *</label>' +
+      '<input type="number" name="montant" id="p-montant" value="' + loyer + '" min="0" step="500" required oninput="window.IG.paiements._pSyncMontant()" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
       _field('date_paiement', t('Date paiement'), now.toISOString().split('T')[0], true, 'date') +
+      '</div>' +
+      // Répartition (affichée si nb_mois > 1)
+      '<div id="p-repartition" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(14,106,175,.08);border-radius:8px;border-left:3px solid var(--accent)">' +
+      '<div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:6px">RÉPARTITION AUTOMATIQUE</div>' +
+      '<div id="p-repartition-detail" style="font-size:12px;color:var(--text2)"></div>' +
       '</div>' +
       '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Mode paiement') + '</label>' +
       '<select name="mode_paiement" style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
@@ -505,22 +528,61 @@ window.IG.paiements = (function() {
       '<option value="charge">Charge</option>' +
       '</select></div>' +
       _field('note', t('Note (optionnel)'), '') +
-      (function() {
-        var session = window.IG.auth ? window.IG.auth.getSession() : {};
-        var profil = session.type_profil || '';
-        if (profil === 'proprietaire') return '';
-        return '<div style="margin-bottom:12px;padding:10px 12px;background:var(--bg3);border-radius:8px;display:flex;align-items:center;gap:10px">' +
-          '<input type="checkbox" name="remisAuBailleur" id="chk-remis" value="1" style="width:16px;height:16px;cursor:pointer">' +
-          '<label for="chk-remis" style="font-size:13px;color:var(--text);cursor:pointer">' +
-          t('Loyer remis directement au bailleur') + '</label></div>';
-      })() +
+      (profil === 'proprietaire' ? '' :
+        '<div style="margin-bottom:12px;padding:10px 12px;background:var(--bg3);border-radius:8px;display:flex;align-items:center;gap:10px">' +
+        '<input type="checkbox" name="remisAuBailleur" id="chk-remis" value="1" style="width:16px;height:16px;cursor:pointer">' +
+        '<label for="chk-remis" style="font-size:13px;color:var(--text);cursor:pointer">' +
+        t('Loyer remis directement au bailleur') + '</label></div>') +
       '<div id="ig-ad-pay-form" style="margin:14px 0 10px;text-align:center"></div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">' +
       '<button type="button" data-modal-close style="padding:10px 18px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer">' + t('Annuler') + '</button>' +
-      '<button type="submit" style="padding:10px 20px;border-radius:8px;border:none;background:var(--green);color:#fff;cursor:pointer;font-weight:600">💵 ' + t('Enregistrer') + '</button>' +
+      '<button type="submit" id="p-btn-submit" style="padding:10px 20px;border-radius:8px;border:none;background:var(--green);color:#fff;cursor:pointer;font-weight:600">💵 ' + t('Enregistrer') + '</button>' +
       '</div></form>';
 
-    var modal = window.IG.utils.showModal(html, { width: '480px' });
+    // État nb mois (closure)
+    var _nbMois = 1;
+    window.IG.paiements._pNbMois = function(dir) {
+      _nbMois = Math.max(1, Math.min(24, _nbMois + dir));
+      var el = document.getElementById('p-nb-mois-val');
+      if (el) el.textContent = _nbMois;
+      var montEl = document.getElementById('p-montant');
+      if (montEl) {
+        montEl.value = loyer * _nbMois;
+        window.IG.paiements._pSyncMontant();
+      }
+      var preview = document.getElementById('p-total-preview');
+      if (preview) preview.textContent = fmt(loyer * _nbMois);
+      _pMajRepartition(_nbMois, loyer * _nbMois);
+      var btn = document.getElementById('p-btn-submit');
+      if (btn) btn.textContent = '💵 ' + (_nbMois > 1 ? t('Enregistrer') + ' (' + _nbMois + ' mois)' : t('Enregistrer'));
+    };
+    window.IG.paiements._pSyncMontant = function() {
+      var montEl = document.getElementById('p-montant');
+      var val = montEl ? parseFloat(montEl.value) || 0 : 0;
+      var preview = document.getElementById('p-total-preview');
+      if (preview) preview.textContent = fmt(val);
+      _pMajRepartition(_nbMois, val);
+    };
+    function _pMajRepartition(n, total) {
+      var zone = document.getElementById('p-repartition');
+      var detail = document.getElementById('p-repartition-detail');
+      if (!zone || !detail) return;
+      if (n <= 1) { zone.style.display = 'none'; return; }
+      zone.style.display = 'block';
+      var par = Math.round(total / n);
+      var reste = total - par * (n - 1);
+      var dateEl = document.getElementById('form-paiement') && document.querySelector('[name="date_paiement"]');
+      var d = dateEl ? new Date(dateEl.value) : new Date();
+      var lignes = [];
+      for (var i = 0; i < n; i++) {
+        var md = new Date(d.getFullYear(), d.getMonth() + i, 1);
+        var mnt = (i === n - 1) ? reste : par;
+        lignes.push(md.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) + ' : ' + fmt(mnt));
+      }
+      detail.innerHTML = lignes.join(' · ');
+    }
+
+    var modal = window.IG.utils.showModal(html, { width: '500px' });
     setTimeout(function() { if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-pay-form', 'ad1'); }, 80);
 
     modal.box.querySelector('#form-paiement').addEventListener('submit', async function(e) {
@@ -528,24 +590,37 @@ window.IG.paiements = (function() {
       var fd = new FormData(e.target);
       var datePay = fd.get('date_paiement');
       var dObj = datePay ? new Date(datePay) : new Date();
-      var pay = {
-        id:             window.IG.utils.uid(),
-        locataire_id:   parseInt(fd.get('locataire_id')),
-        montant:        parseFloat(fd.get('montant')) || 0,
-        date_paiement:  datePay,
-        mois:           dObj.getMonth() + 1,
-        annee:          dObj.getFullYear(),
-        mode_paiement:  fd.get('mode_paiement'),
-        type:           fd.get('type'),
-        note:           fd.get('note'),
-        remisAuBailleur: fd.get('remisAuBailleur') === '1'
-      };
+      var montantTotal = parseFloat(fd.get('montant')) || 0;
+      var parMois = Math.round(montantTotal / _nbMois);
+      var mode = fd.get('mode_paiement');
+      var type = fd.get('type');
+      var note = fd.get('note');
+      var remis = fd.get('remisAuBailleur') === '1';
+      var locId2 = parseInt(fd.get('locataire_id'));
       try {
-        await enregistrer(pay);
+        for (var i = 0; i < _nbMois; i++) {
+          var md = new Date(dObj.getFullYear(), dObj.getMonth() + i, 1);
+          var mnt = (i === _nbMois - 1) ? (montantTotal - parMois * (_nbMois - 1)) : parMois;
+          var pay = {
+            id:             window.IG.utils.uid(),
+            locataire_id:   locId2,
+            montant:        mnt,
+            date_paiement:  datePay,
+            mois:           md.getMonth() + 1,
+            annee:          md.getFullYear(),
+            mode_paiement:  mode,
+            type:           type,
+            note:           (note || '') + (_nbMois > 1 ? ' [' + (i + 1) + '/' + _nbMois + ']' : ''),
+            remisAuBailleur: remis
+          };
+          await enregistrer(pay);
+        }
         modal.close();
-        toast('✓ ' + t('Paiement enregistré'), 'green');
+        var msg = _nbMois > 1
+          ? '✓ ' + _nbMois + ' ' + t('paiements enregistrés') + ' · ' + fmt(montantTotal)
+          : '✓ ' + t('Paiement enregistré');
+        toast(msg, 'green');
         if (onSuccess) {
-          // Recharger les données puis rappeler le callback (ex: rouvrir la fiche)
           if (window.IG.app && window.IG.app.refresh) {
             window.IG.app.refresh();
             setTimeout(onSuccess, 500);
