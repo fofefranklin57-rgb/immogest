@@ -17,7 +17,8 @@ window.IG.immeubles = (function() {
   // ── CRUD ─────────────────────────────────────────────────────
   async function charger() {
     try {
-      _cache = await db().select('immeubles');
+      var all = await db().select('immeubles');
+      _cache = (all || []).filter(function(i) { return !i.archive; });
       return _cache;
     } catch(e) {
       toast(t('Erreur chargement immeubles') + ': ' + e.message, 'red');
@@ -113,7 +114,7 @@ window.IG.immeubles = (function() {
         '<div style="display:flex;gap:8px">' +
         '<button onclick="window.IG.immeubles.afficherDetail(' + imm.id + ')" class="btn-sm btn-primary" style="flex:1">' + t('Détails') + '</button>' +
         '<button onclick="window.IG.immeubles.afficherFormulaire(' + imm.id + ')" class="btn-sm btn-secondary">' + t('Modifier') + '</button>' +
-        '<button onclick="window.IG.immeubles.confirmerSuppression(' + imm.id + ')" class="btn-sm" style="background:#e53935;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px" title="' + t('Supprimer') + '">🗑</button>' +
+        '<button onclick="window.IG.immeubles.confirmerArchivage(' + imm.id + ')" class="btn-sm" style="background:var(--bg3);color:var(--text3);border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px" title="' + t('Archiver') + '">📦</button>' +
         '</div></div>';
     });
     html += '</div>';
@@ -338,19 +339,46 @@ window.IG.immeubles = (function() {
     renderListe(locataires);
   }
 
-  function confirmerSuppression(id) {
+  function confirmerArchivage(id) {
     var imm = getById(id);
     if (!imm) return;
-    window.IG.utils.confirm(t('Supprimer cet immeuble ?') + ' « ' + (imm.nom_immeuble || imm.nom) + ' »', async function() {
-      await supprimer(id);
-      if (window.IG.app && window.IG.app.refresh) window.IG.app.refresh();
-      if (window.IG.plans) window.IG.plans.verifierRetrogradation();
-      window.IG.utils.showToast(t('Immeuble supprimé'), 'green');
+    // Vérifier locataires actifs
+    var locsActifs = [];
+    if (window.IG.locataires) {
+      locsActifs = window.IG.locataires.getCache().filter(function(l) {
+        return l.immeuble_id == id && l.statut !== 'libre';
+      });
+    }
+    if (locsActifs.length) {
+      window.IG.utils.showModal(
+        '<div style="text-align:center;padding:10px 0 20px">' +
+        '<div style="font-size:36px;margin-bottom:12px">⚠️</div>' +
+        '<div style="font-weight:700;font-size:15px;margin-bottom:8px">' + t('Impossible d\'archiver') + '</div>' +
+        '<div style="font-size:13px;color:var(--text2);margin-bottom:16px">' +
+        locsActifs.length + ' ' + t('locataire(s) actif(s) dans cet immeuble.') + '<br>' +
+        t('Libérez tous les locataires avant d\'archiver.') + '</div>' +
+        '<button data-modal-close style="padding:10px 24px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:600">OK</button>' +
+        '</div>',
+        { width: '360px' }
+      );
+      return;
+    }
+    window.IG.utils.confirm('📦 ' + t('Archiver cet immeuble ?') + ' « ' + (imm.nom_immeuble || imm.nom) + ' »\n' + t('L\'immeuble ne sera plus visible mais les données sont conservées.'), async function() {
+      try {
+        await sauvegarder({ ...imm, archive: true, date_archive: new Date().toISOString() });
+        // Retirer du cache visible
+        _cache = _cache.filter(function(i) { return i.id != id; });
+        if (window.IG.app && window.IG.app.refresh) window.IG.app.refresh();
+        if (window.IG.plans) window.IG.plans.verifierRetrogradation();
+        window.IG.utils.showToast('📦 ' + t('Immeuble archivé'), 'green');
+      } catch(err) {
+        window.IG.utils.showToast(t('Erreur') + ': ' + err.message, 'red');
+      }
     });
   }
 
   return {
-    charger, getCache, getById, sauvegarder, supprimer, confirmerSuppression,
+    charger, getCache, getById, sauvegarder, supprimer, confirmerArchivage,
     render, renderListe, afficherFormulaire, afficherDetail
   };
 
