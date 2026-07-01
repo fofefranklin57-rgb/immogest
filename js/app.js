@@ -106,7 +106,7 @@ window.IG.app = (function() {
         '<div id="sidebar-immeubles-list"></div>' +
         '</div>'
       ) : '') +
-      (_p('locataires') || _p('paiements') || _p('rapports') || _p('statistiques') || _p('juridique') ? (
+      (_p('locataires') || _p('paiements') || _p('rapports') || _p('statistiques') || _p('juridique') || _p('messages') ? (
         _navSectionToggle('gestion', t('Gestion')) +
         '<div id="sb-body-gestion" class="nav-section-body">' +
         (_p('locataires')   ? _navItem('locataires',  '👥', t('Locataires'))   : '') +
@@ -114,6 +114,7 @@ window.IG.app = (function() {
         (_p('locataires')   ? _navItem('relances',    '⚠️', t('Relances'), true) : '') +
         (_p('rapports')     ? _navItem('rapports',    '📄', t('Rapports'))      : '') +
         (_p('statistiques') ? _navItem('statistiques','📈', t('Statistiques'))  : '') +
+        (_p('messages')     ? _navItem('messages-wa', '📱', 'Messages WA')      : '') +
         (_p('juridique')    ? _navItem('juridique',   '⚖️', t('Juridique'))     : '') +
         '</div>'
       ) : '') +
@@ -712,6 +713,10 @@ window.IG.app = (function() {
         if (title) title.textContent = t('Paiements');
         if (sub) sub.textContent = '';
         _renderPaiements(); break;
+      case 'messages-wa':
+        if (title) title.textContent = 'Messages WhatsApp';
+        if (sub) sub.textContent = '';
+        if (window.IG.messagesWA) window.IG.messagesWA.renderPage(_data); break;
       case 'rapports':
         if (title) title.textContent = t('Rapports');
         if (sub) sub.textContent = '';
@@ -2866,6 +2871,7 @@ window.IG.app = (function() {
     authGoStep, doLogin, joinV2, registerV2, browseMarketplace,
     toggleSidebar, closeSidebar, toggleSidebarSection, toggleDarkMode, lockScreen, openGuide,
     toggleAIChat, sendAIMessage, aiQuickAction,
+    getData: function() { return _data; },
     _renderDashboardBailleur,
     _refreshPaiements, _payTab, _renderCaisseJour, _exportCaisseWA,
     _ouvrirSelLocataire, _filtrerSelLoc, _selLoc, _confirmerSupprPaiement,

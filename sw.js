@@ -36,6 +36,7 @@ var ASSETS_CACHE = [
   '/js/signature.js',
   '/js/onesignal.js',
   '/js/perms.js',
+  '/js/messages-wa.js',
   '/js/app.js'
 ];
 
