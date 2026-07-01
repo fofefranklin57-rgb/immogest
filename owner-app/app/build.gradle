@@ -1,0 +1,50 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Lire version.properties
+def versionProps = new Properties()
+file("../version.properties").withInputStream { versionProps.load(it) }
+
+// Lire local.properties (credentials, jamais commite)
+def localProps = new Properties()
+def localFile = rootProject.file("local.properties")
+if (localFile.exists()) { localFile.withInputStream { localProps.load(it) } }
+
+android {
+    namespace 'com.immogest.owner'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.immogest.owner"
+        minSdk 26
+        targetSdk 34
+        versionCode  versionProps['VERSION_CODE'].toInteger()
+        versionName  versionProps['VERSION_NAME']
+    }
+
+    signingConfigs {
+        release {
+            storeFile     file(localProps['KEYSTORE_PATH'] ?: '../../android/app/immogest-release.jks')
+            storePassword localProps['KEYSTORE_PASSWORD'] ?: ''
+            keyAlias      localProps['KEY_ALIAS']         ?: 'my-key-alias'
+            keyPassword   localProps['KEY_PASSWORD']      ?: ''
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+}

@@ -8,6 +8,10 @@ android/.gradle/
 android/app/build/
 android/build/
 *.apk
+
+# Credentials locaux — NE JAMAIS COMMITTER
+local.properties
+owner-app/local.properties
 *.aab
 
 # Secrets & clés — JAMAIS committer
