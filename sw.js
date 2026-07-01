@@ -4,7 +4,7 @@
 //  Stratégie : Cache-first pour assets, Network-first pour API
 // ════════════════════════════════════════════════════════════════
 
-var CACHE_NAME = 'immogest-v2-cache-v27';
+var CACHE_NAME = 'immogest-v2-cache-v28';
 var SYNC_TAG   = 'immogest-sync';
 
 var ASSETS_CACHE = [
@@ -127,3 +127,4 @@ self.addEventListener('sync', function(event) {
 self.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
+
