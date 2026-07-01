@@ -25,10 +25,28 @@ window.IG.app = (function() {
       _renderLogin();
       return;
     }
+    // Locataire → portail directement, pas l'app principale
+    if (session.role === 'locataire') {
+      if (window.IG.portailLocataire) { window.IG.portailLocataire.init(); return; }
+      // fallback si module non chargé
+    }
+
     _showAppShell();
     _applyDarkMode();
     _renderLangPlan();
     await _loadData();
+
+    // Bailleur : filtrer les données à ses immeubles uniquement
+    if (session.role === 'bailleur') {
+      var immIds = (session.immeubles || []).map(String);
+      if (immIds.length) {
+        _data.immeubles  = _data.immeubles.filter(function(i) { return immIds.includes(String(i.id)); });
+        _data.locataires = _data.locataires.filter(function(l) { return immIds.includes(String(l.immeuble_id)); });
+        var locIds = _data.locataires.map(function(l) { return String(l.id); });
+        _data.paiements  = _data.paiements.filter(function(p) { return locIds.includes(String(p.locataire_id)); });
+      }
+    }
+
     showPage('dashboard');
 
     // Publicités plan gratuit + expiry check
@@ -803,8 +821,95 @@ window.IG.app = (function() {
     }
   }
 
+  // ── Dashboard bailleur ────────────────────────────────────────
+  function _renderDashboardBailleur() {
+    var content = document.getElementById('page-content');
+    if (!content) return;
+    var fmt = window.IG.utils.formatMontant;
+    var session = window.IG.auth.getSession();
+    var now = new Date();
+    var mois = now.getMonth() + 1;
+    var annee = now.getFullYear();
+
+    var imms = _data.immeubles;
+    var locs = _data.locataires.filter(function(l) { return l.statut !== 'libre'; });
+    var pays = _data.paiements.filter(function(p) {
+      return parseInt(p.mois) === mois && parseInt(p.annee) === annee;
+    });
+
+    var totalAttendu = locs.reduce(function(s, l) { return s + (parseFloat(l.loyer) || 0); }, 0);
+    var totalEncaisse = pays.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
+    var nbImpayes = locs.filter(function(l) { return (parseInt(l.mois_arrieres) || 0) > 0; }).length;
+
+    var gestTel = session.parametres && session.parametres.tel ? session.parametres.tel : null;
+
+    var html = '<div class="content">' +
+      '<div style="font-size:17px;font-weight:700;margin-bottom:4px">Bonjour, ' + esc(session.nom || 'Bailleur') + ' 👋</div>' +
+      '<div style="font-size:12px;color:var(--text3);margin-bottom:20px">' + now.toLocaleDateString('fr-FR', {month:'long', year:'numeric'}) + '</div>' +
+
+      // KPIs
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px">' +
+      _bKpi('🏢', imms.length, 'Immeuble(s)', 'var(--accent)') +
+      _bKpi('👥', locs.length, 'Locataires actifs', 'var(--green)') +
+      _bKpi('💰', fmt(totalEncaisse), 'Encaissé ce mois', 'var(--green)') +
+      _bKpi('⚠️', nbImpayes, 'En retard', nbImpayes > 0 ? 'var(--red)' : 'var(--text3)') +
+      '</div>' +
+
+      // Immeubles
+      '<h3 style="font-size:14px;font-weight:700;margin-bottom:12px">Mes immeubles</h3>' +
+      '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">' +
+      imms.map(function(imm) {
+        var locsImm = _data.locataires.filter(function(l) { return l.immeuble_id == imm.id && l.statut !== 'libre'; });
+        var paysImm = pays.filter(function(p) {
+          return locsImm.some(function(l) { return l.id == p.locataire_id; });
+        });
+        var att = locsImm.reduce(function(s, l) { return s + (parseFloat(l.loyer) || 0); }, 0);
+        var enc = paysImm.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
+        var taux = att > 0 ? Math.round((enc / att) * 100) : 0;
+        var couleur = taux >= 80 ? 'var(--green)' : taux >= 50 ? '#E05A00' : 'var(--red)';
+        return '<div class="card" style="padding:14px 16px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+          '<div>' +
+          '<div style="font-weight:700;font-size:14px">' + esc(imm.nom_immeuble || imm.nom) + '</div>' +
+          '<div style="font-size:12px;color:var(--text3);margin-top:2px">' + esc(imm.ville || '') + (imm.quartier ? ' · ' + esc(imm.quartier) : '') + '</div>' +
+          '</div>' +
+          '<div style="text-align:right">' +
+          '<div style="font-size:18px;font-weight:800;color:' + couleur + '">' + taux + '%</div>' +
+          '<div style="font-size:10px;color:var(--text3)">recouvrement</div>' +
+          '</div></div>' +
+          '<div style="display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--text2)">' +
+          '<span>' + locsImm.length + ' locataire(s)</span>' +
+          '<span>Attendu : ' + fmt(att) + '</span>' +
+          '<span>Encaissé : <strong style="color:var(--green)">' + fmt(enc) + '</strong></span>' +
+          '</div></div>';
+      }).join('') +
+      '</div>' +
+
+      // Bouton contacter gestionnaire
+      (gestTel ?
+        '<a href="https://wa.me/' + gestTel.replace(/[^0-9+]/g,'') + '?text=' + encodeURIComponent('Bonjour, je souhaite des informations concernant mes immeubles.') + '" target="_blank" ' +
+        'style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px;border-radius:12px;background:#25D366;color:#fff;font-size:14px;font-weight:700;text-decoration:none;margin-bottom:16px">' +
+        '📱 Contacter mon gestionnaire</a>' : '') +
+
+      '</div>';
+
+    content.innerHTML = html;
+  }
+
+  function _bKpi(icon, val, label, color) {
+    return '<div style="background:var(--bg2);border-radius:12px;padding:14px;text-align:center;border:1px solid var(--border)">' +
+      '<div style="font-size:20px;margin-bottom:6px">' + icon + '</div>' +
+      '<div style="font-size:16px;font-weight:800;color:' + color + '">' + val + '</div>' +
+      '<div style="font-size:10px;color:var(--text3);margin-top:3px">' + label + '</div>' +
+      '</div>';
+  }
+
   // ── Dashboard ─────────────────────────────────────────────────
   function _renderDashboard() {
+    var session = window.IG.auth.getSession();
+    // Bailleur → vue dédiée
+    if (session && session.role === 'bailleur') { _renderDashboardBailleur(); return; }
+
     // Déléguer au module dashboard.js (KPIs avancés + graphe mensuel)
     if (window.IG.dashboard) {
       _syncCaches();
@@ -2761,6 +2866,7 @@ window.IG.app = (function() {
     authGoStep, doLogin, joinV2, registerV2, browseMarketplace,
     toggleSidebar, closeSidebar, toggleSidebarSection, toggleDarkMode, lockScreen, openGuide,
     toggleAIChat, sendAIMessage, aiQuickAction,
+    _renderDashboardBailleur,
     _refreshPaiements, _payTab, _renderCaisseJour, _exportCaisseWA,
     _ouvrirSelLocataire, _filtrerSelLoc, _selLoc, _confirmerSupprPaiement,
     _restaurer, _supprimerDefinitivement, _viderCorbeille, _loadCorbeille,

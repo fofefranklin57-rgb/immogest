@@ -116,9 +116,10 @@ window.IG.auth = (function() {
     var data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Connexion échouée');
 
-    SESSION.userId = data.user.id;
-    SESSION.role   = data.user.role;
-    SESSION.nom    = data.user.nom;
+    SESSION.userId    = data.user.id;
+    SESSION.role      = data.user.role;
+    SESSION.nom       = data.user.nom;
+    SESSION.immeubles = data.user.immeubles || [];
     _saveSession(SESSION);
     return SESSION;
   }

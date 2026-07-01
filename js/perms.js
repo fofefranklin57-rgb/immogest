@@ -58,25 +58,25 @@ window.IG.perms = (function() {
     agent: {
       dashboard: true, immeubles: false, immeubles_edit: false,
       locataires: true, locataires_edit: false,
-      paiements: false, paiements_edit: false,
+      paiements: true, paiements_edit: false,
       rapports: false, statistiques: false,
-      juridique: true, signatures: true,
-      marketplace: true, marketplace_publie: true, leads: true,
+      juridique: false, signatures: false,
+      marketplace: false, marketplace_publie: false, leads: false,
       messages: true, declarations: false,
       parametres: false, equipe: false,
       voir_fiche_suivi: false, voir_rapport_bailleur: false, voir_contrat: false, voir_paiements_bailleur: false,
       telecharger_contrat: false, voir_recus: false, declarer_paiement: false, maintenance: false
     },
     bailleur: {
-      dashboard: true, immeubles: false, immeubles_edit: false,
+      dashboard: true, immeubles: true, immeubles_edit: false,
       locataires: true, locataires_edit: false,
-      paiements: false, paiements_edit: false,
-      rapports: false, statistiques: false,
+      paiements: true, paiements_edit: false,
+      rapports: true, statistiques: false,
       juridique: false, signatures: false,
       marketplace: false, marketplace_publie: false, leads: false,
       messages: true, declarations: false,
       parametres: false, equipe: false,
-      voir_fiche_suivi: false, voir_rapport_bailleur: false, voir_contrat: false, voir_paiements_bailleur: true,
+      voir_fiche_suivi: true, voir_rapport_bailleur: true, voir_contrat: true, voir_paiements_bailleur: true,
       telecharger_contrat: false, voir_recus: false, declarer_paiement: false, maintenance: false
     },
     locataire: {
