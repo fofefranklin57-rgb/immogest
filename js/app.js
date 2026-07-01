@@ -642,6 +642,15 @@ window.IG.app = (function() {
           devise: PAYS_DEVISE[pays] || (window.IG.auth.getSession() && window.IG.auth.getSession().locale) || 'XAF'
         };
       } catch(_) {}
+      // Persister en localStorage pour le mode hors ligne
+      var _s = window.IG.auth.getSession();
+      if (_s && _s.tenantId) {
+        try {
+          localStorage.setItem('immeubles_'  + _s.tenantId, JSON.stringify(_data.immeubles));
+          localStorage.setItem('locataires_' + _s.tenantId, JSON.stringify(_data.locataires));
+          localStorage.setItem('paiements_'  + _s.tenantId, JSON.stringify(_data.paiements));
+        } catch(_) {}
+      }
       _setSyncStatus('ok');
       _updateSidebarImmeubles();
       _updateRelancesBadge();
