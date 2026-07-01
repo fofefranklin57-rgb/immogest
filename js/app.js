@@ -907,18 +907,25 @@ window.IG.app = (function() {
     var now = new Date();
     var mois = now.getMonth() + 1;
     var annee = now.getFullYear();
-    var fmt = window.IG.utils.formatMontant;
 
-    // Sélecteur mois/année/immeuble
     var immOptions = '<option value="">Tous les immeubles</option>' +
       _data.immeubles.map(function(i) {
         return '<option value="' + i.id + '">' + esc(i.nom_immeuble || i.nom) + '</option>';
       }).join('');
 
+    var tabStyle = 'padding:8px 18px;border-radius:8px 8px 0 0;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:background .15s;';
     var html = '<div class="content">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">' +
-      '<h2 style="font-size:17px;font-weight:700">💰 ' + t('Encaissements') + '</h2>' +
-      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0;flex-wrap:wrap;gap:10px">' +
+      '<div style="display:flex;gap:0">' +
+      '<button id="tab-encaissements" onclick="window.IG.app._payTab(\'enc\')" style="' + tabStyle + 'background:var(--accent);color:#fff">💰 ' + t('Encaissements') + '</button>' +
+      '<button id="tab-caisse" onclick="window.IG.app._payTab(\'caisse\')" style="' + tabStyle + 'background:var(--bg3);color:var(--text2)">📊 Caisse du jour</button>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+      '<button onclick="window.IG.app._ouvrirSelLocataire()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--green);color:#fff;cursor:pointer;font-size:13px;font-weight:600">+ Nouveau</button>' +
+      '</div></div>' +
+      '<div id="pay-tab-body" style="border:1px solid var(--border);border-radius:0 8px 8px 8px;padding:16px;background:var(--bg2)">' +
+      // Onglet Encaissements
+      '<div id="pay-enc-filters" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">' +
       '<select id="pay-mois" onchange="window.IG.app._refreshPaiements()" style="padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
       Array.from({length:12}, function(_,i) {
         var m = i+1;
@@ -931,7 +938,7 @@ window.IG.app = (function() {
       immOptions + '</select>' +
       '<input id="pay-search" type="text" placeholder="Rechercher..." oninput="window.IG.app._refreshPaiements()" ' +
         'style="padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);width:160px">' +
-      '</div></div>' +
+      '</div>' +
       '<div id="pay-total-bar" style="margin-bottom:12px"></div>' +
       '<div id="ig-ad-paiements" style="margin-bottom:16px;text-align:center"></div>' +
       '<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table id="pay-table" style="width:100%;border-collapse:collapse;font-size:13px">' +
@@ -944,11 +951,193 @@ window.IG.app = (function() {
       '<th style="padding:10px 14px;text-align:left">' + t('Date') + '</th>' +
       '<th style="padding:10px 14px;text-align:left">Type</th>' +
       '<th style="padding:10px 14px;text-align:center">✕</th>' +
-      '</tr></thead><tbody id="pay-tbody"></tbody></table></div></div></div>';
+      '</tr></thead><tbody id="pay-tbody"></tbody></table></div></div>' +
+      '</div></div>';
 
     content.innerHTML = html;
     _refreshPaiements();
     if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-paiements', 'ad2');
+  }
+
+  function _payTab(tab) {
+    var btnEnc    = document.getElementById('tab-encaissements');
+    var btnCaisse = document.getElementById('tab-caisse');
+    var body      = document.getElementById('pay-tab-body');
+    if (!body) return;
+    if (tab === 'caisse') {
+      if (btnEnc)    { btnEnc.style.background = 'var(--bg3)'; btnEnc.style.color = 'var(--text2)'; }
+      if (btnCaisse) { btnCaisse.style.background = 'var(--accent)'; btnCaisse.style.color = '#fff'; }
+      _renderCaisseJour(body);
+    } else {
+      if (btnCaisse) { btnCaisse.style.background = 'var(--bg3)'; btnCaisse.style.color = 'var(--text2)'; }
+      if (btnEnc)    { btnEnc.style.background = 'var(--accent)'; btnEnc.style.color = '#fff'; }
+      // Remettre les encaissements
+      showPage('paiements');
+    }
+  }
+
+  function _renderCaisseJour(container) {
+    var fmt = window.IG.utils.formatMontant;
+    var today = new Date();
+    var todayStr = today.toISOString().slice(0, 10); // YYYY-MM-DD
+
+    var paiementsJour = _data.paiements.filter(function(p) {
+      return p.date_paiement && p.date_paiement.slice(0, 10) === todayStr;
+    });
+
+    var total = paiementsJour.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
+
+    // Par mode de paiement
+    var modes = {};
+    paiementsJour.forEach(function(p) {
+      var m = p.mode_paiement || 'espèces';
+      modes[m] = (modes[m] || 0) + (parseFloat(p.montant) || 0);
+    });
+
+    // À remettre au bailleur
+    var aRemettre = paiementsJour.filter(function(p) { return !p.remisAuBailleur; });
+    var totalAR = aRemettre.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
+
+    var dateFR = today.toLocaleDateString('fr-FR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+
+    var modeEmojis = { 'espèces': '💵', 'mobile money': '📱', 'virement': '🏦', 'chèque': '📝' };
+
+    var html = '<div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">' +
+      '<div style="font-size:12px;color:var(--text3);font-weight:600;text-transform:capitalize">' + dateFR + '</div>' +
+      '<button onclick="window.IG.app._exportCaisseWA()" style="padding:8px 16px;border-radius:8px;border:none;background:#25D366;color:#fff;font-size:12px;font-weight:700;cursor:pointer">📱 Envoyer WhatsApp</button>' +
+      '</div>' +
+
+      // Carte totale
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">' +
+      '<div style="background:var(--green);border-radius:12px;padding:16px;color:#fff;text-align:center">' +
+      '<div style="font-size:11px;font-weight:700;opacity:.85;margin-bottom:6px;text-transform:uppercase">Total encaissé</div>' +
+      '<div style="font-size:24px;font-weight:800">' + fmt(total) + '</div>' +
+      '<div style="font-size:11px;opacity:.75;margin-top:4px">' + paiementsJour.length + ' paiement(s)</div>' +
+      '</div>' +
+      '<div style="background:var(--red);border-radius:12px;padding:16px;color:#fff;text-align:center">' +
+      '<div style="font-size:11px;font-weight:700;opacity:.85;margin-bottom:6px;text-transform:uppercase">À remettre bailleur</div>' +
+      '<div style="font-size:24px;font-weight:800">' + fmt(totalAR) + '</div>' +
+      '<div style="font-size:11px;opacity:.75;margin-top:4px">' + aRemettre.length + ' paiement(s)</div>' +
+      '</div></div>' +
+
+      // Par mode
+      (Object.keys(modes).length ? (
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">' +
+        Object.entries(modes).map(function(kv) {
+          return '<div style="flex:1;min-width:110px;background:var(--bg3);border-radius:10px;padding:12px;text-align:center">' +
+            '<div style="font-size:18px;margin-bottom:4px">' + (modeEmojis[kv[0]] || '💳') + '</div>' +
+            '<div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:capitalize">' + esc(kv[0]) + '</div>' +
+            '<div style="font-size:16px;font-weight:700;color:var(--text);margin-top:4px">' + fmt(kv[1]) + '</div>' +
+            '</div>';
+        }).join('') +
+        '</div>'
+      ) : '') +
+
+      // Liste du jour
+      (paiementsJour.length ? (
+        '<div class="card" style="padding:0;overflow:hidden">' +
+        '<div style="padding:10px 14px;background:var(--bg3);font-size:11px;text-transform:uppercase;font-weight:700;color:var(--text3)">Détail des paiements</div>' +
+        paiementsJour.slice().reverse().map(function(p) {
+          var loc = _data.locataires.find(function(l) { return l.id == p.locataire_id; });
+          var imm = loc ? (window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null) : null;
+          var badge = p.remisAuBailleur
+            ? '<span style="font-size:10px;background:rgba(39,174,96,.1);color:var(--green);padding:2px 6px;border-radius:99px">Remis</span>'
+            : '<span style="font-size:10px;background:rgba(185,48,32,.1);color:var(--red);padding:2px 6px;border-radius:99px">À remettre</span>';
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)">' +
+            '<div>' +
+            '<div style="font-weight:600;font-size:13px">' + esc(loc ? loc.nom : '?') + '</div>' +
+            '<div style="font-size:11px;color:var(--text3)">' + esc(imm ? (imm.nom_immeuble || imm.nom) : '—') + ' · ' + esc(p.mode_paiement || 'espèces') + ' · ' + esc(p.type || 'loyer') + '</div>' +
+            '</div>' +
+            '<div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
+            '<div style="font-weight:700;color:var(--green)">' + fmt(p.montant) + '</div>' +
+            badge +
+            '</div></div>';
+        }).join('') +
+        '</div>'
+      ) : '<div style="text-align:center;padding:40px;color:var(--text3)">Aucun paiement enregistré aujourd\'hui</div>') +
+      '</div>';
+
+    container.innerHTML = html;
+  }
+
+  function _exportCaisseWA() {
+    var fmt = window.IG.utils.formatMontant;
+    var today = new Date().toISOString().slice(0, 10);
+    var paiementsJour = _data.paiements.filter(function(p) {
+      return p.date_paiement && p.date_paiement.slice(0, 10) === today;
+    });
+    if (!paiementsJour.length) { window.IG.utils.showToast('Aucun paiement aujourd\'hui', 'blue'); return; }
+
+    var total = paiementsJour.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
+    var aRem = paiementsJour.filter(function(p) { return !p.remisAuBailleur; });
+    var totalAR = aRem.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
+
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var cab = session.nomCabinet || session.nom || 'Cabinet';
+    var dateStr = new Date().toLocaleDateString('fr-FR');
+
+    var lignes = paiementsJour.map(function(p) {
+      var loc = _data.locataires.find(function(l) { return l.id == p.locataire_id; });
+      return '• ' + (loc ? loc.nom : '?') + ' — ' + fmt(p.montant) + ' (' + (p.mode_paiement || 'espèces') + ')';
+    }).join('\n');
+
+    var msg = '*Caisse du ' + dateStr + ' — ' + cab + '*\n\n' +
+      lignes + '\n\n' +
+      '*Total encaissé : ' + fmt(total) + '*\n' +
+      'À remettre bailleur : ' + fmt(totalAR) + '\n' +
+      '(' + paiementsJour.length + ' paiement(s))';
+
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  }
+
+  function _ouvrirSelLocataire() {
+    var locs = (_data.locataires || []).filter(function(l) { return l.statut !== 'libre'; });
+    if (!locs.length) { window.IG.utils.showToast('Aucun locataire actif', 'orange'); return; }
+
+    var immMap = {};
+    (_data.immeubles || []).forEach(function(i) { immMap[i.id] = i.nom_immeuble || i.nom; });
+
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:900;background:rgba(0,0,0,0.45);display:flex;align-items:flex-end;justify-content:center';
+    overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+
+    var panel = document.createElement('div');
+    panel.style.cssText = 'background:var(--bg);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:500px;max-height:75vh;overflow-y:auto';
+    panel.innerHTML =
+      '<div style="font-size:15px;font-weight:700;margin-bottom:14px">Sélectionner un locataire</div>' +
+      '<input id="sel-loc-q" placeholder="Rechercher..." oninput="window.IG.app._filtrerSelLoc()" ' +
+        'style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);margin-bottom:10px">' +
+      '<div id="sel-loc-list">' +
+      locs.map(function(l) {
+        return '<div onclick="window.IG.app._selLoc(' + l.id + ')" data-nom="' + esc((l.nom || '').toLowerCase()) + '" ' +
+          'style="padding:11px 12px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);margin-bottom:6px" ' +
+          'onmouseenter="this.style.background=\'var(--bg3)\'" onmouseleave="this.style.background=\'\'">' +
+          '<div><div style="font-weight:600;font-size:13px">' + esc(l.nom) + '</div>' +
+          '<div style="font-size:11px;color:var(--text3)">' + esc(immMap[l.immeuble_id] || '—') + ' · Local ' + esc(l.appt || '?') + '</div></div>' +
+          '<div style="font-size:13px;font-weight:700;color:var(--green)">' + window.IG.utils.formatMontant(l.loyer) + '</div></div>';
+      }).join('') +
+      '</div>';
+
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    setTimeout(function() { var el = document.getElementById('sel-loc-q'); if (el) el.focus(); }, 100);
+  }
+
+  function _filtrerSelLoc() {
+    var q = ((document.getElementById('sel-loc-q') || {}).value || '').toLowerCase();
+    (document.querySelectorAll('#sel-loc-list > div') || []).forEach(function(el) {
+      el.style.display = (!q || (el.dataset.nom || '').includes(q)) ? '' : 'none';
+    });
+  }
+
+  function _selLoc(locId) {
+    // Fermer overlay
+    var overlay = document.querySelector('[style*="inset:0"][style*="z-index:900"]');
+    if (overlay) overlay.remove();
+    if (window.IG.paiements) window.IG.paiements.afficherFormulaire(locId, function() {
+      showPage('paiements');
+    });
   }
 
   function _refreshPaiements() {
@@ -1000,8 +1189,25 @@ window.IG.app = (function() {
         '<td style="padding:10px 14px;color:var(--text3)">' + window.IG.utils.formatDate(p.date_paiement) + '</td>' +
         '<td style="padding:10px 14px;color:var(--text3);font-size:11px">' + esc(p.type || 'loyer') + '</td>' +
         '<td style="padding:10px 14px;text-align:center">' +
-        '<button onclick="window.IG.paiements.annuler(' + p.id + ')" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:18px;font-weight:700">×</button></td></tr>';
+        '<button onclick="window.IG.app._confirmerSupprPaiement(' + p.id + ',\'' + esc(loc ? loc.nom : '?') + '\',' + (parseFloat(p.montant)||0) + ')" ' +
+          'style="border:none;background:none;color:var(--red);cursor:pointer;font-size:18px;font-weight:700">×</button></td></tr>';
     }).join('');
+  }
+
+  function _confirmerSupprPaiement(id, nomLoc, montant) {
+    var fmt = window.IG.utils.formatMontant;
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:910;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center';
+    overlay.innerHTML = '<div style="background:var(--bg);border-radius:14px;padding:24px;max-width:360px;width:90%;text-align:center">' +
+      '<div style="font-size:32px;margin-bottom:12px">⚠️</div>' +
+      '<div style="font-size:15px;font-weight:700;margin-bottom:8px">Supprimer ce paiement ?</div>' +
+      '<div style="font-size:13px;color:var(--text2);margin-bottom:20px">' + esc(nomLoc) + ' — ' + fmt(montant) + '<br>Cette action est irréversible.</div>' +
+      '<div style="display:flex;gap:10px;justify-content:center">' +
+      '<button onclick="this.closest(\'[style*=inset]\').remove()" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;cursor:pointer">Annuler</button>' +
+      '<button onclick="window.IG.paiements.annuler(' + id + ');this.closest(\'[style*=inset]\').remove();window.IG.app._refreshPaiements()" ' +
+        'style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--red);color:#fff;font-size:13px;font-weight:700;cursor:pointer">Supprimer</button>' +
+      '</div></div>';
+    document.body.appendChild(overlay);
   }
 
   // ── Rapports ──────────────────────────────────────────────────
@@ -2555,7 +2761,9 @@ window.IG.app = (function() {
     authGoStep, doLogin, joinV2, registerV2, browseMarketplace,
     toggleSidebar, closeSidebar, toggleSidebarSection, toggleDarkMode, lockScreen, openGuide,
     toggleAIChat, sendAIMessage, aiQuickAction,
-    _refreshPaiements, _restaurer, _supprimerDefinitivement, _viderCorbeille, _loadCorbeille,
+    _refreshPaiements, _payTab, _renderCaisseJour, _exportCaisseWA,
+    _ouvrirSelLocataire, _filtrerSelLoc, _selLoc, _confirmerSupprPaiement,
+    _restaurer, _supprimerDefinitivement, _viderCorbeille, _loadCorbeille,
     _locFiltrer,
     _genererInvitation, _toggleUser, _equipeTab, _resetCodeUser, _appliquerPromo,
     _loadDeclarations, _validerDeclaration,
