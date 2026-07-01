@@ -308,79 +308,299 @@ window.IG.locataires = (function() {
   }
 
   // ── Formulaire ajout/édition ──────────────────────────────────
-  function afficherFormulaire(id) {
+  function afficherFormulaire(id, onSuccess) {
     if (window.IG.plans && window.IG.plans.estEnModeRetro()) {
       window.IG.utils.showToast(t('Accès limité — upgradez votre plan pour modifier les données'), 'red');
       setTimeout(function() { window.IG.plans.afficherUpgrade(); }, 800);
       return;
     }
     var loc = id ? getById(id) : null;
-    var imms = window.IG.immeubles ? window.IG.immeubles.getCache() : [];
-    var titre = loc ? t('Modifier locataire') : t('Ajouter un locataire');
+    // Modification : garder le formulaire simple en une page
+    if (loc) { _afficherFormulaireEdition(loc, onSuccess); return; }
+    // Création : wizard 4 étapes
+    _afficherWizardLocataire(onSuccess);
+  }
 
+  function _afficherWizardLocataire(onSuccess) {
+    if (window.IG.plans) {
+      var errPlan = window.IG.plans.verifierLocataire();
+      if (errPlan) { window.IG.utils.showToast(errPlan, 'red'); setTimeout(function() { window.IG.plans.afficherUpgrade(); }, 800); return; }
+    }
+
+    var imms = window.IG.immeubles ? window.IG.immeubles.getCache() : [];
+    var _data = {};
+    var _etape = 1;
+    var _modal = null;
+
+    function _inp(style) {
+      return 'width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);margin-top:4px;' + (style || '');
+    }
+    function _lbl(txt, req) {
+      return '<label style="font-size:12px;font-weight:600;color:var(--text2)">' + txt + (req ? ' <span style="color:var(--red)">*</span>' : '') + '</label>';
+    }
+    function _grp(inner) { return '<div style="margin-bottom:14px">' + inner + '</div>'; }
+
+    function _stepper(actif) {
+      var etapes = ['Identité','Logement','Contrat','Accès'];
+      return '<div style="display:flex;gap:0;margin-bottom:24px;border-radius:10px;overflow:hidden">' +
+        etapes.map(function(e, i) {
+          var n = i + 1;
+          var fait = n < actif;
+          var courant = n === actif;
+          var bg = courant ? 'var(--accent)' : fait ? 'var(--green)' : 'var(--bg3)';
+          var col = (courant || fait) ? '#fff' : 'var(--text3)';
+          return '<div style="flex:1;text-align:center;padding:10px 4px;background:' + bg + ';color:' + col + ';font-size:11px;font-weight:700">' +
+            (fait ? '✓' : n) + ' ' + e + '</div>';
+        }).join('') +
+        '</div>';
+    }
+
+    function _renderEtape(n) {
+      var html = '<div style="padding:20px 24px;max-width:500px;margin:0 auto">' + _stepper(n);
+
+      if (n === 1) {
+        html += '<div style="font-size:15px;font-weight:700;margin-bottom:16px">👤 Identité du locataire</div>' +
+          _grp(_lbl('Nom complet', true) + '<input id="wz-nom" value="' + esc(_data.nom || '') + '" placeholder="Ex: Jean Dupont" style="' + _inp() + '">') +
+          _grp(_lbl('Téléphone', true) + '<input id="wz-tel" value="' + esc(_data.telephone || '') + '" placeholder="+237 6XX XXX XXX" style="' + _inp() + '" onblur="window.IG.locataires._checkDoublon()">') +
+          '<div id="wz-doublon" style="display:none;margin:-10px 0 12px;padding:8px 12px;background:rgba(185,48,32,.1);border-radius:8px;color:var(--red);font-size:12px"></div>' +
+          _grp(_lbl('WhatsApp') + '<input id="wz-wa" value="' + esc(_data.whatsapp || '') + '" placeholder="Identique au téléphone si pareil" style="' + _inp() + '">');
+
+      } else if (n === 2) {
+        var immOptions = '<option value="">Sélectionner un immeuble...</option>' +
+          imms.map(function(i) {
+            return '<option value="' + i.id + '"' + (_data.immeuble_id == i.id ? ' selected' : '') + '>' + esc(i.nom_immeuble || i.nom) + '</option>';
+          }).join('');
+        html += '<div style="font-size:15px;font-weight:700;margin-bottom:16px">🏢 Logement</div>' +
+          _grp(_lbl('Immeuble', true) + '<select id="wz-imm" onchange="window.IG.locataires._chargerLocaux()" style="' + _inp() + '">' + immOptions + '</select>') +
+          _grp(_lbl('Numéro de local', true) +
+            '<div style="display:flex;gap:8px;margin-top:4px">' +
+            '<input id="wz-appt" value="' + esc(_data.appt || '') + '" placeholder="Ex: A1, S2, C3" style="' + _inp('flex:1;margin-top:0') + '" onblur="window.IG.locataires._checkLocalOccupe()">' +
+            '<button type="button" onclick="window.IG.locataires._voirLocaux()" style="padding:10px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;cursor:pointer;white-space:nowrap">Voir libres</button></div>') +
+          '<div id="wz-occupe" style="display:none;margin:-10px 0 12px;padding:8px 12px;background:rgba(185,48,32,.1);border-radius:8px;color:var(--red);font-size:12px"></div>' +
+          _grp(_lbl('Type de local') + '<select id="wz-type" style="' + _inp() + '">' +
+            ['appartement','studio','chambre','duplex','bureau','commerce'].map(function(tp) {
+              return '<option value="' + tp + '"' + (_data.type_local === tp ? ' selected' : '') + '>' + tp.charAt(0).toUpperCase() + tp.slice(1) + '</option>';
+            }).join('') + '</select>');
+
+      } else if (n === 3) {
+        html += '<div style="font-size:15px;font-weight:700;margin-bottom:16px">📋 Contrat</div>' +
+          _grp(_lbl('Date d\'entrée', true) + '<input type="date" id="wz-entree" value="' + esc(_data.entree || '') + '" style="' + _inp() + '">') +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+          _grp(_lbl('Loyer mensuel (FCFA)', true) + '<input type="number" id="wz-loyer" value="' + (_data.loyer || '') + '" min="0" step="500" placeholder="Ex: 50000" style="' + _inp() + '">') +
+          _grp(_lbl('Caution') + '<input type="number" id="wz-caution" value="' + (_data.caution || '') + '" min="0" step="500" style="' + _inp() + '">') +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+          _grp(_lbl('Arriérés antérieurs (FCFA)') + '<input type="number" id="wz-arr" value="' + (_data.arrieres || 0) + '" min="0" step="500" oninput="window.IG.locataires._syncArrMois()" style="' + _inp() + '">') +
+          _grp(_lbl('Nb mois arriérés') + '<input type="number" id="wz-arr-mois" value="' + (_data.mois_arrieres || 0) + '" min="0" step="1" oninput="window.IG.locataires._syncArrMontant()" style="' + _inp() + '">') +
+          '</div>' +
+          _grp(_lbl('Observations') + '<textarea id="wz-obs" rows="2" placeholder="Notes particulières..." style="' + _inp() + 'resize:vertical">' + esc(_data.observations || '') + '</textarea>');
+
+      } else if (n === 4) {
+        html += '<div style="text-align:center;padding:10px 0">' +
+          '<div style="font-size:40px;margin-bottom:12px">🎉</div>' +
+          '<div style="font-size:16px;font-weight:700;margin-bottom:6px">' + esc(_data.nom || '') + ' ajouté !</div>' +
+          '<div style="font-size:13px;color:var(--text3);margin-bottom:20px">' + esc(_data.appt || '') + (imms.find(function(i) { return i.id == _data.immeuble_id; }) ? ' · ' + esc((imms.find(function(i) { return i.id == _data.immeuble_id; })).nom_immeuble || '') : '') + '</div>' +
+          '<div id="wz-invite-zone"><div style="font-size:13px;color:var(--text3)">Génération de l\'accès locataire...</div></div>' +
+          '</div>';
+      }
+
+      // Boutons navigation
+      html += '<div style="display:flex;gap:10px;justify-content:space-between;margin-top:20px">';
+      if (n > 1 && n < 4) {
+        html += '<button onclick="window.IG.locataires._wzNav(-1)" style="padding:11px 20px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;cursor:pointer">← Retour</button>';
+      } else {
+        html += '<div></div>';
+      }
+      if (n < 3) {
+        html += '<button onclick="window.IG.locataires._wzNav(1)" style="padding:11px 24px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer">Suivant →</button>';
+      } else if (n === 3) {
+        html += '<button onclick="window.IG.locataires._wzSauvegarder()" style="padding:11px 24px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:13px;font-weight:700;cursor:pointer">✅ Enregistrer</button>';
+      } else {
+        html += '<button onclick="window.IG.locataires._wzFermer()" style="padding:11px 24px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer">Terminer</button>';
+      }
+      html += '</div></div>';
+      return html;
+    }
+
+    // Accès depuis les fonctions inline
+    window.IG.locataires._wzData = _data;
+    window.IG.locataires._wzEtape = function() { return _etape; };
+    window.IG.locataires._wzNav = function(dir) {
+      if (dir === 1) {
+        // Valider étape courante
+        if (_etape === 1) {
+          var nom = (document.getElementById('wz-nom') || {}).value || '';
+          var tel = (document.getElementById('wz-tel') || {}).value || '';
+          if (!nom.trim()) { toast('Nom obligatoire', 'red'); return; }
+          if (!tel.trim()) { toast('Téléphone obligatoire', 'red'); return; }
+          _data.nom = nom.trim();
+          _data.telephone = tel.trim();
+          _data.whatsapp = (document.getElementById('wz-wa') || {}).value || '';
+        } else if (_etape === 2) {
+          var immId = (document.getElementById('wz-imm') || {}).value || '';
+          var appt = (document.getElementById('wz-appt') || {}).value || '';
+          if (!immId) { toast('Immeuble obligatoire', 'red'); return; }
+          if (!appt.trim()) { toast('Numéro de local obligatoire', 'red'); return; }
+          _data.immeuble_id = parseInt(immId);
+          _data.appt = appt.trim();
+          _data.type_local = (document.getElementById('wz-type') || {}).value || 'appartement';
+        }
+      }
+      _etape += dir;
+      var box = document.getElementById('wz-modal-body');
+      if (box) box.innerHTML = _renderEtape(_etape);
+    };
+    window.IG.locataires._wzSauvegarder = async function() {
+      var entree = (document.getElementById('wz-entree') || {}).value || '';
+      var loyer  = parseFloat((document.getElementById('wz-loyer') || {}).value || 0);
+      var caution = parseFloat((document.getElementById('wz-caution') || {}).value || 0);
+      var arr = parseFloat((document.getElementById('wz-arr') || {}).value || 0);
+      var arrM = parseInt((document.getElementById('wz-arr-mois') || {}).value || 0);
+      var obs = (document.getElementById('wz-obs') || {}).value || '';
+      if (!entree) { toast('Date d\'entrée obligatoire', 'red'); return; }
+      if (!loyer) { toast('Loyer obligatoire', 'red'); return; }
+      _data.entree = entree;
+      _data.loyer = loyer;
+      _data.caution = caution;
+      _data.arrieres = arr;
+      _data.mois_arrieres = arrM;
+      _data.observations = obs;
+      _data.statut = 'actif';
+      _data.id = window.IG.utils.uid();
+      try {
+        await sauvegarder(_data);
+        if (window.IG.app && window.IG.app.refresh) window.IG.app.refresh();
+        if (typeof onSuccess === 'function') onSuccess();
+        _etape = 4;
+        var box = document.getElementById('wz-modal-body');
+        if (box) box.innerHTML = _renderEtape(4);
+        // Générer invitation et afficher code
+        setTimeout(function() { _genererInvitationLocataire(_data); }, 400);
+      } catch(err) { toast('Erreur: ' + err.message, 'red'); }
+    };
+    window.IG.locataires._wzFermer = function() {
+      var overlay = document.querySelector('[id="wz-overlay"]');
+      if (overlay) overlay.remove();
+    };
+    window.IG.locataires._checkDoublon = function() {
+      var tel = (document.getElementById('wz-tel') || {}).value || '';
+      if (!tel) return;
+      var existe = _cache.some(function(l) { return l.telephone && l.telephone.replace(/\D/g,'') === tel.replace(/\D/g,''); });
+      var zone = document.getElementById('wz-doublon');
+      if (zone) {
+        if (existe) { zone.style.display = 'block'; zone.textContent = '⚠️ Ce numéro est déjà utilisé par un locataire existant.'; }
+        else { zone.style.display = 'none'; }
+      }
+    };
+    window.IG.locataires._checkLocalOccupe = function() {
+      var immId = (document.getElementById('wz-imm') || {}).value || '';
+      var appt = (document.getElementById('wz-appt') || {}).value || '';
+      if (!immId || !appt) return;
+      var occupe = _cache.find(function(l) { return l.immeuble_id == immId && l.appt === appt && l.statut !== 'libre'; });
+      var zone = document.getElementById('wz-occupe');
+      if (zone) {
+        if (occupe) { zone.style.display = 'block'; zone.textContent = '⚠️ Ce local est déjà occupé par ' + esc(occupe.nom) + '.'; }
+        else { zone.style.display = 'none'; }
+      }
+    };
+    window.IG.locataires._chargerLocaux = function() {
+      var immId = (document.getElementById('wz-imm') || {}).value || '';
+      _data.immeuble_id = parseInt(immId) || null;
+    };
+    window.IG.locataires._voirLocaux = function() {
+      var immId = (document.getElementById('wz-imm') || {}).value || '';
+      if (!immId) { toast('Choisir d\'abord un immeuble', 'orange'); return; }
+      var imm = imms.find(function(i) { return i.id == immId; });
+      if (!imm) return;
+      var occupesIds = _cache.filter(function(l) { return l.immeuble_id == immId && l.statut !== 'libre'; }).map(function(l) { return l.appt; });
+      var types = [['A','apparts'],['S','studios'],['C','chambres'],['D','duplex']];
+      var lignes = [];
+      types.forEach(function(tp) {
+        var nb = parseInt(imm[tp[1]] || 0);
+        for (var k = 1; k <= nb; k++) {
+          var code = tp[0] + k;
+          var libre = !occupesIds.includes(code);
+          lignes.push('<span style="display:inline-block;margin:3px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;background:' + (libre ? 'rgba(14,122,69,.15)' : 'rgba(185,48,32,.1)') + ';color:' + (libre ? 'var(--green)' : 'var(--red)') + ';cursor:' + (libre ? 'pointer' : 'default') + '"' +
+            (libre ? ' onclick="document.getElementById(\'wz-appt\').value=\'' + code + '\';this.closest(\'[style*=z-index:950]\').remove()"' : '') + '>' +
+            code + (libre ? ' ✓' : ' ✗') + '</span>');
+        }
+      });
+      var pop = document.createElement('div');
+      pop.style.cssText = 'position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center';
+      pop.innerHTML = '<div style="background:var(--bg);border-radius:14px;padding:20px;max-width:340px;width:90%">' +
+        '<div style="font-weight:700;font-size:14px;margin-bottom:12px">Locaux — ' + esc(imm.nom_immeuble || imm.nom) + '</div>' +
+        '<div style="margin-bottom:12px">' + (lignes.join('') || 'Aucun local configuré') + '</div>' +
+        '<div style="font-size:11px;color:var(--text3)">✓ libre — cliquer pour sélectionner &nbsp;|&nbsp; ✗ occupé</div>' +
+        '<button onclick="this.closest(\'[style*=z-index:950]\').remove()" style="margin-top:14px;width:100%;padding:9px;border-radius:8px;border:none;background:var(--bg3);color:var(--text);cursor:pointer">Fermer</button></div>';
+      document.body.appendChild(pop);
+    };
+    window.IG.locataires._syncArrMois = function() {
+      var loyer = parseFloat((document.getElementById('wz-loyer') || {}).value || 0);
+      var arr = parseFloat((document.getElementById('wz-arr') || {}).value || 0);
+      var moisEl = document.getElementById('wz-arr-mois');
+      if (loyer > 0 && moisEl) moisEl.value = Math.round(arr / loyer);
+    };
+    window.IG.locataires._syncArrMontant = function() {
+      var loyer = parseFloat((document.getElementById('wz-loyer') || {}).value || 0);
+      var mois = parseInt((document.getElementById('wz-arr-mois') || {}).value || 0);
+      var arrEl = document.getElementById('wz-arr');
+      if (loyer > 0 && arrEl) arrEl.value = mois * loyer;
+    };
+
+    // Créer l'overlay
+    var overlay = document.createElement('div');
+    overlay.id = 'wz-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px';
+    overlay.innerHTML = '<div style="background:var(--bg);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto" id="wz-modal-body">' + _renderEtape(1) + '</div>';
+    document.body.appendChild(overlay);
+  }
+
+  function _afficherFormulaireEdition(loc, onSuccess) {
+    var imms = window.IG.immeubles ? window.IG.immeubles.getCache() : [];
     var immOptions = imms.map(function(i) {
-      var sel = loc && loc.immeuble_id == i.id ? ' selected' : '';
+      var sel = loc.immeuble_id == i.id ? ' selected' : '';
       return '<option value="' + i.id + '"' + sel + '>' + esc(i.nom_immeuble || i.nom) + '</option>';
     }).join('');
 
-    var html = '<h3 style="margin-bottom:18px;font-size:16px">' + titre + '</h3>' +
+    var html = '<h3 style="margin-bottom:18px;font-size:16px">✏️ Modifier locataire</h3>' +
       '<form id="form-locataire">' +
-      _field('nom', t('Nom complet'), loc ? loc.nom : '', true) +
+      _field('nom', t('Nom complet'), loc.nom, true) +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-      window.IG.utils.phoneField('telephone', t('Téléphone'), loc ? (loc.telephone || '') : '') +
-      window.IG.utils.phoneField('whatsapp', 'WhatsApp', loc ? (loc.whatsapp || '') : '') +
+      window.IG.utils.phoneField('telephone', t('Téléphone'), loc.telephone || '') +
+      window.IG.utils.phoneField('whatsapp', 'WhatsApp', loc.whatsapp || '') +
       '</div>' +
       '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Immeuble') + ' *</label>' +
       '<select name="immeuble_id" required style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
       '<option value="">' + t('Sélectionner...') + '</option>' + immOptions + '</select></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-      _field('appt', t('Local / Appt'), loc ? (loc.appt || '') : '') +
+      _field('appt', t('Local / Appt'), loc.appt || '') +
       '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Type') + '</label>' +
       '<select name="type_local" style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
       ['appartement','studio','chambre','duplex','bureau','commerce'].map(function(tp) {
-        return '<option value="' + tp + '"' + (loc && loc.type_local === tp ? ' selected' : '') + '>' + tp + '</option>';
-      }).join('') + '</select></div>' +
-      '</div>' +
+        return '<option value="' + tp + '"' + (loc.type_local === tp ? ' selected' : '') + '>' + tp + '</option>';
+      }).join('') + '</select></div></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-      _fieldNum('loyer', t('Loyer mensuel (FCFA)'), loc ? (loc.loyer || 0) : 0) +
-      _fieldNum('caution', t('Caution'), loc ? (loc.caution || 0) : 0) +
+      _fieldNum('loyer', t('Loyer (FCFA)'), loc.loyer || 0) +
+      _fieldNum('caution', t('Caution'), loc.caution || 0) +
       '</div>' +
-      _field('entree', t('Date entrée'), loc ? (loc.entree || '') : '', false, 'date') +
+      _field('entree', t('Date entrée'), loc.entree || '', false, 'date') +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-      '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Arriérés antérieurs (FCFA)') + '</label>' +
-      '<input type="number" name="arrieres" id="ig-arrieres-montant" value="' + (loc ? (loc.arrieres || 0) : 0) + '" min="0" step="500"' +
-      ' oninput="(function(el){var l=parseFloat(document.querySelector(\'[name=loyer]\').value)||0;var m=document.getElementById(\'ig-arrieres-mois\');if(l>0&&m)m.value=Math.round((parseFloat(el.value)||0)/l);})(this)"' +
-      ' style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
-      '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Nb mois arriérés') + '</label>' +
-      '<input type="number" name="mois_arrieres" id="ig-arrieres-mois" value="' + (loc ? (loc.mois_arrieres || 0) : 0) + '" min="0" step="1"' +
-      ' oninput="(function(el){var l=parseFloat(document.querySelector(\'[name=loyer]\').value)||0;var m=document.getElementById(\'ig-arrieres-montant\');if(l>0&&m)m.value=(parseInt(el.value)||0)*l;})(this)"' +
-      ' style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
+      _fieldNum('arrieres', t('Arriérés (FCFA)'), loc.arrieres || 0) +
+      _fieldNum('mois_arrieres', t('Nb mois arriérés'), loc.mois_arrieres || 0) +
       '</div>' +
       '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Observations') + '</label>' +
-      '<textarea name="observations" rows="2" style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);resize:vertical">' + esc(loc ? (loc.observations || '') : '') + '</textarea></div>' +
-      '<div id="ig-ad-loc-form" style="margin:14px 0 10px;text-align:center"></div>' +
+      '<textarea name="observations" rows="2" style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);resize:vertical">' + esc(loc.observations || '') + '</textarea></div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">' +
-      (loc ? '<button type="button" onclick="window.IG.locataires._libererConfirm(' + (loc.id) + ')" data-modal-close style="padding:10px 16px;border-radius:8px;border:1px solid #B93020;color:#B93020;background:transparent;cursor:pointer;font-size:12px">' + t('Libérer') + '</button>' : '') +
+      '<button type="button" onclick="window.IG.locataires._libererConfirm(' + loc.id + ')" data-modal-close style="padding:10px 16px;border-radius:8px;border:1px solid var(--red);color:var(--red);background:transparent;cursor:pointer;font-size:12px">' + t('Libérer') + '</button>' +
       '<button type="button" data-modal-close class="btn-secondary" style="padding:10px 18px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer">' + t('Annuler') + '</button>' +
       '<button type="submit" style="padding:10px 20px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:600">' + t('Sauvegarder') + '</button>' +
       '</div></form>';
 
-    // Vérification limite plan avant d'ouvrir (création seulement)
-    if (!id && window.IG.plans) {
-      var errPlan = window.IG.plans.verifierLocataire();
-      if (errPlan) {
-        window.IG.utils.showToast(errPlan, 'red');
-        setTimeout(function() { window.IG.plans.afficherUpgrade(); }, 800);
-        return;
-      }
-    }
-
     var modal = window.IG.utils.showModal(html, { width: '540px' });
-    setTimeout(function() { if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-loc-form', 'ad1'); }, 80);
     modal.box.querySelector('#form-locataire').addEventListener('submit', async function(e) {
       e.preventDefault();
       var fd = new FormData(e.target);
-      var data = loc ? { ...loc } : { id: window.IG.utils.uid() };
+      var data = { ...loc };
       data.nom          = fd.get('nom');
       data.telephone    = fd.get('telephone');
       data.whatsapp     = fd.get('whatsapp');
@@ -389,25 +609,17 @@ window.IG.locataires = (function() {
       data.type_local   = fd.get('type_local');
       data.loyer        = parseFloat(fd.get('loyer')) || 0;
       data.caution      = parseFloat(fd.get('caution')) || 0;
-      data.entree         = fd.get('entree');
-      data.arrieres       = parseFloat(fd.get('arrieres')) || 0;
-      data.mois_arrieres  = parseInt(fd.get('mois_arrieres')) || 0;
-      data.observations   = fd.get('observations');
-      data.statut       = data.statut || 'actif';
+      data.entree       = fd.get('entree');
+      data.arrieres     = parseFloat(fd.get('arrieres')) || 0;
+      data.mois_arrieres = parseInt(fd.get('mois_arrieres')) || 0;
+      data.observations = fd.get('observations');
       try {
-        var estNouveau = !loc;
         await sauvegarder(data);
         modal.close();
+        toast(t('Locataire sauvegardé'), 'green');
         if (window.IG.app && window.IG.app.refresh) window.IG.app.refresh();
-        if (estNouveau) {
-          // Générer code d'invitation automatiquement pour le nouveau locataire
-          _genererInvitationLocataire(data);
-        } else {
-          toast(t('Locataire sauvegardé'), 'green');
-        }
-      } catch(err) {
-        toast(t('Erreur') + ': ' + err.message, 'red');
-      }
+        if (typeof onSuccess === 'function') onSuccess();
+      } catch(err) { toast(t('Erreur') + ': ' + err.message, 'red'); }
     });
   }
 
