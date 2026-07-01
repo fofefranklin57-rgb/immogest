@@ -1,9 +1,42 @@
-﻿index.html.bak
+index.html.bak
 supabase_migration.sql
 .claude/
 
+# Build Android
 www/
 android/.gradle/
 android/app/build/
 android/build/
 *.apk
+*.aab
+
+# Secrets & clés — JAMAIS committer
+*.jks
+*.keystore
+*.p12
+*.pem
+*.env
+*.env.*
+.env.local
+
+# Backups de données (contiennent des infos personnelles)
+backup_*.json
+*_backup.json
+
+# Dépendances
+node_modules/
+.npm/
+
+# Captures d'écran temporaires
+screen*.png
+screen_*.png
+
+# Documents non liés au code
+roman_*/
+RAPPORT_AUDIT_*.md
+PROMESSE_DE_VENTE_*.docx
+~$*
+
+# Divers
+.DS_Store
+Thumbs.db

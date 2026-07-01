@@ -11,11 +11,7 @@ window.IG.config = {
   workerUrl:   'https://immogest1.fofefranklin57.workers.dev',
   oneSignalAppId: '8a3857ab-64cc-4a62-9916-ce46b4768dac',
   monetagMeta: 'd9b7d2935fbcb3e568288a4ff0852e32',
-  fapshi: {
-    apikey:   'FAK_49b4bbee5088be50e98dfcb21120cd7b',
-    apiuser:  'bd0c1e07-3ae4-4009-a1b9-3946225e1291',
-    baseUrl:  'https://live.fapshi.com'
-  },
+  // Fapshi : clés gérées côté Worker (Cloudflare secrets FAPSHI_KEY, FAPSHI_USER)
 
   primaryColor:'#0E6AAF',
   modules: {

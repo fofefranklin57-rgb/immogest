@@ -47,7 +47,7 @@ window.IG.db = (function() {
       res = await fetch(_workerUrl() + '/db', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, table, tenantId: s.tenantId, sessionToken: s.sessionToken || null, data: data || null, filters: filters || null })
+        body: JSON.stringify({ action, table, tenantId: s.tenantId, userId: s.userId || null, sessionToken: s.sessionToken || null, data: data || null, filters: filters || null })
       });
     } catch(e) {
       throw e;
@@ -87,24 +87,23 @@ window.IG.db = (function() {
     return { immeubles: im, locataires: lo, paiements: pa };
   }
 
-  // ── Upload photo vers Supabase Storage ───────────────────────
-  var _SB_URL  = 'https://uggxfmwpttfsfcirmeqx.supabase.co';
-  var _SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZ3hmbXdwdHRmc2ZjaXJtZXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNTA4MjIsImV4cCI6MjA5NDYyNjgyMn0.l8iYlJHOt6evNlBQ3zRskZasn_J2BjAUs1l2vKOZNvY';
-  var _BUCKET  = 'marketplace';
-
+  // ── Upload photo via Worker (clé Supabase gérée côté serveur) ─
   async function uploadPhoto(file, folder) {
+    var s = _session();
+    if (!s) throw new Error('Non authentifié');
     var ext  = file.name.split('.').pop().toLowerCase() || 'jpg';
     var name = (folder || 'annonces') + '/' + Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
-    var res  = await fetch(_SB_URL + '/storage/v1/object/' + _BUCKET + '/' + name, {
-      method:  'POST',
-      headers: { 'Authorization': 'Bearer ' + _SB_KEY, 'Content-Type': file.type || 'image/jpeg' },
-      body:    file
-    });
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('path', name);
+    fd.append('tenantId', s.tenantId);
+    var res = await fetch(_workerUrl() + '/upload', { method: 'POST', body: fd });
     if (!res.ok) {
       var err = await res.json().catch(function() { return {}; });
-      throw new Error(err.message || 'Erreur upload photo');
+      throw new Error(err.error || 'Erreur upload photo');
     }
-    return _SB_URL + '/storage/v1/object/public/' + _BUCKET + '/' + name;
+    var d = await res.json();
+    return d.url;
   }
 
   return { select, upsert, insert, update, remove, syncAll, loadAll, workerCall, resetAuth, _db, uploadPhoto };
