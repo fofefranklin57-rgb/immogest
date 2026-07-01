@@ -206,7 +206,33 @@ ${_footer()}</body></html>`;
 
       // ── /health ──────────────────────────────────────────────
       if (path === '/health') {
-        return json({ ok: true, version: '2.0', ts: Date.now() });
+        // Vérifier connexion Supabase
+        let dbOk = false;
+        try {
+          const r = await sbFetch('tenants', '?limit=1&select=id');
+          dbOk = r.ok;
+        } catch(_) {}
+        return json({
+          ok: true, version: '2.1', ts: Date.now(),
+          db: dbOk ? 'ok' : 'error',
+          env: { supabase: !!env.SUPABASE_URL, fapshi: !!env.FAPSHI_API_KEY }
+        });
+      }
+
+      // ── /logs — audit log récent (admin seulement) ────────────
+      if (path === '/logs' && request.method === 'GET') {
+        const authH = request.headers.get('Authorization') || '';
+        const masterKey = env.MASTER_KEY || '';
+        if (!masterKey || authH !== 'Bearer ' + masterKey) {
+          return json({ error: 'Non autorisé' }, 401);
+        }
+        const tenantFilter = url.searchParams.get('tenant_id');
+        const limit = Math.min(parseInt(url.searchParams.get('limit') || '100'), 500);
+        let qs = '?order=created_at.desc&limit=' + limit;
+        if (tenantFilter) qs += '&tenant_id=eq.' + encodeURIComponent(tenantFilter);
+        const r = await sbFetch('owner_logs', qs);
+        const logs = r.ok ? await r.json() : [];
+        return json({ logs, count: logs.length });
       }
 
       // ── /marketplace-public — endpoint public sans auth ───────
