@@ -2367,28 +2367,108 @@ window.IG.app = (function() {
     var el = document.getElementById('corbeille-body');
     if (!el) return;
     try {
-      var items = await window.IG.db.select('corbeille');
-      if (!items || !items.length) {
-        el.innerHTML = '<div class="card" style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:36px;margin-bottom:10px">🗑️</div><p>' + t('La corbeille est vide') + '</p></div>';
-        return;
-      }
-      var rows = items.map(function(item) {
+      // 1. Éléments table corbeille (locataires supprimés)
+      var corbItems = await window.IG.db.select('corbeille').catch(function() { return []; });
+      // 2. Immeubles archivés (flag archive:true dans la table immeubles)
+      var allImm = await window.IG.db.select('immeubles').catch(function() { return []; });
+      var immArchives = (allImm || []).filter(function(i) { return i.archive; });
+      // 3. Locataires libérés dans les 30 derniers jours
+      var allLocs = await window.IG.db.select('locataires').catch(function() { return []; });
+      var cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+      var locsLiberes = (allLocs || []).filter(function(l) {
+        if (l.statut !== 'libre') return false;
+        if (!l.date_liberation) return false;
+        return new Date(l.date_liberation) >= cutoff;
+      });
+
+      var rows = '';
+
+      // Immeubles archivés
+      immArchives.forEach(function(imm) {
+        var dateArch = imm.date_archive ? new Date(imm.date_archive).toLocaleDateString('fr-FR') : '';
+        var expiration = imm.date_archive ? _joursRestants(imm.date_archive, 30) : null;
+        rows += '<div class="card" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;border-left:3px solid var(--accent)">' +
+          '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:2px">📦 ' + t('Immeuble archivé') + '</div>' +
+          '<div style="font-weight:700">' + esc(imm.nom_immeuble || imm.nom) + '</div>' +
+          '<div style="font-size:12px;color:var(--text3)">' + esc(imm.ville || '') + (dateArch ? ' · ' + t('Archivé le') + ' ' + dateArch : '') + (expiration !== null ? ' · ' + (expiration > 0 ? expiration + ' j.' : '<span style="color:var(--red)">Expiré</span>') : '') + '</div>' +
+          '</div>' +
+          '<button onclick="window.IG.app._restaurerImmeuble(' + imm.id + ')" style="padding:6px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:12px;font-weight:600">↩ ' + t('Restaurer') + '</button>' +
+          '</div>';
+      });
+
+      // Locataires libérés récents
+      locsLiberes.forEach(function(loc) {
+        var imm = _data.immeubles.find(function(i) { return i.id == loc.immeuble_id; });
+        var dateLib = loc.date_liberation ? new Date(loc.date_liberation).toLocaleDateString('fr-FR') : '';
+        var expiration = loc.date_liberation ? _joursRestants(loc.date_liberation, 30) : null;
+        rows += '<div class="card" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;border-left:3px solid var(--green)">' +
+          '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;margin-bottom:2px">🏃 ' + t('Locataire libéré') + '</div>' +
+          '<div style="font-weight:700">' + esc(loc.nom) + '</div>' +
+          '<div style="font-size:12px;color:var(--text3)">' + esc(loc.appt || '') + (imm ? ' · ' + esc(imm.nom_immeuble || imm.nom) : '') + (dateLib ? ' · ' + t('Libéré le') + ' ' + dateLib : '') + (expiration !== null ? ' · ' + (expiration > 0 ? expiration + ' j.' : '<span style="color:var(--red)">Expiré</span>') : '') + '</div>' +
+          '</div>' +
+          '<button onclick="window.IG.app._restaurerLocataire(' + loc.id + ')" style="padding:6px 12px;border-radius:8px;border:none;background:var(--green);color:#fff;cursor:pointer;font-size:12px;font-weight:600">↩ ' + t('Restaurer') + '</button>' +
+          '</div>';
+      });
+
+      // Table corbeille (anciens items)
+      (corbItems || []).forEach(function(item) {
         var d = item.locataire_data || {};
-        var dateSuppr = item.date_suppression ? window.IG.utils.formatDate(item.date_suppression) : '';
-        return '<div class="card" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
+        var dateSuppr = item.date_suppression ? new Date(item.date_suppression).toLocaleDateString('fr-FR') : '';
+        var expiration = item.date_suppression ? _joursRestants(item.date_suppression, 30) : null;
+        rows += '<div class="card" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
           '<div style="flex:1;min-width:0">' +
           '<div style="font-weight:700">' + esc(d.nom || '—') + '</div>' +
-          '<div style="font-size:12px;color:var(--text3)">' + esc(d.appt || '') + (d.loyer ? ' · ' + window.IG.utils.formatMontant(d.loyer) + '/mois' : '') + (dateSuppr ? ' · ' + t('Supprimé le') + ' ' + dateSuppr : '') + '</div>' +
+          '<div style="font-size:12px;color:var(--text3)">' + esc(d.appt || '') + (d.loyer ? ' · ' + window.IG.utils.formatMontant(d.loyer) + '/mois' : '') + (dateSuppr ? ' · ' + t('Supprimé le') + ' ' + dateSuppr : '') + (expiration !== null ? ' · ' + (expiration > 0 ? expiration + ' j.' : '<span style="color:var(--red)">Expiré</span>') : '') + '</div>' +
           '</div>' +
           '<div style="display:flex;gap:8px;flex-shrink:0">' +
           '<button onclick="window.IG.app._restaurer(' + item.id + ')" style="padding:6px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:12px;font-weight:600">↩ ' + t('Restaurer') + '</button>' +
           '<button onclick="window.IG.app._supprimerDefinitivement(' + item.id + ')" style="padding:6px 12px;border-radius:8px;border:none;background:var(--red);color:#fff;cursor:pointer;font-size:12px;font-weight:600">✕ ' + t('Supprimer') + '</button>' +
           '</div></div>';
-      }).join('');
-      el.innerHTML = rows;
+      });
+
+      if (!rows) {
+        el.innerHTML = '<div class="card" style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:36px;margin-bottom:10px">🗑️</div><p>' + t('La corbeille est vide') + '</p></div>';
+      } else {
+        el.innerHTML = rows;
+      }
     } catch(e) {
       el.innerHTML = '<div class="alert alert-yellow">' + t('Corbeille non disponible hors connexion.') + '</div>';
     }
+  }
+
+  function _joursRestants(dateStr, duree) {
+    var d = new Date(dateStr);
+    var exp = new Date(d.getTime() + duree * 24 * 3600 * 1000);
+    var diff = Math.ceil((exp - Date.now()) / (24 * 3600 * 1000));
+    return diff;
+  }
+
+  async function _restaurerImmeuble(id) {
+    try {
+      var allImm = await window.IG.db.select('immeubles');
+      var imm = (allImm || []).find(function(i) { return i.id == id; });
+      if (!imm) { window.IG.utils.showToast('Immeuble introuvable', 'red'); return; }
+      var restaure = Object.assign({}, imm, { archive: false, date_archive: null });
+      await window.IG.db.upsert('immeubles', [restaure]);
+      window.IG.utils.showToast('↩ ' + t('Immeuble restauré'), 'green');
+      _loadCorbeille();
+      if (window.IG.app && window.IG.app.refresh) window.IG.app.refresh();
+    } catch(e) { window.IG.utils.showToast('Erreur: ' + e.message, 'red'); }
+  }
+
+  async function _restaurerLocataire(id) {
+    try {
+      var allLocs = await window.IG.db.select('locataires');
+      var loc = (allLocs || []).find(function(l) { return l.id == id; });
+      if (!loc) { window.IG.utils.showToast('Locataire introuvable', 'red'); return; }
+      var restaure = Object.assign({}, loc, { statut: 'actif', date_liberation: null, motif_liberation: null });
+      await window.IG.db.upsert('locataires', [restaure]);
+      window.IG.utils.showToast('↩ ' + t('Locataire restauré'), 'green');
+      _loadCorbeille();
+      if (window.IG.app && window.IG.app.refresh) window.IG.app.refresh();
+    } catch(e) { window.IG.utils.showToast('Erreur: ' + e.message, 'red'); }
   }
 
   async function _supprimerDefinitivement(corbeilleId) {
@@ -2876,6 +2956,7 @@ window.IG.app = (function() {
     _refreshPaiements, _payTab, _renderCaisseJour, _exportCaisseWA,
     _ouvrirSelLocataire, _filtrerSelLoc, _selLoc, _confirmerSupprPaiement,
     _restaurer, _supprimerDefinitivement, _viderCorbeille, _loadCorbeille,
+    _restaurerImmeuble, _restaurerLocataire,
     _locFiltrer,
     _genererInvitation, _toggleUser, _equipeTab, _resetCodeUser, _appliquerPromo,
     _loadDeclarations, _validerDeclaration,
