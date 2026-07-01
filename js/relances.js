@@ -6,6 +6,8 @@ window.IG = window.IG || {};
 
 window.IG.relances = (function() {
 
+  var _dernieresAlertes = [];
+
   function t(k)   { return window.IG.i18n ? window.IG.i18n.t(k) : k; }
   function esc(s) { return window.IG.utils.esc(s); }
   function fmt(n) { return window.IG.utils.formatMontant(n); }
@@ -135,6 +137,7 @@ window.IG.relances = (function() {
         '</div></div>';
     });
     html += '</div></div>';
+    _dernieresAlertes = alertes;
     content.innerHTML = html;
     if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-relances', 'ad2');
   }
@@ -145,9 +148,21 @@ window.IG.relances = (function() {
   }
 
   function envoyerTous() {
-    window.IG.utils.showToast('Liens WhatsApp générés — ouvrez chaque locataire', 'blue');
+    if (!_dernieresAlertes.length) {
+      window.IG.utils.showToast('Aucune relance à envoyer', 'blue');
+      return;
+    }
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var count = 0;
+    _dernieresAlertes.forEach(function(a) {
+      if (!a.loc.telephone) return;
+      var msg = encodeURIComponent(messageWA(a.loc, a.retard, a.montant, session));
+      var tel = a.loc.telephone.replace(/[^0-9+]/g, '');
+      setTimeout(function() { window.open('https://wa.me/' + tel + '?text=' + msg, '_blank'); }, count++ * 800);
+    });
+    window.IG.utils.showToast(count + ' messages WhatsApp ouverts', 'green');
   }
 
-  return { renderPage, calculerRetard, montantDu, niveauRelance, messageWA };
+  return { renderPage, calculerRetard, montantDu, niveauRelance, messageWA, envoyerTous };
 
 })();
