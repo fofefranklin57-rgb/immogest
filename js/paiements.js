@@ -73,10 +73,11 @@ window.IG.paiements = (function() {
     var avances     = versements.filter(function(v) { return v.type === 'avance'; });
     var cumulAvance = avances.reduce(function(s, v) { return s + (parseFloat(v.montant) || 0); }, 0);
 
-    // Générer les mois de la date d'entrée jusqu'à décembre de annee
+    // Générer les années complètes : la fiche doit toujours afficher janvier → décembre.
+    // Les mois avant l'entrée restent visibles mais marqués "Hors bail".
     var entree  = new Date(locataire.entree);
     var moisList = [];
-    var cur = new Date(entree.getFullYear(), entree.getMonth(), 1);
+    var cur = new Date(entree.getFullYear(), 0, 1);
     var end = new Date(annee, 11, 31);
     while (cur <= end) {
       moisList.push({ mois: cur.getMonth() + 1, annee: cur.getFullYear() });
@@ -95,6 +96,9 @@ window.IG.paiements = (function() {
     var moisArrieres = parseInt(locataire.mois_arrieres) || 0;
     if (moisArrieres > 0 && loyer > 0) {
       var totalPasse = moisList.filter(function(m) {
+        var avantEntree = (m.annee < entree.getFullYear()) ||
+                          (m.annee === entree.getFullYear() && m.mois < (entree.getMonth() + 1));
+        if (avantEntree) return false;
         return !((m.annee > anneeCourante) || (m.annee === anneeCourante && m.mois > moisCourant));
       }).length;
       var creditMois = Math.max(0, totalPasse - moisArrieres);
@@ -102,6 +106,8 @@ window.IG.paiements = (function() {
     }
 
     moisList.forEach(function(m) {
+      var horsBail = (m.annee < entree.getFullYear()) ||
+                     (m.annee === entree.getFullYear() && m.mois < (entree.getMonth() + 1));
       // Mois futur = pas encore échu
       var futur = (m.annee > anneeCourante) ||
                   (m.annee === anneeCourante && m.mois > moisCourant);
@@ -109,7 +115,7 @@ window.IG.paiements = (function() {
       var cumul = 0;
       var versementsMois = [];
 
-      if (!futur) {
+      if (!horsBail && !futur) {
         // 1. Consommer avance en premier
         if (cumulAvance >= loyer) {
           cumul = loyer;
@@ -134,11 +140,12 @@ window.IG.paiements = (function() {
         periode:    _formatPeriode(m.mois, m.annee),
         mois:       m.mois,
         annee:      m.annee,
+        horsBail:   horsBail,
         futur:      futur,
-        statut:     futur ? 'À venir' : (paye ? 'Payé' : (cumul > 0 ? 'Partiel' : 'Impayé')),
+        statut:     horsBail ? 'Hors bail' : (futur ? 'À venir' : (paye ? 'Payé' : (cumul > 0 ? 'Partiel' : 'Impayé'))),
         versements: versementsMois,
         cumul:      cumul,
-        reste:      futur ? 0 : (paye ? 0 : loyer - cumul)
+        reste:      (horsBail || futur) ? 0 : (paye ? 0 : loyer - cumul)
       });
     });
 
@@ -178,8 +185,9 @@ window.IG.paiements = (function() {
     var nbPayes    = lignes.filter(function(l) { return l.statut === 'Payé'; }).length;
     var totalVerse = lignes.reduce(function(s, l) { return s + (l.cumul  || 0); }, 0);
     var totalReste = lignes.reduce(function(s, l) { return s + (l.reste  || 0); }, 0);
-    var nbMoisAll  = toutesLignes.length;
-    var nbPayesAll = toutesLignes.filter(function(l) { return l.statut === 'Payé'; }).length;
+    var lignesEligiblesScore = toutesLignes.filter(function(l) { return !l.horsBail; });
+    var nbMoisAll  = lignesEligiblesScore.length;
+    var nbPayesAll = lignesEligiblesScore.filter(function(l) { return l.statut === 'Payé'; }).length;
     var score      = nbMoisAll ? Math.round((nbPayesAll / nbMoisAll) * 100) : 100;
     var scoreCouleur = score >= 80 ? '#27ae60' : score >= 50 ? '#f39c12' : '#e74c3c';
     var scoreLabel   = score >= 80 ? 'Fiable' : score >= 50 ? 'Moyen' : 'À risque';
@@ -306,6 +314,17 @@ window.IG.paiements = (function() {
     lignes.forEach(function(lg, i) {
       var bg      = i % 2 === 0 ? '' : 'background:#F5F9FD;';
       var isFutur = (lg.annee * 100 + lg.mois) > todayYYMM;
+
+      if (lg.horsBail) {
+        html += '<tr style="' + bg + '">' +
+          '<td style="' + TD + 'color:#999;font-style:italic">' + lg.periode + '</td>' +
+          '<td style="' + TD + '"><span style="color:#777;font-weight:700">Hors bail</span></td>' +
+          '<td style="' + TD + 'color:#aaa">—</td>' +
+          '<td style="' + TD + 'color:#aaa">—</td>' +
+          '<td style="' + TD + 'color:#777">Avant entrée du locataire</td>' +
+          '</tr>';
+        return;
+      }
 
       if (isFutur) {
         html += '<tr style="' + bg + '">' +
