@@ -33,6 +33,7 @@ window.IG.app = (function() {
 
     _showAppShell();
     _applyDarkMode();
+    _watchSystemTheme();
     _renderLangPlan();
     await _loadData();
 
@@ -81,6 +82,7 @@ window.IG.app = (function() {
     var app = document.getElementById('app');
     if (!app) return;
     var session = window.IG.auth.getSession();
+    var canUseAdminTools = ['admin','coordinateur','gestionnaire'].includes(session.role || '');
     var now = new Date();
     var mois = now.getMonth() + 1;
     var annee = now.getFullYear();
@@ -126,15 +128,15 @@ window.IG.app = (function() {
       (_p('declarations') ? '<div class="nav-item" data-page="declarations"><span class="nav-icon">📨</span><span>' + t('Déclarations') + '</span><span class="nav-badge" id="badge-declarations" style="display:none">0</span></div>' : '') +
       (_p('messages')    ? _navItem('messages',   '💬', t('Messages'))   : '') +
       (_p('signatures')  ? _navItem('signatures', '✍️', t('Signatures')) : '') +
-      _navItem('parametres', '⚙️', t('Paramètres')) +
+      (_p('parametres') ? _navItem('parametres', '⚙️', t('Paramètres')) : '') +
       '</div>' +
       '<div class="sidebar-footer">' +
       '<div id="sidebar-user-info" style="font-weight:600;color:rgba(255,255,255,0.9);margin-bottom:3px;font-size:12px">' + esc(session.nom || '') + '</div>' +
       '<div id="sync-indicator" style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:8px">● Sync...</div>' +
       (session.role === 'locataire' ? '<div onclick="window.IG.app.showPage(\'portail\')" class="sidebar-footer-btn sidebar-footer-btn-green"><span>🏠</span><span>' + t('Mon espace') + '</span></div>' : '') +
       '<div onclick="window.IG.app.openGuide()" class="sidebar-footer-btn"><span>📄 ' + t('Guide d\'utilisation') + '</span><span style="font-size:9px;background:#e74c3c;color:#fff;padding:1px 5px;border-radius:4px;font-weight:700;letter-spacing:.03em">PDF</span></div>' +
-      '<div onclick="window.IG.app.showPage(\'archives\')" class="sidebar-footer-btn"><span>🗄️ ' + t('Archives') + '</span></div>' +
-      '<div onclick="window.IG.app.showPage(\'corbeille\')" class="sidebar-footer-btn" style="margin-bottom:8px"><span>🗑️ ' + t('Corbeille') + '</span><span id="badge-corbeille" class="nav-badge" style="display:none">0</span></div>' +
+      (canUseAdminTools ? '<div onclick="window.IG.app.showPage(\'archives\')" class="sidebar-footer-btn"><span>🗄️ ' + t('Archives') + '</span></div>' : '') +
+      (canUseAdminTools ? '<div onclick="window.IG.app.showPage(\'corbeille\')" class="sidebar-footer-btn" style="margin-bottom:8px"><span>🗑️ ' + t('Corbeille') + '</span><span id="badge-corbeille" class="nav-badge" style="display:none">0</span></div>' : '') +
       '<button id="btn-dark-mode" onclick="window.IG.app.toggleDarkMode()" title="Mode sombre" style="width:100%;margin-bottom:6px;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85);font-size:16px;cursor:pointer;font-family:var(--font);">🌙 ' + t('Mode sombre') + '</button>' +
       '</div></nav>' +
       // Bouton IA flottant
@@ -229,25 +231,60 @@ window.IG.app = (function() {
   function topbarAction() {
     var p = _currentPage;
     if (p === 'locataires') { if (window.IG.locataires) window.IG.locataires.afficherFormulaire(); }
-    else if (p === 'paiements') { if (window.IG.paiements) window.IG.paiements.afficherFormulaire(); }
+    else if (p === 'paiements') { _ouvrirSelLocataire(); }
     else if (p === 'immeubles') { if (window.IG.immeubles) window.IG.immeubles.afficherFormulaire(); }
     else { showPage('locataires'); }
   }
 
   function toggleDarkMode() {
-    var isDark = document.body.classList.toggle('dark');
-    localStorage.setItem('ig_dark_mode', isDark ? '1' : '0');
-    var btn = document.getElementById('btn-dark-mode');
-    if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+    var isDark = document.body.classList.contains('dark');
+    setThemeMode(isDark ? 'light' : 'dark');
   }
 
   function _applyDarkMode() {
-    var saved = localStorage.getItem('ig_dark_mode');
-    if (saved === '1') {
-      document.body.classList.add('dark');
-      var btn = document.getElementById('btn-dark-mode');
-      if (btn) btn.textContent = '☀️';
+    var saved = localStorage.getItem('ig_theme') || (localStorage.getItem('ig_dark_mode') === '1' ? 'dark' : 'light');
+    _applyThemeMode(saved);
+  }
+
+  function _prefersDark() {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  function _applyThemeMode(mode) {
+    mode = ['light','dark','auto'].includes(mode) ? mode : 'light';
+    var dark = mode === 'dark' || (mode === 'auto' && _prefersDark());
+    document.body.classList.toggle('dark', dark);
+    localStorage.setItem('ig_theme', mode);
+    localStorage.setItem('ig_dark_mode', dark ? '1' : '0');
+    var btn = document.getElementById('btn-dark-mode');
+    if (btn) {
+      btn.textContent = dark ? '☀️ ' + t('Jour') : '🌙 ' + t('Nuit');
+      btn.title = mode === 'auto' ? t('Mode automatique') : (dark ? t('Passer en mode jour') : t('Passer en mode nuit'));
     }
+    ['light','dark','auto'].forEach(function(m) {
+      var el = document.getElementById('theme-' + m);
+      if (!el) return;
+      var active = m === mode;
+      el.style.background = active ? 'var(--accent)' : 'var(--bg4)';
+      el.style.color = active ? '#fff' : 'var(--text)';
+      el.style.borderColor = active ? 'var(--accent)' : 'var(--border2)';
+    });
+  }
+
+  function setThemeMode(mode) {
+    _applyThemeMode(mode);
+  }
+
+  function _watchSystemTheme() {
+    if (!window.matchMedia) return;
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq._igBound) return;
+    var handler = function() {
+      if ((localStorage.getItem('ig_theme') || 'light') === 'auto') _applyThemeMode('auto');
+    };
+    if (mq.addEventListener) mq.addEventListener('change', handler);
+    else if (mq.addListener) mq.addListener(handler);
+    mq._igBound = true;
   }
 
   function _initEssai() {
@@ -608,6 +645,59 @@ window.IG.app = (function() {
       '</div>';
   }
 
+  function _num(v, def) {
+    var n = parseFloat(v);
+    return isNaN(n) ? (def || 0) : n;
+  }
+
+  function _dateIso(v) {
+    if (!v) return '';
+    var d = new Date(v);
+    if (isNaN(d)) return String(v);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function _normaliserData() {
+    _data.immeubles = (_data.immeubles || []).map(function(i) {
+      i.nom_immeuble = i.nom_immeuble || i.nom || i.name || '';
+      i.nom = i.nom || i.nom_immeuble;
+      i.apparts  = parseInt(i.apparts  || i.nb_apparts || i.nb_appts || i.appartements) || 0;
+      i.studios  = parseInt(i.studios  || i.nb_studios) || 0;
+      i.chambres = parseInt(i.chambres || i.nb_chambres) || 0;
+      i.duplex   = parseInt(i.duplex   || i.nb_duplex) || 0;
+      return i;
+    });
+    _data.locataires = (_data.locataires || []).map(function(l) {
+      l.immeuble_id = l.immeuble_id || l.immeubleId || l.iid || l.imm_id || null;
+      l.entree = _dateIso(l.entree || l.date_entree || l.dateEntree || l.debut_bail || l.created_at);
+      l.loyer = _num(l.loyer || l.rent || l.loyer_mensuel, 0);
+      l.caution = _num(l.caution, 0);
+      l.arrieres = _num(l.arrieres, 0);
+      l.mois_arrieres = parseInt(l.mois_arrieres || l.nb_impayes || l.retard_mois) || 0;
+      l.appt = l.appt || l.local || l.appartement || l.numero_local || '';
+      l.statut = l.statut || 'actif';
+      return l;
+    });
+    _data.paiements = (_data.paiements || []).map(function(p) {
+      p.locataire_id = p.locataire_id || p.locataireId || p.lid || null;
+      p.date_paiement = _dateIso(p.date_paiement || p.datePaiement || p.date || p.created_at);
+      if ((!p.mois || !p.annee) && p.date_paiement) {
+        var d = new Date(p.date_paiement);
+        if (!isNaN(d)) {
+          p.mois = p.mois || (d.getMonth() + 1);
+          p.annee = p.annee || d.getFullYear();
+        }
+      }
+      p.mois = parseInt(p.mois) || null;
+      p.annee = parseInt(p.annee) || null;
+      p.montant = _num(p.montant || p.amount, 0);
+      p.mode_paiement = p.mode_paiement || p.modePaiement || p.mode || 'espèces';
+      p.type = p.type || 'loyer';
+      p.remisAuBailleur = !!(p.remisAuBailleur || p.remis_au_bailleur || p.remis_bailleur);
+      return p;
+    });
+  }
+
   // ── Charger données ───────────────────────────────────────────
   async function _loadData() {
     _setSyncStatus('syncing');
@@ -616,6 +706,7 @@ window.IG.app = (function() {
       _data.immeubles  = result.immeubles  || [];
       _data.locataires = result.locataires || [];
       _data.paiements  = result.paiements  || [];
+      _normaliserData();
       // Charger settings momo pour le portail locataire
       try {
         var params = await window.IG.db.select('parametres');
@@ -652,6 +743,7 @@ window.IG.app = (function() {
         } catch(_) {}
       }
       _setSyncStatus('ok');
+      _syncCaches();
       _updateSidebarImmeubles();
       _updateRelancesBadge();
       _updateCorbeilleBadge();
@@ -665,6 +757,8 @@ window.IG.app = (function() {
         try { _data.immeubles  = JSON.parse(localStorage.getItem('immeubles_'  + s.tenantId) || '[]'); } catch(_) {}
         try { _data.locataires = JSON.parse(localStorage.getItem('locataires_' + s.tenantId) || '[]'); } catch(_) {}
         try { _data.paiements  = JSON.parse(localStorage.getItem('paiements_'  + s.tenantId) || '[]'); } catch(_) {}
+        _normaliserData();
+        _syncCaches();
       }
     }
   }
@@ -853,13 +947,29 @@ window.IG.app = (function() {
 
     var totalAttendu = locs.reduce(function(s, l) { return s + (parseFloat(l.loyer) || 0); }, 0);
     var totalEncaisse = pays.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
-    var nbImpayes = locs.filter(function(l) { return (parseInt(l.mois_arrieres) || 0) > 0; }).length;
+    var nbImpayes = 0;
+    var totalDu = 0;
+    locs.forEach(function(l) {
+      var paysLoc = _data.paiements.filter(function(p) { return p.locataire_id == l.id; });
+      var du = window.IG.relances ? window.IG.relances.montantDu(l, paysLoc) : ((parseFloat(l.arrieres) || 0) + (parseInt(l.mois_arrieres) || 0) * (parseFloat(l.loyer) || 0));
+      if (du > 0) nbImpayes++;
+      totalDu += du;
+    });
+    var tauxGlobal = totalAttendu > 0 ? Math.round((totalEncaisse / totalAttendu) * 100) : 0;
+    var derniereDate = pays.length ? pays.slice().sort(function(a,b) { return new Date(b.date_paiement || b.created_at || 0) - new Date(a.date_paiement || a.created_at || 0); })[0] : null;
 
     var gestTel = session.parametres && session.parametres.tel ? session.parametres.tel : null;
 
     var html = '<div class="content">' +
-      '<div style="font-size:17px;font-weight:700;margin-bottom:4px">Bonjour, ' + esc(session.nom || 'Bailleur') + ' 👋</div>' +
-      '<div style="font-size:12px;color:var(--text3);margin-bottom:20px">' + now.toLocaleDateString('fr-FR', {month:'long', year:'numeric'}) + '</div>' +
+      '<div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#0E6AAF,#0E7A45);color:#fff;border:none;overflow:hidden;position:relative">' +
+      '<div style="position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12)"></div>' +
+      '<div style="position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">' +
+      '<div><div style="font-size:11px;font-weight:800;opacity:.75;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Espace bailleur</div>' +
+      '<div style="font-size:22px;font-weight:900;line-height:1.15">Bonjour, ' + esc(session.nom || 'Bailleur') + '</div>' +
+      '<div style="font-size:13px;opacity:.82;margin-top:6px">' + now.toLocaleDateString('fr-FR', {month:'long', year:'numeric'}) + ' · ' + imms.length + ' immeuble(s) suivi(s)</div></div>' +
+      '<div style="text-align:right"><div style="font-size:28px;font-weight:900">' + tauxGlobal + '%</div>' +
+      '<div style="font-size:11px;opacity:.8">recouvrement global</div></div>' +
+      '</div></div>' +
 
       // KPIs
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px">' +
@@ -867,12 +977,22 @@ window.IG.app = (function() {
       _bKpi('👥', locs.length, 'Locataires actifs', 'var(--green)') +
       _bKpi('💰', fmt(totalEncaisse), 'Encaissé ce mois', 'var(--green)') +
       _bKpi('⚠️', nbImpayes, 'En retard', nbImpayes > 0 ? 'var(--red)' : 'var(--text3)') +
+      _bKpi('📌', fmt(totalDu), 'Reste à recouvrer', totalDu > 0 ? 'var(--red)' : 'var(--green)') +
       '</div>' +
+
+      '<div class="card" style="margin-bottom:18px;padding:14px 16px;border-left:4px solid ' + (totalDu > 0 ? 'var(--red)' : 'var(--green)') + '">' +
+      '<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">' +
+      '<div><div style="font-size:14px;font-weight:800">' + (totalDu > 0 ? 'Suivi à surveiller' : 'Portefeuille à jour') + '</div>' +
+      '<div style="font-size:12px;color:var(--text3);margin-top:4px">' +
+      (derniereDate ? 'Dernier encaissement enregistré le ' + window.IG.utils.formatDate(derniereDate.date_paiement || derniereDate.created_at) : 'Aucun encaissement enregistré ce mois-ci') +
+      '</div></div>' +
+      '<button onclick="window.IG.app.showPage(\'rapports\')" style="padding:9px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">📄 Voir mes rapports</button>' +
+      '</div></div>' +
 
       // Immeubles
       '<h3 style="font-size:14px;font-weight:700;margin-bottom:12px">Mes immeubles</h3>' +
       '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">' +
-      imms.map(function(imm) {
+      (imms.length ? imms.map(function(imm) {
         var locsImm = _data.locataires.filter(function(l) { return l.immeuble_id == imm.id && l.statut !== 'libre'; });
         var paysImm = pays.filter(function(p) {
           return locsImm.some(function(l) { return l.id == p.locataire_id; });
@@ -881,8 +1001,9 @@ window.IG.app = (function() {
         var enc = paysImm.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
         var taux = att > 0 ? Math.round((enc / att) * 100) : 0;
         var couleur = taux >= 80 ? 'var(--green)' : taux >= 50 ? '#E05A00' : 'var(--red)';
-        return '<div class="card" style="padding:14px 16px">' +
-          '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+        var libres = ((parseInt(imm.apparts) || 0) + (parseInt(imm.studios) || 0) + (parseInt(imm.chambres) || 0) + (parseInt(imm.duplex) || 0)) - locsImm.length;
+        return '<div class="card" style="padding:15px 16px;border-left:4px solid ' + esc(imm.couleur || '#0E6AAF') + '">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
           '<div>' +
           '<div style="font-weight:700;font-size:14px">' + esc(imm.nom_immeuble || imm.nom) + '</div>' +
           '<div style="font-size:12px;color:var(--text3);margin-top:2px">' + esc(imm.ville || '') + (imm.quartier ? ' · ' + esc(imm.quartier) : '') + '</div>' +
@@ -891,12 +1012,13 @@ window.IG.app = (function() {
           '<div style="font-size:18px;font-weight:800;color:' + couleur + '">' + taux + '%</div>' +
           '<div style="font-size:10px;color:var(--text3)">recouvrement</div>' +
           '</div></div>' +
-          '<div style="display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--text2)">' +
+          '<div style="display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--text2);flex-wrap:wrap">' +
           '<span>' + locsImm.length + ' locataire(s)</span>' +
+          '<span>' + Math.max(0, libres) + ' local(aux) libre(s)</span>' +
           '<span>Attendu : ' + fmt(att) + '</span>' +
           '<span>Encaissé : <strong style="color:var(--green)">' + fmt(enc) + '</strong></span>' +
           '</div></div>';
-      }).join('') +
+      }).join('') : '<div class="card" style="text-align:center;padding:30px;color:var(--text3)">Aucun immeuble assigné à votre compte bailleur.</div>') +
       '</div>' +
 
       // Bouton contacter gestionnaire
@@ -1055,7 +1177,7 @@ window.IG.app = (function() {
         'style="width:80px;padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
       '<select id="pay-imm" onchange="window.IG.app._refreshPaiements()" style="padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
       immOptions + '</select>' +
-      '<input id="pay-search" type="text" placeholder="Rechercher..." oninput="window.IG.app._refreshPaiements()" ' +
+      '<input id="pay-search" type="text" placeholder="' + t('Rechercher...') + '" oninput="window.IG.app._refreshPaiements()" ' +
         'style="padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);width:160px">' +
       '</div>' +
       '<div id="pay-total-bar" style="margin-bottom:12px"></div>' +
@@ -1225,7 +1347,7 @@ window.IG.app = (function() {
     panel.style.cssText = 'background:var(--bg);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:500px;max-height:75vh;overflow-y:auto';
     panel.innerHTML =
       '<div style="font-size:15px;font-weight:700;margin-bottom:14px">Sélectionner un locataire</div>' +
-      '<input id="sel-loc-q" placeholder="Rechercher..." oninput="window.IG.app._filtrerSelLoc()" ' +
+      '<input id="sel-loc-q" placeholder="' + t('Rechercher...') + '" oninput="window.IG.app._filtrerSelLoc()" ' +
         'style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);margin-bottom:10px">' +
       '<div id="sel-loc-list">' +
       locs.map(function(l) {
@@ -1379,6 +1501,7 @@ window.IG.app = (function() {
       { id: 'compte',    icon: '👤', label: 'Mon compte',   always: true },
       { id: 'cabinet',   icon: '🏢', label: 'Cabinet',      show: isAdmin },
       { id: 'equipe',    icon: '👥', label: 'Équipe',       show: isAdmin },
+      { id: 'acces',     icon: '🔐', label: 'Accès portail', show: isAdmin },
       { id: 'prefs',     icon: '🎛️', label: 'Préférences',  always: true },
       { id: 'finances',  icon: '💼', label: 'Finances',     show: isFinance },
     ].filter(function(tab) { return tab.always || tab.show; });
@@ -1405,10 +1528,23 @@ window.IG.app = (function() {
       '</div></div>' +
 
       '<div class="card" style="margin-bottom:12px">' +
+      '<div class="card-header"><div class="card-title">🔐 ' + t('Changer mon mot de passe') + '</div></div>' +
+      '<div class="card-body">' +
+      '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">' +
+      '<input id="pwd-current" type="password" placeholder="' + t('Mot de passe actuel') + '" autocomplete="current-password" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px">' +
+      '<input id="pwd-new" type="password" placeholder="' + t('Nouveau mot de passe') + '" autocomplete="new-password" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px">' +
+      '<input id="pwd-confirm" type="password" placeholder="' + t('Confirmer le mot de passe') + '" autocomplete="new-password" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px">' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-top:10px">' +
+      '<button onclick="window.IG.app._changerMotDePasse()" style="padding:9px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">💾 ' + t('Mettre à jour') + '</button>' +
+      '<span id="pwd-change-status" style="font-size:12px;color:var(--text3)"></span>' +
+      '</div></div></div>' +
+
+      '<div class="card" style="margin-bottom:12px">' +
       '<div class="card-header"><div class="card-title">🎁 Code promotionnel</div></div>' +
       '<div class="card-body">' +
       '<div style="display:flex;gap:8px">' +
-      '<input id="promo-input" type="text" placeholder="Entrez votre code promo" style="flex:1;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px">' +
+      '<input id="promo-input" type="text" placeholder="' + t('Entrez votre code promo') + '" style="flex:1;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px">' +
       '<button onclick="window.IG.app._appliquerPromo()" style="padding:9px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Appliquer</button>' +
       '</div><div id="promo-msg" style="margin-top:8px;font-size:12px"></div>' +
       '</div></div>' +
@@ -1426,14 +1562,19 @@ window.IG.app = (function() {
       '<div class="card-body">' +
       '<p style="font-size:12px;color:var(--text3);margin-bottom:16px">Ces informations apparaissent dans les en-têtes de vos fiches, reçus et rapports.</p>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">' +
-      _fieldInput('cab-nom',        'Nom du cabinet',         'Ex: Cabinet CRAA') +
-      _fieldInput('cab-signataire', 'Signataire',             'Prénom Nom du responsable') +
-      _fieldInput('cab-adresse',    'Adresse',                'Rue, quartier') +
-      _fieldInput('cab-ville',      'Ville',                  'Ex: Yaoundé') +
-      window.IG.utils.phoneField('cab-tel', 'Téléphone', '', false) +
-      _fieldInput('cab-email',      'Email professionnel',    'contact@votrecabinet.com', 'email') +
-      _fieldInput('cab-rccm',       t('Registre / Numéro fiscal'),   t('Ex: RC/YAE/2020/B/XXX')) +
-      _fieldInput('cab-logo',       'URL du logo',            'https://... (lien image)') +
+      _fieldInput('cab-nom',        t('Nom du cabinet'),         'Ex: Cabinet CRAA') +
+      _fieldInput('cab-sigle',      t('Sigle du cabinet'),       'Ex: CRAA') +
+      _fieldInput('cab-mention',    t('Mention légale'),         "Ex: Cabinet de recouvrement et d'avocats associés") +
+      _fieldInput('cab-signataire', t('Signataire gestionnaire'), 'Prénom Nom du responsable') +
+      _fieldInput('cab-adresse',    t('Adresse'),                'Rue, quartier') +
+      _fieldInput('cab-ville',      t('Ville'),                  'Ex: Yaoundé') +
+      window.IG.utils.phoneField('cab-tel', t('Téléphone principal'), '', false) +
+      _fieldInput('cab-tel2',       t('Téléphone secondaire'),   '+237 6XX XX XX XX') +
+      _fieldInput('cab-email',      t('Email professionnel'),    'contact@votrecabinet.com', 'email') +
+      _fieldInput('cab-rccm',       t('RCCM'),                   'Ex: RC/YAD/2018/A/3347') +
+      _fieldInput('cab-contribuable', t('N° contribuable'),      'Ex: P038412724963M') +
+      _fieldInput('cab-fiscal',     t('Autre registre / fiscal'), 'Ex: agrément, NIU, IFU...') +
+      _fieldInput('cab-logo',       t('URL du logo'),            'https://... (lien image)') +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:10px;margin-top:8px">' +
       '<button onclick="window.IG.app._sauvegarderCabinet()" style="padding:9px 20px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">💾 Enregistrer</button>' +
@@ -1451,8 +1592,33 @@ window.IG.app = (function() {
       '</div>'
     ) : '';
 
+    var tabAcces = isAdmin ? (
+      '<div class="card" style="margin-bottom:12px">' +
+      '<div class="card-header"><div class="card-title">🔐 Accès locataires & bailleurs</div></div>' +
+      '<div class="card-body">' +
+      '<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.7;color:var(--text2)">' +
+      '<strong>Fonctionnement sécurisé :</strong><br>' +
+      '• Login = numéro de téléphone du locataire ou du bailleur.<br>' +
+      '• Mot de passe = code temporaire généré automatiquement.<br>' +
+      '• En base, ImmoGest stocke uniquement le hash du code. Le code lisible est affiché une seule fois à la génération ou à la réinitialisation.' +
+      '</div>' +
+      '<div id="acces-portail-body"><div style="text-align:center;padding:24px"><div class="spinner" style="margin:0 auto"></div></div></div>' +
+      '</div></div>'
+    ) : '';
+
     // ── Contenu onglet Préférences ──
     var tabPrefs =
+      '<div class="card" style="margin-bottom:12px">' +
+      '<div class="card-header"><div class="card-title">🎨 ' + t('Apparence') + '</div></div>' +
+      '<div class="card-body">' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+      '<button id="theme-light" onclick="window.IG.app.setThemeMode(\'light\')" style="padding:9px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);cursor:pointer;font-size:13px">☀️ ' + t('Jour') + '</button>' +
+      '<button id="theme-dark" onclick="window.IG.app.setThemeMode(\'dark\')" style="padding:9px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);cursor:pointer;font-size:13px">🌙 ' + t('Nuit') + '</button>' +
+      '<button id="theme-auto" onclick="window.IG.app.setThemeMode(\'auto\')" style="padding:9px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);cursor:pointer;font-size:13px">💻 ' + t('Auto') + '</button>' +
+      '</div>' +
+      '<div style="font-size:11px;color:var(--text3);margin-top:8px">' + t('Auto suit le thème de votre appareil.') + '</div>' +
+      '</div></div>' +
+
       '<div class="card" style="margin-bottom:12px">' +
       '<div class="card-header"><div class="card-title">🌐 Langue de l\'interface</div></div>' +
       '<div class="card-body">' +
@@ -1523,6 +1689,7 @@ window.IG.app = (function() {
       '<div id="ppanel-compte">'   + tabCompte   + '</div>' +
       '<div id="ppanel-cabinet"  style="display:none">' + tabCabinet  + '</div>' +
       '<div id="ppanel-equipe"   style="display:none">' + tabEquipe   + '</div>' +
+      '<div id="ppanel-acces"    style="display:none">' + tabAcces    + '</div>' +
       '<div id="ppanel-prefs"    style="display:none">' + tabPrefs    + '</div>' +
       '<div id="ppanel-finances" style="display:none">' + tabFinances + '</div>' +
 
@@ -1530,14 +1697,15 @@ window.IG.app = (function() {
 
     content.innerHTML = html;
     if (window.IG.plans) window.IG.plans.renderBlocPlan('plans-bloc');
-    if (isAdmin) { _chargerEquipe(); _chargerCleIA(); _chargerCabinet(); }
+    if (isAdmin) { _chargerEquipe(); _chargerAccesPortail(); _chargerCleIA(); _chargerCabinet(); }
     if (isFinance) _chargerMomo();
     _chargerModePublication();
+    _applyThemeMode(localStorage.getItem('ig_theme') || (localStorage.getItem('ig_dark_mode') === '1' ? 'dark' : 'light'));
   }
 
   // ── Switcher onglets paramètres ──
   function _paramTab(id) {
-    ['compte','cabinet','equipe','prefs','finances'].forEach(function(tid) {
+    ['compte','cabinet','equipe','acces','prefs','finances'].forEach(function(tid) {
       var panel = document.getElementById('ppanel-' + tid);
       var btn   = document.getElementById('ptab-' + tid);
       if (!panel || !btn) return;
@@ -1549,6 +1717,7 @@ window.IG.app = (function() {
     });
     // Charger à la demande
     if (id === 'equipe' && window.IG.auth.getSession().role === 'admin') _chargerEquipe();
+    if (id === 'acces' && window.IG.auth.getSession().role === 'admin') _chargerAccesPortail();
   }
 
   async function _chargerModePublication() {
@@ -1559,6 +1728,34 @@ window.IG.app = (function() {
       var settings = (params && params[0] && params[0].settings) || {};
       sel.value = settings.mode_publication || 'manuel';
     } catch(_) {}
+  }
+
+  async function _changerMotDePasse() {
+    var cur = (document.getElementById('pwd-current') || {}).value || '';
+    var neu = (document.getElementById('pwd-new') || {}).value || '';
+    var cof = (document.getElementById('pwd-confirm') || {}).value || '';
+    var status = document.getElementById('pwd-change-status');
+    function setStatus(msg, color) {
+      if (!status) return;
+      status.textContent = msg;
+      status.style.color = color || 'var(--text3)';
+    }
+    if (!cur || !neu || !cof) { setStatus(t('Tous les champs sont requis'), 'var(--red)'); return; }
+    if (neu.length < 6) { setStatus(t('Minimum 6 caractères'), 'var(--red)'); return; }
+    if (neu !== cof) { setStatus(t('Les mots de passe ne correspondent pas'), 'var(--red)'); return; }
+    if (cur === neu) { setStatus(t('Le nouveau mot de passe doit être différent'), 'var(--red)'); return; }
+    try {
+      setStatus(t('Mise à jour...'));
+      await window.IG.auth.changePassword(cur, neu);
+      ['pwd-current','pwd-new','pwd-confirm'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      setStatus(t('Mot de passe mis à jour'), 'var(--green)');
+      if (window.IG.utils) window.IG.utils.showToast(t('Mot de passe mis à jour'), 'green');
+    } catch(e) {
+      setStatus(e.message || t('Erreur'), 'var(--red)');
+    }
   }
 
   async function _sauvegarderMomo() {
@@ -1605,7 +1802,7 @@ window.IG.app = (function() {
   }
 
   async function _sauvegarderCabinet() {
-    var fields = ['nom','adresse','ville','email','rccm','signataire','logo'];
+    var fields = ['nom','sigle','mention','adresse','ville','email','rccm','contribuable','fiscal','signataire','tel2','logo'];
     var cab = {};
     fields.forEach(function(f) {
       var el = document.getElementById('cab-' + f);
@@ -1641,7 +1838,20 @@ window.IG.app = (function() {
       var params = await window.IG.db.select('parametres');
       var settings = (params && params[0] && params[0].settings) || {};
       var cab = settings.cabinet || {};
-      var map = { nom: 'nom', adresse: 'adresse', ville: 'ville', email: 'email', rccm: 'rccm', signataire: 'signataire', logo: 'logo_url' };
+      var map = {
+        nom: 'nom',
+        sigle: 'sigle',
+        mention: 'mention',
+        adresse: 'adresse',
+        ville: 'ville',
+        email: 'email',
+        rccm: 'rccm',
+        contribuable: 'contribuable',
+        fiscal: 'fiscal',
+        signataire: 'signataire',
+        tel2: 'tel2',
+        logo: 'logo_url'
+      };
       Object.keys(map).forEach(function(f) {
         var el = document.getElementById('cab-' + f);
         if (el) el.value = cab[map[f]] || '';
@@ -1790,19 +2000,16 @@ window.IG.app = (function() {
         var code = u.password || null;
 
         if (showCode) {
-          // Carte étendue pour proprio / locataire — affiche le mot de passe portail
+          // Carte étendue pour proprio / locataire — ne jamais afficher le hash stocké.
           var tel = u.telephone || '—';
-          var codeHtml = code
-            ? '<div style="margin-top:6px;background:var(--bg3);border-radius:8px;padding:8px 10px">' +
+          var codeHtml =
+            '<div style="margin-top:6px;background:var(--bg3);border-radius:8px;padding:8px 10px">' +
               '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">' +
               '<span style="font-size:10px;color:var(--text3);min-width:60px">📱 Login</span>' +
               '<span style="font-family:monospace;font-size:13px;font-weight:700;color:var(--text)">' + esc(tel) + '</span></div>' +
               '<div style="display:flex;align-items:center;gap:8px">' +
               '<span style="font-size:10px;color:var(--text3);min-width:60px">🔑 MP</span>' +
-              '<span style="font-family:monospace;font-size:15px;font-weight:800;letter-spacing:3px;color:var(--accent);cursor:pointer" ' +
-              'onclick="navigator.clipboard.writeText(\'' + esc(tel) + ' / ' + esc(code) + '\');window.IG.utils.showToast(\'Login + MP copiés ✓\',\'green\')" title="Cliquer pour copier login+MP">' +
-              esc(code) + ' 📋</span></div></div>'
-            : '<div style="margin-top:6px;font-size:11px;color:var(--text3);font-style:italic">Aucun mot de passe défini</div>';
+              '<span style="font-size:11px;color:var(--text3)">Masqué — réinitialiser pour générer un nouveau code</span></div></div>';
 
           return '<div style="padding:12px 0;border-bottom:1px solid var(--border)">' +
             // Ligne principale : nom + badges + actions
@@ -1908,6 +2115,69 @@ window.IG.app = (function() {
     }
   }
 
+  async function _chargerAccesPortail() {
+    var el = document.getElementById('acces-portail-body');
+    if (!el) return;
+    try {
+      var users = await window.IG.db.select('users_app');
+      users = (users || []).filter(function(u) { return u.role === 'locataire' || u.role === 'bailleur'; });
+      var locatairesData = _data.locataires || [];
+      var immeublesData = _data.immeubles || [];
+      var ROLE_LABELS = { locataire: 'Locataire', bailleur: 'Bailleur' };
+
+      function _status(u) {
+        if (u.actif === false) return '<span style="background:var(--red);color:#fff;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Bloqué</span>';
+        if (u.date_blocage_auto) {
+          var j = Math.ceil((new Date(u.date_blocage_auto) - Date.now()) / 86400000);
+          if (j <= 0) return '<span style="background:var(--red);color:#fff;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Bloqué</span>';
+          return '<span style="background:#E07B00;color:#fff;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Blocage J+' + j + '</span>';
+        }
+        return '<span style="background:var(--green-bg);color:var(--green);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Actif</span>';
+      }
+
+      function _meta(u) {
+        if (u.role === 'locataire') {
+          var loc = locatairesData.find(function(l) { return String(l.id) === String(u.locataire_id || '') || (l.telephone && u.telephone && l.telephone === u.telephone); });
+          var imm = loc ? immeublesData.find(function(i) { return String(i.id) === String(loc.immeuble_id); }) : null;
+          return [
+            loc && loc.appt ? 'Local ' + esc(loc.appt) : '',
+            imm ? esc(imm.nom_immeuble || imm.nom || '') : ''
+          ].filter(Boolean).join(' · ');
+        }
+        var nb = (u.immeubles_assignes || u.immeubles || []).length;
+        return nb ? nb + ' immeuble(s) assigné(s)' : 'Aucun immeuble assigné';
+      }
+
+      if (!users.length) {
+        el.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">Aucun accès portail créé pour le moment.</div>';
+        return;
+      }
+
+      el.innerHTML = users.map(function(u) {
+        var tel = u.telephone || '—';
+        var nom = u.nom || u.id;
+        return '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid var(--border);padding:12px 0">' +
+          '<div style="min-width:0">' +
+          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+          '<strong style="font-size:13px">' + (u.role === 'bailleur' ? '🏠 ' : '🔑 ') + esc(nom) + '</strong>' +
+          '<span style="font-size:11px;color:var(--text3)">' + ROLE_LABELS[u.role] + '</span>' +
+          _status(u) +
+          '</div>' +
+          '<div style="margin-top:6px;font-size:12px;color:var(--text2)">Login : <span style="font-family:monospace;font-weight:700">' + esc(tel) + '</span></div>' +
+          '<div style="font-size:11px;color:var(--text3);margin-top:3px">' + (_meta(u) || 'Accès portail') + '</div>' +
+          '<div style="font-size:11px;color:var(--text3);margin-top:3px">Mot de passe : masqué. Un nouveau code est visible uniquement à la réinitialisation.</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">' +
+          '<button onclick="window.IG.app._resetCodeUser(\'' + u.id + '\',\'' + esc(nom) + '\')" style="padding:7px 11px;border-radius:8px;border:1px solid var(--accent);background:var(--bg4);color:var(--accent);cursor:pointer;font-size:12px;font-weight:600">🔄 Nouveau MP</button>' +
+          '<button onclick="window.IG.app._toggleUser(\'' + u.id + '\',' + (u.actif !== false) + ')" style="padding:7px 11px;border-radius:8px;border:1px solid ' + (u.actif !== false ? 'var(--red)' : 'var(--green)') + ';background:var(--bg4);color:' + (u.actif !== false ? 'var(--red)' : 'var(--green)') + ';cursor:pointer;font-size:12px">' + (u.actif !== false ? 'Bloquer' : 'Débloquer') + '</button>' +
+          '</div>' +
+          '</div>';
+      }).join('');
+    } catch(e) {
+      el.innerHTML = '<p style="color:var(--red);font-size:13px;padding:12px">Erreur : ' + esc(e.message) + '</p>';
+    }
+  }
+
   function _equipeTab(tabId) {
     var ids = ['collab','proprio','loc'];
     ids.forEach(function(id) {
@@ -1924,20 +2194,48 @@ window.IG.app = (function() {
   }
 
   async function _resetCodeUser(userId, nom) {
-    var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    var newCode = Array.from({ length: 6 }, function() { return chars[Math.floor(Math.random() * chars.length)]; }).join('');
     try {
-      await window.IG.db.update('users_app', userId, { password: newCode, actif: true, date_blocage_auto: null, motif_blocage: null });
+      var session = window.IG.auth.getSession();
+      var users = await window.IG.db.select('users_app');
+      var user = (users || []).find(function(u) { return String(u.id) === String(userId); });
+      if (!user) throw new Error('Utilisateur introuvable');
+      if (!user.telephone) throw new Error('Téléphone manquant : impossible de créer un login portail');
+      if (!['locataire','bailleur'].includes(user.role)) throw new Error('Réinitialisation réservée aux accès portail');
+
+      var workerUrl = window.IG.config.workerUrl;
+      var res = await fetch(workerUrl + '/generate-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenantId: session.tenantId,
+          sessionToken: session.sessionToken || null,
+          role: user.role,
+          nom: user.nom || nom || '',
+          telephone: user.telephone,
+          locataire_id: user.locataire_id || null,
+          immeuble_id: user.immeuble_id || null,
+          immeubles: user.immeubles_assignes || user.immeubles || []
+        })
+      });
+      var data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Réinitialisation impossible');
+      var newCode = data.code;
+      var login = user.telephone || '';
       var html = '<h3 style="font-size:15px;margin-bottom:14px">🔄 Nouveau mot de passe portail</h3>' +
-        '<p style="font-size:13px;color:var(--text3);margin-bottom:14px">Communiquez ce MP à <strong>' + esc(nom) + '</strong>. Il se connecte avec son téléphone + ce code.</p>' +
+        '<p style="font-size:13px;color:var(--text3);margin-bottom:14px">Communiquez ce MP à <strong>' + esc(user.nom || nom) + '</strong>. Il se connecte avec son téléphone + ce code.</p>' +
         '<div style="text-align:center;background:var(--bg3);border-radius:10px;padding:20px">' +
+        '<div style="font-size:11px;color:var(--text3);margin-bottom:6px">LOGIN</div>' +
+        '<div style="font-size:15px;font-weight:800;font-family:monospace;margin-bottom:14px">' + esc(login) + '</div>' +
+        '<div style="font-size:11px;color:var(--text3);margin-bottom:6px">MOT DE PASSE TEMPORAIRE</div>' +
         '<div style="font-size:26px;font-weight:900;letter-spacing:4px;color:var(--accent);font-family:monospace">' + newCode + '</div>' +
         '</div>' +
         '<div style="display:flex;gap:10px;margin-top:16px">' +
-        '<button onclick="navigator.clipboard.writeText(\'' + newCode + '\');window.IG.utils.showToast(\'Code copié ✓\',\'green\')" style="flex:1;padding:9px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">📋 Copier</button>' +
-        '<button data-modal-close style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Fermer</button>' +
+        '<button onclick="navigator.clipboard.writeText(\'' + esc(login) + ' / ' + newCode + '\');window.IG.utils.showToast(\'Login + code copiés ✓\',\'green\')" style="flex:1;padding:9px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">📋 Copier</button>' +
+        '<button data-modal-close style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">' + t('Fermer') + '</button>' +
         '</div>';
       window.IG.utils.showModal(html, { width: '360px' });
+      _chargerEquipe();
+      _chargerAccesPortail();
     } catch(e) { window.IG.utils.showToast('Erreur : ' + e.message, 'red'); }
   }
 
@@ -1958,7 +2256,7 @@ window.IG.app = (function() {
       '<div id="inv-role-desc" style="font-size:12px;color:var(--text3);background:var(--bg3);border-radius:8px;padding:8px 12px;margin-bottom:16px">' + ROLES_INFO.coordinateur.desc + '</div>' +
       '<button id="btn-gen-inv" style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Générer le code</button>' +
       '<div id="inv-result" style="margin-top:16px"></div>' +
-      '<div style="text-align:right;margin-top:16px"><button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Fermer</button></div>';
+      '<div style="text-align:right;margin-top:16px"><button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">' + t('Fermer') + '</button></div>';
 
     var modal = window.IG.utils.showModal(html, { width: '400px' });
     modal.box.querySelector('#btn-gen-inv').addEventListener('click', async function() {
@@ -1970,7 +2268,7 @@ window.IG.app = (function() {
         var res = await fetch(workerUrl + '/generate-invite', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tenantId: session.tenantId, role: role })
+          body: JSON.stringify({ tenantId: session.tenantId, sessionToken: session.sessionToken || null, role: role })
         });
         var data = await res.json();
         if (!data.success) throw new Error(data.error || 'Erreur');
@@ -2160,6 +2458,7 @@ window.IG.app = (function() {
         window.IG.utils.showToast('✓ ' + nom + ' réintégré — accès rétabli', 'green');
         if (modal.close) modal.close();
         _chargerEquipe();
+        _chargerAccesPortail();
       } catch(e) { window.IG.utils.showToast('Erreur : ' + e.message, 'red'); }
     });
   }
@@ -2169,6 +2468,7 @@ window.IG.app = (function() {
       await window.IG.db.update('users_app', userId, { actif: !currentlyActive });
       window.IG.utils.showToast('Utilisateur ' + (currentlyActive ? 'désactivé' : 'réactivé') + ' ✓', 'green');
       _chargerEquipe();
+      _chargerAccesPortail();
     } catch(e) { window.IG.utils.showToast('Erreur: ' + e.message, 'red'); }
   }
 
@@ -2814,7 +3114,7 @@ window.IG.app = (function() {
       '<label class="auth-label">NUMÉRO DE TÉLÉPHONE</label>' +
       window.IG.utils.phoneField('login-tel', '', '', true) +
       '<label class="auth-label">MOT DE PASSE</label>' +
-      '<input type="password" id="login-pwd" class="auth-input" placeholder="Mot de passe" autocomplete="current-password" style="margin-bottom:20px;" onkeydown="if(event.key===\'Enter\')window.IG.app.doLogin()">' +
+      '<input type="password" id="login-pwd" class="auth-input" placeholder="' + t('Mot de passe') + '" autocomplete="current-password" style="margin-bottom:20px;" onkeydown="if(event.key===\'Enter\')window.IG.app.doLogin()">' +
       '<button class="auth-btn-primary" onclick="window.IG.app.doLogin()">🔐 Se connecter</button>' +
       '<div id="err-login" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>' +
       '<div style="text-align:center;margin-top:16px;">' +
@@ -2830,13 +3130,13 @@ window.IG.app = (function() {
       '<div style="font-size:11px;color:rgba(200,223,248,0.4);margin-top:3px;">Nouvel espace ImmoGest</div>' +
       '</div>' +
       '<label class="auth-label">VOTRE NOM</label>' +
-      '<input type="text" id="reg-nom" class="auth-input" placeholder="Nom complet" style="margin-bottom:12px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'reg-cabinet\').focus()">' +
+      '<input type="text" id="reg-nom" class="auth-input" placeholder="' + t('Nom complet') + '" style="margin-bottom:12px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'reg-cabinet\').focus()">' +
       '<label class="auth-label">NOM DU CABINET <span style="opacity:.5;font-weight:400;">(optionnel)</span></label>' +
       '<input type="text" id="reg-cabinet" class="auth-input" placeholder="Mon Cabinet Immobilier" style="margin-bottom:12px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'reg-tel\').focus()">' +
       '<label class="auth-label">TÉLÉPHONE</label>' +
       window.IG.utils.phoneField('reg-tel', '', '', true) +
       '<label class="auth-label">MOT DE PASSE</label>' +
-      '<input type="password" id="reg-pwd" class="auth-input" placeholder="Min. 6 caractères" style="margin-bottom:18px;" onkeydown="if(event.key===\'Enter\')window.IG.app.registerV2()">' +
+      '<input type="password" id="reg-pwd" class="auth-input" placeholder="' + t('Min. 6 caractères') + '" style="margin-bottom:18px;" onkeydown="if(event.key===\'Enter\')window.IG.app.registerV2()">' +
       '<button class="auth-btn-primary" onclick="window.IG.app.registerV2()">🚀 Créer mon espace</button>' +
       '<div id="err-register" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>' +
       '</div>' +
@@ -2853,9 +3153,9 @@ window.IG.app = (function() {
       '<label class="auth-label">CODE D\'INVITATION</label>' +
       '<input type="text" id="join-code" class="auth-input" placeholder="Ex: AB3F1234" style="margin-bottom:12px;text-transform:uppercase;letter-spacing:3px;font-weight:700;" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key===\'Enter\')document.getElementById(\'join-nom\').focus()">' +
       '<label class="auth-label">VOTRE NOM</label>' +
-      '<input type="text" id="join-nom" class="auth-input" placeholder="Nom complet" style="margin-bottom:12px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'join-pwd\').focus()">' +
+      '<input type="text" id="join-nom" class="auth-input" placeholder="' + t('Nom complet') + '" style="margin-bottom:12px;" onkeydown="if(event.key===\'Enter\')document.getElementById(\'join-pwd\').focus()">' +
       '<label class="auth-label">MOT DE PASSE</label>' +
-      '<input type="password" id="join-pwd" class="auth-input" placeholder="Choisissez un mot de passe" style="margin-bottom:18px;" onkeydown="if(event.key===\'Enter\')window.IG.app.joinV2()">' +
+      '<input type="password" id="join-pwd" class="auth-input" placeholder="' + t('Choisissez un mot de passe') + '" style="margin-bottom:18px;" onkeydown="if(event.key===\'Enter\')window.IG.app.joinV2()">' +
       '<button class="auth-btn-primary" onclick="window.IG.app.joinV2()">🔗 Rejoindre</button>' +
       '<div id="err-join" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>' +
       '</div>' +
@@ -2962,7 +3262,6 @@ window.IG.app = (function() {
     authGoStep, doLogin, joinV2, registerV2, browseMarketplace,
     toggleSidebar, closeSidebar, toggleSidebarSection, toggleDarkMode, lockScreen, openGuide,
     toggleAIChat, sendAIMessage, aiQuickAction,
-    getData: function() { return _data; },
     _renderDashboardBailleur,
     _refreshPaiements, _payTab, _renderCaisseJour, _exportCaisseWA,
     _ouvrirSelLocataire, _filtrerSelLoc, _selLoc, _confirmerSupprPaiement,
@@ -2973,6 +3272,7 @@ window.IG.app = (function() {
     _loadDeclarations, _validerDeclaration,
     _loadMessages, _nouveauMessage, _marquerLu,
     _paramTab,
+    setThemeMode, _changerMotDePasse,
     _ouvrirDroits, _sauvegarderDroits, _reintegrerUser,
     _sauvegarderModePublication, _chargerModePublication, _sauvegarderCleIA, _chargerCleIA, _sauvegarderMomo, _chargerMomo, _sauvegarderCabinet, _chargerCabinet,
     getData: function() { return _data; },

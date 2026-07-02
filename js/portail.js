@@ -42,17 +42,23 @@ window.IG.portail = (function() {
     var fiche = window.IG.paiements ? window.IG.paiements.calculerFiche(loc, paiements) : [];
     var impayes = fiche.filter(function(l) { return l.statut !== 'Payé'; });
     var montantDu = impayes.reduce(function(s, l) { return s + (l.reste || 0); }, 0);
+    var lastPay = paiements.length ? paiements.slice().sort(function(a, b) {
+      return new Date(b.date_paiement || b.created_at || 0) - new Date(a.date_paiement || a.created_at || 0);
+    })[0] : null;
+    var prochaineLigne = fiche.find(function(l) { return l.statut !== 'Payé'; }) || fiche[fiche.length - 1] || null;
+    var canDeclare = !window.IG.perms || window.IG.perms.canDo('declarer_paiement');
     var score = window.IG.legal ? window.IG.legal.calculerScore(loc, paiements) : 100;
     var scoreBadge = window.IG.legal ? window.IG.legal.scoreBadge(score) : { emoji: '🟢', label: 'Bon', color: 'var(--green)' };
 
     var html = '<div class="content">' +
       // En-tête
-      '<div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none">' +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">' +
+      '<div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#0E6AAF,#6B46C1);color:#fff;border:none;overflow:hidden;position:relative">' +
+      '<div style="position:absolute;right:-36px;top:-46px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.12)"></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;position:relative">' +
       '<div>' +
-      '<div style="font-size:11px;opacity:.75;margin-bottom:4px">' + t('MON ESPACE LOCATAIRE') + '</div>' +
-      '<div style="font-size:20px;font-weight:700">' + esc(loc.nom) + '</div>' +
-      '<div style="font-size:13px;opacity:.85;margin-top:4px">' + t('Local') + ' ' + esc(loc.appt || '—') + ' · ' + t('Loyer') + ' ' + fmt(loc.loyer) + t('/mois') + '</div>' +
+      '<div style="font-size:11px;opacity:.75;margin-bottom:6px;font-weight:800;letter-spacing:.08em;text-transform:uppercase">' + t('MON ESPACE LOCATAIRE') + '</div>' +
+      '<div style="font-size:22px;font-weight:900;line-height:1.15">' + esc(loc.nom) + '</div>' +
+      '<div style="font-size:13px;opacity:.85;margin-top:6px">' + t('Local') + ' ' + esc(loc.appt || '—') + ' · ' + t('Loyer') + ' ' + fmt(loc.loyer) + t('/mois') + '</div>' +
       '</div>' +
       '<div style="text-align:right">' +
       '<div style="font-size:24px">' + scoreBadge.emoji + '</div>' +
@@ -68,14 +74,26 @@ window.IG.portail = (function() {
       _kpi('✅', paiements.length, t('Paiements'), '') +
       '</div>' +
 
+      '<div class="card" style="margin-bottom:16px;border-left:4px solid ' + (montantDu > 0 ? 'var(--red)' : 'var(--green)') + ';padding:14px 16px">' +
+      '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">' +
+      '<div><div style="font-size:14px;font-weight:800">' + (montantDu > 0 ? t('Paiement à régulariser') : t('Compte à jour')) + '</div>' +
+      '<div style="font-size:12px;color:var(--text3);margin-top:4px">' +
+      (lastPay ? t('Dernier paiement') + ' : ' + fmt(lastPay.montant) + ' · ' + window.IG.utils.formatDate(lastPay.date_paiement || lastPay.created_at) : t('Aucun paiement enregistré pour le moment')) +
+      '</div>' +
+      (prochaineLigne ? '<div style="font-size:12px;color:var(--text3);margin-top:3px">' + t('Période suivie') + ' : ' + esc(prochaineLigne.periode || '') + '</div>' : '') +
+      '</div>' +
+      (canDeclare ? '<button onclick="window.IG.portail.declarerPaiement(' + loc.id + ')" style="padding:10px 14px;border-radius:9px;border:none;background:var(--green);color:#fff;cursor:pointer;font-size:13px;font-weight:800">💵 ' + t('Déclarer un paiement') + '</button>' : '') +
+      '</div></div>' +
+
       // Bouton déclarer paiement
-      (montantDu > 0 ? '<button onclick="window.IG.portail.declarerPaiement(' + loc.id + ')" ' +
+      (montantDu > 0 && canDeclare ? '<button onclick="window.IG.portail.declarerPaiement(' + loc.id + ')" ' +
         'style="width:100%;padding:14px;border-radius:12px;border:none;background:var(--green);color:#fff;cursor:pointer;font-size:14px;font-weight:700;margin-bottom:16px">' +
         '💵 ' + t('Enregistrer un paiement') + '</button>' : '') +
 
       // Historique fiche
       '<div class="card">' +
-      '<div class="card-header"><div class="card-title">📋 Historique des loyers</div></div>' +
+      '<div class="card-header"><div class="card-title">📋 Historique des loyers</div>' +
+      '<button onclick="window.print()" style="font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;font-weight:700">Imprimer</button></div>' +
       '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
       '<thead><tr style="background:var(--bg4)">' +
       '<th style="padding:8px 10px;text-align:left;font-weight:600">' + t('Période') + '</th>' +
@@ -83,7 +101,7 @@ window.IG.portail = (function() {
       '<th style="padding:8px 10px;text-align:center;font-weight:600">' + t('Statut') + '</th>' +
       '<th style="padding:8px 10px;text-align:right;font-weight:600">' + t('Reste') + '</th>' +
       '</tr></thead><tbody>' +
-      fiche.slice().reverse().map(function(ligne) {
+      (fiche.length ? fiche.slice().reverse().map(function(ligne) {
         var paye = ligne.statut === 'Payé';
         return '<tr style="border-bottom:1px solid var(--border2)">' +
           '<td style="padding:8px 10px">' + esc(ligne.periode) + '</td>' +
@@ -96,7 +114,7 @@ window.IG.portail = (function() {
           '<td style="padding:8px 10px;text-align:right;color:' + (ligne.reste > 0 ? 'var(--red)' : 'var(--green)') + ';font-weight:600">' +
           (ligne.reste > 0 ? fmt(ligne.reste) : '—') + '</td>' +
           '</tr>';
-      }).join('') +
+      }).join('') : '<tr><td colspan="4" style="padding:22px;text-align:center;color:var(--text3)">Aucun historique disponible.</td></tr>') +
       '</tbody></table></div></div>' +
 
       // Bannière pub

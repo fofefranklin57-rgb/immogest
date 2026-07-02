@@ -996,7 +996,7 @@ function processPaymentAbonnement() {
   var modal = document.getElementById('modal-paiement-abonnement');
   if (modal) modal.classList.remove('open');
 
-  payerAvecNotchPay(selectedPlan, duree, total);
+  payerAvecFapshi(selectedPlan, duree, total);
 }
 
 function _confirmerPaiementAbonnement(plan, duree, txId) {
@@ -1009,7 +1009,7 @@ function _confirmerPaiementAbonnement(plan, duree, txId) {
   var sub = {
     plan:      plan,
     duree:     duree,
-    provider:  'notchpay',
+    provider:  'fapshi',
     phone:     (document.getElementById('pay-phone') ? document.getElementById('pay-phone').value : ''),
     ref:       ref || ('SUB-' + Date.now()),
     statut:    'en_attente',
@@ -1052,18 +1052,18 @@ function _confirmerPaiementAbonnement(plan, duree, txId) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// NOTCHPAY — Paiement abonnement (via Worker Cloudflare)
+// FAPSHI — Paiement abonnement (via Worker Cloudflare)
 // ══════════════════════════════════════════════════════════════
-const _NOTCHPAY_WORKER = 'https://immogest1.fofefranklin57.workers.dev';
-var _notchTimer   = null;
-var _notchTicks   = 0;
-var _NOTCH_MAXSEC = 120;
+const _FAPSHI_WORKER = 'https://immogest1.fofefranklin57.workers.dev';
+var _fapshiTimer   = null;
+var _fapshiTicks   = 0;
+var _FAPSHI_MAXSEC = 120;
 
-async function payerAvecNotchPay(plan, duree, total) {
+async function payerAvecFapshi(plan, duree, total) {
   document.querySelectorAll('.overlay.open').forEach(function(el) { el.classList.remove('open'); });
 
   var overlay = document.createElement('div');
-  overlay.id = 'notchpay-pending-overlay';
+  overlay.id = 'fapshi-pending-overlay';
   overlay.className = 'overlay open';
   overlay.style.zIndex = '10010';
   overlay.innerHTML =
@@ -1071,12 +1071,12 @@ async function payerAvecNotchPay(plan, duree, total) {
       '<div style="font-size:52px;margin-bottom:12px;">🔒</div>' +
       '<h3 style="margin-bottom:8px;">Paiement en cours…</h3>' +
       '<p style="font-size:13px;color:var(--text2);line-height:1.7;margin:0 0 20px;">' +
-        'Une page NotchPay s\'est ouverte dans un nouvel onglet.<br>' +
+        'Une page Fapshi s\'est ouverte dans un nouvel onglet.<br>' +
         'Choisissez votre mode de paiement (MoMo, Wave, carte…)<br>puis revenez ici.' +
       '</p>' +
       '<div style="display:flex;justify-content:center;margin-bottom:16px;"><div style="width:32px;height:32px;border:3px solid rgba(14,106,175,0.2);border-top-color:#0E6AAF;border-radius:50%;animation:spin 0.8s linear infinite;"></div></div>' +
-      '<div id="notchpay-status-msg" style="font-size:12px;color:var(--text3);margin-bottom:16px;">En attente de confirmation…</div>' +
-      '<button class="btn btn-ghost" style="font-size:12px;" onclick="_cancelNotchPay()">Annuler</button>' +
+      '<div id="fapshi-status-msg" style="font-size:12px;color:var(--text3);margin-bottom:16px;">En attente de confirmation…</div>' +
+      '<button class="btn btn-ghost" style="font-size:12px;" onclick="_cancelFapshi()">Annuler</button>' +
     '</div>';
   document.body.appendChild(overlay);
 
@@ -1084,20 +1084,21 @@ async function payerAvecNotchPay(plan, duree, total) {
     var userId = (typeof SESSION !== 'undefined' && SESSION && SESSION.userId) ? SESSION.userId : ('anon_' + Date.now());
     var email  = (typeof SESSION !== 'undefined' && SESSION && SESSION.email) ? SESSION.email : undefined;
 
+    var ref = 'IMMOGEST-' + plan.toUpperCase() + '-D' + duree + '-' + Date.now();
     // Appel via Worker (clé secrète côté serveur)
-    var resp = await fetch(_NOTCHPAY_WORKER + '/notchpay-init', {
+    var resp = await fetch(_FAPSHI_WORKER + '/fapshi-init', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan: plan, duree: duree, total: total, userId: userId, email: email })
+      body: JSON.stringify({ amount: total, planId: plan, duree: duree, tenantId: userId, ref: ref, email: email })
     });
     var data = await resp.json();
-    if (!data.ok) throw new Error(data.error || 'Erreur NotchPay');
+    if (!resp.ok) throw new Error(data.error || 'Erreur Fapshi');
 
-    window.open(data.authorization_url, '_blank');
-    _pollNotchpayStatus(data.reference, plan, duree, total);
+    window.open(data.link, '_blank');
+    _pollFapshiStatus(data.transId, ref, plan, duree, total);
 
   } catch(e) {
-    var ov = document.getElementById('notchpay-pending-overlay');
+    var ov = document.getElementById('fapshi-pending-overlay');
     if (ov) ov.remove();
     // Afficher modal de fallback paiement manuel
     var planInfo = getCurrentPlans()[plan] || {};
@@ -1130,29 +1131,28 @@ async function payerAvecNotchPay(plan, duree, total) {
   }
 }
 
-function _pollNotchpayStatus(reference, plan, duree, total) {
-  _notchTicks = 0;
-  _notchTimer = setInterval(async function() {
-    _notchTicks += 5;
-    var msgEl = document.getElementById('notchpay-status-msg');
+function _pollFapshiStatus(transId, reference, plan, duree, total) {
+  _fapshiTicks = 0;
+  _fapshiTimer = setInterval(async function() {
+    _fapshiTicks += 5;
+    var msgEl = document.getElementById('fapshi-status-msg');
 
-    if (_notchTicks >= _NOTCH_MAXSEC) {
-      clearInterval(_notchTimer);
-      var ov = document.getElementById('notchpay-pending-overlay');
+    if (_fapshiTicks >= _FAPSHI_MAXSEC) {
+      clearInterval(_fapshiTimer);
+      var ov = document.getElementById('fapshi-pending-overlay');
       if (ov) ov.remove();
       showToast('⏱ Délai dépassé. Réessayez ou contactez-nous via WhatsApp.', 'error');
       return;
     }
 
     try {
-      // Vérification statut via Worker
-      var resp = await fetch(_NOTCHPAY_WORKER + '/notchpay-check?ref=' + encodeURIComponent(reference));
+      var resp = await fetch(_FAPSHI_WORKER + '/fapshi-check?transId=' + encodeURIComponent(transId));
       var data  = await resp.json();
-      var st    = data.status || '';
+      var st    = (data.status || '').toUpperCase();
 
-      if (st === 'complete') {
-        clearInterval(_notchTimer);
-        var ov = document.getElementById('notchpay-pending-overlay');
+      if (st === 'SUCCESSFUL') {
+        clearInterval(_fapshiTimer);
+        var ov = document.getElementById('fapshi-pending-overlay');
         if (ov) ov.remove();
         MONETISATION.plan = plan;
         var now = new Date();
@@ -1178,25 +1178,25 @@ function _pollNotchpayStatus(reference, plan, duree, total) {
         }
         _showAbonnementSuccess(plan, duree || 1);
 
-      } else if (st === 'failed' || st === 'canceled') {
-        clearInterval(_notchTimer);
-        var ov = document.getElementById('notchpay-pending-overlay');
+      } else if (st === 'FAILED' || st === 'EXPIRED' || st === 'CANCELLED') {
+        clearInterval(_fapshiTimer);
+        var ov = document.getElementById('fapshi-pending-overlay');
         if (ov) ov.remove();
         showToast('❌ Paiement refusé. Vérifiez votre solde et réessayez.', 'error');
 
       } else {
-        var restant = _NOTCH_MAXSEC - _notchTicks;
+        var restant = _FAPSHI_MAXSEC - _fapshiTicks;
         if (msgEl) msgEl.textContent = 'En attente… (' + restant + 's restantes)';
       }
     } catch(e) {
-      console.warn('[NotchPay] Poll error:', e.message);
+      console.warn('[Fapshi] Poll error:', e.message);
     }
   }, 5000);
 }
 
-function _cancelNotchPay() {
-  clearInterval(_notchTimer);
-  var ov = document.getElementById('notchpay-pending-overlay');
+function _cancelFapshi() {
+  clearInterval(_fapshiTimer);
+  var ov = document.getElementById('fapshi-pending-overlay');
   if (ov) ov.remove();
 }
 

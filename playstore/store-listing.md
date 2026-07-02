@@ -17,7 +17,7 @@ ImmoGest est la plateforme de gestion immobilière complète pour les propriéta
 
 💳 PAIEMENTS MOBILES INTÉGRÉS
 • Collecte des loyers via Mobile Money MTN, Orange Money et Wave
-• Paiement en ligne sécurisé via NotchPay
+• Paiement en ligne sécurisé via Fapshi
 • Reçus automatiques envoyés par WhatsApp
 
 📄 DOCUMENTS PROFESSIONNELS
@@ -70,7 +70,7 @@ ImmoGest is the complete property management platform for landlords, property ma
 
 💳 INTEGRATED MOBILE PAYMENTS
 • Collect rent via MTN Mobile Money, Orange Money and Wave
-• Secure online payment via NotchPay
+• Secure online payment via Fapshi
 • Automatic receipts sent via WhatsApp
 
 📄 PROFESSIONAL DOCUMENTS

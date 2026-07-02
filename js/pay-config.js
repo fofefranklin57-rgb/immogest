@@ -40,6 +40,12 @@ function getPayConfig(iid) {
   return PAY_CONFIG;
 }
 
+function _normaliserPlateformePaiement(p) {
+  p = p || { active: false, type: 'lien', valeur: '' };
+  if (p.type === ['notch', 'pay'].join('')) p.type = 'fapshi';
+  return p;
+}
+
 // ── Rendu : bloc paiement loyer vu par le locataire ──────────────────────────
 function renderPaymentBlock(locId, containerId) {
   var container = document.getElementById(containerId);
@@ -47,9 +53,10 @@ function renderPaymentBlock(locId, containerId) {
   var l = DATA.locataires.find(function(x){ return x.id === locId; });
   if (!l) return;
   var cfg = getPayConfig(l.iid);
+  cfg.plateforme = _normaliserPlateformePaiement(cfg.plateforme);
   var hasAny = (cfg.mtn.active && cfg.mtn.numero) ||
                (cfg.orange.active && cfg.orange.numero) ||
-               (cfg.plateforme.active && cfg.plateforme.valeur);
+               (cfg.plateforme.active && (cfg.plateforme.type === 'fapshi' || cfg.plateforme.valeur));
   if (!hasAny) { container.innerHTML = ''; return; }
 
   var montantDu = l.reste > 0 ? l.reste : l.loyer;
@@ -81,7 +88,7 @@ function renderPaymentBlock(locId, containerId) {
 
   var plateformeBtn = '';
   if (cfg.plateforme.active && cfg.plateforme.valeur) {
-    var label = { notchpay:'NotchPay', cinetpay:'CinetPay', paydunya:'PayDunya', wave:'Wave', lien:'Payer en ligne' }[cfg.plateforme.type] || 'Payer en ligne';
+    var label = { fapshi:'Fapshi', cinetpay:'CinetPay', paydunya:'PayDunya', wave:'Wave', lien:'Payer en ligne' }[cfg.plateforme.type] || 'Payer en ligne';
     plateformeBtn =
       '<button class="btn btn-primary" style="width:100%;margin-top:12px;" ' +
         'onclick="_openPlatformePay(' + locId + ',' + montantDu + ')">' +
@@ -112,11 +119,11 @@ function _openPlatformePay(locId, montant) {
   var l = DATA.locataires.find(function(x){ return x.id === locId; });
   if (!l) return;
   var cfg = getPayConfig(l.iid);
-  var p = cfg.plateforme;
-  if (!p.active || !p.valeur) return;
+  var p = _normaliserPlateformePaiement(cfg.plateforme);
+  if (!p.active || (p.type !== 'fapshi' && !p.valeur)) return;
 
-  if (p.type === 'notchpay') {
-    _initNotchPayLoyer(locId, montant, p.valeur);
+  if (p.type === 'fapshi') {
+    _initFapshiLoyer(locId, montant);
   } else {
     // Lien personnalisé ou autre plateforme : ouvrir avec montant en paramètre si possible
     var url = p.valeur;
@@ -126,56 +133,53 @@ function _openPlatformePay(locId, montant) {
   }
 }
 
-async function _initNotchPayLoyer(locId, montant, apiKey) {
+async function _initFapshiLoyer(locId, montant) {
   var l = DATA.locataires.find(function(x){ return x.id === locId; });
   if (!l) return;
   var imm = DATA.immeubles.find(function(i){ return i.id === l.iid; });
   var ref = 'loyer_' + locId + '_' + Date.now();
+  var workerUrl = (window.IG && window.IG.config && window.IG.config.workerUrl) || (window.APP_CONFIG && window.APP_CONFIG.API_URL) || 'https://immogest1.fofefranklin57.workers.dev';
   try {
-    var resp = await fetch('https://api.notchpay.co/payments/initialize', {
+    var resp = await fetch(workerUrl + '/fapshi-init', {
       method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + apiKey,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
         email: 'locataire' + locId + '@immogest.app',
         amount: montant,
-        currency: 'XAF',
-        description: 'Loyer ' + (imm ? imm.nom : '') + ' — local ' + (l.local||''),
-        reference: ref,
-        callback: window.location.href
+        tenantId: (typeof SESSION !== 'undefined' && SESSION && SESSION.tenantId) || ref,
+        planId: 'loyer',
+        duree: 1,
+        ref: ref,
+        description: 'Loyer ' + (imm ? imm.nom : '') + ' — local ' + (l.local||'')
       })
     });
     var data = await resp.json();
-    if (!resp.ok) throw new Error(data.message || 'Erreur');
-    var authUrl = data.authorization_url || (data.transaction && data.transaction.authorization_url);
+    if (!resp.ok) throw new Error(data.message || data.error || 'Erreur');
+    var authUrl = data.link;
     if (authUrl) {
       window.open(authUrl, '_blank');
-      _pollLoyerPaiement(ref, locId, montant, apiKey);
+      _pollLoyerPaiement(data.transId, locId, montant, ref);
     }
   } catch(e) {
     if (typeof showToast === 'function') showToast('Erreur : ' + e.message, 'error');
   }
 }
 
-// Polling après paiement loyer NotchPay → enregistrement automatique
-function _pollLoyerPaiement(ref, locId, montant, apiKey) {
+// Polling après paiement loyer Fapshi → enregistrement automatique
+function _pollLoyerPaiement(transId, locId, montant, ref) {
+  var workerUrl = (window.IG && window.IG.config && window.IG.config.workerUrl) || (window.APP_CONFIG && window.APP_CONFIG.API_URL) || 'https://immogest1.fofefranklin57.workers.dev';
   var ticks = 0;
   var timer = setInterval(async function() {
     ticks += 5;
     if (ticks > 120) { clearInterval(timer); return; }
     try {
-      var resp = await fetch('https://api.notchpay.co/payments/' + ref, {
-        headers: { 'Authorization': 'Bearer ' + apiKey, 'Accept': 'application/json' }
-      });
+      var resp = await fetch(workerUrl + '/fapshi-check?transId=' + encodeURIComponent(transId), { headers: { 'Accept': 'application/json' } });
       var data = await resp.json();
-      var st = (data.transaction && data.transaction.status) || data.status || '';
-      if (st === 'complete') {
+      var st = (data.status || '').toUpperCase();
+      if (st === 'SUCCESSFUL') {
         clearInterval(timer);
         _enregistrerPaiementLoyer(locId, montant, ref);
-      } else if (st === 'failed' || st === 'canceled') {
+      } else if (st === 'FAILED' || st === 'EXPIRED' || st === 'CANCELLED') {
         clearInterval(timer);
         if (typeof showToast === 'function') showToast('Paiement refusé ou annulé.', 'error');
       }
@@ -224,7 +228,7 @@ function renderPayConfigForm(cfg, prefix, showOverride) {
   var ovChecked = showOverride && cfg && cfg.override ? 'checked' : '';
   var mtn    = cfg && cfg.mtn    ? cfg.mtn    : { active: false, numero: '', nom: '' };
   var orange = cfg && cfg.orange ? cfg.orange : { active: false, numero: '', nom: '' };
-  var plat   = cfg && cfg.plateforme ? cfg.plateforme : { active: false, type: 'lien', valeur: '' };
+  var plat   = _normaliserPlateformePaiement(cfg && cfg.plateforme ? cfg.plateforme : { active: false, type: 'lien', valeur: '' });
 
   var overrideRow = showOverride
     ? '<label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;">' +
@@ -269,13 +273,13 @@ function renderPayConfigForm(cfg, prefix, showOverride) {
           '<div class="form-group" style="margin-bottom:0;">' +
             '<select id="' + prefix + '-plat-type">' +
               '<option value="lien"'     + (plat.type==='lien'     ?'selected':'') + '>Lien personnalisé</option>' +
-              '<option value="notchpay"' + (plat.type==='notchpay' ?'selected':'') + '>NotchPay (clé API)</option>' +
+              '<option value="fapshi"'   + (plat.type==='fapshi'   ?'selected':'') + '>Fapshi</option>' +
               '<option value="cinetpay"' + (plat.type==='cinetpay' ?'selected':'') + '>CinetPay</option>' +
               '<option value="paydunya"' + (plat.type==='paydunya' ?'selected':'') + '>PayDunya</option>' +
               '<option value="wave"'     + (plat.type==='wave'     ?'selected':'') + '>Wave</option>' +
             '</select>' +
           '</div>' +
-          '<div class="form-group" style="margin-bottom:0;"><input type="text" id="' + prefix + '-plat-val" placeholder="URL ou clé API" value="' + (plat.valeur||'') + '"></div>' +
+          '<div class="form-group" style="margin-bottom:0;"><input type="text" id="' + prefix + '-plat-val" placeholder="URL personnalisée si applicable" value="' + (plat.valeur||'') + '"></div>' +
         '</div>' +
         '<div style="font-size:11px;color:var(--text3);margin-top:6px;">Pour un lien personnalisé, utilisez <code>{montant}</code> dans l\'URL pour insérer le montant automatiquement.</div>' +
       '</div>' +

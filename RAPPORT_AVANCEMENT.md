@@ -21,7 +21,7 @@
 - ✅ URL : `https://immogest1.fofefranklin57.workers.dev`
 - ✅ `/health` → `{"ok":true,"version":"2.0"}`
 - ✅ Secret `SUPABASE_SERVICE_KEY` configuré
-- ✅ Routes disponibles : `/register`, `/login-tenant`, `/login-user`, `/generate-invite`, `/join`, `/db`, `/ai`, `/translate`, `/payment-init`, `/payment-check`, `/wa-impayes`, `/owner`
+- ✅ Routes disponibles : `/register`, `/login-tenant`, `/login-user`, `/generate-invite`, `/join`, `/db`, `/ai`, `/translate`, `/fapshi-init`, `/fapshi-check`, `/wa-impayes`, `/owner`
 
 ---
 
@@ -73,9 +73,9 @@ Et ajoutera les colonnes manquantes : `tenants.plan`, `locataires.statut_juridiq
 
 ### 2. Secrets Worker manquants (optionnels Phase 3)
 Dans Cloudflare Dashboard → immogest1 → Settings → Variables :
-- `NOTCHPAY_PK` = `pk_test.7xP5pdyVLFxBwWiIeFK5Zwi3MgUCu8U5BRd1quKJxT20vDbyNwqAv3x29cDP4wqFJQ4DPSMYT5PpQpc5rWZWRYIoDyjbwwk0rCWDkmFoqXpWVQYLgf4BWDQjekjII`
+- Paiement actif : Fapshi via secrets Cloudflare.
 - `ANTHROPIC_API_KEY` = (à fournir depuis console.anthropic.com)
-- `OWNER_TOKEN` = `8237a8d86b7038877840cd600b135f4edc8966be05cf3ba12727535f2670c058`
+- `OWNER_TOKEN` = secret Cloudflare, ne pas écrire la vraie valeur dans le dépôt
 
 ---
 
@@ -119,7 +119,7 @@ Appliquer dans l'ordre sur https://supabase.com/dashboard/project/uggxfmwpttfsfc
 | Fichier | Statut | Description |
 |---------|--------|-------------|
 | `js/owner.js` | ✅ | Panneau admin `?owner=1` — stats globales, upgrade plan, codes promo, logs |
-| `js/plans.js` | ✅ | Restrictions par plan, jauges, modal upgrade NotchPay, code promo `/apply-promo` |
+| `js/plans.js` | ✅ | Restrictions par plan, jauges, modal upgrade Fapshi, code promo `/apply-promo` |
 | `js/ads.js` | ✅ | Bandeau Monetag plan gratuit, caché sur plans payants |
 | `js/immeubles.js` | ✅ | Blocage formulaire si limite plan atteinte + redirect upgrade |
 | `js/locataires.js` | ✅ | Blocage formulaire si limite plan atteinte + redirect upgrade |
@@ -128,7 +128,7 @@ Appliquer dans l'ordre sur https://supabase.com/dashboard/project/uggxfmwpttfsfc
 
 ### Flux complet monétisation
 1. **Plan gratuit** → bandeau bas + limite 2 imm / 20 loc → modal upgrade
-2. **NotchPay** → `/payment-init` → lien paiement → `/payment-check` → plan activé
+2. **Fapshi** → `/fapshi-init` → lien paiement → `/fapshi-check` → plan activé
 3. **Code promo** → `/apply-promo` → plan activé pour X jours
 4. **Owner panel** (`?owner=1`) → créer/lister promos → upgrader plan manuellement
 

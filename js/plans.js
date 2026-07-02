@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════════════
 //  ImmoGest v2 — Gestion des plans tarifaires
-//  Restrictions par plan + UI upgrade + NotchPay paiement
+//  Restrictions par plan + UI upgrade + paiement Fapshi
 // ════════════════════════════════════════════════════════════════
 
 window.IG = window.IG || {};
@@ -513,11 +513,20 @@ window.IG.plans = (function() {
         if (st === 'SUCCESSFUL') {
           modal.close();
           var session2 = window.IG.auth ? window.IG.auth.getSession() : {};
-          await fetch(workerUrl + '/activate-plan', {
+          var activation = await fetch(workerUrl + '/activate-plan', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ planId: planId, ref: ref, duree: duree, tenantId: session2.tenantId || '' })
-          }).catch(function(){});
+            body: JSON.stringify({
+              planId: planId,
+              ref: ref,
+              duree: duree,
+              tenantId: session2.tenantId || '',
+              transId: transId,
+              sessionToken: session2.sessionToken || ''
+            })
+          });
+          var activationData = await activation.json().catch(function() { return {}; });
+          if (!activation.ok) throw new Error(activationData.error || 'Activation abonnement échouée');
           var dl = duree === 1 ? '1 mois' : duree === 12 ? '1 an' : duree + ' mois';
           window.IG.utils.showToast('Paiement confirmé ! Plan ' + planId.toUpperCase() + ' activé pour ' + dl + '.', 'green');
           setTimeout(function() { location.reload(); }, 2000);

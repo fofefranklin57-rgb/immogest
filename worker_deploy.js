@@ -2,9 +2,9 @@
 // IMMOGEST v2 — Cloudflare Worker complet
 // Routes : /health /register /login-tenant /login-user
 //          /generate-invite /join /db /ai /translate
-//          /payment-init /payment-check /wa-impayes /owner
+//          /fapshi-init /fapshi-check /wa-impayes /owner
 // Secrets : SUPABASE_SERVICE_KEY, SUPABASE_URL, SUPABASE_PAT,
-//            NOTCHPAY_PK, ONESIGNAL_APP_ID, ONESIGNAL_REST_KEY,
+//            ONESIGNAL_APP_ID, ONESIGNAL_REST_KEY,
 //            ANTHROPIC_API_KEY, MANAGER_WHATSAPP, OWNER_TOKEN
 // ═══════════════════════════════════════════════════════════════
 
@@ -539,29 +539,13 @@ ${_footer()}</body></html>`;
         }
       }
 
-      // ── /payment-init ─────────────────────────────────────────
+      // ── Anciennes routes paiement désactivées : Fapshi uniquement ──
       if (path === '/payment-init' && request.method === 'POST') {
-        const { amount, email, phone, description, reference, tenantId } = await request.json();
-        const pk = env.NOTCHPAY_PK;
-        if (!pk) return json({ error: 'NotchPay non configuré' }, 500);
-        const res = await fetch('https://api.notchpay.co/payments/initialize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': pk },
-          body: JSON.stringify({ amount, currency: 'XAF', email, phone, description, reference,
-            callback: 'https://immogest-34w.pages.dev/?notchpay_ref=' + reference })
-        });
-        const d = await res.json();
-        return json({ success: true, authorization_url: d.transaction?.authorization_url, reference });
+        return json({ error: 'Route désactivée. Utilisez /fapshi-init.' }, 410);
       }
 
-      // ── /payment-check ────────────────────────────────────────
       if (path === '/payment-check' && request.method === 'GET') {
-        const ref = url.searchParams.get('ref');
-        const pk = env.NOTCHPAY_PK;
-        if (!pk) return json({ error: 'NotchPay non configuré' }, 500);
-        const res = await fetch('https://api.notchpay.co/payments/' + ref, { headers: { 'Authorization': pk } });
-        const d = await res.json();
-        return json({ success: true, status: d.transaction?.status, transaction: d.transaction });
+        return json({ error: 'Route désactivée. Utilisez /fapshi-check.' }, 410);
       }
 
       // ── /wa-impayes ───────────────────────────────────────────
@@ -578,7 +562,7 @@ ${_footer()}</body></html>`;
       // ── /migrate — DDL via Supabase Management API ────────────
       if (path === '/migrate' && request.method === 'POST') {
         const { ownerToken, sql } = await request.json();
-        const OWNER_TOKEN = env.OWNER_TOKEN || '8237a8d86b7038877840cd600b135f4edc8966be05cf3ba12727535f2670c058';
+        const OWNER_TOKEN = env.OWNER_TOKEN;
         if (ownerToken !== OWNER_TOKEN) return json({ error: 'Accès refusé' }, 403);
         const pat = env.SUPABASE_PAT;
         if (!pat) return json({ error: 'SUPABASE_PAT non configuré' }, 500);
@@ -597,8 +581,8 @@ ${_footer()}</body></html>`;
       // ── /fapshi-init — proxy Fapshi initiate-pay ─────────────
       if (path === '/fapshi-init' && request.method === 'POST') {
         const { amount, email, tenantId, planId, duree, ref } = await request.json();
-        const FAPSHI_KEY  = env.FAPSHI_APIKEY  || 'FAK_49b4bbee5088be50e98dfcb21120cd7b';
-        const FAPSHI_USER = env.FAPSHI_APIUSER || 'bd0c1e07-3ae4-4009-a1b9-3946225e1291';
+        const FAPSHI_KEY  = env.FAPSHI_APIKEY;
+        const FAPSHI_USER = env.FAPSHI_APIUSER;
         const FAPSHI_BASE = 'https://live.fapshi.com';
         const dureeLabel  = duree === 1 ? '1 mois' : duree === 12 ? '1 an' : duree + ' mois';
         const body = {
@@ -623,8 +607,8 @@ ${_footer()}</body></html>`;
       if (path === '/fapshi-check' && request.method === 'GET') {
         const transId     = url.searchParams.get('transId');
         if (!transId) return json({ error: 'transId requis' }, 400);
-        const FAPSHI_KEY  = env.FAPSHI_APIKEY  || 'FAK_49b4bbee5088be50e98dfcb21120cd7b';
-        const FAPSHI_USER = env.FAPSHI_APIUSER || 'bd0c1e07-3ae4-4009-a1b9-3946225e1291';
+        const FAPSHI_KEY  = env.FAPSHI_APIKEY;
+        const FAPSHI_USER = env.FAPSHI_APIUSER;
         const res = await fetch('https://live.fapshi.com/payment-status/' + transId, {
           headers: { apiuser: FAPSHI_USER, apikey: FAPSHI_KEY }
         });
@@ -681,7 +665,7 @@ ${_footer()}</body></html>`;
       // ── /owner ────────────────────────────────────────────────
       if (path.startsWith('/owner') && request.method === 'POST') {
         const { ownerToken, action } = await request.json();
-        const OWNER_TOKEN = env.OWNER_TOKEN || '8237a8d86b7038877840cd600b135f4edc8966be05cf3ba12727535f2670c058';
+        const OWNER_TOKEN = env.OWNER_TOKEN;
         if (ownerToken !== OWNER_TOKEN) return json({ error: 'Accès refusé' }, 403);
 
         if (action === 'stats') {
@@ -809,7 +793,7 @@ ${_footer()}</body></html>`;
       // ── /push-notify ──────────────────────────────────────────
       if (path === '/push-notify' && request.method === 'POST') {
         const { tenantId, title, body: notifBody, url: notifUrl, ownerToken } = await request.json();
-        const OWNER_TOKEN = env.OWNER_TOKEN || '8237a8d86b7038877840cd600b135f4edc8966be05cf3ba12727535f2670c058';
+        const OWNER_TOKEN = env.OWNER_TOKEN;
         // Peut être appelé par l'owner ou par un tenant authentifié
         if (ownerToken && ownerToken !== OWNER_TOKEN) return json({ error: 'Accès refusé' }, 403);
 

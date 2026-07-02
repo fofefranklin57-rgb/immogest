@@ -56,6 +56,29 @@ window.IG.rapports = (function() {
     return ('0'+d.getDate()).slice(-2) + '/' + ('0'+(d.getMonth()+1)).slice(-2) + '/' + d.getFullYear();
   }
 
+  function _docIdentity(params, session) {
+    var nom = params.nom_cabinet || params.nom || session.nomCabinet || session.nom || 'Cabinet';
+    var sigle = params.sigle || nom.replace(/[^A-Za-z]/g,'').substring(0,4).toUpperCase() || 'IG';
+    var mention = params.mention || '';
+    var tel = params.telephone || params.tel || session.telephone || '';
+    var tel2 = params.tel2 || '';
+    return {
+      nom: nom,
+      sigle: sigle,
+      mention: mention,
+      adresse: params.adresse || '',
+      ville: params.ville || '',
+      tel: tel,
+      tel2: tel2,
+      email: params.email || '',
+      rccm: params.rccm || '',
+      contribuable: params.contribuable || '',
+      fiscal: params.fiscal || '',
+      logo: params.logo_url || params.logo || '',
+      signataire: params.signataire || nom
+    };
+  }
+
   // ── Rapport mensuel HTML — spec V2 (juin 2026) ──────────────
   function genererRapportMensuelHTML(immeubleId, dateDebut, dateFin, immeubles, locataires, paiements) {
     var session  = window.IG.auth ? window.IG.auth.getSession() : {};
@@ -65,12 +88,13 @@ window.IG.rapports = (function() {
     var devise   = (window.IG._locale && window.IG._locale.devise) || 'FCFA';
 
     var imm = immeubles.filter(function(i) { return i.id == immeubleId; })[0];
-    if (!imm) return '<p style="padding:20px;color:var(--text3)">Sélectionnez un immeuble.</p>';
+    if (!imm) return '<p style="padding:20px;color:var(--text3)">' + t('Sélectionnez un immeuble.') + '</p>';
 
-    var nomCab  = params.nom_cabinet || session.nomCabinet || session.nom || 'Cabinet';
-    var adresse = params.adresse || '';
-    var tel     = params.telephone || session.telephone || '';
-    var ville   = params.ville || imm.ville || '';
+    var docInfo = _docIdentity(params, session);
+    var nomCab  = docInfo.nom;
+    var adresse = docInfo.adresse;
+    var tel     = docInfo.tel;
+    var ville   = docInfo.ville || imm.ville || '';
     var nomImm  = imm.nom_immeuble || imm.nom || '';
     var quartier= imm.quartier || '';
 
@@ -79,7 +103,7 @@ window.IG.rapports = (function() {
 
     var MOIS_FR = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 
-    var cabAbbr    = nomCab.replace(/[^A-Za-z]/g,'').substring(0,4).toUpperCase();
+    var cabAbbr    = docInfo.sigle;
     var refDoc     = cabAbbr + '/RM/' + fin.getFullYear() + '/' + (quartier || nomImm).replace(/\s+/g,'');
     var dateDoc    = (ville ? ville + ', ' : '') + 'le ' + fin.getDate() + ' ' + MOIS_FR[fin.getMonth()] + ' ' + fin.getFullYear();
     var fmtDebut   = _fmtD(dateDebut);
@@ -136,7 +160,7 @@ window.IG.rapports = (function() {
       '</tr>';
     });
     s1Rows += '<tr style="background:#1a2e4a;color:#fff;font-weight:700">' +
-      '<td style="padding:7px 9px;border:1px solid #2d4a6e" colspan="5">TOTAL RESTE À PAYER</td>' +
+      '<td style="padding:7px 9px;border:1px solid #2d4a6e" colspan="5">' + t('TOTAL RESTE À PAYER') + '</td>' +
       '<td style="padding:7px 9px;border:1px solid #2d4a6e;text-align:right;color:#f1948a">'+fmt(totalResteS1)+'</td>' +
     '</tr>';
 
@@ -159,7 +183,7 @@ window.IG.rapports = (function() {
       '</tr>';
     });
     if (!paysP.length) {
-      s2Rows = '<tr><td colspan="5" style="padding:14px;text-align:center;color:#999;font-style:italic">Aucun encaissement dans cette période</td></tr>';
+      s2Rows = '<tr><td colspan="5" style="padding:14px;text-align:center;color:#999;font-style:italic">' + t('Aucun encaissement dans cette période') + '</td></tr>';
     }
 
     // ── Récapitulatif financier ──────────────────────────────────
@@ -185,9 +209,9 @@ window.IG.rapports = (function() {
     }
 
     var recapHtml = '<table style="width:100%;border-collapse:collapse;border:1px solid #ddd">' +
-      _rl('Loyers encaissés', totalLoyers) +
-      _rl('Cautions reçues', totalCautions) +
-      '<tr style="background:#e8f4fd"><td style="padding:6px 10px;font-size:11px;font-weight:800">TOTAL LOYER</td>' +
+      _rl(t('Loyers encaissés'), totalLoyers) +
+      _rl(t('Cautions reçues'), totalCautions) +
+      '<tr style="background:#e8f4fd"><td style="padding:6px 10px;font-size:11px;font-weight:800">' + t('TOTAL LOYER') + '</td>' +
       '<td style="padding:6px 10px;text-align:right;font-size:12px;font-weight:800">'+fmt(totalBrut)+'</td></tr>';
     if (isCab) {
       recapHtml += _rl('Loyer reçu par le bailleur', totalRemis, { neg: true, color: '#c62828' }) +
@@ -204,49 +228,62 @@ window.IG.rapports = (function() {
     var montantPhrase = isCab ? netAPer : totalBrut;
     var lettres       = _enLettres(Math.abs(montantPhrase));
     var nomProprio    = imm.nom_proprio || '';
+    var docLegalLine = [
+      docInfo.mention || nomCab,
+      docInfo.sigle && docInfo.sigle !== nomCab ? docInfo.sigle : '',
+      docInfo.rccm ? 'RCCM N° ' + docInfo.rccm : '',
+      docInfo.contribuable ? 'N°Contrib. ' + docInfo.contribuable : '',
+      docInfo.fiscal && !docInfo.rccm ? docInfo.fiscal : ''
+    ].filter(Boolean).join(' · ');
+    var docContactLine = [
+      [docInfo.tel, docInfo.tel2].filter(Boolean).join(' / '),
+      docInfo.email
+    ].filter(Boolean).join(' / ');
+    var logoCell = docInfo.logo
+      ? '<img src="' + esc(docInfo.logo) + '" alt="Logo" style="max-width:82px;max-height:54px;object-fit:contain">'
+      : '<div style="width:54px;height:54px;border:1px solid #d8d8d8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#0E6AAF">' + esc(docInfo.sigle) + '</div>';
 
     // ── Assemblage ───────────────────────────────────────────────
     var html = '<div style="font-family:Arial,Helvetica,sans-serif;max-width:760px;margin:0 auto;color:#111">';
 
-    // En-tête
-    html += '<table style="width:100%;border-collapse:collapse;margin-bottom:10px"><tr>' +
-      '<td style="vertical-align:top;width:60%">' +
-      '<div style="font-size:13px;font-weight:900;color:#0E6AAF">'+esc(nomCab)+'</div>' +
-      (adresse ? '<div style="font-size:9.5px;color:#333">'+esc(adresse)+'</div>' : '') +
-      (tel     ? '<div style="font-size:9.5px;color:#333">Tél : '+esc(tel)+'</div>' : '') +
-      '</td><td style="vertical-align:top;text-align:right">' +
-      '<div style="font-size:9.5px;color:#333">'+esc(dateDoc)+'</div>' +
-      '<div style="font-size:9px;color:#777;font-style:italic">Réf : '+esc(refDoc)+'</div>' +
+    // En-tête inspiré du modèle Word CRAA : logo, identité légale, contacts.
+    html += '<table style="width:100%;border-collapse:collapse;margin-bottom:8px;border-bottom:3px solid #0E6AAF"><tr>' +
+      '<td style="vertical-align:middle;width:16%;padding:0 8px 8px 0">' + logoCell + '</td>' +
+      '<td style="vertical-align:middle;width:52%;padding:0 8px 8px 0">' +
+      '<div style="font-size:12px;font-weight:900;color:#0E6AAF;text-transform:uppercase">'+esc(nomCab)+'</div>' +
+      '<div style="font-size:9.5px;color:#333;line-height:1.35">'+esc(docLegalLine || nomCab)+'</div>' +
+      (adresse ? '<div style="font-size:9px;color:#555;line-height:1.35">'+esc(adresse)+'</div>' : '') +
+      '</td><td style="vertical-align:middle;text-align:right;width:32%;padding:0 0 8px 8px">' +
+      (docContactLine ? '<div style="font-size:9px;color:#333;line-height:1.35">'+esc(docContactLine)+'</div>' : '') +
+      '<div style="font-size:9px;color:#777;margin-top:3px">'+esc(dateDoc)+'</div>' +
+      '<div style="font-size:8.5px;color:#888;font-style:italic">Réf : '+esc(refDoc)+'</div>' +
       '</td></tr></table>';
-
-    // Séparateur bleu
-    html += '<div style="border-bottom:3px solid #0E6AAF;margin-bottom:14px"></div>';
 
     // Titre centré
     html += '<div style="text-align:center;margin-bottom:16px">' +
-      '<div style="font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.3px">RAPPORT MENSUEL — IMMEUBLE ' + esc(nomImm.toUpperCase()) + '</div>' +
-      '<div style="font-style:italic;color:#555;font-size:11px;margin-top:4px">'+esc(quartier||nomImm)+' · du '+fmtDebut+' · au '+fmtFin+'</div>' +
+      '<div style="font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.3px">' + esc(t('Rapport mensuel').toUpperCase()) + ' - ' + esc(t('Immeuble').toUpperCase()) + ' ' + esc(nomImm.toUpperCase()) + '</div>' +
+      '<div style="font-style:italic;color:#555;font-size:11px;margin-top:4px">'+esc(quartier||nomImm)+' · '+t('du')+' '+fmtDebut+' · '+t('Au')+' '+fmtFin+'</div>' +
       '</div>';
 
     // Section 1
-    html += '<div style="font-size:11.5px;font-weight:800;text-transform:uppercase;color:#0E6AAF;margin-bottom:8px;border-left:4px solid #0E6AAF;padding-left:8px">LISTE DES LOCATAIRES ET SITUATION LOCATIVE</div>' +
+    html += '<div style="font-size:11.5px;font-weight:800;text-transform:uppercase;color:#0E6AAF;margin-bottom:8px;border-left:4px solid #0E6AAF;padding-left:8px">' + t('LISTE DES LOCATAIRES ET SITUATION LOCATIVE') + '</div>' +
       '<table style="width:100%;border-collapse:collapse;margin-bottom:18px"><thead><tr>' +
-      '<th style="'+TH+'">Local</th>' +
-      '<th style="'+TH+'">Nom &amp; Téléphone</th>' +
-      '<th style="'+TH+'text-align:right">Loyer</th>' +
-      '<th style="'+TH+'">Dernier paiement</th>' +
-      '<th style="'+TH+'">Observations</th>' +
-      '<th style="'+TH+'text-align:right">Reste à payer</th>' +
+      '<th style="'+TH+'">' + t('Local') + '</th>' +
+      '<th style="'+TH+'">' + t('Nom & Téléphone') + '</th>' +
+      '<th style="'+TH+'text-align:right">' + t('Loyer') + '</th>' +
+      '<th style="'+TH+'">' + t('Dernier paiement') + '</th>' +
+      '<th style="'+TH+'">' + t('Observations') + '</th>' +
+      '<th style="'+TH+'text-align:right">' + t('Reste à payer') + '</th>' +
       '</tr></thead><tbody>'+s1Rows+'</tbody></table>';
 
     // Section 2
-    html += '<div style="font-size:11.5px;font-weight:800;text-transform:uppercase;color:#0E6AAF;margin-bottom:8px;border-left:4px solid #0E6AAF;padding-left:8px">ENCAISSEMENTS — '+esc(periodeEncL)+'</div>' +
+    html += '<div style="font-size:11.5px;font-weight:800;text-transform:uppercase;color:#0E6AAF;margin-bottom:8px;border-left:4px solid #0E6AAF;padding-left:8px">' + t('ENCAISSEMENTS') + ' - '+esc(periodeEncL)+'</div>' +
       '<table style="width:100%;border-collapse:collapse;margin-bottom:18px"><thead><tr>' +
-      '<th style="'+TH+'">Date</th>' +
-      '<th style="'+TH+'">Local</th>' +
-      '<th style="'+TH+'">Locataire</th>' +
-      '<th style="'+TH+'">Note</th>' +
-      '<th style="'+TH+'text-align:right">Montant</th>' +
+      '<th style="'+TH+'">' + t('Date') + '</th>' +
+      '<th style="'+TH+'">' + t('Local') + '</th>' +
+      '<th style="'+TH+'">' + t('Locataire') + '</th>' +
+      '<th style="'+TH+'">' + t('Note') + '</th>' +
+      '<th style="'+TH+'text-align:right">' + t('Montant') + '</th>' +
       '</tr></thead><tbody>'+s2Rows+'</tbody></table>';
 
     // Récapitulatif aligné à droite
@@ -260,19 +297,19 @@ window.IG.rapports = (function() {
     // Signatures
     html += '<div style="border-top:1px solid #ddd;padding-top:14px;display:flex;justify-content:space-between">' +
       '<div style="text-align:center;width:44%">' +
-      '<div style="font-size:10.5px;font-weight:700">Le Gestionnaire</div>' +
-      '<div style="font-size:10px;color:#555">'+esc(nomCab)+'</div>' +
+      '<div style="font-size:10.5px;font-weight:700">' + t('Le Gestionnaire') + '</div>' +
+      '<div style="font-size:10px;color:#555">'+esc(docInfo.signataire || docInfo.sigle || nomCab)+'</div>' +
       '<div style="height:38px"></div>' +
-      '<div style="border-top:1px solid #555;padding-top:3px;font-size:9px;color:#888;font-style:italic">Signature &amp; Cachet</div>' +
+      '<div style="border-top:1px solid #555;padding-top:3px;font-size:9px;color:#888;font-style:italic">' + t('Signature & Cachet') + '</div>' +
       '</div>' +
       '<div style="text-align:center;width:44%">' +
-      '<div style="font-size:10.5px;font-weight:700">Lu et approuvé — Le Propriétaire</div>' +
+      '<div style="font-size:10.5px;font-weight:700">' + t('Lu et approuvé - Le Propriétaire') + '</div>' +
       '<div style="font-size:10px;color:#555">'+esc(nomProprio||nomImm)+'</div>' +
       '<div style="height:38px"></div>' +
-      '<div style="border-top:1px solid #555;padding-top:3px;font-size:9px;color:#888;font-style:italic">Signature</div>' +
+      '<div style="border-top:1px solid #555;padding-top:3px;font-size:9px;color:#888;font-style:italic">' + t('Signature') + '</div>' +
       '</div></div>';
 
-    html += '<div style="text-align:center;color:#ccc;font-size:9px;margin-top:20px;border-top:1px solid #f0f0f0;padding-top:8px">Document généré le '+_fmtD(new Date().toISOString().slice(0,10))+' par ImmoGest v2 — '+esc(nomCab)+'</div>';
+    html += '<div style="text-align:center;color:#999;font-size:9px;margin-top:20px;border-top:1px solid #f0f0f0;padding-top:8px">' + t('Document généré le') + ' '+_fmtD(new Date().toISOString().slice(0,10))+' ' + t('par') + ' ImmoGest · '+esc(docInfo.sigle || nomCab)+'</div>';
     html += '</div>';
     return html;
   }
@@ -308,27 +345,28 @@ window.IG.rapports = (function() {
       '</div>' +
 
       '<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:8px;align-items:end">' +
-      '<div><label style="font-size:11px;font-weight:600;color:var(--text2)">IMMEUBLE</label>' +
+      '<div><label style="font-size:11px;font-weight:600;color:var(--text2)">' + t('Immeuble').toUpperCase() + '</label>' +
       '<select id="rapport-imm" style="width:100%;margin-top:4px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
       (immOptions || '<option value="">—</option>') + '</select></div>' +
 
-      '<div><label style="font-size:11px;font-weight:600;color:var(--text2)">DÉBUT</label>' +
+      '<div><label style="font-size:11px;font-weight:600;color:var(--text2)">' + t('Début').toUpperCase() + '</label>' +
       '<input id="rapport-debut" type="date" value="' + _iso(defDebut) + '" style="width:100%;margin-top:4px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
 
-      '<div><label style="font-size:11px;font-weight:600;color:var(--text2)">FIN</label>' +
+      '<div><label style="font-size:11px;font-weight:600;color:var(--text2)">' + t('Fin').toUpperCase() + '</label>' +
       '<input id="rapport-fin" type="date" value="' + _iso(defFin) + '" style="width:100%;margin-top:4px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
       '</div>' +
 
       '<div style="margin-bottom:12px;display:flex;gap:8px">' +
-      '<button id="btn-mois-courant" style="padding:5px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--bg3);font-size:11px;cursor:pointer">Mois courant</button>' +
-      '<button id="btn-mois-prec" style="padding:5px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--bg3);font-size:11px;cursor:pointer">Mois précédent</button>' +
-      '<button id="btn-generer-rapport" style="padding:5px 20px;border-radius:20px;border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto">▶ Générer</button>' +
+      '<button id="btn-mois-courant" style="padding:5px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--bg3);font-size:11px;cursor:pointer">' + t('Mois courant') + '</button>' +
+      '<button id="btn-mois-prec" style="padding:5px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--bg3);font-size:11px;cursor:pointer">' + t('Mois précédent') + '</button>' +
+      '<button id="btn-generer-rapport" style="padding:5px 20px;border-radius:20px;border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto">▶ ' + t('Générer') + '</button>' +
       '</div>' +
 
       '<div id="rapport-contenu"></div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">' +
       '<button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">' + t('Fermer') + '</button>' +
-      '<button id="btn-imprimer-rapport" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);cursor:pointer;font-size:13px;display:none">🖨️ Imprimer</button>' +
+      '<button id="btn-word-rapport" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);cursor:pointer;font-size:13px;display:none">📄 Word</button>' +
+      '<button id="btn-imprimer-rapport" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);cursor:pointer;font-size:13px;display:none">🖨️ ' + t('Imprimer') + '</button>' +
       '</div>';
 
     var modal = window.IG.utils.showModal(html, { width: '820px' });
@@ -340,12 +378,13 @@ window.IG.rapports = (function() {
       var debut = modal.box.querySelector('#rapport-debut').value;
       var fin   = modal.box.querySelector('#rapport-fin').value;
       if (!immId) {
-        modal.box.querySelector('#rapport-contenu').innerHTML = '<p style="padding:20px;text-align:center;color:var(--text3)">Sélectionnez un immeuble.</p>';
+        modal.box.querySelector('#rapport-contenu').innerHTML = '<p style="padding:20px;text-align:center;color:var(--text3)">' + t('Sélectionnez un immeuble.') + '</p>';
         return;
       }
       _lastHtml = genererRapportMensuelHTML(immId, debut, fin, imm, loc, pay);
       modal.box.querySelector('#rapport-contenu').innerHTML = _lastHtml;
       modal.box.querySelector('#btn-imprimer-rapport').style.display = 'inline-block';
+      modal.box.querySelector('#btn-word-rapport').style.display = 'inline-block';
     }
 
     function _setPeriode(debut, fin) {
@@ -373,40 +412,30 @@ window.IG.rapports = (function() {
       w.focus();
     });
 
+    modal.box.querySelector('#btn-word-rapport').addEventListener('click', function() {
+      if (!_lastHtml) generer();
+      exporterDocx(_lastHtml);
+    });
+
     // Générer automatiquement si un immeuble est présélectionné
     if (immeubleIdPreselect && immOptions) generer();
   }
 
-  // ── Export DOCX via docx.bundle.js ───────────────────────────
+  // ── Export Word conservant la mise en page HTML du rapport ───
   function exporterDocx(htmlContent) {
     try {
-      if (typeof docx === 'undefined') {
-        window.IG.utils.showToast(t('Bibliothèque DOCX non chargée'), 'red');
-        return;
-      }
       var session = window.IG.auth ? window.IG.auth.getSession() : {};
-      var doc = new docx.Document({
-        sections: [{
-          children: [
-            new docx.Paragraph({
-              text: (session.nomCabinet || 'ImmoGest') + ' — Rapport mensuel',
-              heading: docx.HeadingLevel.HEADING_1,
-            }),
-            new docx.Paragraph({
-              text: 'Généré le ' + new Date().toLocaleDateString('fr-FR'),
-            }),
-            new docx.Paragraph({
-              text: htmlContent.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),
-            })
-          ]
-        }]
-      });
-      docx.Packer.toBlob(doc).then(function(blob) {
-        var link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'rapport-immogest-' + Date.now() + '.docx';
-        link.click();
-      });
+      var title = (session.nomCabinet || 'ImmoGest') + ' - Rapport mensuel';
+      var wordHtml = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+        '<title>' + esc(title) + '</title>' +
+        '<style>body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111}table{border-collapse:collapse}img{max-width:100%}</style>' +
+        '</head><body>' + htmlContent + '</body></html>';
+      var blob = new Blob(['\ufeff', wordHtml], { type: 'application/msword;charset=utf-8' });
+      var link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'rapport-immogest-' + Date.now() + '.doc';
+      link.click();
+      setTimeout(function() { URL.revokeObjectURL(link.href); }, 1500);
     } catch(e) {
       window.IG.utils.showToast(t('Erreur export DOCX') + ': ' + e.message, 'red');
     }

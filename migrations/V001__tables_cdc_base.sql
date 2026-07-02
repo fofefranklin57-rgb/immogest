@@ -12,12 +12,12 @@
 
 CREATE TABLE IF NOT EXISTS owner_config (
   id            BIGSERIAL PRIMARY KEY,
-  password_hash TEXT NOT NULL DEFAULT '8237a8d86b7038877840cd600b135f4edc8966be05cf3ba12727535f2670c058',
+  password_hash TEXT NOT NULL DEFAULT '',
   settings      JSONB DEFAULT '{}'
 );
 
 INSERT INTO owner_config (password_hash)
-SELECT '8237a8d86b7038877840cd600b135f4edc8966be05cf3ba12727535f2670c058'
+SELECT ''
 WHERE NOT EXISTS (SELECT 1 FROM owner_config);
 
 CREATE TABLE IF NOT EXISTS owner_logs (

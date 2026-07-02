@@ -231,7 +231,7 @@ window.IG.immeubles = (function() {
       var res = await fetch(WORKER + '/generate-invite', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ tenantId: session.tenantId, role: 'bailleur', nom: imm.nom_proprio, telephone: imm.tel_proprio, immeuble_id: imm.id })
+        body:    JSON.stringify({ tenantId: session.tenantId, sessionToken: session.sessionToken || null, role: 'bailleur', nom: imm.nom_proprio, telephone: imm.tel_proprio, immeuble_id: imm.id })
       });
       var data = await res.json();
       if (!data.success) throw new Error(data.error || 'Erreur');

@@ -1,3 +1,6 @@
 /sitemap.xml /sitemap.xml 200
 /robots.txt /robots.txt 200
+/confidentialite /privacy 302
+/cgu /terms 302
+/mentions-legales /terms 302
 /* /index.html 200

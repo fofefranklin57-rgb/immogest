@@ -707,7 +707,7 @@ main{padding:24px;max-width:1400px;margin:0 auto;width:100%;flex:1}
         <div class="sec-title" style="margin-top:28px">🔑 Sécurité</div>
         <div class="pkg-form">
           <div class="cfg-row">
-            <div><div class="cfg-label">Mot de passe dashboard</div><div class="cfg-sub">Modifier dans le code source (OWNER_PWD)</div></div>
+            <div><div class="cfg-label">Mot de passe dashboard</div><div class="cfg-sub">Saisir le token propriétaire au moment de la connexion</div></div>
             <span style="font-size:.75rem;color:var(--text3);font-family:monospace">••••••••••••</span>
           </div>
           <div class="cfg-row">
@@ -732,12 +732,12 @@ main{padding:24px;max-width:1400px;margin:0 auto;width:100%;flex:1}
 // ════════════════════════════════════════════════════════
 // CONFIG
 // ════════════════════════════════════════════════════════
-const OWNER_PWD    = 'Lastbender';
+const OWNER_PWD    = '';
 const SUPABASE_URL = 'https://uggxfmwpttfsfcirmeqx.supabase.co';
 const _WORKER     = 'https://immogest1.fofefranklin57.workers.dev';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZ3hmbXdwdHRmc2ZjaXJtZXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNTA4MjIsImV4cCI6MjA5NDYyNjgyMn0.l8iYlJHOt6evNlBQ3zRskZasn_J2BjAUs1l2vKOZNvY';
+const SUPABASE_KEY = localStorage.getItem('immogest_owner_supabase_key') || '';
 
-const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const _sb = SUPABASE_KEY ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 let _charts = {};
 let _selectedPlan = 'starter';
 let _allAbonnements = [];
@@ -767,8 +767,9 @@ function installPWA() {
 // ════════════════════════════════════════════════════════
 function checkAuth() {
   const val = document.getElementById('pwd-input').value;
-  if (val === OWNER_PWD) {
+  if (val && (OWNER_PWD ? val === OWNER_PWD : val.length >= 24)) {
     sessionStorage.setItem('owner_ok', '1');
+    sessionStorage.setItem('owner_token', val);
     showDashboard();
   } else {
     const err = document.getElementById('auth-err');
@@ -787,6 +788,10 @@ function showDashboard() {
   document.getElementById('dashboard').style.display = 'flex';
   document.getElementById('dashboard').style.flexDirection = 'column';
   startClock();
+  if (!_sb) {
+    toast('Clé Supabase owner absente: configurez immogest_owner_supabase_key en localStorage');
+    return;
+  }
   loadAll();
 }
 if (sessionStorage.getItem('owner_ok') === '1') showDashboard();
@@ -1287,7 +1292,7 @@ async function genererCodePromo() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ownerToken: OWNER_PWD,
+          ownerToken: sessionStorage.getItem('owner_token') || OWNER_PWD,
           action: 'owner_reply',
           tenant_id: tenantId,
           pour_user_id: '__ADMIN__' + tenantId,
@@ -1567,11 +1572,10 @@ function toast(msg, dur=3000) {
   );
   ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
   CREATE POLICY "insert_public" ON contact_messages FOR INSERT WITH CHECK (true);
-  CREATE POLICY "select_all"   ON contact_messages FOR SELECT  USING (true);
-  CREATE POLICY "update_all"   ON contact_messages FOR UPDATE  USING (true);
-  CREATE POLICY "delete_all"   ON contact_messages FOR DELETE  USING (true);
+  -- Ne pas rendre SELECT/UPDATE/DELETE publics en production.
+  -- Les lectures et modifications doivent passer par un Worker owner authentifié.
 
-  Mot de passe : immogest2025owner (OWNER_PWD dans le script)
+  Le token propriétaire doit être stocké dans les secrets Cloudflare, pas dans ce HTML.
 ═══════════════════════════════════════════════════════════
 -->
 </body>

@@ -2,13 +2,72 @@
 // IMMOGEST v2 — Cloudflare Worker complet
 // Routes : /health /register /login-tenant /login-user
 //          /generate-invite /join /db /ai /translate
-//          /payment-init /payment-check /wa-impayes /owner
+//          /fapshi-init /fapshi-check /wa-impayes /owner
 // Secrets : SUPABASE_SERVICE_KEY, SUPABASE_URL, SUPABASE_PAT,
-//            NOTCHPAY_PK, ONESIGNAL_APP_ID, ONESIGNAL_REST_KEY,
+//            ONESIGNAL_APP_ID, ONESIGNAL_REST_KEY,
 //            ANTHROPIC_API_KEY, MANAGER_WHATSAPP, OWNER_TOKEN
 // ═══════════════════════════════════════════════════════════════
 
 const SUPABASE_URL_DEFAULT = 'https://uggxfmwpttfsfcirmeqx.supabase.co';
+
+async function _sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function _telFilter(telephone) {
+  const raw = String(telephone || '').replace(/[\s\-\(\)]/g, '');
+  const variants = [raw];
+  if (raw.startsWith('+')) {
+    for (let len = 1; len <= 3; len++) {
+      const stripped = raw.slice(1 + len);
+      if (stripped.length >= 7) variants.push(stripped);
+    }
+  } else if (/^\d{10,}$/.test(raw)) {
+    for (let len = 1; len <= 3; len++) {
+      const stripped = raw.slice(len);
+      if (stripped.length >= 7 && stripped.length < raw.length) variants.push(stripped);
+    }
+  }
+  const unique = [...new Set(variants.filter(Boolean))];
+  if (unique.length === 1) return 'telephone=eq.' + encodeURIComponent(unique[0]);
+  return 'or=(' + unique.map(v => 'telephone.eq.' + encodeURIComponent(v)).join(',') + ')';
+}
+
+function _b64url(buf) {
+  const bytes = buf instanceof ArrayBuffer ? new Uint8Array(buf) : new TextEncoder().encode(String(buf));
+  let bin = '';
+  bytes.forEach(b => { bin += String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function _fromB64url(str) {
+  str = String(str || '').replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4) str += '=';
+  return atob(str);
+}
+
+async function _signToken(payload, secret) {
+  const enc = new TextEncoder();
+  const header = _b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const body = _b64url(JSON.stringify(payload));
+  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(header + '.' + body));
+  return header + '.' + body + '.' + _b64url(sig);
+}
+
+async function _verifyToken(token, secret) {
+  if (!token || !secret) return null;
+  const parts = String(token).split('.');
+  if (parts.length !== 3) return null;
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(parts[0] + '.' + parts[1]));
+  if (_b64url(sig) !== parts[2]) return null;
+  const payload = JSON.parse(_fromB64url(parts[1]));
+  if (payload.exp && Date.now() > payload.exp) return null;
+  return payload;
+}
 
 // ── Rate limiting (mémoire Worker, reset à chaque cold start) ──
 const _rl = new Map();
@@ -43,7 +102,7 @@ function _corsHeaders(request) {
 const ALLOWED_TABLES = [
   'immeubles','locataires','paiements','users_app','parametres',
   'locale_profiles','archives','corbeille','declarations','abonnements',
-  'messages_internes','marketplace_annonces','invite_codes',
+  'messages_internes','marketplace_annonces','annonces','invite_codes',
   'dossiers_juridiques','timeline_juridique','templates_docs',
   'workflow_recouvrement','feature_flags','events_log','scores_locataires',
   'user_organisations','promo_codes','owner_logs','prestataires','signatures'
@@ -63,6 +122,18 @@ export default {
       new Response(JSON.stringify(data), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 
     const sbBase = env.SUPABASE_URL || SUPABASE_URL_DEFAULT;
+    const SESSION_SECRET = env.SESSION_SECRET || env.JWT_SECRET;
+    const makeToken = (tenantId, userId, role, extra = {}) => {
+      if (!SESSION_SECRET) throw new Error('SESSION_SECRET non configuré');
+      return _signToken({
+        tenantId,
+        userId,
+        role: role || 'admin',
+        ...extra,
+        iat: Date.now(),
+        exp: Date.now() + 24 * 3600 * 1000
+      }, SESSION_SECRET);
+    };
 
     function sbHdrs() {
       return {
@@ -262,8 +333,9 @@ ${_footer()}</body></html>`;
         // Tenter locale_profiles (table optionnelle)
         try { await sbFetch('locale_profiles', '', 'POST', { tenant_id: tenant.id }); } catch(_) {}
 
+        const sessionToken = await makeToken(tenant.id, adminId, 'admin');
         await logEvent(tenant.id, 'info', 'tenant.register', 'Nouveau tenant', { nom, telephone });
-        return json({ success: true, tenantId: tenant.id, userId: adminId, plan: 'starter', plan_expire: trialExpire });
+        return json({ success: true, tenantId: tenant.id, userId: adminId, plan: 'starter', plan_expire: trialExpire, sessionToken });
       }
 
       // ── /login-tenant ─────────────────────────────────────────
@@ -299,13 +371,15 @@ ${_footer()}</body></html>`;
             }
           }
         }
+        const sessionToken = await makeToken(tenant.id, adminUser.id, adminUser.role || 'admin');
         await logEvent(tenant.id, 'info', 'tenant.login', 'Connexion', { telephone });
         return json({
           success: true,
           tenant: { ...tenant, plan: planFinal, plan_expire: planExpireFinal },
           userId: adminUser.id,
           role: adminUser.role,
-          user: adminUser
+          user: adminUser,
+          sessionToken
         });
       }
 
@@ -321,16 +395,154 @@ ${_footer()}</body></html>`;
         if (user.actif === false) return json({ error: 'Compte désactivé' }, 403);
         const storedPwd = user.password || user.password_hash || '';
         if (storedPwd !== passwordHash) return json({ error: 'Mot de passe incorrect' }, 401);
-        return json({ success: true, user });
+        const sessionToken = await makeToken(tenantId, user.id, user.role, {
+          immeubles: user.immeubles_assignes || user.immeubles || [],
+          locataireId: user.locataire_id || null,
+          immeubleId: user.immeuble_id || null
+        });
+        return json({ success: true, user, sessionToken });
+      }
+
+      // ── /login-portal — connexion locataire / bailleur ────────
+      if (path === '/login-portal' && request.method === 'POST') {
+        if (_rateLimit(clientIp, 'login-portal', 8, 900000))
+          return json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' }, 429);
+        const { telephone, passwordHash } = await request.json();
+        if (!telephone || !passwordHash) return json({ error: 'Téléphone et mot de passe requis' }, 400);
+
+        const telFilter = _telFilter(telephone);
+        const uRes = await sbFetch('users_app', '?' + telFilter + '&actif=eq.true&select=*');
+        const users = uRes.ok ? await uRes.json() : [];
+        const portal = users.find(u => u.role === 'locataire' || u.role === 'bailleur');
+        if (!portal) return json({ error: 'Aucun compte locataire ou bailleur trouvé pour ce numéro' }, 404);
+        if (portal.actif === false) return json({ error: 'Compte désactivé' }, 403);
+
+        const storedPwd = portal.password || '';
+        const fallback = storedPwd.length === 6 ? await _sha256(storedPwd) : null;
+        if (storedPwd !== passwordHash && fallback !== passwordHash) return json({ error: 'Mot de passe incorrect' }, 401);
+        if (storedPwd.length === 6) await sbFetch('users_app', '?id=eq.' + portal.id, 'PATCH', { password: fallback });
+
+        const tRes = await sbFetch('tenants', '?id=eq.' + portal.tenant_id + '&select=*');
+        const tenant = (tRes.ok ? await tRes.json() : [])[0] || { id: portal.tenant_id };
+        let locataireId = portal.locataire_id || null;
+        let immeubleId = portal.immeuble_id || null;
+        if (portal.role === 'locataire' && !locataireId) {
+          const lRes = await sbFetch('locataires', '?tenant_id=eq.' + portal.tenant_id + '&' + telFilter + '&select=id,immeuble_id');
+          const locs = lRes.ok ? await lRes.json() : [];
+          if (locs.length) { locataireId = locs[0].id; immeubleId = locs[0].immeuble_id; }
+        }
+
+        const extra = portal.role === 'locataire'
+          ? { locataireId, locId: locataireId, immeubleId, immId: immeubleId }
+          : { immeubles: portal.immeubles_assignes || portal.immeubles || (portal.immeuble_id ? [portal.immeuble_id] : []) };
+        const sessionToken = await makeToken(portal.tenant_id, portal.id, portal.role, extra);
+        return json({
+          success: true, userId: portal.id, role: portal.role, nom: portal.nom, tenant, locataireId, sessionToken,
+          user: {
+            id: portal.id, role: portal.role, nom: portal.nom, telephone: portal.telephone || '',
+            immeubles: portal.immeubles_assignes || portal.immeubles || (portal.immeuble_id ? [portal.immeuble_id] : []),
+            permissions: portal.permissions || {}, locataire_id: locataireId, immeuble_id: immeubleId
+          }
+        });
+      }
+
+      // ── /login — connexion unifiée (admin + utilisateurs) ─────
+      if (path === '/login' && request.method === 'POST') {
+        if (_rateLimit(clientIp, 'login', 8, 900000))
+          return json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' }, 429);
+        const { telephone, passwordHash } = await request.json();
+        if (!telephone || !passwordHash) return json({ error: 'Téléphone et mot de passe requis' }, 400);
+        const telFilter = _telFilter(telephone);
+
+        const tRes = await sbFetch('tenants', '?' + telFilter + '&select=*');
+        const tenants = tRes.ok ? await tRes.json() : [];
+        if (tenants.length) {
+          const tenant = tenants[0];
+          if (tenant.password_hash !== passwordHash) return json({ error: 'Mot de passe incorrect' }, 401);
+          const uRes = await sbFetch('users_app', '?tenant_id=eq.' + tenant.id + '&role=eq.admin&select=*&limit=1');
+          const adminUser = (uRes.ok ? await uRes.json() : [])[0] || { id: 'admin_' + tenant.id, role: 'admin', nom: tenant.nom };
+          const sessionToken = await makeToken(tenant.id, adminUser.id, 'admin');
+          await logEvent(tenant.id, 'info', 'tenant.login', 'Connexion', { telephone });
+          return json({ success: true, userId: adminUser.id, role: 'admin', nom: adminUser.nom, tenant, locataireId: null, sessionToken });
+        }
+
+        const uRes = await sbFetch('users_app', '?' + telFilter + '&actif=eq.true&select=*');
+        const users = uRes.ok ? await uRes.json() : [];
+        if (!users.length) return json({ error: 'Aucun compte trouvé pour ce numéro' }, 404);
+        const user = users[0];
+        if (user.actif === false) return json({ error: 'Compte désactivé' }, 403);
+        const storedPwd = user.password || user.password_hash || '';
+        const fallback = storedPwd.length === 6 ? await _sha256(storedPwd) : null;
+        if (storedPwd !== passwordHash && fallback !== passwordHash) return json({ error: 'Mot de passe incorrect' }, 401);
+        if (storedPwd.length === 6) await sbFetch('users_app', '?id=eq.' + user.id, 'PATCH', { password: fallback });
+
+        const ttRes = await sbFetch('tenants', '?id=eq.' + user.tenant_id + '&select=*');
+        const tenant = (ttRes.ok ? await ttRes.json() : [])[0] || { id: user.tenant_id };
+        let locataireId = user.locataire_id || null;
+        let immeubleId = user.immeuble_id || null;
+        if (user.role === 'locataire' && !locataireId) {
+          const lRes = await sbFetch('locataires', '?tenant_id=eq.' + user.tenant_id + '&' + telFilter + '&select=id,immeuble_id');
+          const locs = lRes.ok ? await lRes.json() : [];
+          if (locs.length) { locataireId = locs[0].id; immeubleId = locs[0].immeuble_id; }
+        }
+
+        const extra = user.role === 'locataire'
+          ? { locataireId, locId: locataireId, immeubleId, immId: immeubleId }
+          : ['bailleur','agent','gestionnaire'].includes(user.role)
+            ? { immeubles: user.immeubles_assignes || user.immeubles || (user.immeuble_id ? [user.immeuble_id] : []) }
+            : {};
+        const sessionToken = await makeToken(user.tenant_id, user.id, user.role, extra);
+        return json({
+          success: true, userId: user.id, role: user.role, nom: user.nom, tenant, locataireId, sessionToken,
+          user: {
+            id: user.id, role: user.role, nom: user.nom, telephone: user.telephone || '',
+            immeubles: user.immeubles_assignes || user.immeubles || (user.immeuble_id ? [user.immeuble_id] : []),
+            permissions: user.permissions || {}, locataire_id: locataireId, immeuble_id: immeubleId
+          }
+        });
       }
 
       // ── /generate-invite ──────────────────────────────────────
       if (path === '/generate-invite' && request.method === 'POST') {
-        const { tenantId, role, immeubles } = await request.json();
+        const { tenantId, role, immeubles, nom, telephone, locataire_id, immeuble_id, sessionToken } = await request.json();
         if (!tenantId) return json({ error: 'tenantId requis' }, 400);
-        const code = crypto.randomUUID().replace(/-/g,'').substring(0,12).toUpperCase();
+        const payload = await _verifyToken(sessionToken, SESSION_SECRET);
+        if (!payload || payload.tenantId !== tenantId || !['admin','coordinateur','gestionnaire'].includes(payload.role)) {
+          return json({ error: 'Action non autorisée' }, 403);
+        }
+        const finalRole = role || 'gestionnaire';
+        const isPortal = finalRole === 'locataire' || finalRole === 'bailleur';
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const code = Array.from({ length: isPortal ? 6 : 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        if (isPortal) {
+          const codeHash = await _sha256(code);
+          const existingRes = telephone
+            ? await sbFetch('users_app', '?tenant_id=eq.' + tenantId + '&telephone=eq.' + encodeURIComponent(telephone) + '&role=eq.' + finalRole + '&select=id')
+            : null;
+          const existing = existingRes && existingRes.ok ? await existingRes.json() : [];
+          const patch = {
+            password: codeHash,
+            actif: true,
+            date_blocage_auto: null,
+            motif_blocage: null,
+            locataire_id: locataire_id || null,
+            immeuble_id: immeuble_id || null,
+            immeubles_assignes: immeuble_id ? [immeuble_id] : (immeubles || [])
+          };
+          if (existing.length) {
+            await sbFetch('users_app', '?id=eq.' + existing[0].id, 'PATCH', patch);
+          } else {
+            await sbFetch('users_app', '', 'POST', {
+              id: 'u_' + crypto.randomUUID().replace(/-/g,'').substring(0,10),
+              tenant_id: tenantId, role: finalRole,
+              nom: nom || '', telephone: telephone || '',
+              permissions: {}, ...patch
+            });
+          }
+          return json({ success: true, code });
+        }
         await sbFetch('invite_codes', '', 'POST', {
-          code, tenant_id: tenantId, role: role || 'gestionnaire',
+          code, tenant_id: tenantId, role: finalRole,
           immeubles: immeubles || []
         });
         return json({ success: true, code });
@@ -338,39 +550,138 @@ ${_footer()}</body></html>`;
 
       // ── /join ─────────────────────────────────────────────────
       if (path === '/join' && request.method === 'POST') {
-        const { code, nom, password, pin } = await request.json();
+        const { code, nom, password, passwordHash, pin } = await request.json();
         const res = await sbFetch('invite_codes', '?code=eq.' + code + '&used=eq.false&select=*');
         const codes = res.ok ? await res.json() : [];
         if (!codes.length) return json({ error: 'Code invalide ou déjà utilisé' }, 404);
         const inv = codes[0];
         if (new Date(inv.expire_at) < new Date()) return json({ error: 'Code expiré' }, 410);
+        const tenantRes = await sbFetch('tenants', '?id=eq.' + inv.tenant_id + '&select=*');
+        const tenants = tenantRes.ok ? await tenantRes.json() : [];
+        if (!tenants.length) return json({ error: 'Espace introuvable' }, 404);
+        const tenant = tenants[0];
 
         const userId = 'u_' + crypto.randomUUID().replace(/-/g,'').substring(0,10);
         await sbFetch('users_app', '', 'POST', {
           id: userId, tenant_id: inv.tenant_id, role: inv.role,
-          nom, password: password || null, pin: pin || null,
+          nom, password: passwordHash || password || null, pin: pin || null,
           immeubles: inv.immeubles || [], actif: true
         });
         await fetch(sbBase + '/rest/v1/invite_codes?id=eq.' + inv.id, {
           method: 'PATCH', headers: sbHdrs(), body: JSON.stringify({ used: true })
         });
-        return json({ success: true, userId, tenantId: inv.tenant_id, role: inv.role });
+        const sessionToken = await makeToken(inv.tenant_id, userId, inv.role, { immeubles: inv.immeubles || [] });
+        return json({ success: true, userId, tenantId: inv.tenant_id, tenant, role: inv.role, sessionToken });
+      }
+
+      // ── /change-password — chaque utilisateur change son mot de passe ──
+      if (path === '/change-password' && request.method === 'POST') {
+        const { tenantId, sessionToken, currentPasswordHash, newPasswordHash } = await request.json();
+        if (!tenantId || !sessionToken || !currentPasswordHash || !newPasswordHash)
+          return json({ error: 'Champs manquants' }, 400);
+        if (!SESSION_SECRET) return json({ error: 'SESSION_SECRET non configuré' }, 500);
+        if (currentPasswordHash === newPasswordHash)
+          return json({ error: 'Le nouveau mot de passe doit être différent' }, 400);
+
+        const payload = await _verifyToken(sessionToken, SESSION_SECRET);
+        if (!payload || String(payload.tenantId) !== String(tenantId))
+          return json({ error: 'Session invalide' }, 401);
+
+        const userId = payload.userId;
+        const isAdmin = (payload.role || '') === 'admin';
+        let pwdOk = false;
+        let user = null;
+
+        if (userId) {
+          const uRes = await sbFetch('users_app', '?id=eq.' + encodeURIComponent(userId) + '&tenant_id=eq.' + encodeURIComponent(tenantId) + '&select=id,tenant_id,role,password,password_hash&limit=1');
+          const users = uRes.ok ? await uRes.json() : [];
+          user = users[0] || null;
+          const storedUserPwd = user ? (user.password || user.password_hash || '') : '';
+          if (storedUserPwd === currentPasswordHash) pwdOk = true;
+        }
+
+        if (isAdmin) {
+          const tRes = await sbFetch('tenants', '?id=eq.' + encodeURIComponent(tenantId) + '&select=id,password_hash&limit=1');
+          const tenants = tRes.ok ? await tRes.json() : [];
+          const tenant = tenants[0] || null;
+          if (tenant && tenant.password_hash === currentPasswordHash) pwdOk = true;
+          if (!pwdOk) return json({ error: 'Mot de passe actuel incorrect' }, 401);
+          await sbFetch('tenants', '?id=eq.' + encodeURIComponent(tenantId), 'PATCH', { password_hash: newPasswordHash });
+          if (user) await sbFetch('users_app', '?id=eq.' + encodeURIComponent(user.id), 'PATCH', { password: newPasswordHash });
+        } else {
+          if (!user) return json({ error: 'Utilisateur introuvable' }, 404);
+          if (!pwdOk) return json({ error: 'Mot de passe actuel incorrect' }, 401);
+          await sbFetch('users_app', '?id=eq.' + encodeURIComponent(user.id), 'PATCH', { password: newPasswordHash });
+        }
+
+        await logEvent(tenantId, 'info', 'auth.password_change', 'Mot de passe modifié', { userId, role: payload.role });
+        const freshToken = await makeToken(tenantId, userId, payload.role, {
+          immeubles: payload.immeubles || [],
+          locataireId: payload.locataireId || payload.locId || null
+        });
+        return json({ success: true, sessionToken: freshToken });
       }
 
       // ── /db — CRUD proxy ──────────────────────────────────────
       if (path === '/db' && request.method === 'POST') {
         const body = await request.json();
         const action = body.action || body.op;  // v2: action, v1 legacy: op
-        const { table, data, tenantId } = body;
+        const { table, data, tenantId, sessionToken } = body;
         const filters = body.filters || body.filter;
 
         if (!tenantId) return json({ error: 'Session invalide' }, 401);
         if (!ALLOWED_TABLES.includes(table)) return json({ error: 'Table non autorisée: ' + table }, 403);
+        if (!sessionToken) return json({ error: 'Session invalide' }, 401);
+        if (!SESSION_SECRET) return json({ error: 'SESSION_SECRET non configuré' }, 500);
 
-        // Vérifier tenant
-        const tRes = await sbFetch('tenants', '?id=eq.' + tenantId + '&select=id');
-        const tData = tRes.ok ? await tRes.json() : [];
-        if (!tData.length) return json({ error: 'Session invalide' }, 401);
+        const payload = await _verifyToken(sessionToken, SESSION_SECRET);
+        if (!payload || payload.tenantId !== tenantId) return json({ error: 'Session invalide' }, 401);
+
+        const SAFE_KEY = /^[a-zA-Z_][a-zA-Z0-9_]{0,63}$/;
+        const FULL_ACCESS_ROLES = ['admin','proprietaire','coordinateur'];
+        const WRITE_ALLOWED = {
+          gestionnaire: ['locataires','marketplace_annonces','messages_internes','declarations'],
+          comptable: ['paiements','messages_internes'],
+          agent: ['locataires','paiements','marketplace_annonces','messages_internes','declarations'],
+          bailleur: ['messages_internes'],
+          locataire: ['declarations','messages_internes']
+        };
+        async function locIdsForImmeubles(immeubleIds) {
+          const ids = (immeubleIds || []).filter(Boolean).map(String);
+          if (!ids.length) return [];
+          const r = await sbFetch('locataires', '?tenant_id=eq.' + tenantId + '&immeuble_id=in.(' + ids.map(encodeURIComponent).join(',') + ')&select=id');
+          const rows = r.ok ? await r.json() : [];
+          return rows.map(x => String(x.id));
+        }
+        async function inAssignedScope(tableName, rows) {
+          if (FULL_ACCESS_ROLES.includes(payload.role)) return true;
+          if (payload.role === 'comptable') return ['paiements','messages_internes'].includes(tableName);
+          const assigned = (payload.immeubles || []).map(String);
+          if (payload.role === 'locataire') {
+            const locId = String(payload.locataireId || payload.locId || payload.userId || '');
+            if (tableName === 'declarations') return rows.every(r => String(r.locataire_id) === locId);
+            if (tableName === 'messages_internes') return true;
+            return false;
+          }
+          if (payload.role === 'bailleur') return tableName === 'messages_internes';
+          if (payload.role === 'agent' || payload.role === 'gestionnaire') {
+            if (tableName === 'messages_internes') return true;
+            if (!assigned.length) return false;
+            if (tableName === 'locataires' || tableName === 'marketplace_annonces') {
+              return rows.every(r => assigned.includes(String(r.immeuble_id)));
+            }
+            if (tableName === 'paiements' || tableName === 'declarations') {
+              const locIds = await locIdsForImmeubles(assigned);
+              return rows.every(r => locIds.includes(String(r.locataire_id)));
+            }
+          }
+          return false;
+        }
+        async function existingRowsForFilters(tableName, rowFilters) {
+          if (!rowFilters || !rowFilters.id) return [];
+          const r = await sbFetch(tableName, '?tenant_id=eq.' + tenantId + '&id=eq.' + encodeURIComponent(rowFilters.id) + '&select=*');
+          return r.ok ? await r.json() : [];
+        }
 
         let endpoint = sbBase + '/rest/v1/' + table;
         let method = 'GET';
@@ -379,14 +690,51 @@ ${_footer()}</body></html>`;
 
         if (action === 'select') {
           let qs = '?tenant_id=eq.' + tenantId;
-          if (filters) Object.entries(filters).forEach(([k,v]) => { qs += '&' + k + '=eq.' + encodeURIComponent(v); });
+          if (payload.role === 'locataire') {
+            const locId = payload.locataireId || payload.locId || payload.userId;
+            if (table === 'locataires') qs += '&id=eq.' + encodeURIComponent(locId);
+            else if (table === 'paiements' || table === 'declarations') qs += '&locataire_id=eq.' + encodeURIComponent(locId);
+            else if (table === 'messages_internes') qs += '&or=(pour_user_id.eq.' + encodeURIComponent(payload.userId) + ',de_user_id.eq.' + encodeURIComponent(payload.userId) + ')';
+            else if (table !== 'parametres') return json({ success: true, data: [], ok: true });
+          } else if (!FULL_ACCESS_ROLES.includes(payload.role)) {
+            const assigned = payload.immeubles || [];
+            if (payload.role === 'comptable') {
+              if (!['immeubles','locataires','paiements','messages_internes','parametres'].includes(table)) return json({ success: true, data: [], ok: true });
+            } else if (payload.role === 'agent' || payload.role === 'bailleur' || payload.role === 'gestionnaire') {
+              if (assigned.length && table === 'immeubles') {
+                qs += '&id=in.(' + assigned.map(encodeURIComponent).join(',') + ')';
+              } else if (assigned.length && (table === 'locataires' || table === 'marketplace_annonces')) {
+                qs += '&immeuble_id=in.(' + assigned.map(encodeURIComponent).join(',') + ')';
+              } else if (assigned.length && (table === 'paiements' || table === 'declarations')) {
+                const locIds = await locIdsForImmeubles(assigned);
+                if (!locIds.length) return json({ success: true, data: [], ok: true });
+                qs += '&locataire_id=in.(' + locIds.map(encodeURIComponent).join(',') + ')';
+              } else if (table === 'messages_internes') {
+                qs += '&or=(pour_user_id.eq.' + encodeURIComponent(payload.userId) + ',de_user_id.eq.' + encodeURIComponent(payload.userId) + ')';
+              } else if (table !== 'parametres') {
+                return json({ success: true, data: [], ok: true });
+              }
+            } else if (table === 'messages_internes') {
+              qs += '&or=(pour_user_id.eq.' + encodeURIComponent(payload.userId) + ',de_user_id.eq.' + encodeURIComponent(payload.userId) + ')';
+            } else if (table !== 'parametres') {
+              return json({ success: true, data: [], ok: true });
+            }
+          }
+          if (filters) Object.entries(filters).forEach(([k,v]) => {
+            if (SAFE_KEY.test(k)) qs += '&' + k + '=eq.' + encodeURIComponent(v);
+          });
           // Tables sans created_at : order by id
           const NO_CREATED_AT = ['declarations','corbeille'];
-          qs += '&select=*&order=' + (NO_CREATED_AT.includes(table) ? 'id.asc' : 'created_at.asc');
+          const selectFields = table === 'users_app'
+            ? 'id,tenant_id,role,nom,telephone,email,actif,immeubles,immeubles_assignes,permissions,locataire_id,immeuble_id,created_at'
+            : '*';
+          qs += '&select=' + selectFields + '&order=' + (NO_CREATED_AT.includes(table) ? 'id.asc' : 'created_at.asc');
           endpoint += qs;
 
         } else if (action === 'upsert') {
+          if (WRITE_ALLOWED[payload.role] && !WRITE_ALLOWED[payload.role].includes(table)) return json({ error: 'Action non autorisée' }, 403);
           const rows = Array.isArray(data) ? data : [data];
+          if (!(await inAssignedScope(table, rows))) return json({ error: 'Action hors périmètre' }, 403);
           const withTenant = rows.map(r => ({ ...r, tenant_id: tenantId }));
           endpoint += '?on_conflict=id';
           method = 'POST';
@@ -394,16 +742,28 @@ ${_footer()}</body></html>`;
           hdrs['Prefer'] = 'resolution=merge-duplicates,return=representation';
 
         } else if (action === 'insert') {
+          if (WRITE_ALLOWED[payload.role] && !WRITE_ALLOWED[payload.role].includes(table)) return json({ error: 'Action non autorisée' }, 403);
           const rows = Array.isArray(data) ? data : [data];
+          if (!(await inAssignedScope(table, rows))) return json({ error: 'Action hors périmètre' }, 403);
           method = 'POST';
           sbBody = JSON.stringify(rows.map(r => ({ ...r, tenant_id: tenantId })));
 
         } else if (action === 'delete') {
+          if (WRITE_ALLOWED[payload.role] && !WRITE_ALLOWED[payload.role].includes(table)) return json({ error: 'Action non autorisée' }, 403);
+          if (!FULL_ACCESS_ROLES.includes(payload.role)) {
+            const existing = await existingRowsForFilters(table, filters);
+            if (!existing.length || !(await inAssignedScope(table, existing))) return json({ error: 'Action hors périmètre' }, 403);
+          }
           const delId = filters?.id;
           endpoint += '?tenant_id=eq.' + tenantId + '&id=eq.' + delId;
           method = 'DELETE';
 
         } else if (action === 'update' || action === 'patch') {
+          if (WRITE_ALLOWED[payload.role] && !WRITE_ALLOWED[payload.role].includes(table)) return json({ error: 'Action non autorisée' }, 403);
+          if (!FULL_ACCESS_ROLES.includes(payload.role)) {
+            const existing = await existingRowsForFilters(table, filters);
+            if (!existing.length || !(await inAssignedScope(table, existing))) return json({ error: 'Action hors périmètre' }, 403);
+          }
           endpoint += '?tenant_id=eq.' + tenantId + '&id=eq.' + filters.id;
           method = 'PATCH';
           sbBody = JSON.stringify(data);
@@ -418,6 +778,30 @@ ${_footer()}</body></html>`;
         const result = await res.json();
         if (!res.ok) return json({ error: 'Erreur base de données', detail: result }, 500);
         return json({ success: true, data: result, ok: true });
+      }
+
+      // ── /upload — proxy Supabase Storage (clé jamais côté client) ─
+      if (path === '/upload' && request.method === 'POST') {
+        const fd = await request.formData();
+        const file = fd.get('file');
+        const filePath = fd.get('path');
+        const tenantId = fd.get('tenantId');
+        const sessionToken = fd.get('sessionToken');
+        if (!tenantId || !file || !filePath) return json({ error: 'Paramètres manquants' }, 400);
+        if (!SESSION_SECRET) return json({ error: 'SESSION_SECRET non configuré' }, 500);
+        const payload = await _verifyToken(sessionToken, SESSION_SECRET);
+        if (!payload || payload.tenantId !== tenantId) return json({ error: 'Session invalide' }, 401);
+        if (!/^[a-zA-Z0-9_./-]+$/.test(String(filePath)) || String(filePath).includes('..')) {
+          return json({ error: 'Chemin fichier invalide' }, 400);
+        }
+        const sbUrl = env.SUPABASE_URL || SUPABASE_URL_DEFAULT;
+        const upRes = await fetch(sbUrl + '/storage/v1/object/marketplace/' + filePath, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_KEY, 'Content-Type': file.type || 'image/jpeg' },
+          body: file
+        });
+        if (!upRes.ok) return json({ error: 'Erreur upload' }, 500);
+        return json({ url: sbUrl + '/storage/v1/object/public/marketplace/' + filePath });
       }
 
       // ── /ai ───────────────────────────────────────────────────
@@ -462,29 +846,13 @@ ${_footer()}</body></html>`;
         }
       }
 
-      // ── /payment-init ─────────────────────────────────────────
+      // ── Anciennes routes paiement désactivées : Fapshi uniquement ──
       if (path === '/payment-init' && request.method === 'POST') {
-        const { amount, email, phone, description, reference, tenantId } = await request.json();
-        const pk = env.NOTCHPAY_PK;
-        if (!pk) return json({ error: 'NotchPay non configuré' }, 500);
-        const res = await fetch('https://api.notchpay.co/payments/initialize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': pk },
-          body: JSON.stringify({ amount, currency: 'XAF', email, phone, description, reference,
-            callback: 'https://immogest-34w.pages.dev/?notchpay_ref=' + reference })
-        });
-        const d = await res.json();
-        return json({ success: true, authorization_url: d.transaction?.authorization_url, reference });
+        return json({ error: 'Route désactivée. Utilisez /fapshi-init.' }, 410);
       }
 
-      // ── /payment-check ────────────────────────────────────────
       if (path === '/payment-check' && request.method === 'GET') {
-        const ref = url.searchParams.get('ref');
-        const pk = env.NOTCHPAY_PK;
-        if (!pk) return json({ error: 'NotchPay non configuré' }, 500);
-        const res = await fetch('https://api.notchpay.co/payments/' + ref, { headers: { 'Authorization': pk } });
-        const d = await res.json();
-        return json({ success: true, status: d.transaction?.status, transaction: d.transaction });
+        return json({ error: 'Route désactivée. Utilisez /fapshi-check.' }, 410);
       }
 
       // ── /wa-impayes ───────────────────────────────────────────
@@ -501,7 +869,8 @@ ${_footer()}</body></html>`;
       // ── /migrate — DDL via Supabase Management API ────────────
       if (path === '/migrate' && request.method === 'POST') {
         const { ownerToken, sql } = await request.json();
-        const OWNER_TOKEN = env.OWNER_TOKEN || '8237a8d86b7038877840cd600b135f4edc8966be05cf3ba12727535f2670c058';
+        const OWNER_TOKEN = env.OWNER_TOKEN;
+        if (!OWNER_TOKEN) return json({ error: 'OWNER_TOKEN non configuré' }, 500);
         if (ownerToken !== OWNER_TOKEN) return json({ error: 'Accès refusé' }, 403);
         const pat = env.SUPABASE_PAT;
         if (!pat) return json({ error: 'SUPABASE_PAT non configuré' }, 500);
@@ -520,8 +889,9 @@ ${_footer()}</body></html>`;
       // ── /fapshi-init — proxy Fapshi initiate-pay ─────────────
       if (path === '/fapshi-init' && request.method === 'POST') {
         const { amount, email, tenantId, planId, duree, ref } = await request.json();
-        const FAPSHI_KEY  = env.FAPSHI_APIKEY  || 'FAK_49b4bbee5088be50e98dfcb21120cd7b';
-        const FAPSHI_USER = env.FAPSHI_APIUSER || 'bd0c1e07-3ae4-4009-a1b9-3946225e1291';
+        const FAPSHI_KEY  = env.FAPSHI_APIKEY;
+        const FAPSHI_USER = env.FAPSHI_APIUSER;
+        if (!FAPSHI_KEY || !FAPSHI_USER) return json({ error: 'Fapshi non configuré' }, 500);
         const FAPSHI_BASE = 'https://live.fapshi.com';
         const dureeLabel  = duree === 1 ? '1 mois' : duree === 12 ? '1 an' : duree + ' mois';
         const body = {
@@ -546,8 +916,9 @@ ${_footer()}</body></html>`;
       if (path === '/fapshi-check' && request.method === 'GET') {
         const transId     = url.searchParams.get('transId');
         if (!transId) return json({ error: 'transId requis' }, 400);
-        const FAPSHI_KEY  = env.FAPSHI_APIKEY  || 'FAK_49b4bbee5088be50e98dfcb21120cd7b';
-        const FAPSHI_USER = env.FAPSHI_APIUSER || 'bd0c1e07-3ae4-4009-a1b9-3946225e1291';
+        const FAPSHI_KEY  = env.FAPSHI_APIKEY;
+        const FAPSHI_USER = env.FAPSHI_APIUSER;
+        if (!FAPSHI_KEY || !FAPSHI_USER) return json({ error: 'Fapshi non configuré' }, 500);
         const res = await fetch('https://live.fapshi.com/payment-status/' + transId, {
           headers: { apiuser: FAPSHI_USER, apikey: FAPSHI_KEY }
         });
@@ -557,8 +928,20 @@ ${_footer()}</body></html>`;
 
       // ── /activate-plan — activer plan après paiement Fapshi ───
       if (path === '/activate-plan' && request.method === 'POST') {
-        const { planId, ref, duree, tenantId } = await request.json();
-        if (!planId || !tenantId) return json({ error: 'planId + tenantId requis' }, 400);
+        const { planId, ref, duree, tenantId, transId, sessionToken } = await request.json();
+        if (!planId || !tenantId || !transId) return json({ error: 'planId + tenantId + transId requis' }, 400);
+        if (!SESSION_SECRET) return json({ error: 'SESSION_SECRET non configuré' }, 500);
+        const payload = sessionToken ? await _verifyToken(sessionToken, SESSION_SECRET) : null;
+        if (!payload || payload.tenantId !== tenantId) return json({ error: 'Session invalide' }, 401);
+        const FAPSHI_KEY  = env.FAPSHI_APIKEY;
+        const FAPSHI_USER = env.FAPSHI_APIUSER;
+        if (!FAPSHI_KEY || !FAPSHI_USER) return json({ error: 'Fapshi non configuré' }, 500);
+        const chk = await fetch('https://live.fapshi.com/payment-status/' + encodeURIComponent(transId), {
+          headers: { apiuser: FAPSHI_USER, apikey: FAPSHI_KEY }
+        });
+        const pay = await chk.json().catch(() => ({}));
+        if (!chk.ok) return json({ error: pay.message || pay.error || 'Vérification Fapshi échouée' }, 400);
+        if (String(pay.status || '').toUpperCase() !== 'SUCCESSFUL') return json({ error: 'Paiement non confirmé', status: pay.status || 'PENDING' }, 402);
         const dureeJours  = (duree || 1) === 12 ? 365 : (duree || 1) * 31;
         const planExpire  = new Date(Date.now() + dureeJours * 86400000).toISOString();
         const r = await fetch(sbBase + '/rest/v1/tenants?id=eq.' + tenantId, {
@@ -567,7 +950,7 @@ ${_footer()}</body></html>`;
           body: JSON.stringify({ plan: planId, plan_expire: planExpire })
         });
         if (!r.ok) return json({ error: 'Mise à jour plan échouée' }, 500);
-        await logEvent(tenantId, 'info', 'plan.activated', 'Plan activé: ' + planId, { ref, duree });
+        await logEvent(tenantId, 'info', 'plan.activated', 'Plan activé: ' + planId, { ref, duree, transId });
         return json({ success: true, plan: planId, plan_expire: planExpire });
       }
 
@@ -604,7 +987,8 @@ ${_footer()}</body></html>`;
       // ── /owner ────────────────────────────────────────────────
       if (path.startsWith('/owner') && request.method === 'POST') {
         const { ownerToken, action } = await request.json();
-        const OWNER_TOKEN = env.OWNER_TOKEN || '8237a8d86b7038877840cd600b135f4edc8966be05cf3ba12727535f2670c058';
+        const OWNER_TOKEN = env.OWNER_TOKEN;
+        if (!OWNER_TOKEN) return json({ error: 'OWNER_TOKEN non configuré' }, 500);
         if (ownerToken !== OWNER_TOKEN) return json({ error: 'Accès refusé' }, 403);
 
         if (action === 'stats') {
@@ -675,6 +1059,44 @@ ${_footer()}</body></html>`;
           return json({ success: true, promos: r.ok ? await r.json() : [] });
         }
 
+        if (action === 'owner_messages') {
+          const r = await sbFetch('messages_internes', '?select=*&or=(pour_user_id.eq.__OWNER__,destinataire_id.eq.__OWNER__,pour_user_id.is.null)&order=created_at.desc&limit=200');
+          return json({ success: true, messages: r.ok ? await r.json() : [] });
+        }
+
+        if (action === 'owner_mark_read') {
+          const { msgId } = body;
+          if (!msgId) return json({ error: 'msgId requis' }, 400);
+          const r0 = await sbFetch('messages_internes', '?id=eq.' + encodeURIComponent(msgId) + '&select=lu_par&limit=1');
+          const rows = r0.ok ? await r0.json() : [];
+          const luPar = Array.isArray(rows[0]?.lu_par) ? rows[0].lu_par : [];
+          if (!luPar.includes('__OWNER__')) luPar.push('__OWNER__');
+          const r = await sbFetch('messages_internes', '?id=eq.' + encodeURIComponent(msgId), 'PATCH', { lu: true, lu_par: luPar });
+          if (!r.ok) return json({ error: 'Marquage lecture échoué' }, 500);
+          return json({ success: true });
+        }
+
+        if (action === 'owner_reply') {
+          const { tenant_id, pour_user_id, pour_nom, sujet, contenu } = body;
+          if (!tenant_id || !pour_user_id || !contenu) return json({ error: 'tenant_id + pour_user_id + contenu requis' }, 400);
+          const msg = {
+            tenant_id,
+            sujet: sujet && String(sujet).startsWith('Re:') ? sujet : 'Re: ' + (sujet || 'Message'),
+            contenu,
+            de_user_id: '__OWNER__',
+            de_nom: 'ImmoGest Support',
+            pour_user_id,
+            pour_nom: pour_nom || pour_user_id,
+            expediteur_id: '__OWNER__',
+            destinataire_id: pour_user_id,
+            lu: false,
+            lu_par: []
+          };
+          const r = await sbFetch('messages_internes', '', 'POST', msg);
+          if (!r.ok) return json({ error: 'Réponse owner échouée' }, 500);
+          return json({ success: true });
+        }
+
         return json({ error: 'Action inconnue' }, 400);
       }
 
@@ -695,22 +1117,33 @@ ${_footer()}</body></html>`;
 
       // ── /push-notify ──────────────────────────────────────────
       if (path === '/push-notify' && request.method === 'POST') {
-        const { tenantId, title, body: notifBody, url: notifUrl, ownerToken } = await request.json();
-        const OWNER_TOKEN = env.OWNER_TOKEN || '8237a8d86b7038877840cd600b135f4edc8966be05cf3ba12727535f2670c058';
-        // Peut être appelé par l'owner ou par un tenant authentifié
-        if (ownerToken && ownerToken !== OWNER_TOKEN) return json({ error: 'Accès refusé' }, 403);
+        const { tenantId, title, body: notifBody, url: notifUrl, ownerToken, sessionToken, externalUserId, data } = await request.json();
+        const OWNER_TOKEN = env.OWNER_TOKEN;
+        let actorTenant = tenantId || '';
+        if (ownerToken) {
+          if (!OWNER_TOKEN || ownerToken !== OWNER_TOKEN) return json({ error: 'Accès refusé' }, 403);
+        } else {
+          if (!SESSION_SECRET) return json({ error: 'SESSION_SECRET non configuré' }, 500);
+          const payload = await _verifyToken(sessionToken, SESSION_SECRET);
+          if (!payload || !payload.tenantId) return json({ error: 'Session invalide' }, 401);
+          actorTenant = payload.tenantId;
+          if (tenantId && tenantId !== payload.tenantId) return json({ error: 'Tenant non autorisé' }, 403);
+        }
 
         const appId = env.ONESIGNAL_APP_ID;
         const restKey = env.ONESIGNAL_REST_KEY;
         if (!appId || !restKey) return json({ error: 'OneSignal non configuré' }, 500);
+        if (!externalUserId && !actorTenant) return json({ error: 'Cible notification requise' }, 400);
 
         const payload = {
           app_id: appId,
           headings: { fr: title || 'ImmoGest', en: title || 'ImmoGest' },
           contents: { fr: notifBody || 'Nouvelle notification', en: notifBody || 'New notification' },
           url: notifUrl || 'https://immogest-34w.pages.dev/',
-          filters: tenantId ? [{ field: 'tag', key: 'tenant_id', relation: '=', value: tenantId }] : undefined,
-          included_segments: tenantId ? undefined : ['All']
+          data: data || {},
+          include_aliases: externalUserId ? { external_id: [String(externalUserId)] } : undefined,
+          target_channel: externalUserId ? 'push' : undefined,
+          filters: externalUserId ? undefined : [{ field: 'tag', key: 'tenant_id', relation: '=', value: actorTenant }]
         };
 
         const osRes = await fetch('https://onesignal.com/api/v1/notifications', {
@@ -720,7 +1153,7 @@ ${_footer()}</body></html>`;
         });
         const osData = await osRes.json();
         if (osData.errors && osData.errors.length) return json({ error: osData.errors[0] }, 500);
-        await logEvent(tenantId || 'owner', 'info', 'push.sent', title || 'Notification', { recipients: osData.recipients });
+        await logEvent(actorTenant || 'owner', 'info', 'push.sent', title || 'Notification', { recipients: osData.recipients });
         return json({ success: true, id: osData.id, recipients: osData.recipients });
       }
 

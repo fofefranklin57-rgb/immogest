@@ -10,7 +10,42 @@ window.IG.ads = (function() {
   var META_ID = window.IG.config ? window.IG.config.monetagMeta : 'd9b7d2935fbcb3e568288a4ff0852e32';
   var _injected = false;
 
+  function _planActuel() {
+    return window.IG.plans ? window.IG.plans.getPlan() : 'gratuit';
+  }
+
+  function _sessionRole() {
+    var s = window.IG.auth && window.IG.auth.getSession ? window.IG.auth.getSession() : {};
+    return (s && s.role ? String(s.role).toLowerCase() : '');
+  }
+
+  function _audienceBailleurLocataire() {
+    var role = _sessionRole();
+    return role === 'bailleur' || role === 'locataire';
+  }
+
+  function _pubGestionGratuite() {
+    return _planActuel() === 'gratuit' && !_audienceBailleurLocataire();
+  }
+
+  function _adsAllowed() {
+    return _pubGestionGratuite() || _audienceBailleurLocataire();
+  }
+
+  function _slotAllowed(containerId) {
+    if (!_adsAllowed()) return false;
+    if (!_audienceBailleurLocataire()) return true;
+    return [
+      'ai-ad-banner',
+      'ig-dash-ad',
+      'ig-ad-portail',
+      'ig-ad-portail-loc',
+      'ig-ad-mafiche'
+    ].includes(containerId);
+  }
+
   function _injecterScript() {
+    if (!_adsAllowed()) return;
     if (_injected) return;
     _injected = true;
     var s = document.createElement('script');
@@ -21,10 +56,14 @@ window.IG.ads = (function() {
   }
 
   function init() {
-    // Publicités désactivées
+    if (!_adsAllowed()) {
+      surUpgrade();
+      return;
+    }
   }
 
   function _injecterBanniereFixe() {
+    if (!_pubGestionGratuite()) return;
     if (document.getElementById('ig-fixed-ad')) return;
 
     var wrap = document.createElement('div');
@@ -57,6 +96,7 @@ window.IG.ads = (function() {
   }
 
   function _injecterPromoIA() {
+    if (!_slotAllowed('ai-ad-banner')) return;
     var tries = 0;
     var iv = setInterval(function() {
       var b = document.getElementById('ai-ad-banner');
@@ -74,6 +114,7 @@ window.IG.ads = (function() {
   var VIGNETTE_ZONE_ID = '11135220';
 
   function _injecterVignette() {
+    if (!_pubGestionGratuite()) return;
     if (document.getElementById('monetag-vignette')) return;
     var s = document.createElement('script');
     s.id = 'monetag-vignette';
@@ -85,6 +126,7 @@ window.IG.ads = (function() {
   }
 
   function _injecterBanniereIA() {
+    if (!_slotAllowed('ai-ad-banner')) return;
     // Injecte le script In-Page Push une seule fois (peut déjà être chargé par portail)
     if (document.getElementById('monetag-ipp-app')) return;
     var s = document.createElement('script');
@@ -115,6 +157,7 @@ window.IG.ads = (function() {
   }
 
   function _afficherBandeauUpgrade() {
+    if (!_pubGestionGratuite()) return;
     if (document.getElementById('ig-upgrade-bandeau')) return;
     var div = document.createElement('div');
     div.id = 'ig-upgrade-bandeau';
@@ -135,9 +178,10 @@ window.IG.ads = (function() {
   function rendreBlocPub(containerId) {
     var el = document.getElementById(containerId);
     if (!el) return;
-    var plan = window.IG.plans ? window.IG.plans.getPlan() : 'gratuit';
+    var plan = _planActuel();
+    if (!_slotAllowed(containerId)) { el.style.display = 'none'; return; }
     // Seulement sur plan gratuit (pas essai, pas payant)
-    if (plan !== 'gratuit') { el.style.display = 'none'; return; }
+    if (plan !== 'gratuit' && !_audienceBailleurLocataire()) { el.style.display = 'none'; return; }
 
     el.className = 'ig-ad-zone';
     el.style.cssText = 'margin:16px 0;border-radius:12px;overflow:hidden;min-height:100px;background:var(--bg2);border:1px solid var(--border);';
@@ -158,13 +202,13 @@ window.IG.ads = (function() {
 
   // ── Widget usage sidebar ──────────────────────────────────────
   function renderUsageWidget() {
-    var plan = window.IG.plans ? window.IG.plans.getPlan() : 'gratuit';
+    var plan = _planActuel();
     var footer = document.querySelector('.sidebar-footer');
     if (!footer) return;
 
     var existing = document.getElementById('ig-usage-widget');
     // Masquer pour essai ET plans payants
-    if (plan !== 'gratuit') { if (existing) existing.remove(); return; }
+    if (plan !== 'gratuit' || _audienceBailleurLocataire()) { if (existing) existing.remove(); return; }
 
     // Afficher le badge essai si applicable
     var joursRestants = window.IG.plans ? window.IG.plans.getJoursEssaiRestants() : 0;
@@ -246,7 +290,7 @@ window.IG.ads = (function() {
 
   // ── Score locataire flou si plan gratuit ──────────────────────
   function scoreDisplay(score) {
-    var plan = window.IG.plans ? window.IG.plans.getPlan() : 'gratuit';
+    var plan = _planActuel();
     if (plan !== 'gratuit') {
       var col = score >= 80 ? 'var(--green)' : score >= 50 ? 'var(--yellow)' : 'var(--red)';
       return '<span style="font-weight:700;color:' + col + '">' + score + '/100</span>';
@@ -257,7 +301,7 @@ window.IG.ads = (function() {
 
   // ── Bandeau expiration abonnement ─────────────────────────────
   function checkExpiry() {
-    var plan = window.IG.plans ? window.IG.plans.getPlan() : 'gratuit';
+    var plan = _planActuel();
     if (plan === 'gratuit') return;
 
     var raw = localStorage.getItem('ig_subscription');
@@ -316,6 +360,7 @@ window.IG.ads = (function() {
   }
 
   function _injecterAdsterra(containerId) {
+    if (!_slotAllowed(containerId)) return;
     var container = document.getElementById(containerId);
     if (!container) return;
     var isIA = containerId === 'ai-ad-banner';
@@ -346,6 +391,7 @@ window.IG.ads = (function() {
 
   // ── Adsterra dashboard — re-injectable à chaque render ───────
   function injecterAdDash(containerId) {
+    if (!_slotAllowed(containerId)) return;
     var container = document.getElementById(containerId);
     if (!container || container.querySelector('script')) return;
     var cfg = document.createElement('script');
@@ -359,6 +405,7 @@ window.IG.ads = (function() {
 
   // ── Monetag zones numériques (Banner / Native) ───────────────
   function injecterMonetag(containerId, zoneId) {
+    if (!_slotAllowed(containerId)) return;
     var container = document.getElementById(containerId);
     if (!container) return;
     if (container.querySelector('script[data-zone="' + zoneId + '"]')) return;
@@ -372,6 +419,7 @@ window.IG.ads = (function() {
 
   // ── Bannière promo maison (fallback si pub pas chargée) ──────
   function rendreBannierePromo(containerId) {
+    if (!_slotAllowed(containerId)) return;
     var parent = document.getElementById(containerId);
     if (!parent) return;
     var existing = parent.querySelector('.ig-promo-banner');
@@ -392,6 +440,7 @@ window.IG.ads = (function() {
 
   // ── Slot iframe — compatible SPA (chargement frais à chaque navigation) ──
   function injecterSlot(containerId, zone) {
+    if (!_slotAllowed(containerId)) return;
     var container = document.getElementById(containerId);
     if (!container) return;
     var key, src, extra = '', iw, ih;

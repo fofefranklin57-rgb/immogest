@@ -2,7 +2,7 @@
 
 ## 1. Supabase (Base de données + Storage)
 - **URL** : `https://uggxfmwpttfsfcirmeqx.supabase.co`
-- **Anon key** : `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZ3hmbXdwdHRmc2ZjaXJtZXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNTA4MjIsImV4cCI6MjA5NDYyNjgyMn0.l8iYlJHOt6evNlBQ3zRskZasn_J2BjAUs1l2vKOZNvY`
+- **Anon key** : à récupérer dans Supabase si nécessaire, ne pas committer de vraie clé
 - **Storage bucket** : `marketplace` (doit être Public)
 - **Accès DB** : via Cloudflare Worker `/db` (jamais directement depuis le client sauf Storage)
 - **Statut** : ✅ Actif — 27 tables V2
@@ -42,20 +42,20 @@
 
 ## 5. OneSignal (Push notifications)
 - **App ID** : `8a3857ab-64cc-4a62-9916-ce46b4768dac`
-- **REST Key** : dans wrangler.toml vars
+- **REST Key** : secret Cloudflare `ONESIGNAL_REST_KEY`
 - **SDK Worker** : `OneSignalSDKWorker.js` (racine)
 - **Usage** : notifications push relances loyer, confirmations paiement
 - **Statut** : ✅ Configuré
 
 ## 6. CamPay (Mobile Money Cameroun)
 - **Env** : `demo` (pas encore en production)
-- **API Key** : `FAK_cbc4bca6ea0ddf6e23d57ab438b93a4a`
-- **User** : `fofefranklin57@gmail.com`
+- **API Key** : secret Cloudflare `FAPSHI_APIKEY`
+- **User** : secret Cloudflare `FAPSHI_APIUSER`
 - **Base URL** : `https://live.fapshi.com`
 - **Statut** : ⚠️ En test (mode demo)
 
-## 7. NotchPay (Paiement alternatif)
-- **Clé publique** : dans wrangler secrets (`NOTCHPAY_PK`)
+## 7. Paiement en ligne
+- **Prestataire actif** : Fapshi
 - **Usage** : paiement abonnements ImmoGest
 - **Statut** : ⚠️ Configuré, non testé en prod
 
@@ -78,14 +78,13 @@
 - **Statut** : ✅ Actif
 
 ## 11. Fapshi (Paiement)
-- **API Key** : `FAK_cbc4bca6ea0ddf6e23d57ab438b93a4a`
+- **API Key** : secret Cloudflare `FAPSHI_APIKEY`
 - **Statut** : ⚠️ En test
 
 ## Variables d'environnement Worker (wrangler.toml)
 ```toml
 ONESIGNAL_APP_ID   = "8a3857ab-64cc-4a62-9916-ce46b4768dac"
 SUPABASE_URL       = "https://uggxfmwpttfsfcirmeqx.supabase.co"
-SUPABASE_KEY       = "eyJ..." (anon key)
 CAMPAY_ENV         = "demo"
 ```
 
@@ -94,7 +93,9 @@ CAMPAY_ENV         = "demo"
 SUPABASE_SERVICE_KEY  — clé service_role Supabase
 CAMPAY_TOKEN          — token CamPay permanent
 CAMPAY_WEBHOOK_KEY    — webhook CamPay
-NOTCHPAY_PK           — clé publique NotchPay
 ANTHROPIC_API_KEY     — clé Claude
 ONESIGNAL_REST_KEY    — REST key OneSignal
+SESSION_SECRET        — secret long pour signer les sessions
+FAPSHI_APIKEY         — clé API Fapshi
+FAPSHI_APIUSER        — identifiant API Fapshi
 ```

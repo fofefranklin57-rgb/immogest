@@ -91,7 +91,8 @@ window.IG.auth = (function() {
       telephone:   data.tenant.telephone,
       parametres:  data.tenant.parametres || {},
       loginAt:     Date.now(),
-      locale:      data.tenant.locale || null
+      locale:      data.tenant.locale || null,
+      sessionToken: data.sessionToken || null
     };
     _saveSession(session);
 
@@ -119,7 +120,9 @@ window.IG.auth = (function() {
     SESSION.userId    = data.user.id;
     SESSION.role      = data.user.role;
     SESSION.nom       = data.user.nom;
-    SESSION.immeubles = data.user.immeubles || [];
+    SESSION.immeubles = data.user.immeubles_assignes || data.user.immeubles || [];
+    SESSION.permissions = data.user.permissions || {};
+    SESSION.sessionToken = data.sessionToken || SESSION.sessionToken || null;
     _saveSession(SESSION);
     return SESSION;
   }
@@ -149,6 +152,8 @@ window.IG.auth = (function() {
       loginAt:     Date.now(),
       locale:      data.tenant.locale || null,
       locataireId: data.locataireId || null,
+      immeubles:   data.user && data.user.immeubles ? data.user.immeubles : [],
+      permissions: data.user && data.user.permissions ? data.user.permissions : {},
       sessionToken: data.sessionToken || null
     };
     _saveSession(session);
@@ -181,6 +186,8 @@ window.IG.auth = (function() {
       loginAt:     Date.now(),
       locale:      data.tenant.locale || null,
       locataireId: data.locataireId || null,
+      immeubles:   data.user && data.user.immeubles ? data.user.immeubles : [],
+      permissions: data.user && data.user.permissions ? data.user.permissions : {},
       sessionToken: data.sessionToken || null
     };
     _saveSession(session);
@@ -212,7 +219,8 @@ window.IG.auth = (function() {
       parametres:  data.tenant.parametres || {},
       loginAt:     Date.now(),
       locale:      data.tenant.locale || null,
-      locataireId: data.locataireId || null
+      locataireId: data.locataireId || null,
+      sessionToken: data.sessionToken || null
     };
     _saveSession(session);
 
@@ -221,6 +229,31 @@ window.IG.auth = (function() {
     }
 
     return session;
+  }
+
+  // ── Changer le mot de passe de l'utilisateur connecté ─────────
+  async function changePassword(currentPassword, newPassword) {
+    if (!SESSION || !SESSION.tenantId || !SESSION.sessionToken) throw new Error('Session invalide');
+    var currentPasswordHash = await _hash(currentPassword);
+    var newPasswordHash = await _hash(newPassword);
+    var wUrl = window.IG.config.workerUrl;
+    var res = await fetch(wUrl + '/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tenantId: SESSION.tenantId,
+        sessionToken: SESSION.sessionToken,
+        currentPasswordHash,
+        newPasswordHash
+      })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Mot de passe non modifié');
+    if (data.sessionToken) {
+      SESSION.sessionToken = data.sessionToken;
+      _saveSession(SESSION);
+    }
+    return data;
   }
 
   // ── Déconnexion ───────────────────────────────────────────────
@@ -248,7 +281,7 @@ window.IG.auth = (function() {
   }
 
   return {
-    register, login, loginUnified, loginUser, loginPortal, join, logout,
+    register, login, loginUnified, loginUser, loginPortal, join, changePassword, logout,
     getSession, getTenantId, isLoggedIn, hasRole,
     init, ROLES
   };

@@ -1462,10 +1462,10 @@ async function confirmerUpgradeAgent(id) {
   err.style.display='none';
   btn.disabled=true; btn.textContent='⏳ Initialisation paiement…';
   try {
-    var ref = await _notchpayInit(tel, 5000, 'XAF', 'Agent Pro ImmoGest — ' + id, 'upgrade_' + id + '_' + Date.now());
-    if (!ref) throw new Error('Paiement non initialisé');
+    var payment = await _fapshiInit(tel, 5000, 'Agent Pro ImmoGest — ' + id, 'upgrade_' + id + '_' + Date.now());
+    if (!payment || !payment.transId) throw new Error('Paiement non initialisé');
     btn.textContent='⏳ En attente de confirmation…';
-    var ok = await _notchpayPoll(ref, 120);
+    var ok = await _fapshiPoll(payment.transId, 120);
     if (!ok) throw new Error('Paiement non confirmé ou expiré');
     await sb.from('agents').update({ plan:'pro', badge_pro:true }).eq('id', id);
     var a = _agents.find(function(x){ return x.id===id; });
@@ -1543,63 +1543,60 @@ function ouvrir3D(url) {
   document.body.appendChild(ov);
 }
 
-// ── NotchPay — helpers paiement ───────────────────────────────
-var _NOTCHPAY_PK = 'pk.tUNTim9P4CegA7U4mi1lHGuVWHZRGIP2K2malINDMc0p3hrMlboEF9mHI7yaC7tctAQ9Vu1VfVy2YSI0dlY6Za8RQPTHJiNIfIW4xZS9Mm9uGzuksmQluS12IbR9d';
+// ── Fapshi — helpers paiement via Worker Cloudflare ───────────
+var _PAYMENT_WORKER = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || 'https://immogest1.fofefranklin57.workers.dev';
 
-// Initialise un paiement NotchPay — retourne la référence ou null
-async function _notchpayInit(phone, amount, currency, description, reference) {
+// Initialise un paiement Fapshi — retourne { link, transId }
+async function _fapshiInit(phone, amount, description, reference) {
   // Normaliser le numéro : ajouter +237 si pas de préfixe international
   var tel = phone.replace(/\s/g,'');
   if (!tel.startsWith('+')) tel = '+237' + tel.replace(/^00237/, '');
   try {
-    var res = await fetch('https://api.notchpay.co/payments/initialize', {
+    var res = await fetch(_PAYMENT_WORKER + '/fapshi-init', {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer ' + _NOTCHPAY_PK,
         'Content-Type':  'application/json',
         'Accept':        'application/json'
       },
       body: JSON.stringify({
-        email:       tel.replace(/\+/g,'') + '@notchpay.user',
+        email:       tel.replace(/\+/g,'') + '@fapshi.user',
         phone:       tel,
         amount:      amount,
-        currency:    currency,
+        planId:      'marketplace',
+        duree:       1,
         description: description,
-        reference:   reference,
-        callback:    'https://immogest-34w.pages.dev/marche.html'
+        tenantId:    reference,
+        reference:   reference
       })
     });
     var data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Erreur NotchPay');
-    // Ouvrir la page de paiement NotchPay dans un nouvel onglet
-    var authUrl = data.authorization_url || (data.transaction && data.transaction.authorization_url);
+    if (!res.ok) throw new Error(data.message || data.error || 'Erreur Fapshi');
+    var authUrl = data.link;
     if (authUrl) window.open(authUrl, '_blank');
-    return data.reference || (data.transaction && data.transaction.reference) || reference;
+    return { transId: data.transId, reference: reference };
   } catch(e) {
-    console.error('NotchPay init error:', e);
+    console.error('Fapshi init error:', e);
     return null;
   }
 }
 
-// Vérifie le statut d'un paiement NotchPay
-async function _notchpayVerify(ref) {
+// Vérifie le statut d'un paiement Fapshi
+async function _fapshiVerify(transId) {
   try {
-    var res = await fetch('https://api.notchpay.co/payments/' + ref, {
-      headers: { 'Authorization': 'Bearer ' + _NOTCHPAY_PK, 'Accept': 'application/json' }
-    });
+    var res = await fetch(_PAYMENT_WORKER + '/fapshi-check?transId=' + encodeURIComponent(transId), { headers: { 'Accept': 'application/json' } });
     var data = await res.json();
-    var status = (data.transaction && data.transaction.status) || data.status || '';
-    return status; // 'complete', 'pending', 'failed', 'canceled'
+    var status = (data.status || '').toUpperCase();
+    return status;
   } catch(e) { return 'error'; }
 }
 
 // Attend la confirmation jusqu'à timeoutSec secondes — retourne true si complete
-async function _notchpayPoll(ref, timeoutSec) {
+async function _fapshiPoll(transId, timeoutSec) {
   var deadline = Date.now() + timeoutSec * 1000;
   while (Date.now() < deadline) {
-    var status = await _notchpayVerify(ref);
-    if (status === 'complete')  return true;
-    if (status === 'failed' || status === 'canceled') return false;
+    var status = await _fapshiVerify(transId);
+    if (status === 'SUCCESSFUL') return true;
+    if (status === 'FAILED' || status === 'EXPIRED' || status === 'CANCELLED') return false;
     await new Promise(function(r){ setTimeout(r, 4000); });
   }
   return false;
@@ -1613,7 +1610,7 @@ function _toastSuccess(msg) {
   setTimeout(function(){ t.remove(); }, 5000);
 }
 
-// ── Boost annonce (paiement NotchPay) ─────────────────────────
+// ── Boost annonce (paiement Fapshi) ───────────────────────────
 var BOOST_PLANS = [
   { id:'basic',   label:'Boosté 7 jours',   prix:2000,  desc:'Position haute + badge ⚡ Boosté' },
   { id:'premium', label:'Premium 30 jours', prix:5000,  desc:'Top position + badge 🏆 Coup de cœur + 10 photos' },
@@ -1688,10 +1685,10 @@ async function confirmerBoost(id) {
   btn.disabled = true; btn.textContent = '⏳ Initialisation paiement…';
   try {
     var desc = 'Boost annonce ' + (plan.id==='premium'?'Premium 30j':'Basic 7j') + ' — #' + id;
-    var ref  = await _notchpayInit(tel, plan.prix, 'XAF', desc, 'boost_' + id + '_' + Date.now());
-    if (!ref) throw new Error('Paiement non initialisé');
+    var payment = await _fapshiInit(tel, plan.prix, desc, 'boost_' + id + '_' + Date.now());
+    if (!payment || !payment.transId) throw new Error('Paiement non initialisé');
     btn.textContent = '⏳ En attente de confirmation…';
-    var ok = await _notchpayPoll(ref, 120);
+    var ok = await _fapshiPoll(payment.transId, 120);
     if (!ok) throw new Error('Paiement non confirmé ou expiré');
     var boostExpiry = new Date(Date.now() + (plan.id==='premium'?30:7)*24*60*60*1000).toISOString();
     await sb.from('annonces').update({ badge_boost:true, boost_plan:plan.id, boost_expiry:boostExpiry }).eq('id', id);

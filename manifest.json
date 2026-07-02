@@ -35,43 +35,6 @@
     }
   ],
   "categories": ["business", "productivity"],
-  "screenshots": [
-    {
-      "src": "/playstore/screenshot1.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Tableau de bord ImmoGest"
-    },
-    {
-      "src": "/playstore/screenshot2.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Gestion des locataires"
-    },
-    {
-      "src": "/playstore/screenshot3.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Paiements Mobile Money"
-    },
-    {
-      "src": "/playstore/screenshot4.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Module Juridique IA"
-    },
-    {
-      "src": "/playstore/screenshot_wide.png",
-      "sizes": "1920x1080",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "ImmoGest sur tablette"
-    }
-  ],
   "shortcuts": [
     {
       "name": "Tableau de bord",

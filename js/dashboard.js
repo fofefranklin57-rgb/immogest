@@ -129,6 +129,10 @@ window.IG.dashboard = (function() {
       '<button onclick="window.IG.app.refresh()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:12px;color:var(--text2)">↻ ' + t('Actualiser') + '</button>' +
       '</div>' +
 
+      _roleInsight(session, data, kpis, nbRetards) +
+
+      _quickStart(data) +
+
       // Slot bannière Adsterra CPM
       '<div id="ig-dash-ad" style="margin-bottom:18px;min-height:90px;border-radius:12px;overflow:hidden;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;position:relative;">' +
       '<span style="position:absolute;top:3px;left:8px;font-size:9px;color:var(--text3);letter-spacing:.05em;text-transform:uppercase;font-weight:600;opacity:.5">Pub</span>' +
@@ -150,13 +154,7 @@ window.IG.dashboard = (function() {
       '<div class="card-header"><div class="card-title">📊 ' + t('Recettes') + ' ' + now.getFullYear() + ' — ' + fmt(kpis.recetteAnnuelle) + '</div></div>' +
       '<div style="padding-top:8px">' + renderGrapheMensuel(kpis.recettesParMois, kpis.loyerTheorique) + '</div>' +
       '</div>' +
-      '<div style="display:flex;flex-direction:column;gap:10px;min-width:200px">' +
-      _actionBtn('🏢', t('Ajouter immeuble'), 'window.IG.immeubles.afficherFormulaire()') +
-      _actionBtn('👤', t('Ajouter locataire'), 'window.IG.locataires.afficherFormulaire()') +
-      _actionBtn('💵', t('Encaisser loyer'), 'window.IG.app.showPage(\'locataires\')') +
-      _actionBtn('📊', t('Rapport mensuel'), 'window.IG.rapports.afficherRapportMensuel()') +
-      (nbRetards > 0 ? _actionBtn('🔔', t('Relances') + ' (' + nbRetards + ')', 'window.IG.app.showPage(\'relances\')', '#B93020') : '') +
-      '</div></div>' +
+      _actionsRapides(nbRetards) + '</div>' +
 
       // 2ème slot pub — Monetag 728x90
       '<div id="ig-dash-ad2" style="margin-bottom:18px;min-height:90px;border-radius:12px;overflow:hidden;background:var(--bg3);border:1px solid var(--border2);position:relative;">' +
@@ -191,6 +189,78 @@ window.IG.dashboard = (function() {
   function _actionBtn(icon, label, onclick, color) {
     return '<button onclick="' + onclick + '" style="padding:11px 16px;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;width:100%;color:' + (color || 'var(--text)') + ';box-shadow:var(--shadow)">' +
       icon + ' ' + label + '</button>';
+  }
+
+  function _can(perm) {
+    return window.IG.perms ? window.IG.perms.canDo(perm) : true;
+  }
+
+  function _actionsRapides(nbRetards) {
+    var actions = [];
+    if (_can('immeubles_edit')) actions.push(_actionBtn('🏢', t('Ajouter immeuble'), 'window.IG.immeubles.afficherFormulaire()'));
+    if (_can('locataires_edit')) actions.push(_actionBtn('👤', t('Ajouter locataire'), 'window.IG.locataires.afficherFormulaire()'));
+    if (_can('paiements')) actions.push(_actionBtn('💵', t('Encaisser loyer'), 'window.IG.app.showPage(\'locataires\')'));
+    if (_can('rapports')) actions.push(_actionBtn('📊', t('Rapport mensuel'), 'window.IG.rapports.afficherRapportMensuel()'));
+    if (_can('locataires') && nbRetards > 0) actions.push(_actionBtn('🔔', t('Relances') + ' (' + nbRetards + ')', 'window.IG.app.showPage(\'relances\')', '#B93020'));
+    if (!actions.length) {
+      actions.push('<div class="card" style="min-width:200px;padding:14px;font-size:12px;color:var(--text3);line-height:1.5">' +
+        t('Votre accès est limité aux informations autorisées par l’administrateur.') + '</div>');
+    }
+    return '<div style="display:flex;flex-direction:column;gap:10px;min-width:200px">' + actions.join('') + '</div>';
+  }
+
+  function _roleInsight(session, data, kpis, nbRetards) {
+    var role = (session.role || 'admin').toLowerCase();
+    if (role === 'admin') return '';
+    var labels = {
+      coordinateur: ['🎯', t('Vue coordinateur'), t('Suivez les immeubles et l’équipe qui vous sont confiés.')],
+      gestionnaire: ['🏘️', t('Vue gestionnaire'), t('Priorité aux locataires, encaissements et relances opérationnelles.')],
+      comptable: ['📊', t('Vue comptable'), t('Contrôlez les encaissements, la caisse et les rapports financiers.')],
+      agent: ['🤝', t('Vue agent'), t('Consultez les locataires et les dossiers autorisés par l’administrateur.')]
+    };
+    var meta = labels[role];
+    if (!meta) return '';
+    var taux = kpis.loyerTheorique > 0 ? Math.min(100, Math.round((kpis.recetteMois / kpis.loyerTheorique) * 100)) : 0;
+    return '<div class="card" style="margin-bottom:18px;border-left:4px solid var(--accent);padding:14px 16px">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">' +
+      '<div style="display:flex;gap:12px;align-items:flex-start">' +
+      '<div style="width:38px;height:38px;border-radius:10px;background:rgba(14,106,175,.12);display:flex;align-items:center;justify-content:center;font-size:20px">' + meta[0] + '</div>' +
+      '<div><div style="font-size:14px;font-weight:800;color:var(--text)">' + meta[1] + '</div>' +
+      '<div style="font-size:12px;color:var(--text3);margin-top:3px">' + meta[2] + '</div></div></div>' +
+      '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--text2)">' +
+      '<span><strong style="color:var(--accent)">' + data.immeubles.length + '</strong> ' + t('immeuble(s)') + '</span>' +
+      '<span><strong style="color:var(--green)">' + taux + '%</strong> ' + t('recouvrement') + '</span>' +
+      '<span><strong style="color:' + (nbRetards > 0 ? 'var(--red)' : 'var(--green)') + '">' + nbRetards + '</strong> ' + t('retard(s)') + '</span>' +
+      '</div></div></div>';
+  }
+
+  function _quickStart(data) {
+    if (!_can('immeubles_edit') && !_can('locataires_edit') && !_can('paiements') && !_can('rapports')) return '';
+    var hasImmeuble = data.immeubles.length > 0;
+    var hasLocataire = data.locataires.length > 0;
+    var hasPaiement = data.paiements.length > 0;
+    var steps = [];
+    if (_can('immeubles_edit')) steps.push({ ok: hasImmeuble, label: t('Ajouter votre premier immeuble'), action: 'window.IG.immeubles.afficherFormulaire()' });
+    if (_can('locataires_edit')) steps.push({ ok: hasLocataire, label: t('Ajouter un locataire'), action: 'window.IG.locataires.afficherFormulaire()' });
+    if (_can('paiements')) steps.push({ ok: hasPaiement, label: t('Enregistrer un paiement'), action: "window.IG.app.showPage('paiements')" });
+    if (_can('rapports')) steps.push({ ok: hasPaiement, label: t('Voir un rapport'), action: 'window.IG.rapports.afficherRapportMensuel()' });
+    if (!steps.length) return '';
+    var done = steps.filter(function(s) { return s.ok; }).length;
+    if (done === steps.length) return '';
+    return '<div class="card" style="margin-bottom:18px;border-left:4px solid var(--accent)">' +
+      '<div class="card-header" style="align-items:flex-start">' +
+      '<div><div class="card-title">' + t('Démarrage rapide') + '</div>' +
+      '<div style="font-size:12px;color:var(--text3);margin-top:3px">' + done + '/4 ' + t('étapes terminées') + '</div></div>' +
+      '<button onclick="window.IG.app.openGuide()" style="font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer">' + t('Guide') + ' →</button>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;padding-top:4px">' +
+      steps.map(function(s, i) {
+        return '<button onclick="' + s.action + '" style="text-align:left;padding:10px 12px;border-radius:9px;border:1px solid var(--border2);background:' + (s.ok ? 'var(--bg3)' : 'var(--bg2)') + ';color:var(--text);cursor:pointer;font-size:12px;display:flex;gap:8px;align-items:flex-start">' +
+          '<span style="font-weight:800;color:' + (s.ok ? 'var(--green)' : 'var(--accent)') + '">' + (s.ok ? '✓' : (i + 1)) + '</span>' +
+          '<span>' + s.label + '</span>' +
+        '</button>';
+      }).join('') +
+      '</div></div>';
   }
 
   function _alerteDu(totalDu, locataires, paiements) {

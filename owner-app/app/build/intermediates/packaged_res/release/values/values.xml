@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#FFFFFF</color>
+    <string name="app_name">ImmoGest</string>
+    <string name="custom_url_scheme">com.immogest.app</string>
+    <string name="package_name">com.immogest.app</string>
+    <string name="title_activity_main">ImmoGest</string>
+    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorPrimary">#0E6AAF</item>
+        <item name="colorPrimaryDark">#0A4F87</item>
+        <item name="colorAccent">#0E6AAF</item>
+        <item name="android:windowBackground">#0E6AAF</item>
+    </style>
+</resources>

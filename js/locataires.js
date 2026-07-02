@@ -882,7 +882,7 @@ window.IG.locataires = (function() {
       var res = await fetch(WORKER + '/generate-invite', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ tenantId: session.tenantId, role: 'locataire', nom: loc.nom, telephone: loc.telephone, locataire_id: loc.id })
+        body:    JSON.stringify({ tenantId: session.tenantId, sessionToken: session.sessionToken || null, role: 'locataire', nom: loc.nom, telephone: loc.telephone, locataire_id: loc.id, immeuble_id: loc.immeuble_id || null })
       });
       var data = await res.json();
       if (!data.success) throw new Error(data.error || 'Erreur');

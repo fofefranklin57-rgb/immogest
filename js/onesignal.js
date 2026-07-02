@@ -4,14 +4,13 @@
 // ═══════════════════════════════════════════════════════════════
 // 1. Crée un compte sur https://onesignal.com
 // 2. Crée une Web App → note l'App ID
-// 3. Dans Paramètres → colle App ID + REST API Key
+// 3. Mets la REST API Key dans les secrets Cloudflare, jamais dans le navigateur
 // ═══════════════════════════════════════════════════════════════
 
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 
 var ONESIGNAL_CONFIG = {
-  appId:      '8a3857ab-64cc-4a62-9916-ce46b4768dac',
-  restApiKey: 'os_v2_app_ri4fpk3ezrfgfgiwzzdli5unvsmcdap4mq6u3u57p5bgfvkr2alcj4wfxcmkwuow2spwn6fwnaqlccmw2gnmckfeuxuki32g4275sfq'
+  appId: '8a3857ab-64cc-4a62-9916-ce46b4768dac'
 };
 
 // Restaurer config sauvegardée
@@ -21,7 +20,6 @@ var ONESIGNAL_CONFIG = {
     if (s) {
       var c = JSON.parse(s);
       if (c.appId)      ONESIGNAL_CONFIG.appId      = c.appId;
-      if (c.restApiKey) ONESIGNAL_CONFIG.restApiKey = c.restApiKey;
       console.log('[OneSignal] Config restaurée');
     }
   } catch(e) {}
@@ -116,34 +114,29 @@ function requestNotificationPermission() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// 4. ENVOYER UNE NOTIFICATION VIA REST API
+// 4. ENVOYER UNE NOTIFICATION VIA WORKER
 // ══════════════════════════════════════════════════════════════
 async function sendOneSignalNotif(externalUserId, title, message, data) {
   if (!onesignalEstConfigured()) { console.warn('[OneSignal] Non configuré'); return false; }
-  if (!ONESIGNAL_CONFIG.restApiKey) {
-    console.warn('[OneSignal] REST API Key manquante — va dans Paramètres > Notifications');
-    return false;
-  }
   try {
-    var resp = await fetch('https://onesignal.com/api/v1/notifications', {
+    var session = window.IG && window.IG.auth ? window.IG.auth.getSession() : {};
+    var workerUrl = (window.IG && window.IG.config && window.IG.config.workerUrl) || (window.APP_CONFIG && window.APP_CONFIG.API_URL) || 'https://immogest1.fofefranklin57.workers.dev';
+    var resp = await fetch(workerUrl + '/push-notify', {
       method: 'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'Authorization': 'Basic ' + ONESIGNAL_CONFIG.restApiKey
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        app_id:           ONESIGNAL_CONFIG.appId,
-        include_aliases:  { external_id: [String(externalUserId)] },
-        target_channel:   'push',
-        headings:         { fr: title, en: title },
-        contents:         { fr: message, en: message },
-        url:              'https://immogest-34w.pages.dev/',
-        data:             data || {}
+        sessionToken:   session.sessionToken || '',
+        tenantId:       session.tenantId || '',
+        externalUserId: externalUserId,
+        title:          title,
+        body:           message,
+        url:            'https://immogest-34w.pages.dev/',
+        data:           data || {}
       })
     });
     var json = await resp.json();
-    if (json.errors && json.errors.length > 0) {
-      console.error('[OneSignal] Erreur envoi:', json.errors);
+    if (!resp.ok || json.error) {
+      console.error('[OneSignal] Erreur envoi:', json.error || json);
       return false;
     }
     console.log('[OneSignal] Notification envoyée, ID:', json.id);
@@ -223,16 +216,14 @@ async function notifTousImpayés() {
 // ══════════════════════════════════════════════════════════════
 function saveOneSignalKeys() {
   var appId  = ((document.getElementById('onesignal-appid')  || {}).value || '').trim();
-  var apiKey = ((document.getElementById('onesignal-restkey') || {}).value || '').trim();
 
   if (!appId) {
     if (typeof showToast === 'function') showToast('App ID OneSignal requis', 'error');
     return;
   }
-  ONESIGNAL_CONFIG.appId      = appId;
-  ONESIGNAL_CONFIG.restApiKey = apiKey;
+  ONESIGNAL_CONFIG.appId = appId;
   try {
-    localStorage.setItem('immogest_onesignal', JSON.stringify({ appId: appId, restApiKey: apiKey }));
+    localStorage.setItem('immogest_onesignal', JSON.stringify({ appId: appId }));
   } catch(e) {}
 
   _onesignalReady = false;

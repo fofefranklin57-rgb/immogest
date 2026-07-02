@@ -4,7 +4,7 @@
 //  Stratégie : Cache-first pour assets, Network-first pour API
 // ════════════════════════════════════════════════════════════════
 
-var CACHE_NAME = 'immogest-v2-cache-v28';
+var CACHE_NAME = 'immogest-v2-cache-v36';
 var SYNC_TAG   = 'immogest-sync';
 
 var ASSETS_CACHE = [
@@ -12,6 +12,10 @@ var ASSETS_CACHE = [
   '/index.html',
   '/app.css',
   '/manifest.json',
+  '/privacy.html',
+  '/terms.html',
+  '/marche.html',
+  '/marketplace.html',
   '/icon-192.png',
   '/icon-512.png',
   '/docx.bundle.js',
@@ -69,7 +73,6 @@ self.addEventListener('fetch', function(event) {
   // Toujours réseau pour APIs externes
   if (url.hostname.includes('workers.dev') ||
       url.hostname.includes('supabase.co') ||
-      url.hostname.includes('notchpay.co') ||
       url.hostname.includes('anthropic.com') ||
       url.hostname.includes('onesignal.com')) {
     event.respondWith(

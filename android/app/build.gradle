@@ -1,5 +1,11 @@
 apply plugin: 'com.android.application'
 
+def localProps = new Properties()
+def localPropsFile = rootProject.file('local.properties')
+if (localPropsFile.exists()) {
+    localPropsFile.withInputStream { localProps.load(it) }
+}
+
 android {
     namespace = "com.immogest.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -19,10 +25,10 @@ android {
     }
     signingConfigs {
         release {
-            storeFile file('immogest-release.jks')
-            storePassword 'nh23bNwg86fy'
-            keyAlias 'my-key-alias'
-            keyPassword 'nh23bNwg86fy'
+            storeFile file(localProps['KEYSTORE_PATH'] ?: 'immogest-release.jks')
+            storePassword localProps['KEYSTORE_PASSWORD'] ?: ''
+            keyAlias localProps['KEY_ALIAS'] ?: 'my-key-alias'
+            keyPassword localProps['KEY_PASSWORD'] ?: ''
         }
     }
     buildTypes {
@@ -62,4 +68,3 @@ try {
 } catch(Exception e) {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
 }
-

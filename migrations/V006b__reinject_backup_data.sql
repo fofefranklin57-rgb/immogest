@@ -3,7 +3,7 @@
 
 -- ── Tenants ──────────────────────────────────────────────────
 INSERT INTO tenants (id, nom, telephone, password_hash, nom_cabinet, mode, plan, plan_expire, promo_code, pays, features, created_at) VALUES
-('2f7b8d39-ee4e-40b6-83e7-ebb3c3030d2d','LONTSI TIWA Eric R','676528917','8237a8d86b7038877840cd600b135f4edc8966be05cf3ba12727535f2670c058','RCAA','entreprise','gratuit',NULL,NULL,'CM','{"ia":true,"legalos":false,"marketplace":true}','2026-06-12 21:30:42.356907+00'),
+('2f7b8d39-ee4e-40b6-83e7-ebb3c3030d2d','LONTSI TIWA Eric R','676528917','REDACTED_PASSWORD_HASH','RCAA','entreprise','gratuit',NULL,NULL,'CM','{"ia":true,"legalos":false,"marketplace":true}','2026-06-12 21:30:42.356907+00'),
 ('962df886-7628-41be-8a67-8716a4f1a4fe','Me Tiwa','693530685','f48aaf3634afe8c52abb9a74dd8bc9f29630e4468dd1b6287ff8b1d67efc391e','RCAA','entreprise','gratuit',NULL,NULL,'CM','{"ia":true,"legalos":false,"marketplace":true}','2026-06-14 19:08:59.910542+00'),
 ('189a7d14-4b46-4e15-a79c-998b5e17d3c2','Maitre','690409929','f48aaf3634afe8c52abb9a74dd8bc9f29630e4468dd1b6287ff8b1d67efc391e','Mon Cabinet','entreprise','gratuit',NULL,NULL,'CM','{"ia":true,"legalos":false,"marketplace":true}','2026-06-14 19:13:37.517181+00')
 ON CONFLICT (id) DO NOTHING;
@@ -111,7 +111,7 @@ SELECT setval('locataires_id_seq', (SELECT MAX(id) FROM locataires));
 
 -- ── Users app (15) ─────────────────────────────────────────
 INSERT INTO users_app (id,tenant_id,role,nom,telephone,password,pin,immeubles,locataire_id,actif,created_at) VALUES
-('ind1','2f7b8d39-ee4e-40b6-83e7-ebb3c3030d2d','admin','Administrateur',NULL,'8237a8d86b7038877840cd600b135f4edc8966be05cf3ba12727535f2670c058',NULL,'[]',NULL,true,'2026-06-04 16:04:52.129878+00'),
+('ind1','2f7b8d39-ee4e-40b6-83e7-ebb3c3030d2d','admin','Administrateur',NULL,'REDACTED_PASSWORD_HASH',NULL,'[]',NULL,true,'2026-06-04 16:04:52.129878+00'),
 ('adm1','2f7b8d39-ee4e-40b6-83e7-ebb3c3030d2d','admin','Administrateur',NULL,'b8b8eb83374c0bf3b1c3224159f6119dbfff1b7ed6dfecdd80d4e8a895790a34',NULL,'[]',NULL,true,'2026-06-04 16:04:52.129878+00'),
 ('pro1','2f7b8d39-ee4e-40b6-83e7-ebb3c3030d2d','proprietaire','TIWA Herve Francis',NULL,'tiwa2024',NULL,'1',NULL,true,'2026-06-04 16:04:52.129878+00'),
 ('pro2','2f7b8d39-ee4e-40b6-83e7-ebb3c3030d2d','proprietaire','Ibrahim',NULL,'ibra2024',NULL,'2',NULL,false,'2026-06-04 16:04:52.129878+00'),
