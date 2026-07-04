@@ -128,6 +128,7 @@ window.IG.app = (function() {
       (_p('declarations') ? '<div class="nav-item" data-page="declarations"><span class="nav-icon">📨</span><span>' + t('Déclarations') + '</span><span class="nav-badge" id="badge-declarations" style="display:none">0</span></div>' : '') +
       (_p('messages')    ? _navItem('messages',   '💬', t('Messages'))   : '') +
       (_p('signatures')  ? _navItem('signatures', '✍️', t('Signatures')) : '') +
+      (session.role === 'admin' ? _navItem('acces', '🔐', t('Accès utilisateurs')) : '') +
       (_p('parametres') ? _navItem('parametres', '⚙️', t('Paramètres')) : '') +
       '</div>' +
       '<div class="sidebar-footer">' +
@@ -856,6 +857,10 @@ window.IG.app = (function() {
         if (title) title.textContent = t('Paramètres');
         if (sub) sub.textContent = '';
         _renderParametres(); break;
+      case 'acces':
+        if (title) title.textContent = t('Accès utilisateurs');
+        if (sub) sub.textContent = t('Locataires, bailleurs et mots de passe portail');
+        _renderGestionAcces(); break;
       case 'statistiques':
         if (title) title.textContent = t('Statistiques');
         if (sub) sub.textContent = '';
@@ -1701,6 +1706,35 @@ window.IG.app = (function() {
     if (isFinance) _chargerMomo();
     _chargerModePublication();
     _applyThemeMode(localStorage.getItem('ig_theme') || (localStorage.getItem('ig_dark_mode') === '1' ? 'dark' : 'light'));
+  }
+
+  function _renderGestionAcces() {
+    var content = document.getElementById('page-content');
+    if (!content) return;
+    var session = window.IG.auth.getSession();
+    if (!session || session.role !== 'admin') {
+      content.innerHTML = '<div class="content"><div class="card"><div class="card-body" style="padding:22px;color:var(--text3);font-size:13px">Accès réservé à l’administrateur.</div></div></div>';
+      return;
+    }
+    content.innerHTML = '<div class="content">' +
+      '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap">' +
+      '<div><h2 style="font-size:17px;font-weight:700;margin-bottom:5px">🔐 Accès utilisateurs</h2>' +
+      '<div style="font-size:12px;color:var(--text3)">Gérez les comptes portail des locataires et bailleurs : login, statut, blocage et nouveau mot de passe.</div></div>' +
+      '<button onclick="window.IG.app.showPage(\'parametres\');setTimeout(function(){window.IG.app._paramTab(\'equipe\')},0)" style="padding:9px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);cursor:pointer;font-size:12px;font-weight:600">👥 Équipe</button>' +
+      '</div>' +
+      '<div class="card" style="margin-bottom:12px">' +
+      '<div class="card-header"><div class="card-title">🔑 Portail locataires & bailleurs</div></div>' +
+      '<div class="card-body">' +
+      '<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.7;color:var(--text2)">' +
+      '<strong>Règle ImmoGest :</strong><br>' +
+      '• Login = numéro de téléphone.<br>' +
+      '• Le mot de passe lisible est affiché uniquement lors de la création ou de la réinitialisation.<br>' +
+      '• En base, ImmoGest conserve seulement la version sécurisée du mot de passe.' +
+      '</div>' +
+      '<div id="acces-portail-body"><div style="text-align:center;padding:24px"><div class="spinner" style="margin:0 auto"></div></div></div>' +
+      '</div></div>' +
+      '</div>';
+    _chargerAccesPortail();
   }
 
   // ── Switcher onglets paramètres ──
