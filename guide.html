@@ -151,7 +151,7 @@ tr:hover td{background:#fafcff}
     <li>Signer des documents électroniquement</li>
     <li>Produire des rapports financiers mensuels et annuels (avec charges détaillées)</li>
     <li>Publier et consulter des annonces immobilières (marketplace publique)</li>
-    <li>Permettre à vos locataires de payer leur loyer en ligne (MoMo, Orange Money, Wave)</li>
+    <li>Permettre à vos locataires de payer leur loyer en ligne via Fapshi</li>
     <li>Obtenir des conseils juridiques et rédiger des actes via l'IA intégrée</li>
     <li>Gérer plusieurs espaces (cabinets) depuis un seul compte</li>
   </ul>
@@ -210,7 +210,7 @@ tr:hover td{background:#fafcff}
     <div class="section-icon" style="background:#fef3c7">👥</div>
     <h2>3. Rôles & niveaux d'accès <small>Qui peut faire quoi ?</small></h2>
   </div>
-  <p>ImmoGest gère <strong>5 rôles</strong> distincts. Chaque rôle a un accès adapté à ses responsabilités.</p>
+  <p>ImmoGest gère des rôles distincts et des droits personnalisables. L'administrateur décide qui voit quoi, qui peut modifier les données, et quels immeubles sont assignés à chaque utilisateur.</p>
 
   <div class="roles-grid">
     <div class="role-card role-admin">
@@ -227,11 +227,11 @@ tr:hover td{background:#fafcff}
     <div class="role-card role-gestionnaire">
       <h4>🏢 Gestionnaire</h4>
       <ul>
-        <li>Gérer immeubles & locataires</li>
-        <li>Enregistrer paiements</li>
-        <li>Générer tous les documents</li>
-        <li>Voir tous les rapports</li>
-        <li>Accès module juridique</li>
+        <li>Voir les immeubles assignés</li>
+        <li>Gérer les locataires autorisés</li>
+        <li>Accéder aux paiements si autorisé</li>
+        <li>Générer les documents autorisés</li>
+        <li>Droits modulables par l'admin</li>
         <li>Pas d'accès facturation</li>
       </ul>
     </div>
@@ -249,34 +249,45 @@ tr:hover td{background:#fafcff}
     <div class="role-card role-proprio">
       <h4>🏠 Propriétaire</h4>
       <ul>
-        <li>Voir ses immeubles</li>
-        <li>Consulter ses locataires</li>
-        <li>Voir ses encaissements</li>
-        <li>Portail dédié en lecture</li>
+        <li>Voir uniquement ses immeubles assignés</li>
+        <li>Consulter ses locataires autorisés</li>
+        <li>Voir les encaissements si autorisé</li>
+        <li>Rapports, contrats et fiches selon droits</li>
       </ul>
     </div>
     <div class="role-card role-locataire">
       <h4>🔑 Locataire</h4>
       <ul>
-        <li>Sa fiche de suivi</li>
-        <li>Ses paiements</li>
-        <li>Ses documents</li>
-        <li>Payer son loyer en ligne</li>
+        <li>Sa fiche de suivi si autorisée</li>
+        <li>Ses paiements et reçus si autorisés</li>
+        <li>Son contrat si publié par l'admin</li>
+        <li>Déclarer un paiement si autorisé</li>
         <li>Lecture seule</li>
       </ul>
     </div>
   </div>
 
-  <h3>Ajouter un utilisateur (admin uniquement)</h3>
+  <h3>Gérer les accès portail (admin uniquement)</h3>
   <ol>
-    <li>Menu latéral → <strong>Gestion des utilisateurs</strong></li>
-    <li>Cliquer <strong>+ Nouvel utilisateur</strong></li>
-    <li>Choisir le rôle, entrer nom + identifiant + mot de passe</li>
-    <li>L'utilisateur reçoit ses identifiants par WhatsApp automatiquement</li>
-    <li>Il se connecte avec le code d'invitation <strong>IM-XXXX</strong> de l'espace</li>
+    <li>Menu latéral → <strong>Accès utilisateurs</strong></li>
+    <li>Retrouver le locataire ou le bailleur concerné</li>
+    <li>Cliquer <strong>Droits</strong> pour choisir les fonctions accessibles</li>
+    <li>Cliquer <strong>Nouveau MP</strong> pour générer un mot de passe temporaire</li>
+    <li>Communiquer le téléphone + le mot de passe temporaire à l'utilisateur</li>
   </ol>
 
-  <div class="tip"><div class="tip-icon">💡</div><div>Les identifiants sont automatiquement envoyés par WhatsApp à la création d'un locataire ou d'un utilisateur, si un numéro de téléphone est renseigné.</div></div>
+  <h3>Inviter un collaborateur et assigner ses immeubles</h3>
+  <ol>
+    <li>Menu → <strong>Paramètres</strong> → onglet <strong>Équipe</strong></li>
+    <li>Cliquer <strong>Inviter collaborateur</strong></li>
+    <li>Choisir le rôle : coordinateur, gestionnaire, comptable ou agent</li>
+    <li>Après création, cliquer <strong>Droits</strong></li>
+    <li>Cocher les immeubles accessibles et les fonctions autorisées</li>
+  </ol>
+
+  <div class="tip"><div class="tip-icon">🔐</div><div>Le login d'un locataire ou d'un bailleur est son numéro de téléphone. Le mot de passe lisible n'est affiché qu'à la création ou à la réinitialisation. ImmoGest conserve uniquement une version sécurisée.</div></div>
+
+  <div class="tip warn"><div class="tip-icon">⚠️</div><div>Pour un bailleur, si aucun immeuble n'est assigné, aucune donnée sensible ne s'affiche. Pour un collaborateur, l'admin peut limiter l'accès à certains immeubles et retirer les droits de modification.</div></div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
@@ -333,7 +344,7 @@ tr:hover td{background:#fafcff}
     <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Informations personnelles</div><div class="step-desc">Nom complet, téléphone, numéro de CNI (optionnel), type de local, numéro de local.</div></div></div>
     <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Conditions financières</div><div class="step-desc">Montant du loyer, caution versée, date d'entrée, jour de paiement habituel dans le mois.</div></div></div>
     <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Arriérés initiaux (optionnel)</div><div class="step-desc">Si le locataire reprend un bail avec des mois déjà dus, saisissez le montant restant dû à l'entrée.</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Envoi automatique des identifiants</div><div class="step-desc">Si un téléphone est renseigné, un message WhatsApp avec les identifiants de connexion est envoyé automatiquement au locataire.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Création de l'accès portail</div><div class="step-desc">Si un téléphone est renseigné, ImmoGest crée l'accès locataire. Le login est le numéro de téléphone ; le mot de passe temporaire est affiché à l'admin une seule fois pour transmission au locataire.</div></div></div>
   </div>
 
   <h3>Fiche de suivi</h3>
@@ -356,7 +367,7 @@ tr:hover td{background:#fafcff}
     <li>📝 Générer un contrat</li>
     <li>⚖️ Mise en demeure</li>
     <li>📋 État des lieux</li>
-    <li>🔑 PIN locataire (code d'accès à sa fiche)</li>
+    <li>🔐 Accès portail : réinitialiser le mot de passe depuis Accès utilisateurs</li>
     <li>📦 Archiver (départ)</li>
   </ul>
 
@@ -655,24 +666,23 @@ tr:hover td{background:#fafcff}
 <div class="section" id="s12">
   <div class="section-header">
     <div class="section-icon" style="background:#e8fff0">💳</div>
-    <h2>12. Paiement de loyer en ligne <small>MoMo, Orange Money, plateformes intégrées</small></h2>
+    <h2>12. Paiement de loyer en ligne <small>Fapshi et Mobile Money</small></h2>
   </div>
 
   <h3>Pour l'administrateur — Configuration globale</h3>
   <div class="steps">
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Ouvrir les Paramètres → Paiements</div><div class="step-desc">Menu → <strong>Paramètres</strong> → onglet <strong>💳 Paiements</strong> → section "Paiement de loyer en ligne".</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Choisir la plateforme</div><div class="step-desc">Options disponibles : <strong>Fapshi</strong>, <strong>Lien personnalisé</strong> (votre URL avec {montant}), <strong>CinetPay</strong>, <strong>PayDunya</strong>, <strong>Wave</strong>.</div></div></div>
-    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Saisir les numéros MoMo globaux</div><div class="step-desc">Dans la section "Numéros Mobile Money", entrez vos numéros MTN MoMo, Orange Money et Wave. Ce sont les numéros par défaut pour tous les immeubles.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Ouvrir les paramètres financiers</div><div class="step-desc">Menu → <strong>Paramètres</strong> → onglet <strong>Finances</strong>. Renseignez les numéros Mobile Money et vérifiez que Fapshi est configuré pour les paiements en ligne.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Choisir la plateforme</div><div class="step-desc">ImmoGest utilise <strong>Fapshi</strong> comme passerelle de paiement principale pour les abonnements, boosts et paiements en ligne.</div></div></div>
+    <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Saisir les numéros Mobile Money</div><div class="step-desc">Dans la section "Numéros Mobile Money", entrez les numéros utiles du cabinet. Ils servent surtout aux paiements manuels ou aux instructions affichées au locataire.</div></div></div>
     <div class="step"><div class="step-num"></div><div class="step-body"><div class="step-title">Config par immeuble (optionnel)</div><div class="step-desc">Clic droit sur un immeuble → <strong>⚙️ Config paiement loyer</strong>. Activez "Configuration spécifique" pour utiliser des numéros différents sur cet immeuble uniquement.</div></div></div>
   </div>
 
   <h3>Pour le locataire — Payer son loyer</h3>
   <ol>
-    <li>Ouvrir sa fiche de suivi (via code PIN ou code d'invitation IM-XXXX)</li>
-    <li>Le bloc <strong>💳 Payer votre loyer</strong> affiche les options configurées par le gestionnaire</li>
-    <li>Cliquer sur le numéro MTN/Orange/Wave pour le copier → effectuer le virement</li>
-    <li>Ou cliquer <strong>Payer en ligne</strong> → page de paiement Fapshi s'ouvre</li>
-    <li>Choisir le mode de paiement (MoMo, carte, Wave…) et valider</li>
+    <li>Se connecter au portail avec son téléphone et le mot de passe transmis par le gestionnaire</li>
+    <li>Le bloc <strong>💳 Payer votre loyer</strong> affiche les instructions configurées par le gestionnaire</li>
+    <li>Cliquer <strong>Payer en ligne</strong> → la page de paiement Fapshi s'ouvre</li>
+    <li>Choisir le moyen proposé par Fapshi et valider</li>
     <li>Après confirmation : le paiement est <strong>enregistré automatiquement</strong> dans la fiche de suivi</li>
   </ol>
 
@@ -782,7 +792,7 @@ tr:hover td{background:#fafcff}
     <li>URL du logo (PNG ou JPG — affiché dans les rapports DOCX)</li>
   </ul>
 
-  <h3>💳 Onglet Paiements</h3>
+  <h3>💼 Onglet Finances</h3>
 
   <p><strong>Numéros Mobile Money</strong> — entrez les numéros de votre cabinet :</p>
   <ul>
@@ -792,7 +802,7 @@ tr:hover td{background:#fafcff}
   </ul>
   <p>Ces numéros sont affichés aux locataires dans leur fiche de paiement.</p>
 
-  <p><strong>Paiement de loyer en ligne</strong> — configurez la plateforme de paiement globale (Fapshi, CinetPay, PayDunya, Wave, lien personnalisé). Chaque immeuble peut avoir sa propre configuration via clic droit → ⚙️ Config.</p>
+  <p><strong>Paiement de loyer en ligne</strong> — configurez Fapshi et les numéros Mobile Money du cabinet dans les paramètres financiers. Les autres modes restent des informations de suivi manuel quand ils sont utilisés hors plateforme.</p>
 
   <h3>🔌 Onglet Intégrations</h3>
 
@@ -841,7 +851,7 @@ tr:hover td{background:#fafcff}
   <p>Menu → <strong>Archives</strong> → trouvez le locataire → bouton <strong>Restaurer</strong>. Toutes ses données (paiements, documents) reviennent intact dans la liste active.</p>
 
   <h3>Puis-je avoir plusieurs gestionnaires sur le même espace ?</h3>
-  <p>Oui, avec le plan <strong>PRO</strong>. Créez des comptes gestionnaires, comptables ou propriétaires depuis la Gestion des utilisateurs. Chacun a son propre accès adapté à son rôle.</p>
+  <p>Oui, avec le plan <strong>PRO</strong>. Invitez vos collaborateurs depuis <strong>Paramètres → Équipe</strong>, puis réglez leurs droits et leurs immeubles depuis <strong>Droits</strong>. Les accès locataires et bailleurs se gèrent depuis <strong>Accès utilisateurs</strong>.</p>
 
   <h3>Le code d'invitation IM-XXXX ne fonctionne pas ?</h3>
   <p>Vérifiez que vous avez bien saisi les 7 caractères (IM- suivi de 4 chiffres/lettres). Si le problème persiste, demandez à votre gestionnaire de vérifier que votre compte est bien créé dans le système.</p>

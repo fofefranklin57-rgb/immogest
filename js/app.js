@@ -3206,6 +3206,8 @@ window.IG.app = (function() {
       // Lien marketplace
       '<div style="text-align:center;">' +
       '<button onclick="window.IG.app.browseMarketplace()" style="background:none;border:none;color:#4f8ef7;font-size:12px;cursor:pointer;font-family:inherit;">🏪 Parcourir la marketplace →</button>' +
+      '<span style="color:rgba(232,240,254,0.22);margin:0 8px;">•</span>' +
+      '<button onclick="window.IG.app.openGuide()" style="background:none;border:none;color:#4f8ef7;font-size:12px;cursor:pointer;font-family:inherit;">📄 Guide d\'utilisation →</button>' +
       '</div></div>' +
 
       // ─── CONNEXION UNIFIÉE ───
@@ -3224,6 +3226,7 @@ window.IG.app = (function() {
       '<div id="err-login" style="color:#ff6b6b;font-size:12px;margin-top:10px;text-align:center;display:none;background:rgba(255,107,107,0.1);padding:8px;border-radius:6px;"></div>' +
       '<div style="text-align:center;margin-top:16px;">' +
       '<button onclick="window.IG.app.authGoStep(\'join\')" style="background:none;border:none;color:rgba(232,240,254,0.4);font-size:12px;cursor:pointer;font-family:inherit;">Première connexion avec un code ? →</button>' +
+      '<div style="margin-top:10px"><button onclick="window.IG.app.openGuide()" style="background:none;border:none;color:#4f8ef7;font-size:12px;cursor:pointer;font-family:inherit;">📄 Consulter le guide</button></div>' +
       '</div></div>' +
 
       // ─── CRÉER UN ESPACE ───
