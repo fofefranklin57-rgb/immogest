@@ -89,7 +89,7 @@ window.IG.perms = (function() {
       messages: true, declarations: true,
       parametres: false, equipe: false,
       voir_fiche_suivi: false, voir_rapport_bailleur: false, voir_contrat: false, voir_paiements_bailleur: false,
-      telecharger_contrat: false, voir_recus: true, declarer_paiement: true, maintenance: true
+      telecharger_contrat: false, voir_fiche_locataire: true, voir_recus: true, declarer_paiement: true, maintenance: true
     }
   };
 
@@ -150,6 +150,7 @@ window.IG.perms = (function() {
       label: '🔑 Accès locataire — fonctions',
       roles: ['locataire'],
       perms: [
+        { key: 'voir_fiche_locataire', label: 'Voir sa fiche de suivi' },
         { key: 'telecharger_contrat',  label: 'Télécharger son contrat' },
         { key: 'voir_recus',           label: 'Voir ses reçus' },
         { key: 'declarer_paiement',    label: 'Déclarer un paiement' },

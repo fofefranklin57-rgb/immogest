@@ -309,6 +309,10 @@ window.IG.locataires = (function() {
 
   // ── Formulaire ajout/édition ──────────────────────────────────
   function afficherFormulaire(id, onSuccess) {
+    if (window.IG.perms && !window.IG.perms.canDo('locataires_edit')) {
+      window.IG.utils.showToast('Accès non autorisé', 'red');
+      return;
+    }
     if (window.IG.plans && window.IG.plans.estEnModeRetro()) {
       window.IG.utils.showToast(t('Accès limité — upgradez votre plan pour modifier les données'), 'red');
       setTimeout(function() { window.IG.plans.afficherUpgrade(); }, 800);
@@ -704,6 +708,11 @@ window.IG.locataires = (function() {
 
   // ── Fiche locataire ───────────────────────────────────────────
   function afficherFiche(id, annee) {
+    var session = window.IG.auth ? window.IG.auth.getSession() : null;
+    if (session && (session.role === 'bailleur' || session.role === 'proprietaire') && window.IG.perms && !window.IG.perms.canDo('voir_fiche_suivi')) {
+      window.IG.utils.showToast('Accès non autorisé', 'red');
+      return;
+    }
     var loc = getById(id);
     if (!loc) return;
     var pays = window.IG.paiements ? window.IG.paiements.getByLocataire(id) : [];

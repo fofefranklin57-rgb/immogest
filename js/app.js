@@ -231,9 +231,9 @@ window.IG.app = (function() {
 
   function topbarAction() {
     var p = _currentPage;
-    if (p === 'locataires') { if (window.IG.locataires) window.IG.locataires.afficherFormulaire(); }
-    else if (p === 'paiements') { _ouvrirSelLocataire(); }
-    else if (p === 'immeubles') { if (window.IG.immeubles) window.IG.immeubles.afficherFormulaire(); }
+    if (p === 'locataires') { if (!_p('locataires_edit')) return window.IG.utils.showToast('Accès non autorisé', 'red'); if (window.IG.locataires) window.IG.locataires.afficherFormulaire(); }
+    else if (p === 'paiements') { if (!_p('paiements_edit')) return window.IG.utils.showToast('Accès non autorisé', 'red'); _ouvrirSelLocataire(); }
+    else if (p === 'immeubles') { if (!_p('immeubles_edit')) return window.IG.utils.showToast('Accès non autorisé', 'red'); if (window.IG.immeubles) window.IG.immeubles.afficherFormulaire(); }
     else { showPage('locataires'); }
   }
 
@@ -708,6 +708,7 @@ window.IG.app = (function() {
       _data.locataires = result.locataires || [];
       _data.paiements  = result.paiements  || [];
       _normaliserData();
+      _applyDataScope();
       // Charger settings momo pour le portail locataire
       try {
         var params = await window.IG.db.select('parametres');
@@ -759,9 +760,52 @@ window.IG.app = (function() {
         try { _data.locataires = JSON.parse(localStorage.getItem('locataires_' + s.tenantId) || '[]'); } catch(_) {}
         try { _data.paiements  = JSON.parse(localStorage.getItem('paiements_'  + s.tenantId) || '[]'); } catch(_) {}
         _normaliserData();
+        _applyDataScope();
         _syncCaches();
       }
     }
+  }
+
+  function _applyDataScope() {
+    var session = window.IG.auth ? window.IG.auth.getSession() : null;
+    if (!session || session.role === 'admin') return;
+
+    function ids(list) {
+      return (list || []).map(function(v) { return String(v); }).filter(Boolean);
+    }
+
+    var role = session.role || '';
+    var immIds = ids(session.immeubles || session.immeubles_assignes);
+
+    if ((role === 'bailleur' || role === 'proprietaire') && immIds.length === 0 && session.immeuble_id) {
+      immIds = [String(session.immeuble_id)];
+    }
+
+    if (role === 'locataire') {
+      var locId = String(session.locataireId || session.locataire_id || '');
+      if (!locId) return;
+      var loc = _data.locataires.find(function(l) { return String(l.id) === locId; });
+      _data.locataires = loc ? [loc] : [];
+      _data.immeubles = loc ? _data.immeubles.filter(function(i) { return String(i.id) === String(loc.immeuble_id); }) : [];
+      _data.paiements = _data.paiements.filter(function(p) { return String(p.locataire_id) === locId; });
+      return;
+    }
+
+    var scopedRoles = ['coordinateur','gestionnaire','comptable','agent','bailleur','proprietaire'];
+    if (!scopedRoles.includes(role)) return;
+    if (immIds.length === 0) {
+      if (role === 'bailleur' || role === 'proprietaire') {
+        _data.immeubles = [];
+        _data.locataires = [];
+        _data.paiements = [];
+      }
+      return;
+    }
+
+    _data.immeubles = _data.immeubles.filter(function(i) { return immIds.includes(String(i.id)); });
+    _data.locataires = _data.locataires.filter(function(l) { return immIds.includes(String(l.immeuble_id)); });
+    var locIds = _data.locataires.map(function(l) { return String(l.id); });
+    _data.paiements = _data.paiements.filter(function(p) { return locIds.includes(String(p.locataire_id)); });
   }
 
   function _setSyncStatus(status) {
@@ -804,16 +848,19 @@ window.IG.app = (function() {
         if (sub) sub.textContent = '';
         _renderDashboard(); break;
       case 'immeubles':
+        if (!_p('immeubles')) { _renderAccessDenied(t('Immeubles')); break; }
         if (title) title.textContent = t('Immeubles');
         if (sub) sub.textContent = _data.immeubles.length + ' ' + t('immeuble(s)');
         _renderImmeubles(); break;
       case 'locataires':
+        if (!_p('locataires')) { _renderAccessDenied(t('Locataires')); break; }
         _currentImmeubleId = opts.immeubleId || null;
         if (title) title.textContent = t('Locataires');
         var imm = _currentImmeubleId && window.IG.immeubles ? window.IG.immeubles.getById(_currentImmeubleId) : null;
         if (sub) sub.textContent = imm ? esc(imm.nom_immeuble || imm.nom) : _data.locataires.length + ' ' + t('locataire(s)');
         _renderLocataires(); break;
       case 'paiements':
+        if (!_p('paiements')) { _renderAccessDenied(t('Paiements')); break; }
         if (title) title.textContent = t('Paiements');
         if (sub) sub.textContent = '';
         _renderPaiements(); break;
@@ -822,6 +869,7 @@ window.IG.app = (function() {
         if (sub) sub.textContent = '';
         if (window.IG.messagesWA) window.IG.messagesWA.renderPage(_data); break;
       case 'rapports':
+        if (!_p('rapports') || ((window.IG.auth.getSession().role === 'bailleur' || window.IG.auth.getSession().role === 'proprietaire') && window.IG.perms && !window.IG.perms.canDo('voir_rapport_bailleur'))) { _renderAccessDenied(t('Rapports')); break; }
         if (title) title.textContent = t('Rapports');
         if (sub) sub.textContent = '';
         _renderRapports(); break;
@@ -910,6 +958,16 @@ window.IG.app = (function() {
 
   function renderCurrentPage() { showPage(_currentPage); }
 
+  function _renderAccessDenied(label) {
+    var content = document.getElementById('page-content');
+    if (!content) return;
+    content.innerHTML = '<div class="content"><div class="card" style="text-align:center;padding:46px 20px;color:var(--text3)">' +
+      '<div style="font-size:38px;margin-bottom:10px">🔒</div>' +
+      '<div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:6px">Accès non autorisé</div>' +
+      '<div style="font-size:13px">' + esc(label || 'Cette section') + ' n’est pas disponible sur ce compte.</div>' +
+      '</div></div>';
+  }
+
   function reloadShell() {
     _showAppShell();
     _applyDarkMode();
@@ -943,6 +1001,8 @@ window.IG.app = (function() {
     var now = new Date();
     var mois = now.getMonth() + 1;
     var annee = now.getFullYear();
+    var canSeeMoney = !window.IG.perms || window.IG.perms.canDo('voir_paiements_bailleur');
+    var canSeeReports = !window.IG.perms || window.IG.perms.canDo('voir_rapport_bailleur');
 
     var imms = _data.immeubles;
     var locs = _data.locataires.filter(function(l) { return l.statut !== 'libre'; });
@@ -980,18 +1040,18 @@ window.IG.app = (function() {
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px">' +
       _bKpi('🏢', imms.length, 'Immeuble(s)', 'var(--accent)') +
       _bKpi('👥', locs.length, 'Locataires actifs', 'var(--green)') +
-      _bKpi('💰', fmt(totalEncaisse), 'Encaissé ce mois', 'var(--green)') +
+      (canSeeMoney ? _bKpi('💰', fmt(totalEncaisse), 'Encaissé ce mois', 'var(--green)') : _bKpi('🔒', 'Masqué', 'Paiements', 'var(--text3)')) +
       _bKpi('⚠️', nbImpayes, 'En retard', nbImpayes > 0 ? 'var(--red)' : 'var(--text3)') +
-      _bKpi('📌', fmt(totalDu), 'Reste à recouvrer', totalDu > 0 ? 'var(--red)' : 'var(--green)') +
+      (canSeeMoney ? _bKpi('📌', fmt(totalDu), 'Reste à recouvrer', totalDu > 0 ? 'var(--red)' : 'var(--green)') : '') +
       '</div>' +
 
       '<div class="card" style="margin-bottom:18px;padding:14px 16px;border-left:4px solid ' + (totalDu > 0 ? 'var(--red)' : 'var(--green)') + '">' +
       '<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">' +
       '<div><div style="font-size:14px;font-weight:800">' + (totalDu > 0 ? 'Suivi à surveiller' : 'Portefeuille à jour') + '</div>' +
       '<div style="font-size:12px;color:var(--text3);margin-top:4px">' +
-      (derniereDate ? 'Dernier encaissement enregistré le ' + window.IG.utils.formatDate(derniereDate.date_paiement || derniereDate.created_at) : 'Aucun encaissement enregistré ce mois-ci') +
+      (canSeeMoney ? (derniereDate ? 'Dernier encaissement enregistré le ' + window.IG.utils.formatDate(derniereDate.date_paiement || derniereDate.created_at) : 'Aucun encaissement enregistré ce mois-ci') : 'Les détails financiers sont masqués par l’administrateur.') +
       '</div></div>' +
-      '<button onclick="window.IG.app.showPage(\'rapports\')" style="padding:9px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">📄 Voir mes rapports</button>' +
+      (canSeeReports ? '<button onclick="window.IG.app.showPage(\'rapports\')" style="padding:9px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">📄 Voir mes rapports</button>' : '<span style="font-size:12px;color:var(--text3)">🔒 Rapports masqués</span>') +
       '</div></div>' +
 
       // Immeubles
@@ -1020,8 +1080,8 @@ window.IG.app = (function() {
           '<div style="display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--text2);flex-wrap:wrap">' +
           '<span>' + locsImm.length + ' locataire(s)</span>' +
           '<span>' + Math.max(0, libres) + ' local(aux) libre(s)</span>' +
-          '<span>Attendu : ' + fmt(att) + '</span>' +
-          '<span>Encaissé : <strong style="color:var(--green)">' + fmt(enc) + '</strong></span>' +
+          (canSeeMoney ? '<span>Attendu : ' + fmt(att) + '</span>' : '') +
+          (canSeeMoney ? '<span>Encaissé : <strong style="color:var(--green)">' + fmt(enc) + '</strong></span>' : '<span>Montants masqués</span>') +
           '</div></div>';
       }).join('') : '<div class="card" style="text-align:center;padding:30px;color:var(--text3)">Aucun immeuble assigné à votre compte bailleur.</div>') +
       '</div>' +
@@ -1095,7 +1155,7 @@ window.IG.app = (function() {
     content.innerHTML = '<div class="content">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
       '<h2 style="font-size:17px;font-weight:700">🏢 ' + t('Mes immeubles') + '</h2>' +
-      '<button onclick="window.IG.immeubles.afficherFormulaire()" style="padding:9px 18px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">+ ' + t('Ajouter') + '</button>' +
+      (_p('immeubles_edit') ? '<button onclick="window.IG.immeubles.afficherFormulaire()" style="padding:9px 18px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">+ ' + t('Ajouter') + '</button>' : '') +
       '</div><div id="immeubles-liste"></div>' +
       '<div id="ig-ad-immeubles" style="margin-top:20px;text-align:center"></div></div>';
     if (window.IG.immeubles) window.IG.immeubles.renderListe(_data.locataires);
@@ -1117,7 +1177,7 @@ window.IG.app = (function() {
     content.innerHTML = '<div class="content">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">' +
       '<h2 style="font-size:17px;font-weight:700">👥 ' + t('Locataires') + '</h2>' +
-      '<button onclick="window.IG.locataires.afficherFormulaire()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">+ ' + t('Ajouter') + '</button>' +
+      (_p('locataires_edit') ? '<button onclick="window.IG.locataires.afficherFormulaire()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">+ ' + t('Ajouter') + '</button>' : '') +
       '</div>' +
       // Filtres
       '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">' +
@@ -2178,7 +2238,7 @@ window.IG.app = (function() {
             imm ? esc(imm.nom_immeuble || imm.nom || '') : ''
           ].filter(Boolean).join(' · ');
         }
-        var nb = (u.immeubles_assignes || u.immeubles || []).length;
+        var nb = (u.immeubles_assignes || u.immeubles || (u.immeuble_id ? [u.immeuble_id] : [])).length;
         return nb ? nb + ' immeuble(s) assigné(s)' : 'Aucun immeuble assigné';
       }
 
@@ -2202,6 +2262,7 @@ window.IG.app = (function() {
           '<div style="font-size:11px;color:var(--text3);margin-top:3px">Mot de passe : masqué. Un nouveau code est visible uniquement à la réinitialisation.</div>' +
           '</div>' +
           '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">' +
+          '<button onclick="window.IG.app._ouvrirDroits(\'' + u.id + '\')" style="padding:7px 11px;border-radius:8px;border:1px solid var(--accent);background:var(--bg4);color:var(--accent);cursor:pointer;font-size:12px;font-weight:600">⚙️ Droits</button>' +
           '<button onclick="window.IG.app._resetCodeUser(\'' + u.id + '\',\'' + esc(nom) + '\')" style="padding:7px 11px;border-radius:8px;border:1px solid var(--accent);background:var(--bg4);color:var(--accent);cursor:pointer;font-size:12px;font-weight:600">🔄 Nouveau MP</button>' +
           '<button onclick="window.IG.app._toggleUser(\'' + u.id + '\',' + (u.actif !== false) + ')" style="padding:7px 11px;border-radius:8px;border:1px solid ' + (u.actif !== false ? 'var(--red)' : 'var(--green)') + ';background:var(--bg4);color:' + (u.actif !== false ? 'var(--red)' : 'var(--green)') + ';cursor:pointer;font-size:12px">' + (u.actif !== false ? 'Bloquer' : 'Débloquer') + '</button>' +
           '</div>' +
@@ -2340,12 +2401,10 @@ window.IG.app = (function() {
 
     var perms = window.IG.perms;
     var overrides = u.permissions || {};
-    var immAssignes = u.immeubles_assignes || [];
+    var immAssignes = (u.immeubles_assignes || u.immeubles || (u.immeuble_id ? [u.immeuble_id] : [])).map(function(v) { return String(v); });
     var immeubles = _data.immeubles || [];
 
-    var COLLAB_ROLES = ['coordinateur','gestionnaire','comptable','agent'];
-    var BAILLEUR_ROLES = ['bailleur'];
-    var LOC_ROLES = ['locataire'];
+    var IMMEUBLE_ROLES = ['coordinateur','gestionnaire','comptable','agent','bailleur','proprietaire'];
 
     // ── Sélecteur de rôle ──
     var roleHtml = '';
@@ -2361,12 +2420,16 @@ window.IG.app = (function() {
       roleHtml = '<input type="hidden" id="dr-role" value="' + u.role + '">';
     }
 
-    // ── Immeubles assignés (gestionnaire / agent uniquement) ──
+    // ── Immeubles assignés ──
     var immeublesHtml = '';
-    if (['gestionnaire','agent'].includes(u.role)) {
+    if (IMMEUBLE_ROLES.includes(u.role)) {
       immeublesHtml = '<div style="margin-bottom:18px">' +
         '<label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">🏢 Immeubles accessibles</label>' +
-        '<p style="font-size:11px;color:var(--text3);margin-bottom:8px">Si aucun coché : accès à tous les immeubles.</p>' +
+        '<p style="font-size:11px;color:var(--text3);margin-bottom:8px">' +
+        (u.role === 'bailleur' || u.role === 'proprietaire'
+          ? 'Le bailleur ne voit que les immeubles cochés ici.'
+          : 'Si aucun immeuble n’est coché, ce collaborateur garde l’accès à tous les immeubles autorisés par son rôle.') +
+        '</p>' +
         '<div style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px">' +
         (immeubles.length
           ? immeubles.map(function(imm) {
@@ -2442,7 +2505,10 @@ window.IG.app = (function() {
       var newRole = modal.box.querySelector('#dr-role').value;
 
       // Collecter immeubles cochés
-      var newImm = Array.from(modal.box.querySelectorAll('.dr-imm:checked')).map(function(cb) { return cb.value; });
+      var immBoxes = modal.box.querySelectorAll('.dr-imm');
+      var newImm = immBoxes.length
+        ? Array.from(immBoxes).filter(function(cb) { return cb.checked; }).map(function(cb) { return cb.value; })
+        : immAssignes;
 
       // Collecter permissions — ne sauvegarder que les overrides (différences vs défaut du rôle)
       var newPerms = {};
@@ -2467,10 +2533,15 @@ window.IG.app = (function() {
         immeubles_assignes: newImm
       };
       if (newRole) patch.role = newRole;
+      if (newRole === 'bailleur' || newRole === 'proprietaire') {
+        patch.immeuble_id = newImm[0] || null;
+        patch.immeubles = newImm;
+      }
       await window.IG.db.update('users_app', userId, patch);
       window.IG.utils.showToast('Droits mis à jour ✓', 'green');
       if (modal && modal.close) modal.close();
       _chargerEquipe();
+      _chargerAccesPortail();
     } catch(e) {
       window.IG.utils.showToast('Erreur : ' + e.message, 'red');
     }

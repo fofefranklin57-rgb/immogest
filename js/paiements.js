@@ -562,6 +562,10 @@ window.IG.paiements = (function() {
 
   // ── Formulaire enregistrement paiement ────────────────────────
   function afficherFormulaire(locId, onSuccess) {
+    if (window.IG.perms && !window.IG.perms.canDo('paiements_edit')) {
+      toast('Accès non autorisé', 'red');
+      return;
+    }
     var loc = window.IG.locataires ? window.IG.locataires.getById(locId) : null;
     if (!loc) { toast(t('Locataire introuvable'), 'red'); return; }
 

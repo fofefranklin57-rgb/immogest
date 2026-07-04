@@ -5,6 +5,9 @@ let selectedMomo = null;
 
 function _devise() { return (window.IG._locale && window.IG._locale.devise) || 'FCFA'; }
 function _fmtPortail(n) { return Number(n||0).toLocaleString('fr-FR') + ' ' + _devise(); }
+function _canPortal(perm) {
+  return !(window.IG && window.IG.perms) || window.IG.perms.canDo(perm);
+}
 
 // ═══════════════════════════════════════════════════════════
 // SYSTÈME PUBLICITAIRE — Monetag
@@ -39,6 +42,9 @@ function initPortailAds() {
 
 // Navigation
 function showTab(tab, ev) {
+  if (tab === 'maintenance' && !_canPortal('maintenance')) return;
+  if (tab === 'documents' && !_canPortal('telecharger_contrat')) return;
+  if (tab === 'mafiche' && !_canPortal('voir_fiche_locataire')) return;
   document.querySelectorAll('.tab-content').forEach(function(t) { t.style.display = 'none'; });
   var tabEl = document.getElementById('tab-' + tab);
   if (tabEl) tabEl.style.display = 'block';
@@ -75,6 +81,7 @@ function selectMomo(btn, provider) {
 }
 
 async function processPayment() {
+  if (!_canPortal('declarer_paiement')) { alert('Accès non autorisé'); return; }
   const l = _getLocataireConnecte();
   if (!selectedMomo) { alert('Veuillez sélectionner un mode de paiement'); return; }
 
@@ -263,6 +270,13 @@ async function loadDocumentsLocataire() {
   if (!loc) return;
   const container = document.getElementById('docs-contrat-section');
   if (!container) return;
+  if (!_canPortal('telecharger_contrat')) {
+    container.innerHTML = `<div style="text-align:center;padding:24px;color:#999;">
+      🔒 Votre contrat de bail n'est pas disponible sur ce compte.<br>
+      <span style="font-size:12px;">Contactez votre gestionnaire pour en demander l'accès.</span>
+    </div>`;
+    return;
+  }
 
   container.innerHTML = '<div style="text-align:center;padding:16px;color:#999;">⏳ Chargement...</div>';
   const contrat = await loadContratByLocataire(loc.id);
@@ -916,6 +930,10 @@ async function locMsgEnvoyer() {
 function loadMaFiche() {
   const el = document.getElementById('tab-mafiche');
   if (!el) return;
+  if (!_canPortal('voir_fiche_locataire')) {
+    el.innerHTML = '<div class="card"><p style="color:var(--text3);padding:20px;text-align:center;">🔒 La fiche de suivi n’est pas disponible sur ce compte.</p></div>';
+    return;
+  }
   const l = _getLocataireConnecte();
   if (!l) { el.innerHTML = '<div class="card"><p style="color:var(--text3);padding:20px;">Fiche introuvable.</p></div>'; return; }
 

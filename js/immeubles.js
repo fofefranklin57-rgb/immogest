@@ -130,6 +130,10 @@ window.IG.immeubles = (function() {
 
   // ── Formulaire ajout/édition ──────────────────────────────────
   function afficherFormulaire(id) {
+    if (window.IG.perms && !window.IG.perms.canDo('immeubles_edit')) {
+      window.IG.utils.showToast('Accès non autorisé', 'red');
+      return;
+    }
     if (window.IG.plans && window.IG.plans.estEnModeRetro()) {
       window.IG.utils.showToast(t('Accès limité — upgradez votre plan pour modifier les données'), 'red');
       setTimeout(function() { window.IG.plans.afficherUpgrade(); }, 800);

@@ -47,6 +47,8 @@ window.IG.portail = (function() {
     })[0] : null;
     var prochaineLigne = fiche.find(function(l) { return l.statut !== 'Payé'; }) || fiche[fiche.length - 1] || null;
     var canDeclare = !window.IG.perms || window.IG.perms.canDo('declarer_paiement');
+    var canViewFiche = !window.IG.perms || window.IG.perms.canDo('voir_fiche_locataire');
+    var canViewRecus = !window.IG.perms || window.IG.perms.canDo('voir_recus');
     var score = window.IG.legal ? window.IG.legal.calculerScore(loc, paiements) : 100;
     var scoreBadge = window.IG.legal ? window.IG.legal.scoreBadge(score) : { emoji: '🟢', label: 'Bon', color: 'var(--green)' };
 
@@ -91,7 +93,7 @@ window.IG.portail = (function() {
         '💵 ' + t('Enregistrer un paiement') + '</button>' : '') +
 
       // Historique fiche
-      '<div class="card">' +
+      (canViewFiche ? '<div class="card">' +
       '<div class="card-header"><div class="card-title">📋 Historique des loyers</div>' +
       '<button onclick="window.print()" style="font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;font-weight:700">Imprimer</button></div>' +
       '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
@@ -115,7 +117,10 @@ window.IG.portail = (function() {
           (ligne.reste > 0 ? fmt(ligne.reste) : '—') + '</td>' +
           '</tr>';
       }).join('') : '<tr><td colspan="4" style="padding:22px;text-align:center;color:var(--text3)">Aucun historique disponible.</td></tr>') +
-      '</tbody></table></div></div>' +
+      '</tbody></table></div></div>' :
+      '<div class="card" style="padding:20px;text-align:center;color:var(--text3);font-size:13px">🔒 La fiche de suivi n’est pas disponible sur ce compte. Contactez votre gestionnaire.</div>') +
+
+      (!canViewRecus ? '<div class="card" style="margin-top:12px;padding:16px;text-align:center;color:var(--text3);font-size:12px">🔒 Les reçus sont masqués par l’administrateur.</div>' : '') +
 
       // Bannière pub
       '<div id="ig-ad-portail" style="margin:16px 0;text-align:center"></div>' +
