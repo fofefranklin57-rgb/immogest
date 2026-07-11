@@ -346,3 +346,25 @@ supprimés : leur `immeuble_id` passe à NULL et ils flottent, orphelins, dans l
 - Toute suppression d'une entité « parent » doit nettoyer ses enfants générés
   automatiquement (locaux, annonces). Ne pas se reposer sur `ON DELETE SET NULL`
   pour les lignes qui n'ont pas de sens sans leur parent.
+
+---
+## 2026-07-11 — Blindage intégrité référentielle (FK manquantes)
+
+### Contexte
+Audit référentiel : 0 orphelin actuel, mais 6 relations n'avaient AUCUNE contrainte
+FK → rien au niveau base n'empêchait de recréer des orphelins.
+
+### Migration V018 — FK ajoutées
+- `declarations.locataire_id` → locataires **CASCADE** (colonne convertie TEXT→bigint, table vide)
+- `dossiers_juridiques.locataire_id` → locataires **CASCADE**
+- `dossiers_juridiques.immeuble_id` → immeubles **SET NULL** (garde l'historique juridique)
+- `scores_locataires.locataire_id` → locataires **CASCADE**
+- `timeline_juridique.locataire_id` → locataires **CASCADE**
+- `marketplace_annonces.immeuble_id` → immeubles **CASCADE**
+
+### Conséquences
+- Supprimer un locataire efface désormais ses declarations/dossiers/scores/timeline/paiements (au niveau DB).
+- Supprimer un immeuble efface ses annonces (DB) — le nettoyage app des annonces devient redondant mais reste inoffensif.
+- `locataires.immeuble_id → immeubles` reste volontairement en **SET NULL** (ne jamais
+  auto-supprimer des locataires réels) : le nettoyage des locaux 'libre' se fait côté app
+  (`supprimerDefinitif`), avec garde bloquante si locataire actif.
