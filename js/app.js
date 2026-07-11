@@ -2983,10 +2983,10 @@ window.IG.app = (function() {
       if (statut === 'validated' && d) {
         await window.IG.db.insert('paiements', [{
           locataire_id: d.locataire_id,
-          immeuble_id:  d.immeuble_id || null,
           mois:         d.mois_c,
           annee:        d.annee_c,
           montant:      d.montant,
+          date_paiement: new Date().toISOString().split('T')[0],
           mode_paiement: d.mode || d.mode_paiement || 'espèces',
           reference:    d.reference || '',
           note:         'Déclaration validée'

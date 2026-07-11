@@ -241,3 +241,34 @@ Format : `[DATE] FICHIER — Erreur → Solution`
 
 ### Règle
 - Ne jamais référencer une table hors du schéma V006+migrations. Avant d'ajouter une table à `ALLOWED_TABLES`, vérifier qu'elle existe ET si elle a `created_at` (sinon l'ajouter à `ORDER_COL`).
+
+---
+## 2026-07-11 — Audit complet : incohérences colonnes ↔ schéma
+
+### Méthode
+Introspection du schéma réel (31 tables) via `/migrate` + `information_schema`, puis
+croisement de chaque `insert`/`upsert`/`update` du frontend vivant avec les colonnes réelles.
+
+### Bugs trouvés et corrigés
+1. **`js/app.js` — insert `paiements` avec colonne `immeuble_id` inexistante**
+   - À la validation d'une déclaration de paiement (`_validerDeclaration`), l'insert
+     passait `immeuble_id` : la table `paiements` n'a PAS cette colonne → PostgREST
+     `PGRST204` → « Erreur base de données » à chaque validation.
+   - **Fix** : `immeuble_id` retiré + ajout de `date_paiement` (nécessaire au FIFO).
+
+2. **`messages_internes` — dérive schéma↔code sur 6 colonnes**
+   - Le code (app.js, owner.js, Worker `/db`) lit/écrit `de_user_id`, `pour_user_id`,
+     `de_nom`, `pour_nom`, `date_envoi`, `lu_par` ; la table n'avait que
+     `expediteur_id`/`destinataire_id`/`lu`/`created_at`. → `42703` sur CHAQUE select
+     messagerie des rôles non-admin + échec des envois.
+   - **Fix** : Migration V016 (table vide → ajout additif des 6 colonnes). Zéro refonte de code.
+
+### Constaté mais NON corrigé (code mort — non chargé par index.html)
+- `js/monetisation.js`, `js/portail-locataire.js` : appellent un client Supabase `_sb`
+  jamais défini (ReferenceError). Non chargés par `index.html` → inoffensifs.
+- `js/_onboarding.js` (erreur de syntaxe ligne 133), `_onboarding2.js`, `ai-service.js`,
+  `cinetpay.js`, `pay-config.js`, `push-module.js` : code mort.
+
+### Recommandation (dette, pas un bug bloquant)
+- `parametres` est sauvegardé via `insert` répété (4 endroits dans app.js) → crée des
+  lignes dupliquées par tenant. Devrait être un `upsert` par `tenant_id`.
