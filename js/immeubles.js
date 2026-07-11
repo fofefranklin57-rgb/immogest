@@ -193,8 +193,14 @@ window.IG.immeubles = (function() {
 
     var modal = window.IG.utils.showModal(html, { width: '520px' });
 
+    var _saving = false;
     modal.box.querySelector('#form-immeuble').addEventListener('submit', async function(e) {
       e.preventDefault();
+      if (_saving) return;                         // verrou anti double-submit → évite les immeubles en double
+      _saving = true;
+      var _btn = e.target.querySelector('button[type="submit"]');
+      var _lbl = _btn ? _btn.textContent : '';
+      if (_btn) { _btn.disabled = true; _btn.textContent = t('Enregistrement…'); }
       var fd = new FormData(e.target);
       var data = imm ? { ...imm } : { id: window.IG.utils.uid() };
       data.nom_immeuble = fd.get('nom_immeuble');
@@ -223,6 +229,9 @@ window.IG.immeubles = (function() {
         }
       } catch(err) {
         toast(t('Erreur') + ': ' + err.message, 'red');
+      } finally {
+        _saving = false;
+        if (_btn) { _btn.disabled = false; _btn.textContent = _lbl; }
       }
     });
   }

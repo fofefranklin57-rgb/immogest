@@ -272,3 +272,31 @@ croisement de chaque `insert`/`upsert`/`update` du frontend vivant avec les colo
 ### Recommandation (dette, pas un bug bloquant)
 - `parametres` est sauvegardé via `insert` répété (4 endroits dans app.js) → crée des
   lignes dupliquées par tenant. Devrait être un `upsert` par `tenant_id`.
+
+---
+## 2026-07-11 — Archivage immeuble en erreur + immeubles en double
+
+### Symptômes (signalés en prod avec capture)
+- Clic sur 📦 Archiver un immeuble → « Erreur base de données ».
+- 2 immeubles identiques créés : le bouton Sauvegarder est resté ~1 min sans réaction,
+  2e clic → 2 immeubles.
+
+### Causes
+1. **Colonnes `archive` / `date_archive` absentes de `immeubles`**
+   - `js/immeubles.js confirmerArchivage()` fait `sauvegarder({...imm, archive:true, date_archive:...})`
+     et `charger()`/vue Archives (`js/app.js`) filtrent sur `i.archive`. Ces colonnes
+     n'existaient pas → l'upsert d'archivage → PostgREST 42703/PGRST204 → « Erreur base de données ».
+2. **Pas de verrou anti double-submit sur le formulaire immeuble**
+   - `js/immeubles.js afficherFormulaire()` génère un `id` neuf (`uid()`) à CHAQUE submit d'un
+     nouvel immeuble et ne désactivait pas le bouton pendant l'`await` → un 2e clic (pendant
+     une sauvegarde lente) crée un 2e immeuble.
+
+### Corrections
+- **Migration V017** : `ALTER TABLE immeubles ADD archive BOOLEAN DEFAULT false, date_archive TIMESTAMPTZ`.
+  Appliquée en prod → l'archivage fonctionne.
+- **`js/immeubles.js`** : verrou `_saving` + bouton désactivé (« Enregistrement… ») pendant
+  la sauvegarde, relâché dans `finally`. Empêche les doublons.
+
+### Règle
+- Tout `addEventListener('submit', …)` qui écrit en DB doit désactiver son bouton pendant
+  l'`await` (verrou anti double-submit). À répliquer sur les formulaires locataire/paiement.
