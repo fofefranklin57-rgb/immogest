@@ -102,7 +102,7 @@ function _corsHeaders(request) {
 const ALLOWED_TABLES = [
   'immeubles','locataires','paiements','users_app','parametres',
   'locale_profiles','archives','corbeille','declarations','abonnements',
-  'messages_internes','marketplace_annonces','annonces','invite_codes',
+  'messages_internes','marketplace_annonces','invite_codes',
   'dossiers_juridiques','timeline_juridique','templates_docs',
   'workflow_recouvrement','feature_flags','events_log','scores_locataires',
   'user_organisations','promo_codes','owner_logs','prestataires','signatures'
@@ -723,12 +723,18 @@ ${_footer()}</body></html>`;
           if (filters) Object.entries(filters).forEach(([k,v]) => {
             if (SAFE_KEY.test(k)) qs += '&' + k + '=eq.' + encodeURIComponent(v);
           });
-          // Tables sans created_at : order by id
-          const NO_CREATED_AT = ['declarations','corbeille'];
+          // Colonne de tri par table : ne jamais trier par created_at sur
+          // les tables qui ne l'ont pas (sinon PostgREST 42703 → "Erreur base de données").
+          const ORDER_COL = {
+            declarations: 'id', corbeille: 'id',
+            feature_flags: 'id', scores_locataires: 'id',
+            locale_profiles: 'tenant_id'
+          };
+          const orderCol = ORDER_COL[table] || 'created_at';
           const selectFields = table === 'users_app'
             ? 'id,tenant_id,role,nom,telephone,email,actif,immeubles,immeubles_assignes,permissions,locataire_id,immeuble_id,created_at'
             : '*';
-          qs += '&select=' + selectFields + '&order=' + (NO_CREATED_AT.includes(table) ? 'id.asc' : 'created_at.asc');
+          qs += '&select=' + selectFields + '&order=' + orderCol + '.asc';
           endpoint += qs;
 
         } else if (action === 'upsert') {

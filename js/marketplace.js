@@ -45,19 +45,11 @@ window.IG.marketplace = (function() {
 
   // ── Charger annonces ──────────────────────────────────────────
   async function getAnnonces(filters) {
+    // Table v1 `annonces` supprimée : on lit uniquement `marketplace_annonces`.
     try {
-      // Essayer marketplace_annonces, fallback sur annonces (v1)
-      var res = await db().select('marketplace_annonces', filters);
-      if (res.length === 0 && !filters) {
-        res = await db().select('annonces', filters).catch(function() { return []; });
-      }
-      return res;
+      return await db().select('marketplace_annonces', filters);
     } catch(e) {
-      try {
-        return await db().select('annonces', filters);
-      } catch(e2) {
-        return [];
-      }
+      return [];
     }
   }
 

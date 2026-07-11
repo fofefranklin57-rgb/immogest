@@ -218,3 +218,26 @@ Format : `[DATE] FICHIER — Erreur → Solution`
 - Fonction `_telFilter()` dans worker : génère toutes les variantes de numéro (1-3 chiffres d'indicatif) via filtre `or=()` Supabase
 - Logique login : si tenant trouvé → vérifier mdp immédiatement (pas de fallback)
 - Migration V014 : `ALTER TABLE immeubles ADD COLUMN IF NOT EXISTS type_honoraires/valeur_honoraires`
+
+---
+## 2026-07-11 — Audit Supabase : « Erreur base de données » en masse
+
+### Symptômes
+- Nombreuses alertes « Erreur base de données » côté app + logs PostgREST Supabase pleins d'erreurs 42P01/42703.
+
+### Causes (diagnostic prouvé via /migrate + information_schema)
+1. **Tables V1 supprimées encore appelées** : `signatures` et `annonces` n'existent plus en DB (nettoyage V1→V2 du 15 juin), mais le frontend les interroge encore → PostgREST `42P01 relation "…" does not exist` → Worker renvoie 500 « Erreur base de données ».
+   - `js/signature.js` : insert + select sur `signatures` (fonctionnalité de signature électronique réelle, table jamais recréée dans V006).
+   - `js/marketplace.js` : fallback mort `getAnnonces()` vers `annonces` (remplacé par `marketplace_annonces`).
+2. **Tri `created_at` forcé sur tables sans cette colonne** (bug latent) : le handler `/db` du Worker ajoutait `&order=created_at.asc` à toutes les tables sauf `declarations`/`corbeille`. Or `locale_profiles`, `feature_flags`, `scores_locataires` n'ont pas de `created_at` (`42703`). Non déclenché aujourd'hui (frontend ne les select pas) mais cassait tout select futur (ex. LegalOS scoring).
+
+### Corrections
+- **Migration V015** : recréation de la table `signatures` (schéma identique à `supabase_marketplace_signatures.sql`, avec `created_at`). Appliquée en prod via `/migrate`.
+- **Worker `workers/notif-cron.js`** :
+  - `annonces` retirée de `ALLOWED_TABLES`.
+  - Tri robuste par table via map `ORDER_COL` (`locale_profiles`→`tenant_id`, `feature_flags`/`scores_locataires`→`id`, sinon `created_at`). Plus jamais de `created_at` sur une table qui ne l'a pas.
+  - Redéployé (version `6b7161bb`).
+- **`js/marketplace.js`** : `getAnnonces()` lit uniquement `marketplace_annonces`, fallback `annonces` supprimé.
+
+### Règle
+- Ne jamais référencer une table hors du schéma V006+migrations. Avant d'ajouter une table à `ALLOWED_TABLES`, vérifier qu'elle existe ET si elle a `created_at` (sinon l'ajouter à `ORDER_COL`).
