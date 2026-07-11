@@ -319,3 +319,30 @@ réellement un doublon.
 - Le Worker `/db` renvoie `{success:true}` pour tout DELETE sans vérifier `res.ok`
   (ligne 783 notif-cron.js). OK pour `immeubles` (SET NULL), mais à surveiller pour
   d'autres tables avec FK restrictives : un échec DELETE serait masqué.
+
+---
+## 2026-07-11 — Résidus après suppression d'immeuble (locaux orphelins)
+
+### Symptôme
+Après suppression définitive d'un immeuble, des « résidus » restaient dans l'app.
+
+### Cause
+Créer un immeuble génère **1 ligne `locataires` par local** (statut 'libre', via
+`_creerLocauxManquants`). La FK `locataires.immeuble_id → immeubles` est en
+`ON DELETE SET NULL` → à la suppression de l'immeuble, ces locaux ne sont PAS
+supprimés : leur `immeuble_id` passe à NULL et ils flottent, orphelins, dans l'app.
+(Ex. constaté : 1 immeuble de 34 locaux supprimé → 34 locataires orphelins.)
+
+### Corrections
+- **`js/immeubles.js supprimerDefinitif()`** : suppression en cascade côté app —
+  supprime d'abord les locaux vides (`statut='libre'`) de l'immeuble + les
+  `marketplace_annonces` liées, PUIS l'immeuble ; recharge locataires + refresh.
+  (On ne supprime que les locaux 'libre' : la garde bloque déjà si des locataires
+  actifs existent.)
+- **Nettoyage prod ponctuel** : `DELETE FROM locataires WHERE immeuble_id IS NULL
+  AND statut='libre'` → 34 orphelins purgés.
+
+### Règle
+- Toute suppression d'une entité « parent » doit nettoyer ses enfants générés
+  automatiquement (locaux, annonces). Ne pas se reposer sur `ON DELETE SET NULL`
+  pour les lignes qui n'ont pas de sens sans leur parent.

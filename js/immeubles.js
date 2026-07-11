@@ -384,9 +384,25 @@ window.IG.immeubles = (function() {
       t('Cette action est irréversible : l\'immeuble et ses locaux seront effacés.'),
       async function() {
         try {
+          // 1. Supprimer les locaux vides (locataires 'libre') rattachés à cet immeuble,
+          //    sinon ils resteraient orphelins (FK ON DELETE SET NULL) → résidus dans l'app.
+          var locaux = await db().select('locataires', { immeuble_id: id }).catch(function() { return []; });
+          locaux = (locaux || []).filter(function(l) { return l.statut === 'libre'; });
+          for (var i = 0; i < locaux.length; i++) {
+            try { await db().remove('locataires', locaux[i].id); } catch(_) {}
+          }
+          // 2. Supprimer les annonces marketplace liées à cet immeuble
+          try {
+            var ann = await db().select('marketplace_annonces', { immeuble_id: id });
+            for (var j = 0; j < (ann || []).length; j++) {
+              try { await db().remove('marketplace_annonces', ann[j].id); } catch(_) {}
+            }
+          } catch(_) {}
+          // 3. Supprimer l'immeuble lui-même
           await db().remove('immeubles', id);
           _cache = _cache.filter(function(i) { return i.id != id; });
-          if (window.IG.app && window.IG.app.refresh) window.IG.app.refresh();
+          if (window.IG.locataires && window.IG.locataires.charger) { try { await window.IG.locataires.charger(); } catch(_) {} }
+          if (window.IG.app && window.IG.app.refresh) await window.IG.app.refresh();
           if (window.IG.plans) window.IG.plans.verifierRetrogradation();
           window.IG.utils.showToast('🗑️ ' + t('Immeuble supprimé définitivement'), 'green');
         } catch(err) {
