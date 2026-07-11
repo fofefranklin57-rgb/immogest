@@ -300,3 +300,22 @@ croisement de chaque `insert`/`upsert`/`update` du frontend vivant avec les colo
 ### Règle
 - Tout `addEventListener('submit', …)` qui écrit en DB doit désactiver son bouton pendant
   l'`await` (verrou anti double-submit). À répliquer sur les formulaires locataire/paiement.
+
+---
+## 2026-07-11 — Ajout : suppression définitive d'un immeuble
+
+### Besoin
+La carte immeuble n'offrait que 📦 Archiver (soft-delete). Impossible de supprimer
+réellement un doublon.
+
+### Implémentation
+- **`js/immeubles.js supprimerDefinitif(id)`** : confirmation rouge forte + garde
+  « locataires actifs » (bloque si l'immeuble en a) → `db().remove('immeubles', id)`.
+- Bouton 🗑️ ajouté sur la carte, à côté de 📦.
+- Sûr côté DB : la seule FK vers `immeubles` est `locataires.immeuble_id` en
+  `ON DELETE SET NULL` → le DELETE ne peut pas être bloqué par une contrainte.
+
+### Note
+- Le Worker `/db` renvoie `{success:true}` pour tout DELETE sans vérifier `res.ok`
+  (ligne 783 notif-cron.js). OK pour `immeubles` (SET NULL), mais à surveiller pour
+  d'autres tables avec FK restrictives : un échec DELETE serait masqué.
