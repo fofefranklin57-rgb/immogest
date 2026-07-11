@@ -269,9 +269,12 @@ croisement de chaque `insert`/`upsert`/`update` du frontend vivant avec les colo
 - `js/_onboarding.js` (erreur de syntaxe ligne 133), `_onboarding2.js`, `ai-service.js`,
   `cinetpay.js`, `pay-config.js`, `push-module.js` : code mort.
 
-### Recommandation (dette, pas un bug bloquant)
+### Recommandation (dette, pas un bug bloquant) — ✅ RÉSOLUE le 2026-07-11
 - `parametres` est sauvegardé via `insert` répété (4 endroits dans app.js) → crée des
   lignes dupliquées par tenant. Devrait être un `upsert` par `tenant_id`.
+- **Résolu** : (1) les 4 blocs `insert('parametres')` sont désormais tolérants au conflit
+  (sur échec → relire + update, jamais de doublon) ; (2) migration V019 pose
+  `UNIQUE(tenant_id)` sur `parametres` (garantie au niveau base). Voir entrée dédiée plus bas.
 
 ---
 ## 2026-07-11 — Archivage immeuble en erreur + immeubles en double
@@ -368,3 +371,17 @@ FK → rien au niveau base n'empêchait de recréer des orphelins.
 - `locataires.immeuble_id → immeubles` reste volontairement en **SET NULL** (ne jamais
   auto-supprimer des locataires réels) : le nettoyage des locaux 'libre' se fait côté app
   (`supprimerDefinitif`), avec garde bloquante si locataire actif.
+
+---
+## 2026-07-11 — Dette parametres résolue (anti-doublon réglages)
+
+### Cause
+`parametres` = table singleton par tenant, mais aucune contrainte ne l'imposait.
+La logique `select → si row update, sinon insert` (4 endroits dans app.js) créait un
+doublon si deux sections étaient enregistrées en concurrence AVANT que la 1ère ligne existe.
+
+### Corrections
+- **`js/app.js`** : les 4 blocs `insert('parametres')` attrapent l'échec (conflit) →
+  relisent la ligne existante et font un `update` à la place (aucun doublon, aucune erreur UI).
+- **Migration V019** : `ALTER TABLE parametres ADD CONSTRAINT uq_parametres_tenant UNIQUE (tenant_id)`.
+  Garantie définitive au niveau base (0 doublon existant → posable sans échec).

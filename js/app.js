@@ -1868,7 +1868,14 @@ window.IG.app = (function() {
         await window.IG.db.update('parametres', row.id, { settings });
       } else {
         var session = window.IG.auth.getSession();
-        await window.IG.db.insert('parametres', [{ tenant_id: session.tenantId, settings }]);
+        try {
+          await window.IG.db.insert('parametres', [{ tenant_id: session.tenantId, settings }]);
+        } catch(_e) {
+          // Course : une ligne parametres a été créée entre-temps → relire et mettre à jour (jamais de doublon)
+          var pExist = await window.IG.db.select('parametres');
+          if (pExist && pExist[0]) await window.IG.db.update('parametres', pExist[0].id, { settings });
+          else throw _e;
+        }
       }
       // Mise à jour cache _data
       _data.settings = _data.settings || {};
@@ -1915,7 +1922,14 @@ window.IG.app = (function() {
         await window.IG.db.update('parametres', row.id, { settings });
       } else {
         var session = window.IG.auth.getSession();
-        await window.IG.db.insert('parametres', [{ tenant_id: session.tenantId, settings }]);
+        try {
+          await window.IG.db.insert('parametres', [{ tenant_id: session.tenantId, settings }]);
+        } catch(_e) {
+          // Course : une ligne parametres a été créée entre-temps → relire et mettre à jour (jamais de doublon)
+          var pExist = await window.IG.db.select('parametres');
+          if (pExist && pExist[0]) await window.IG.db.update('parametres', pExist[0].id, { settings });
+          else throw _e;
+        }
       }
       // Injecter dans session.parametres pour que les docs l'utilisent immédiatement
       var sess = window.IG.auth.getSession();
@@ -1988,7 +2002,14 @@ window.IG.app = (function() {
         await window.IG.db.update('parametres', row.id, { settings });
       } else {
         var session = window.IG.auth.getSession();
-        await window.IG.db.insert('parametres', [{ tenant_id: session.tenantId, settings }]);
+        try {
+          await window.IG.db.insert('parametres', [{ tenant_id: session.tenantId, settings }]);
+        } catch(_e) {
+          // Course : une ligne parametres a été créée entre-temps → relire et mettre à jour (jamais de doublon)
+          var pExist = await window.IG.db.select('parametres');
+          if (pExist && pExist[0]) await window.IG.db.update('parametres', pExist[0].id, { settings });
+          else throw _e;
+        }
       }
       // Mettre à jour la session en mémoire
       if (window.IG.auth && window.IG.auth.getSession) {
@@ -2030,7 +2051,14 @@ window.IG.app = (function() {
         await window.IG.db.update('parametres', row.id, { settings });
       } else {
         var session = window.IG.auth.getSession();
-        await window.IG.db.insert('parametres', [{ tenant_id: session.tenantId, settings }]);
+        try {
+          await window.IG.db.insert('parametres', [{ tenant_id: session.tenantId, settings }]);
+        } catch(_e) {
+          // Course : une ligne parametres a été créée entre-temps → relire et mettre à jour (jamais de doublon)
+          var pExist = await window.IG.db.select('parametres');
+          if (pExist && pExist[0]) await window.IG.db.update('parametres', pExist[0].id, { settings });
+          else throw _e;
+        }
       }
       var msg = document.getElementById('mode-publication-saved');
       if (msg) { msg.style.display = 'block'; setTimeout(function() { msg.style.display = 'none'; }, 2000); }
