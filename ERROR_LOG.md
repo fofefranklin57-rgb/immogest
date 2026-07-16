@@ -392,6 +392,20 @@ Franklin faisant des sessions nocturnes, son token était simplement périmé.
 ### Déblocage immédiat
 Se déconnecter puis se reconnecter régénère un token frais (valable 30j après déploiement worker).
 
+### Suite (même jour) — pourquoi le blocage persistait malgré la reconnexion
+Audit worker : sain (health OK, `/login` renvoie bien un `sessionToken`, `SESSION_SECRET` configuré,
+admin = FULL_ACCESS sur `immeubles`). « Session invalide » ne peut donc venir QUE du token.
+**Deux pièges côté client** :
+1. **`js/auth.js` `_loadSession()`** ne validait que `s.tenantId`, jamais l'expiration du token.
+   Au rechargement, l'app restaurait la session **avec un token mort** → dashboard → rebloqué.
+   Rafraîchir ne servait à rien, il fallait se déconnecter *explicitement*.
+   → Fix : `_tokenExpired()` décode l'`exp` du JWT ; si périmé **et** en ligne, la session est
+   purgée → écran de connexion. Hors ligne, la session est conservée (lecture du cache).
+2. **`sw.js`** cache-first : l'ancien `js/supabase.js` restait servi depuis le cache, donc le
+   correctif n'atteignait jamais l'appareil. → Fix : `CACHE_NAME` v37 → **v38** (réinstall + purge).
+
+⚠️ Penser à bumper `CACHE_NAME` dans `sw.js` à CHAQUE correctif JS, sinon il ne parvient pas aux users.
+
 ---
 ## 2026-07-11 — Dette parametres résolue (anti-doublon réglages)
 

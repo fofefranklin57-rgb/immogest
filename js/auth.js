@@ -28,13 +28,37 @@ window.IG.auth = (function() {
     return cur >= min;
   }
 
+  // ── Décoder l'expiration d'un token de session (JWT HS256) ─────
+  function _tokenExpired(token) {
+    try {
+      var parts = String(token || '').split('.');
+      if (parts.length !== 3) return false;              // format inconnu → ne pas invalider
+      var b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4) b64 += '=';
+      var payload = JSON.parse(atob(b64));
+      return !!(payload.exp && Date.now() > payload.exp);
+    } catch(_) { return false; }
+  }
+
   // ── Charger session depuis localStorage ───────────────────────
   function _loadSession() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return null;
       var s = JSON.parse(raw);
-      if (s && s.tenantId) { SESSION = s; return s; }
+      if (s && s.tenantId) {
+        // Token périmé + réseau dispo → forcer une reconnexion propre
+        // (évite de rouvrir le dashboard avec un token mort → « Session invalide »)
+        var online = (typeof navigator === 'undefined') || navigator.onLine !== false;
+        if (online && s.sessionToken && _tokenExpired(s.sessionToken)) {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem('SESSION');
+          SESSION = null;
+          return null;
+        }
+        SESSION = s;
+        return s;
+      }
     } catch(_) {}
     return null;
   }
