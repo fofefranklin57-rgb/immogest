@@ -373,6 +373,26 @@ FK → rien au niveau base n'empêchait de recréer des orphelins.
   (`supprimerDefinitif`), avec garde bloquante si locataire actif.
 
 ---
+## 2026-07-16 — « Erreur: Session invalide » bloquant l'ajout d'immeuble
+
+### Cause
+Le worker déployé (`workers/notif-cron.js`, cf. `wrangler.toml` main) valide `/db` via un
+**token de session signé** dont la durée de vie était de **24h** (`exp: Date.now() + 24*3600*1000`).
+Passé 24h, `_verifyToken` renvoie `null` → `/db` renvoie **401 « Session invalide »**.
+Côté front, `js/supabase.js` ne posait qu'un flag 15s (`_markAuthFailed`) sans déconnecter :
+l'utilisateur restait bloqué sur un toast d'erreur en cul-de-sac (impossible de travailler).
+Franklin faisant des sessions nocturnes, son token était simplement périmé.
+
+### Corrections
+- **`workers/notif-cron.js`** : TTL du token porté à **30 jours** (fin des déconnexions quotidiennes).
+- **`js/supabase.js`** : sur 401 « Session invalide » / « Token invalide ou expiré », appel de
+  `_forceReauth()` → toast *« Session expirée, veuillez vous reconnecter »* + `auth.logout()`
+  (retour propre à l'écran de connexion). Un SELECT sur table offline sert d'abord le cache local.
+
+### Déblocage immédiat
+Se déconnecter puis se reconnecter régénère un token frais (valable 30j après déploiement worker).
+
+---
 ## 2026-07-11 — Dette parametres résolue (anti-doublon réglages)
 
 ### Cause

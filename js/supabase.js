@@ -26,6 +26,23 @@ window.IG.db = (function() {
     _sbFailTimer = setTimeout(function() { _sbAuthFailed = false; }, 15000);
   }
 
+  // ── Session expirée/invalide → reconnexion propre (débouncée) ──
+  var _reauthPrompted = false;
+  function _forceReauth() {
+    if (_reauthPrompted) return;      // ne déclencher qu'une seule fois
+    _reauthPrompted = true;
+    try {
+      if (window.IG.utils && window.IG.utils.showToast) {
+        window.IG.utils.showToast('Session expirée, veuillez vous reconnecter', 'orange');
+      }
+    } catch(_) {}
+    // Laisser le temps au toast de s'afficher avant de renvoyer vers la connexion
+    setTimeout(function() {
+      _reauthPrompted = false;
+      if (window.IG.auth && window.IG.auth.logout) window.IG.auth.logout();
+    }, 1500);
+  }
+
   function resetAuth() { _sbAuthFailed = false; }
 
   function _readJSON(key, fallback) {
@@ -199,8 +216,14 @@ window.IG.db = (function() {
           ? _applyLocal('select', table, null, filters, s)
           : _offlineResult(action, table, data, filters, s);
       }
-      if (res.status === 401 && json.error === 'Session invalide') {
+      if (res.status === 401 && (json.error === 'Session invalide' || json.error === 'Token invalide ou expiré')) {
         _markAuthFailed();
+        // Pour un SELECT, on peut servir le cache local le temps de la reconnexion
+        if (action === 'select' && OFFLINE_TABLES.indexOf(table) !== -1) {
+          _forceReauth();
+          return _applyLocal('select', table, null, filters, s);
+        }
+        _forceReauth();
       }
       throw new Error(json.error || 'Erreur DB');
     }

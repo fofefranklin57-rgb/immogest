@@ -131,7 +131,7 @@ export default {
         role: role || 'admin',
         ...extra,
         iat: Date.now(),
-        exp: Date.now() + 24 * 3600 * 1000
+        exp: Date.now() + 30 * 24 * 3600 * 1000  // 30 jours (évite les déconnexions quotidiennes)
       }, SESSION_SECRET);
     };
 
