@@ -407,6 +407,41 @@ admin = FULL_ACCESS sur `immeubles`). « Session invalide » ne peut donc venir 
 ⚠️ Penser à bumper `CACHE_NAME` dans `sw.js` à CHAQUE correctif JS, sinon il ne parvient pas aux users.
 
 ---
+## 2026-07-16 — CAUSE RACINE : /login ne trouvait aucun compte (n° avec espace)
+
+### Cause
+`_telFilter` (workers/notif-cron.js) retire les séparateurs de la **saisie**, puis compare à la
+valeur **brute** stockée en base. Le tenant CRAA est stocké `"+237 690409929"` **avec une espace** :
+aucune variante générée (toutes sans séparateur) ne pouvait matcher.
+→ `/login` répondait « Aucun compte trouvé pour ce numéro » → **reconnexion impossible**.
+C'est ce qui rendait le blocage « Session invalide » inéchappable : token expiré + reconnexion
+cassée. Les 3 correctifs de session précédents étaient nécessaires mais **ne pouvaient pas
+débloquer** l'app. `/login-tenant` (comparaison exacte) fonctionnait, lui — d'où le contraste
+qui a permis de trouver.
+
+### Corrections
+- `_telFilter` : ajoute `telephone.ilike.*<9 derniers chiffres>*` (**additif** → aucune régression).
+- `_telSame` + `_pickByTel` : tranchent le candidat. **Indispensable** : le `ilike` ramène des faux
+  positifs (`+1 555690409929` finit par les mêmes 9 chiffres que `+237 690409929` → mauvais compte
+  retenu, détecté par les tests). Égalité stricte d'abord, puis suffixe national ≥ 9 chiffres,
+  puis le n° stocké le plus court.
+- Appliqué à `/login`, `/login-portal` et la résolution du locataire.
+- 13 tests unitaires + vérifié en prod sur 3 formats de saisie.
+
+### Leçon
+Le code était juste, la **donnée** était sale. Un `eq.` sur une colonne texte non normalisée est
+un piège : toujours prévoir la tolérance au formatage OU normaliser à l'écriture.
+
+---
+## 2026-07-16 — Sécurité /db : id non encodé + fuite d'erreurs SQL
+
+- `delete`/`update` concaténaient l'`id` client sans `encodeURIComponent` (les `select` le
+  faisaient déjà via `SAFE_KEY`) → injection dans la query PostgREST (portée : son propre tenant).
+  → Corrigé : `encodeURIComponent` + `id` obligatoire.
+- Les erreurs SQL brutes étaient renvoyées au client (`detail: result`) → fuite de schéma.
+  → Corrigé : journalisées côté worker, message générique au client.
+
+---
 ## 2026-07-11 — Dette parametres résolue (anti-doublon réglages)
 
 ### Cause
