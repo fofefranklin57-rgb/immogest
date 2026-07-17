@@ -15,6 +15,29 @@ async function _sha256(str) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
+function _telDigits(telephone) {
+  return String(telephone || '').replace(/\D/g, '');
+}
+
+// Clé de recherche large : les 9 derniers chiffres. Sert UNIQUEMENT à construire un
+// filtre `ilike` tolérant au formatage stocké. Volontairement laxiste — la sélection
+// finale est tranchée par _telSame/_pickByTel, jamais par cette clé seule.
+function _telKey(telephone) {
+  return _telDigits(telephone).slice(-9);
+}
+
+// Deux numéros désignent-ils la même ligne ? Égalité stricte des chiffres, ou bien
+// l'un est le suffixe national de l'autre (« 690409929 » ⊂ « 237690409929 »).
+// Le seuil de 9 chiffres évite qu'un suffixe court fasse matcher n'importe quoi.
+function _telSame(a, b) {
+  const x = _telDigits(a), y = _telDigits(b);
+  if (!x || !y) return false;
+  if (x === y) return true;
+  const long = x.length >= y.length ? x : y;
+  const short = x.length >= y.length ? y : x;
+  return short.length >= 9 && long.endsWith(short);
+}
+
 function _telFilter(telephone) {
   const raw = String(telephone || '').replace(/[\s\-\(\)]/g, '');
   const variants = [raw];
@@ -30,8 +53,34 @@ function _telFilter(telephone) {
     }
   }
   const unique = [...new Set(variants.filter(Boolean))];
-  if (unique.length === 1) return 'telephone=eq.' + encodeURIComponent(unique[0]);
-  return 'or=(' + unique.map(v => 'telephone.eq.' + encodeURIComponent(v)).join(',') + ')';
+  const conds = unique.map(v => 'telephone.eq.' + encodeURIComponent(v));
+
+  // Les variantes ci-dessus sont toutes SANS séparateur, alors que la base peut
+  // stocker « +237 690409929 » (avec espace) : aucune ne matchait, rendant /login
+  // incapable de trouver le compte. On ajoute donc un filtre tolérant sur les 9
+  // chiffres significatifs. Purement additif : les cas qui marchaient marchent toujours.
+  // Le candidat retenu est ensuite re-vérifié en JS via _telKey (cf. /login).
+  const key = _telKey(raw);
+  if (key.length === 9) conds.push('telephone.ilike.*' + encodeURIComponent(key) + '*');
+
+  if (conds.length === 1) return 'telephone=eq.' + encodeURIComponent(unique[0]);
+  return 'or=(' + conds.join(',') + ')';
+}
+
+// Parmi des lignes candidates, retient celle dont le numéro correspond réellement.
+// Indispensable : le filtre `ilike` de _telFilter ramène des faux positifs
+// (« +1 555690409929 » se termine par les mêmes 9 chiffres que « +237 690409929 »).
+// Priorité à l'égalité stricte ; en cas d'ambiguïté résiduelle on retient le numéro
+// stocké le plus court (le national plutôt qu'un international qui l'englobe).
+function _pickByTel(rows, telephone) {
+  const list = rows || [];
+  const target = _telDigits(telephone);
+  const exact = list.find(r => _telDigits(r.telephone) === target);
+  if (exact) return exact;
+  const cands = list.filter(r => _telSame(r.telephone, telephone));
+  if (!cands.length) return null;
+  if (cands.length === 1) return cands[0];
+  return cands.slice().sort((a, b) => _telDigits(a.telephone).length - _telDigits(b.telephone).length)[0];
 }
 
 function _b64url(buf) {
@@ -412,7 +461,7 @@ ${_footer()}</body></html>`;
 
         const telFilter = _telFilter(telephone);
         const uRes = await sbFetch('users_app', '?' + telFilter + '&actif=eq.true&select=*');
-        const users = uRes.ok ? await uRes.json() : [];
+        const users = (uRes.ok ? await uRes.json() : []).filter(u => _telSame(u.telephone, telephone));
         const portal = users.find(u => u.role === 'locataire' || u.role === 'bailleur');
         if (!portal) return json({ error: 'Aucun compte locataire ou bailleur trouvé pour ce numéro' }, 404);
         if (portal.actif === false) return json({ error: 'Compte désactivé' }, 403);
@@ -427,9 +476,9 @@ ${_footer()}</body></html>`;
         let locataireId = portal.locataire_id || null;
         let immeubleId = portal.immeuble_id || null;
         if (portal.role === 'locataire' && !locataireId) {
-          const lRes = await sbFetch('locataires', '?tenant_id=eq.' + portal.tenant_id + '&' + telFilter + '&select=id,immeuble_id');
-          const locs = lRes.ok ? await lRes.json() : [];
-          if (locs.length) { locataireId = locs[0].id; immeubleId = locs[0].immeuble_id; }
+          const lRes = await sbFetch('locataires', '?tenant_id=eq.' + portal.tenant_id + '&' + telFilter + '&select=id,immeuble_id,telephone');
+          const loc = _pickByTel(lRes.ok ? await lRes.json() : [], telephone);
+          if (loc) { locataireId = loc.id; immeubleId = loc.immeuble_id; }
         }
 
         const extra = portal.role === 'locataire'
@@ -455,9 +504,9 @@ ${_footer()}</body></html>`;
         const telFilter = _telFilter(telephone);
 
         const tRes = await sbFetch('tenants', '?' + telFilter + '&select=*');
-        const tenants = tRes.ok ? await tRes.json() : [];
-        if (tenants.length) {
-          const tenant = tenants[0];
+        const tenant0 = _pickByTel(tRes.ok ? await tRes.json() : [], telephone);
+        if (tenant0) {
+          const tenant = tenant0;
           if (tenant.password_hash !== passwordHash) return json({ error: 'Mot de passe incorrect' }, 401);
           const uRes = await sbFetch('users_app', '?tenant_id=eq.' + tenant.id + '&role=eq.admin&select=*&limit=1');
           const adminUser = (uRes.ok ? await uRes.json() : [])[0] || { id: 'admin_' + tenant.id, role: 'admin', nom: tenant.nom };
@@ -467,9 +516,8 @@ ${_footer()}</body></html>`;
         }
 
         const uRes = await sbFetch('users_app', '?' + telFilter + '&actif=eq.true&select=*');
-        const users = uRes.ok ? await uRes.json() : [];
-        if (!users.length) return json({ error: 'Aucun compte trouvé pour ce numéro' }, 404);
-        const user = users[0];
+        const user = _pickByTel(uRes.ok ? await uRes.json() : [], telephone);
+        if (!user) return json({ error: 'Aucun compte trouvé pour ce numéro' }, 404);
         if (user.actif === false) return json({ error: 'Compte désactivé' }, 403);
         const storedPwd = user.password || user.password_hash || '';
         const fallback = storedPwd.length === 6 ? await _sha256(storedPwd) : null;
@@ -481,9 +529,9 @@ ${_footer()}</body></html>`;
         let locataireId = user.locataire_id || null;
         let immeubleId = user.immeuble_id || null;
         if (user.role === 'locataire' && !locataireId) {
-          const lRes = await sbFetch('locataires', '?tenant_id=eq.' + user.tenant_id + '&' + telFilter + '&select=id,immeuble_id');
-          const locs = lRes.ok ? await lRes.json() : [];
-          if (locs.length) { locataireId = locs[0].id; immeubleId = locs[0].immeuble_id; }
+          const lRes = await sbFetch('locataires', '?tenant_id=eq.' + user.tenant_id + '&' + telFilter + '&select=id,immeuble_id,telephone');
+          const loc = _pickByTel(lRes.ok ? await lRes.json() : [], telephone);
+          if (loc) { locataireId = loc.id; immeubleId = loc.immeuble_id; }
         }
 
         const extra = user.role === 'locataire'
@@ -761,7 +809,8 @@ ${_footer()}</body></html>`;
             if (!existing.length || !(await inAssignedScope(table, existing))) return json({ error: 'Action hors périmètre' }, 403);
           }
           const delId = filters?.id;
-          endpoint += '?tenant_id=eq.' + tenantId + '&id=eq.' + delId;
+          if (delId === undefined || delId === null || delId === '') return json({ error: 'id requis' }, 400);
+          endpoint += '?tenant_id=eq.' + tenantId + '&id=eq.' + encodeURIComponent(delId);
           method = 'DELETE';
 
         } else if (action === 'update' || action === 'patch') {
@@ -770,7 +819,9 @@ ${_footer()}</body></html>`;
             const existing = await existingRowsForFilters(table, filters);
             if (!existing.length || !(await inAssignedScope(table, existing))) return json({ error: 'Action hors périmètre' }, 403);
           }
-          endpoint += '?tenant_id=eq.' + tenantId + '&id=eq.' + filters.id;
+          if (!filters || filters.id === undefined || filters.id === null || filters.id === '')
+            return json({ error: 'id requis' }, 400);
+          endpoint += '?tenant_id=eq.' + tenantId + '&id=eq.' + encodeURIComponent(filters.id);
           method = 'PATCH';
           sbBody = JSON.stringify(data);
           hdrs['Prefer'] = 'return=representation';
@@ -782,7 +833,11 @@ ${_footer()}</body></html>`;
         const res = await fetch(endpoint, { method, headers: hdrs, body: sbBody });
         if (method === 'DELETE') return json({ success: true, data: [], ok: true });
         const result = await res.json();
-        if (!res.ok) return json({ error: 'Erreur base de données', detail: result }, 500);
+        if (!res.ok) {
+          // Ne pas renvoyer l'erreur SQL brute au client (fuite de schéma/contraintes)
+          await logEvent(tenantId, 'error', 'db.' + action, 'Erreur base de données', { table, detail: result });
+          return json({ error: 'Erreur base de données' }, 500);
+        }
         return json({ success: true, data: result, ok: true });
       }
 
