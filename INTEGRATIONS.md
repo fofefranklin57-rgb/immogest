@@ -30,7 +30,8 @@
 ## 3. Cloudflare Pages
 - **Repo** : `https://github.com/fofefranklin57-rgb/immogest`
 - **Branche déployée** : `main`
-- **URL prod** : `https://immogest-34w.pages.dev`
+- **URL prod (Pages)** : `https://immogest-34w.pages.dev`
+- **Domaine personnalisé** : `https://immogest.afrisaas.com` (sous-domaine acheté par Franklin, ajouté le 20/07/2026, vérifié actif avec SSL)
 - **Deploy** : automatique sur push GitHub
 - **Statut** : ✅ Actif
 
