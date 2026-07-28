@@ -158,6 +158,7 @@ window.IG.immeubles = (function() {
       _fieldNum('chambres', t('Chambres'), imm ? (imm.chambres || 0) : 0) +
       _fieldNum('duplex',   t('Duplex'),   imm ? (imm.duplex   || 0) : 0) +
       '</div>' +
+      _sectionNumerotation(imm) +
       '<div style="margin-bottom:14px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Couleur') + '</label>' +
       '<input type="color" name="couleur" value="' + esc(imm ? (imm.couleur || '#0E6AAF') : '#0E6AAF') + '" style="width:100%;height:36px;border-radius:6px;border:1px solid var(--border2);cursor:pointer;margin-top:4px"></div>' +
       (function() {
@@ -217,6 +218,7 @@ window.IG.immeubles = (function() {
       data.couleur            = fd.get('couleur');
       data.type_honoraires    = fd.get('type_honoraires') || 'aucun';
       data.valeur_honoraires  = parseFloat(fd.get('valeur_honoraires')) || 0;
+      try { data.locaux = JSON.parse(fd.get('locaux') || '[]'); } catch(_) { data.locaux = []; }
       try {
         var estNouveau = !imm;
         await sauvegarder(data);
@@ -292,40 +294,225 @@ window.IG.immeubles = (function() {
       .filter(function(l) { return String(l.immeuble_id) === String(imm.id); })
       .map(function(l) { return (l.appt || '').toUpperCase(); });
 
-    // Ordre : Duplex → Appartement → Studio → Chambre
-    var types = [
-      { key: 'duplex',   prefixe: 'D', label: 'duplex',       count: parseInt(imm.duplex)   || 0 },
-      { key: 'apparts',  prefixe: 'A', label: 'appartement',  count: parseInt(imm.apparts)  || 0 },
-      { key: 'studios',  prefixe: 'S', label: 'studio',       count: parseInt(imm.studios)  || 0 },
-      { key: 'chambres', prefixe: 'C', label: 'chambre',      count: parseInt(imm.chambres) || 0 }
-    ];
+    // Liste des locaux à créer : numérotation personnalisée si définie,
+    // sinon repli sur l'ancien schéma auto (A1, S1, C1, D1).
+    var aCreer;
+    if (Array.isArray(imm.locaux) && imm.locaux.length) {
+      aCreer = imm.locaux
+        .filter(function(l) { return l && String(l.label || '').trim(); })
+        .map(function(l) { return { appt: String(l.label).trim(), label: l.type || 'appartement' }; });
+    } else {
+      var types = [
+        { prefixe: 'D', label: 'duplex',       count: parseInt(imm.duplex)   || 0 },
+        { prefixe: 'A', label: 'appartement',  count: parseInt(imm.apparts)  || 0 },
+        { prefixe: 'S', label: 'studio',       count: parseInt(imm.studios)  || 0 },
+        { prefixe: 'C', label: 'chambre',      count: parseInt(imm.chambres) || 0 }
+      ];
+      aCreer = [];
+      types.forEach(function(tp) {
+        for (var n = 1; n <= tp.count; n++) aCreer.push({ appt: tp.prefixe + n, label: tp.label });
+      });
+    }
 
     var crees = 0;
-    for (var t2 = 0; t2 < types.length; t2++) {
-      var tp = types[t2];
-      for (var n = 1; n <= tp.count; n++) {
-        var appt = tp.prefixe + n;
-        if (locauxExistants.indexOf(appt) === -1) {
-          var local = {
-            id:          window.IG.utils.uid(),
-            tenant_id:   session.tenantId,
-            immeuble_id: imm.id,
-            nom:         'Local ' + appt,
-            appt:        appt,
-            type_local:  tp.label,
-            statut:      'libre',
-            loyer:       0,
-            arrieres:    0,
-            mois_arrieres: 0
-          };
-          try {
-            await db().upsert('locataires', [local]);
-            crees++;
-          } catch(_) {}
-        }
+    for (var i = 0; i < aCreer.length; i++) {
+      var appt = aCreer[i].appt;
+      if (locauxExistants.indexOf(appt.toUpperCase()) === -1) {
+        var local = {
+          id:          window.IG.utils.uid(),
+          tenant_id:   session.tenantId,
+          immeuble_id: imm.id,
+          nom:         'Local ' + appt,
+          appt:        appt,
+          type_local:  aCreer[i].label,
+          statut:      'libre',
+          loyer:       0,
+          arrieres:    0,
+          mois_arrieres: 0
+        };
+        try {
+          await db().upsert('locataires', [local]);
+          crees++;
+        } catch(_) {}
       }
     }
     if (crees > 0) toast(crees + ' local(aux) créé(s) automatiquement', 'blue');
+  }
+
+  // ══ Numérotation personnalisée des locaux ═══════════════════════
+  var TYPES_LOCAL = ['appartement','studio','chambre','duplex','bureau','commerce'];
+  var _locauxDraft = [];   // état de travail de l'éditeur
+
+  function _resumeLocaux(locaux) {
+    if (!locaux || !locaux.length)
+      return t('Auto (A1, A2…) — cliquez pour personnaliser');
+    var apercu = locaux.slice(0, 4).map(function(l) { return l.label; }).join(', ');
+    return locaux.length + ' ' + t('locaux définis') + ' : ' + apercu + (locaux.length > 4 ? '…' : '');
+  }
+
+  function _sectionNumerotation(imm) {
+    var locaux = (imm && Array.isArray(imm.locaux)) ? imm.locaux : [];
+    return '<div style="margin-bottom:14px">' +
+      '<label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Numérotation des locaux') + '</label>' +
+      '<div style="display:flex;gap:8px;align-items:center;margin-top:4px;flex-wrap:wrap">' +
+      '<button type="button" onclick="window.IG.immeubles._ouvrirEditeurLocaux()" ' +
+      'style="padding:9px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;cursor:pointer;white-space:nowrap">🔢 ' + t('Configurer') + '</button>' +
+      '<span id="imm-locaux-resume" style="font-size:12px;color:var(--text3);flex:1;min-width:120px">' + esc(_resumeLocaux(locaux)) + '</span>' +
+      '</div>' +
+      '<input type="hidden" name="locaux" id="imm-locaux-input" value="' + esc(JSON.stringify(locaux)) + '">' +
+      '</div>';
+  }
+
+  function _lettre(n) {                 // 1→A, 26→Z, 27→AA
+    var s = '';
+    while (n > 0) { var r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); }
+    return s;
+  }
+
+  // Génère des étiquettes par étage : (étage)(suffixe) → 1A, 1B, 2A…
+  function _genererLabels(etages, parEtage, style, ordre, type) {
+    var out = [];
+    for (var e = 1; e <= etages; e++) {
+      for (var u = 1; u <= parEtage; u++) {
+        var suf = style === 'chiffres' ? String(u) : _lettre(u);
+        var label = ordre === 'suffixe-etage' ? (suf + e) : (e + suf);
+        out.push({ label: label, type: type || 'appartement', etage: e });
+      }
+    }
+    return out;
+  }
+
+  function _ouvrirEditeurLocaux() {
+    // Charger l'état courant depuis le champ caché
+    var input = document.getElementById('imm-locaux-input');
+    try { _locauxDraft = JSON.parse((input && input.value) || '[]'); } catch(_) { _locauxDraft = []; }
+    if (!Array.isArray(_locauxDraft)) _locauxDraft = [];
+
+    // Pré-remplir le générateur à partir des compteurs si vide
+    var f = document.getElementById('form-immeuble');
+    var total = 0;
+    if (f) ['apparts','studios','chambres','duplex'].forEach(function(k) {
+      var v = parseInt((f.querySelector('[name="' + k + '"]') || {}).value || 0) || 0; total += v;
+    });
+    var parEtageSuggere = total > 0 ? Math.min(total, 4) : 2;
+
+    var typeOpts = TYPES_LOCAL.map(function(tp) {
+      return '<option value="' + tp + '">' + tp.charAt(0).toUpperCase() + tp.slice(1) + '</option>';
+    }).join('');
+
+    var html = '<h3 style="margin-bottom:4px;font-size:16px">🔢 ' + t('Numérotation des locaux') + '</h3>' +
+      '<p style="font-size:12px;color:var(--text3);margin-bottom:16px">' + t('Générez une base puis renommez chaque local librement.') + '</p>' +
+      '<div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:14px">' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">' +
+      '<div><label style="font-size:11px;color:var(--text2)">' + t('Étages') + '</label>' +
+      '<input type="number" id="gen-etages" value="1" min="1" style="' + _inpGen() + '"></div>' +
+      '<div><label style="font-size:11px;color:var(--text2)">' + t('Locaux par étage') + '</label>' +
+      '<input type="number" id="gen-paretage" value="' + parEtageSuggere + '" min="1" style="' + _inpGen() + '"></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">' +
+      '<div><label style="font-size:11px;color:var(--text2)">' + t('Suffixe') + '</label>' +
+      '<select id="gen-style" style="' + _inpGen() + '"><option value="lettres">A, B, C…</option><option value="chiffres">1, 2, 3…</option></select></div>' +
+      '<div><label style="font-size:11px;color:var(--text2)">' + t('Format') + '</label>' +
+      '<select id="gen-ordre" style="' + _inpGen() + '"><option value="etage-suffixe">1A, 1B…</option><option value="suffixe-etage">A1, B1…</option></select></div>' +
+      '<div><label style="font-size:11px;color:var(--text2)">' + t('Type') + '</label>' +
+      '<select id="gen-type" style="' + _inpGen() + '">' + typeOpts + '</select></div>' +
+      '</div>' +
+      '<button type="button" onclick="window.IG.immeubles._genererGrille()" ' +
+      'style="width:100%;margin-top:10px;padding:9px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer">⚡ ' + t('Générer') + '</button>' +
+      '<div style="font-size:11px;color:var(--text3);margin-top:6px">' + t('Générer remplace la liste ci-dessous.') + '</div>' +
+      '</div>' +
+      '<div id="grille-locaux"></div>' +
+      '<div style="display:flex;gap:10px;justify-content:space-between;margin-top:16px">' +
+      '<button type="button" onclick="window.IG.immeubles._ajouterLocal()" style="padding:10px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;cursor:pointer">+ ' + t('Ajouter un local') + '</button>' +
+      '<button type="button" onclick="window.IG.immeubles._enregistrerLocaux()" style="padding:10px 20px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:13px;font-weight:700;cursor:pointer">✅ ' + t('Valider') + '</button>' +
+      '</div>';
+
+    var modal = window.IG.utils.showModal(html, { width: '480px' });
+    _locauxModal = modal;
+    _renderGrille();
+  }
+
+  var _locauxModal = null;
+  function _inpGen() {
+    return 'width:100%;margin-top:3px;padding:7px 9px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px';
+  }
+
+  function _renderGrille() {
+    var box = document.getElementById('grille-locaux');
+    if (!box) return;
+    if (!_locauxDraft.length) {
+      box.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px">' + t('Aucun local — générez ou ajoutez-en un.') + '</div>';
+      return;
+    }
+    var typeOpts = function(sel) {
+      return TYPES_LOCAL.map(function(tp) {
+        return '<option value="' + tp + '"' + (sel === tp ? ' selected' : '') + '>' + tp.charAt(0).toUpperCase() + tp.slice(1) + '</option>';
+      }).join('');
+    };
+    var rows = _locauxDraft.map(function(l, i) {
+      return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">' +
+        '<input value="' + esc(l.label || '') + '" oninput="window.IG.immeubles._majLabel(' + i + ',this.value)" ' +
+        'style="flex:1;padding:7px 9px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;font-weight:600" placeholder="Ex: 1A">' +
+        '<select onchange="window.IG.immeubles._majType(' + i + ',this.value)" ' +
+        'style="padding:7px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px">' + typeOpts(l.type) + '</select>' +
+        '<button type="button" onclick="window.IG.immeubles._suppLocal(' + i + ')" ' +
+        'style="padding:6px 9px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);color:var(--red);font-size:13px;cursor:pointer">✕</button>' +
+        '</div>';
+    }).join('');
+    box.innerHTML =
+      '<div style="font-size:11px;color:var(--text3);margin-bottom:6px">' + _locauxDraft.length + ' ' + t('local(aux)') + '</div>' +
+      '<div style="max-height:260px;overflow-y:auto">' + rows + '</div>';
+  }
+
+  function _genererGrille() {
+    var etages   = Math.max(1, parseInt((document.getElementById('gen-etages') || {}).value || 1));
+    var parEtage = Math.max(1, parseInt((document.getElementById('gen-paretage') || {}).value || 1));
+    var style    = (document.getElementById('gen-style') || {}).value || 'lettres';
+    var ordre    = (document.getElementById('gen-ordre') || {}).value || 'etage-suffixe';
+    var type     = (document.getElementById('gen-type') || {}).value || 'appartement';
+    if (etages * parEtage > 300) { toast(t('Trop de locaux (max 300)'), 'orange'); return; }
+    _locauxDraft = _genererLabels(etages, parEtage, style, ordre, type);
+    _renderGrille();
+  }
+
+  function _ajouterLocal() {
+    _locauxDraft.push({ label: '', type: 'appartement', etage: null });
+    _renderGrille();
+  }
+  function _suppLocal(i)         { _locauxDraft.splice(i, 1); _renderGrille(); }
+  function _majLabel(i, v)       { if (_locauxDraft[i]) _locauxDraft[i].label = v; }
+  function _majType(i, v)        { if (_locauxDraft[i]) _locauxDraft[i].type  = v; }
+
+  function _enregistrerLocaux() {
+    // Nettoyer + valider : labels non vides, uniques (insensible à la casse)
+    var vus = {}, propres = [], dup = null;
+    for (var i = 0; i < _locauxDraft.length; i++) {
+      var lab = String(_locauxDraft[i].label || '').trim();
+      if (!lab) continue;
+      var key = lab.toUpperCase();
+      if (vus[key]) { dup = lab; break; }
+      vus[key] = true;
+      propres.push({ label: lab, type: _locauxDraft[i].type || 'appartement', etage: _locauxDraft[i].etage || null });
+    }
+    if (dup) { toast(t('Étiquette en double') + ' : ' + dup, 'red'); return; }
+
+    var input = document.getElementById('imm-locaux-input');
+    if (input) input.value = JSON.stringify(propres);
+    var resume = document.getElementById('imm-locaux-resume');
+    if (resume) resume.textContent = _resumeLocaux(propres);
+
+    // Synchroniser les compteurs avec la réalité définie
+    var f = document.getElementById('form-immeuble');
+    if (f) {
+      var cpt = { appartement: 0, studio: 0, chambre: 0, duplex: 0 };
+      propres.forEach(function(l) { if (cpt[l.type] !== undefined) cpt[l.type]++; });
+      var setV = function(name, val) { var el = f.querySelector('[name="' + name + '"]'); if (el && val > 0) el.value = val; };
+      setV('apparts', cpt.appartement); setV('studios', cpt.studio);
+      setV('chambres', cpt.chambre);    setV('duplex', cpt.duplex);
+    }
+
+    if (_locauxModal && _locauxModal.close) _locauxModal.close();
+    toast(propres.length + ' ' + t('locaux définis'), 'green');
   }
 
   function _field(name, label, val, required, type) {
@@ -445,9 +632,47 @@ window.IG.immeubles = (function() {
     });
   }
 
+  // ── Nettoyage des locaux fantômes (ancien schéma auto A1/S1/C1/D1
+  //    laissés orphelins après passage à une numérotation personnalisée) ──
+  var ANCIEN_FORMAT = /^[ASCD]\d+$/i;
+
+  function _candidatsNettoyage() {
+    var all = window.IG.app ? window.IG.app.getData().locataires : [];
+    var candidats = [];
+    _cache.forEach(function(imm) {
+      if (!Array.isArray(imm.locaux) || !imm.locaux.length) return; // pas de numérotation perso définie
+      var valides = imm.locaux.map(function(l) { return String(l.label || '').trim().toUpperCase(); });
+      all.forEach(function(l) {
+        if (String(l.immeuble_id) !== String(imm.id)) return;
+        if (l.statut !== 'libre') return;
+        if ((parseInt(l.loyer) || 0) !== 0) return;
+        if ((parseInt(l.arrieres) || 0) !== 0) return;
+        if ((parseInt(l.mois_arrieres) || 0) !== 0) return;
+        var appt = String(l.appt || '').trim();
+        if (!ANCIEN_FORMAT.test(appt)) return;               // ne touche que l'ancien format A1/S1/C1/D1
+        if (valides.indexOf(appt.toUpperCase()) !== -1) return; // garde s'il fait partie de la numérotation actuelle
+        candidats.push({ id: l.id, appt: appt, immeuble: imm.nom_immeuble || imm.nom });
+      });
+    });
+    return candidats;
+  }
+
+  async function nettoyerLocauxFantomes() {
+    var candidats = _candidatsNettoyage();
+    if (!candidats.length) { toast(t('Aucun local fantôme trouvé'), 'blue'); return candidats; }
+    for (var i = 0; i < candidats.length; i++) {
+      try { await db().remove('locataires', candidats[i].id); } catch(_) {}
+    }
+    if (window.IG.app && window.IG.app.refresh) window.IG.app.refresh();
+    toast(candidats.length + ' ' + t('local(aux) fantôme(s) supprimé(s)'), 'green');
+    return candidats;
+  }
+
   return {
     charger, getCache, getById, sauvegarder, supprimer, confirmerArchivage, supprimerDefinitif,
-    render, renderListe, afficherFormulaire, afficherDetail
+    render, renderListe, afficherFormulaire, afficherDetail,
+    _ouvrirEditeurLocaux, _genererGrille, _ajouterLocal, _suppLocal, _majLabel, _majType, _enregistrerLocaux,
+    _candidatsNettoyage, nettoyerLocauxFantomes
   };
 
 })();

@@ -516,18 +516,26 @@ window.IG.locataires = (function() {
       if (!immId) { toast('Choisir d\'abord un immeuble', 'orange'); return; }
       var imm = imms.find(function(i) { return i.id == immId; });
       if (!imm) return;
-      var occupesIds = _cache.filter(function(l) { return l.immeuble_id == immId && l.statut !== 'libre'; }).map(function(l) { return l.appt; });
-      var types = [['A','apparts'],['S','studios'],['C','chambres'],['D','duplex']];
-      var lignes = [];
-      types.forEach(function(tp) {
-        var nb = parseInt(imm[tp[1]] || 0);
-        for (var k = 1; k <= nb; k++) {
-          var code = tp[0] + k;
-          var libre = !occupesIds.includes(code);
-          lignes.push('<span style="display:inline-block;margin:3px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;background:' + (libre ? 'rgba(14,122,69,.15)' : 'rgba(185,48,32,.1)') + ';color:' + (libre ? 'var(--green)' : 'var(--red)') + ';cursor:' + (libre ? 'pointer' : 'default') + '"' +
-            (libre ? ' onclick="document.getElementById(\'wz-appt\').value=\'' + code + '\';this.closest(\'[style*=z-index:950]\').remove()"' : '') + '>' +
-            code + (libre ? ' ✓' : ' ✗') + '</span>');
-        }
+      var occupesIds = _cache.filter(function(l) { return l.immeuble_id == immId && l.statut !== 'libre'; }).map(function(l) { return String(l.appt || '').toUpperCase(); });
+
+      // Liste des codes : numérotation personnalisée si définie, sinon schéma auto.
+      var codes = [];
+      if (Array.isArray(imm.locaux) && imm.locaux.length) {
+        codes = imm.locaux.filter(function(l) { return l && String(l.label || '').trim(); })
+                          .map(function(l) { return String(l.label).trim(); });
+      } else {
+        [['A','apparts'],['S','studios'],['C','chambres'],['D','duplex']].forEach(function(tp) {
+          var nb = parseInt(imm[tp[1]] || 0);
+          for (var k = 1; k <= nb; k++) codes.push(tp[0] + k);
+        });
+      }
+
+      var lignes = codes.map(function(code) {
+        var libre = !occupesIds.includes(code.toUpperCase());
+        var codeJs = code.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        return '<span style="display:inline-block;margin:3px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;background:' + (libre ? 'rgba(14,122,69,.15)' : 'rgba(185,48,32,.1)') + ';color:' + (libre ? 'var(--green)' : 'var(--red)') + ';cursor:' + (libre ? 'pointer' : 'default') + '"' +
+          (libre ? ' onclick="document.getElementById(\'wz-appt\').value=\'' + codeJs + '\';this.closest(\'[style*=z-index:950]\').remove()"' : '') + '>' +
+          esc(code) + (libre ? ' ✓' : ' ✗') + '</span>';
       });
       var pop = document.createElement('div');
       pop.style.cssText = 'position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center';
