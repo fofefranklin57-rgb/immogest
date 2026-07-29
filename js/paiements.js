@@ -115,9 +115,12 @@ window.IG.paiements = (function() {
       var cumul = 0;
       var versementsMois = [];
 
-      var avancePreview = false;
-
-      if (!horsBail && !futur) {
+      // Consommation chronologique unique (avance-crédit puis FIFO réel),
+      // appliquée à TOUS les mois du bail (passés, actuels ET futurs) —
+      // garantit que l'argent reçu le plus tôt règle toujours le mois le
+      // plus proche en premier, peu importe l'ordre de saisie des paiements
+      // ou une éventuelle étiquette mois/année figée sur un versement.
+      if (!horsBail) {
         // 1. Consommer avance en premier
         if (cumulAvance >= loyer) {
           cumul = loyer;
@@ -127,7 +130,7 @@ window.IG.paiements = (function() {
           cumulAvance = 0;
         }
 
-        // 2. Consommer versements FIFO
+        // 2. Consommer versements FIFO (tri chronologique par date_paiement)
         loyers.forEach(function(v) {
           if (v._restant <= 0 || cumul >= loyer) return;
           var pris = Math.min(loyer - cumul, v._restant);
@@ -135,27 +138,16 @@ window.IG.paiements = (function() {
           cumul += pris;
           versementsMois.push({ montant: pris, date: v.date_paiement, note: v.note, id: v.id, mode_paiement: v.mode_paiement || 'espèces' });
         });
-      } else if (futur) {
-        // Aperçu des versements déjà enregistrés d'avance pour ce mois précis
-        // (sans consommer v._restant : la vraie consommation FIFO se fera
-        // normalement une fois le mois échu).
-        var versFutur = loyers.filter(function(v) { return parseInt(v.mois) === m.mois && parseInt(v.annee) === m.annee; });
-        if (versFutur.length) {
-          var cumulF = versFutur.reduce(function(s, v) { return s + (parseFloat(v.montant) || 0); }, 0);
-          cumul = Math.min(cumulF, loyer);
-          avancePreview = cumul >= loyer;
-          versementsMois = versFutur.map(function(v) { return { montant: v.montant, date: v.date_paiement, note: v.note, id: v.id, mode_paiement: v.mode_paiement || 'espèces' }; });
-        }
       }
 
-      var paye = !futur && cumul >= loyer;
+      var paye = cumul >= loyer;
       lignes.push({
         periode:    _formatPeriode(m.mois, m.annee),
         mois:       m.mois,
         annee:      m.annee,
         horsBail:   horsBail,
         futur:      futur,
-        statut:     horsBail ? 'Hors bail' : (futur ? (avancePreview ? 'Payé (avance)' : 'À venir') : (paye ? 'Payé' : (cumul > 0 ? 'Partiel' : 'Impayé'))),
+        statut:     horsBail ? 'Hors bail' : (paye ? (futur ? 'Payé (avance)' : 'Payé') : (futur ? 'À venir' : (cumul > 0 ? 'Partiel' : 'Impayé'))),
         versements: versementsMois,
         cumul:      cumul,
         reste:      (horsBail || futur) ? 0 : (paye ? 0 : loyer - cumul)
