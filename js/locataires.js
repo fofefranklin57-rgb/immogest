@@ -13,6 +13,27 @@ window.IG.locataires = (function() {
   function esc(s) { return window.IG.utils.esc(s); }
   function fmt(n) { return window.IG.utils.formatMontant(n); }
 
+  // Tri naturel du numéro de local — fonctionne peu importe la convention
+  // (1A, 1B, 2A… ou A1, S2, C3…) et peu importe l'ordre de saisie.
+  function _triAppt(a, b) {
+    var re = /(\d+|\D+)/g;
+    var pa = String(a || '').match(re) || [];
+    var pb = String(b || '').match(re) || [];
+    var len = Math.max(pa.length, pb.length);
+    for (var i = 0; i < len; i++) {
+      var ca = pa[i] || '', cb = pb[i] || '';
+      var na = /^\d+$/.test(ca), nb = /^\d+$/.test(cb);
+      if (na && nb) {
+        var diff = parseInt(ca, 10) - parseInt(cb, 10);
+        if (diff !== 0) return diff;
+      } else {
+        var cmp = ca.localeCompare(cb);
+        if (cmp !== 0) return cmp;
+      }
+    }
+    return 0;
+  }
+
   // ── CRUD ─────────────────────────────────────────────────────
   async function charger(filters) {
     try {
@@ -113,18 +134,8 @@ window.IG.locataires = (function() {
       return;
     }
 
-    // Trier : Duplex → Appartement → Studio → Chambre → autres, puis par numéro
-    var _ordreType = { 'd': 0, 'a': 1, 's': 2, 'c': 3 };
-    liste = liste.slice().sort(function(a, b) {
-      var pa = (a.appt || '').toLowerCase();
-      var pb = (b.appt || '').toLowerCase();
-      var oa = _ordreType[pa[0]] !== undefined ? _ordreType[pa[0]] : 9;
-      var ob = _ordreType[pb[0]] !== undefined ? _ordreType[pb[0]] : 9;
-      if (oa !== ob) return oa - ob;
-      var na = parseInt((pa.match(/\d+/) || [0])[0]);
-      var nb = parseInt((pb.match(/\d+/) || [0])[0]);
-      return na - nb;
-    });
+    // Trier par numéro de local (tri naturel, peu importe l'ordre de saisie)
+    liste = liste.slice().sort(function(a, b) { return _triAppt(a.appt, b.appt); });
 
     // Filtrer par recherche
     var q = (document.getElementById('loc-search') && document.getElementById('loc-search').value || '').toLowerCase();
@@ -260,14 +271,7 @@ window.IG.locataires = (function() {
 
   function _renderTableau(liste, paiements, container) {
     var fmt = window.IG.utils.formatMontant;
-    var _ordreType = { 'd': 0, 'a': 1, 's': 2, 'c': 3 };
-    liste = liste.slice().sort(function(a, b) {
-      var pa = (a.appt || '').toLowerCase(); var pb = (b.appt || '').toLowerCase();
-      var oa = _ordreType[pa[0]] !== undefined ? _ordreType[pa[0]] : 9;
-      var ob = _ordreType[pb[0]] !== undefined ? _ordreType[pb[0]] : 9;
-      if (oa !== ob) return oa - ob;
-      return parseInt((pa.match(/\d+/)||[0])[0]) - parseInt((pb.match(/\d+/)||[0])[0]);
-    });
+    liste = liste.slice().sort(function(a, b) { return _triAppt(a.appt, b.appt); });
     var html = '<div class="table-wrap"><table class="tbl"><thead><tr>' +
       '<th>Local</th><th>Nom</th><th>Tél</th><th>Loyer</th><th>Observations</th><th>Statut</th><th>Reste dû</th><th>Actions</th>' +
       '</tr></thead><tbody>';
