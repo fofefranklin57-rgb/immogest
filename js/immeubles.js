@@ -634,16 +634,30 @@ window.IG.immeubles = (function() {
 
   // ── Nettoyage des locaux fantômes (ancien schéma auto A1/S1/C1/D1
   //    laissés orphelins après passage à une numérotation personnalisée) ──
-  var ANCIEN_FORMAT = /^[ASCD]\d+$/i;
+  var ANCIEN_FORMAT   = /^[ASCD]\d+$/i;   // ex: A1, S16, C1, D2
+  var NOUVEAU_FORMAT  = /^\d+[A-Za-z]+$/; // ex: 1A, 2B, 12C
 
   function _candidatsNettoyage() {
     var all = window.IG.app ? window.IG.app.getData().locataires : [];
     var candidats = [];
     _cache.forEach(function(imm) {
-      if (!Array.isArray(imm.locaux) || !imm.locaux.length) return; // pas de numérotation perso définie
-      var valides = imm.locaux.map(function(l) { return String(l.label || '').trim().toUpperCase(); });
-      all.forEach(function(l) {
-        if (String(l.immeuble_id) !== String(imm.id)) return;
+      var locsImm = all.filter(function(l) { return String(l.immeuble_id) === String(imm.id); });
+
+      // Numérotation personnalisée formellement enregistrée (éditeur "Configurer")
+      var valides = (Array.isArray(imm.locaux) && imm.locaux.length)
+        ? imm.locaux.map(function(l) { return String(l.label || '').trim().toUpperCase(); })
+        : [];
+
+      // Détection de facto : un autre format (ex: 1A/2B) est réellement utilisé
+      // dans cet immeuble sur des locaux non vides -> l'ancien A1/S1/C1 est obsolète.
+      var nouveauFormatEnUsage = locsImm.some(function(l) {
+        var appt = String(l.appt || '').trim();
+        return NOUVEAU_FORMAT.test(appt) && (l.statut !== 'libre' || valides.indexOf(appt.toUpperCase()) !== -1);
+      });
+
+      if (!valides.length && !nouveauFormatEnUsage) return; // aucun signal d'une renumérotation -> ne rien toucher
+
+      locsImm.forEach(function(l) {
         if (l.statut !== 'libre') return;
         if ((parseInt(l.loyer) || 0) !== 0) return;
         if ((parseInt(l.arrieres) || 0) !== 0) return;
