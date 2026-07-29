@@ -57,7 +57,7 @@ window.IG.rapports = (function() {
   }
 
   function _docIdentity(params, session) {
-    var nom = params.nom_cabinet || params.nom || session.nomCabinet || session.nom || 'Cabinet';
+    var nom = params.nom_cabinet || params.nom || session.nomCabinet || session.nom || t('Cabinet');
     var sigle = params.sigle || nom.replace(/[^A-Za-z]/g,'').substring(0,4).toUpperCase() || 'IG';
     var mention = params.mention || '';
     var tel = params.telephone || params.tel || session.telephone || '';
@@ -154,7 +154,7 @@ window.IG.rapports = (function() {
         obs.push(notesSplit.length + ' mois payés d\'avance (' + fmt(totalSplit) + ')');
       }
       if (notesAutres.length) obs = obs.concat(notesAutres);
-      if (!obs.length) obs.push(reste <= 0 ? 'À jour' : 'Doit ' + MOIS_FR[fin.getMonth()]);
+      if (!obs.length) obs.push(reste <= 0 ? t('À jour') : t('Doit') + ' ' + MOIS_FR[fin.getMonth()]);
 
       s1Rows += '<tr style="'+(i%2?'background:#f9fafb;':'')+'">' +
         '<td style="'+TD+'font-weight:700">'+esc(loc.appt||'—')+'</td>' +
@@ -171,23 +171,46 @@ window.IG.rapports = (function() {
     '</tr>';
 
     // ── Section 2 : encaissements ────────────────────────────────
+    // Un paiement multi-mois (ex: 10 mois payés d'avance en un seul versement)
+    // cree une ligne par mois couvert avec la meme date_paiement — on les
+    // regroupe ici en un seul versement reel pour ne pas donner l'impression
+    // de doublons.
     var totalLoyers = 0, totalCautions = 0, totalRemis = 0;
-    var s2Rows = '';
-    paysP.forEach(function(p, i) {
-      var loc = locsImm.filter(function(l){ return parseInt(l.id) == parseInt(p.locataire_id); })[0] || {};
+    var groupes2 = [];
+    var indexGroupe = {};
+    paysP.forEach(function(p) {
+      var estSplit = /\[\d+\/\d+\]/.test(p.note || '');
+      var cle = p.locataire_id + '|' + p.date_paiement + '|' + (p.type || 'loyer') + (estSplit ? '' : '|' + p.id);
+      if (!indexGroupe.hasOwnProperty(cle)) {
+        indexGroupe[cle] = groupes2.length;
+        groupes2.push({ p0: p, montant: 0, mois: [], remis: p.remisAuBailleur });
+      }
+      var g = groupes2[indexGroupe[cle]];
+      g.montant += parseFloat(p.montant) || 0;
+      if (p.mois && p.annee) g.mois.push(MOIS_FR[p.mois - 1] + ' ' + p.annee);
       var montant = parseFloat(p.montant) || 0;
-      var typeP   = (p.type || 'loyer').toLowerCase();
+      var typeP = (p.type || 'loyer').toLowerCase();
       if (typeP === 'caution') totalCautions += montant; else totalLoyers += montant;
       if (p.remisAuBailleur && isCab) totalRemis += montant;
-      var noteCell = p.note ? esc(p.note) : (typeP === 'caution' ? 'Caution' : typeP === 'avance' ? 'Avance' : 'Loyer');
-      var moisCouvert = (p.mois && p.annee) ? MOIS_FR[p.mois - 1] + ' ' + p.annee : '';
-      if (moisCouvert) noteCell += '<br><span style="font-size:9.5px;color:#888">' + t('mois') + ' : ' + moisCouvert + '</span>';
+    });
+
+    var s2Rows = '';
+    groupes2.forEach(function(g, i) {
+      var p = g.p0;
+      var loc = locsImm.filter(function(l){ return parseInt(l.id) == parseInt(p.locataire_id); })[0] || {};
+      var typeP = (p.type || 'loyer').toLowerCase();
+      var noteCell = (g.mois.length <= 1 && p.note && !/\[\d+\/\d+\]/.test(p.note)) ? esc(p.note) : (typeP === 'caution' ? t('Caution') : typeP === 'avance' ? t('Avance') : t('Loyer'));
+      if (g.mois.length > 1) {
+        noteCell += '<br><span style="font-size:9.5px;color:#888">' + g.mois.length + ' ' + t('mois') + ' : ' + esc(g.mois[0]) + ' → ' + esc(g.mois[g.mois.length - 1]) + '</span>';
+      } else if (g.mois.length === 1) {
+        noteCell += '<br><span style="font-size:9.5px;color:#888">' + t('mois') + ' : ' + esc(g.mois[0]) + '</span>';
+      }
       s2Rows += '<tr style="'+(i%2?'background:#f9fafb;':'')+'">' +
         '<td style="'+TD+'">'+_fmtD(p.date_paiement)+'</td>' +
         '<td style="'+TD+'font-weight:700">'+esc(loc.appt||'—')+'</td>' +
         '<td style="'+TD+'">'+esc(loc.nom||'—')+'</td>' +
         '<td style="'+TD+'font-size:10px;color:#555">'+noteCell+'</td>' +
-        '<td style="'+TD+'text-align:right;font-weight:700">'+fmt(montant)+'</td>' +
+        '<td style="'+TD+'text-align:right;font-weight:700">'+fmt(g.montant)+'</td>' +
       '</tr>';
     });
     if (!paysP.length) {
@@ -222,9 +245,9 @@ window.IG.rapports = (function() {
       '<tr style="background:#e8f4fd"><td style="padding:6px 10px;font-size:11px;font-weight:800">' + t('TOTAL LOYER') + '</td>' +
       '<td style="padding:6px 10px;text-align:right;font-size:12px;font-weight:800">'+fmt(totalBrut)+'</td></tr>';
     if (isCab) {
-      recapHtml += _rl('Loyer reçu par le bailleur', totalRemis, { neg: true, color: '#c62828' }) +
-        _rl('Total collecté au cabinet', totalCab, { bold: true }) +
-        _rl('Paiement cabinet (honoraires)', honoraires, { neg: true, color: '#c62828' });
+      recapHtml += _rl(t('Loyer reçu par le bailleur'), totalRemis, { neg: true, color: '#c62828' }) +
+        _rl(t('Total collecté au cabinet'), totalCab, { bold: true }) +
+        _rl(t('Paiement cabinet (honoraires)'), honoraires, { neg: true, color: '#c62828' });
       recapHtml += '<tr style="background:#1a2e4a"><td style="padding:8px 10px;font-size:13px;font-weight:900;color:#fff">NET À PERCEVOIR</td>' +
         '<td style="padding:8px 10px;text-align:right;font-size:14px;font-weight:900;color:#7ecba0">'+fmt(netAPer)+'</td></tr>';
     } else {
@@ -299,7 +322,7 @@ window.IG.rapports = (function() {
 
     // Arrêté en lettres
     html += '<div style="font-size:11px;color:#333;font-style:italic;margin-bottom:22px;line-height:1.5">' +
-      'Soit : '+esc(lettres)+' nets à percevoir au titre des loyers de '+MOIS_FR[fin.getMonth()]+' '+fin.getFullYear()+'.' +
+      t('Soit') + ' : '+esc(lettres)+' ' + t('nets à percevoir au titre des loyers de') + ' '+MOIS_FR[fin.getMonth()]+' '+fin.getFullYear()+'.' +
       '</div>';
 
     // Signatures
@@ -411,7 +434,7 @@ window.IG.rapports = (function() {
     modal.box.querySelector('#btn-imprimer-rapport').addEventListener('click', function() {
       var w = window.open('', '_blank', 'width=860,height=1000');
       var immSel = imm.filter(function(i){ return i.id == modal.box.querySelector('#rapport-imm').value; })[0] || {};
-      var titre  = 'Rapport — ' + (immSel.nom_immeuble || immSel.nom || 'Immeuble');
+      var titre  = t('Rapport') + ' — ' + (immSel.nom_immeuble || immSel.nom || t('Immeuble'));
       w.document.write('<html><head><title>' + titre + '</title>' +
         '<style>*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;font-size:12px;padding:24px;color:#111;margin:0}' +
         'table{width:100%;border-collapse:collapse}@media print{.no-print{display:none}}</style></head>' +
@@ -433,7 +456,7 @@ window.IG.rapports = (function() {
   function exporterDocx(htmlContent) {
     try {
       var session = window.IG.auth ? window.IG.auth.getSession() : {};
-      var title = (session.nomCabinet || 'ImmoGest') + ' - Rapport mensuel';
+      var title = (session.nomCabinet || 'ImmoGest') + ' - ' + t('Rapport mensuel');
       var wordHtml = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
         '<title>' + esc(title) + '</title>' +
         '<style>body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111}table{border-collapse:collapse}img{max-width:100%}</style>' +
@@ -543,7 +566,7 @@ window.IG.rapports = (function() {
       var d = document.getElementById('ra-deb').value;
       var f = document.getElementById('ra-fin').value;
       if (d && f && d <= f) afficherRapportAnnuel(d, f);
-      else window.IG.utils.showToast('Dates invalides', 'red');
+      else window.IG.utils.showToast(t('Dates invalides'), 'red');
     };
     window._raRacc = function(type) {
       var n = new Date();
@@ -691,7 +714,7 @@ window.IG.rapports = (function() {
     var showCom  = typePro !== 'proprietaire';
     var ville    = im.ville || '';
     var tel      = session.telephone || '';
-    var nomImm   = im.nom_immeuble || im.nom || 'Immeuble';
+    var nomImm   = im.nom_immeuble || im.nom || t('Immeuble');
     var bailleur = im.nom_proprio || '';
     var now      = new Date();
 
@@ -817,20 +840,20 @@ window.IG.rapports = (function() {
       locauxLibresHtml =
         '<div style="padding:8px 18px 0">' +
         '<h3 style="font-size:11px;font-weight:700;color:#a32d2d;text-transform:uppercase;letter-spacing:.3px;margin:10px 0 6px">' +
-          'Locaux vacants (' + locsLibres.length + ')' +
+          t('Locaux vacants') + ' (' + locsLibres.length + ')' +
         '</h3>' +
         '<table>' +
           '<thead><tr>' +
-            '<th style="' + TH + ';text-align:left">Local / Appt</th>' +
-            '<th style="' + TH + '">Type</th>' +
-            '<th style="' + TH + '">Loyer/mois</th>' +
-            '<th style="' + TH + '">Date libération</th>' +
-            '<th style="' + TH + '">Durée vacante</th>' +
-            '<th style="' + TH + ';text-align:left">Manque à gagner</th>' +
+            '<th style="' + TH + ';text-align:left">' + t('Local / Appt') + '</th>' +
+            '<th style="' + TH + '">' + t('Type') + '</th>' +
+            '<th style="' + TH + '">' + t('Loyer/mois') + '</th>' +
+            '<th style="' + TH + '">' + t('Date libération') + '</th>' +
+            '<th style="' + TH + '">' + t('Durée vacante') + '</th>' +
+            '<th style="' + TH + ';text-align:left">' + t('Manque à gagner') + '</th>' +
           '</tr></thead>' +
           '<tbody>' + libresRows + '</tbody>' +
           '<tfoot><tr style="background:#fff6f6;color:#a32d2d;font-weight:700">' +
-            '<td style="padding:6px 9px;border:1px solid #e0e0e0" colspan="5">TOTAL MANQUE À GAGNER</td>' +
+            '<td style="padding:6px 9px;border:1px solid #e0e0e0" colspan="5">' + t('TOTAL MANQUE À GAGNER') + '</td>' +
             '<td style="padding:6px 9px;border:1px solid #e0e0e0;text-align:right">' + fmt(perteTotale) + '</td>' +
           '</tr></tfoot>' +
         '</table></div>';
@@ -866,7 +889,7 @@ window.IG.rapports = (function() {
       honorairesCabHtml =
         '<div style="padding:8px 18px 0">' +
         '<h3 style="font-size:11px;font-weight:700;color:#1a2e4a;text-transform:uppercase;letter-spacing:.3px;margin:10px 0 6px">' +
-          'Honoraires cabinet — ' + (typeHon === 'pourcentage' ? valHon + '% sur encaissements' : 'Forfait mensuel') +
+          t('Honoraires cabinet') + ' — ' + (typeHon === 'pourcentage' ? valHon + '% ' + t('sur encaissements') : t('Forfait mensuel')) +
         '</h3>' +
         '<table style="width:60%;min-width:400px">' +
           '<thead><tr>' +
