@@ -172,11 +172,16 @@ window.IG.paiements = (function() {
     var loyer = parseFloat(loc.loyer) || 0;
     var baseArrieres = parseFloat(loc.arrieres) || 0;
     if (!paiementsLoc || !paiementsLoc.length) return baseArrieres;
-    var sorted = paiementsLoc.slice().sort(function(a, b) { return new Date(a.date_paiement) - new Date(b.date_paiement); });
-    var first = new Date(sorted[0].date_paiement);
-    var locProxy = Object.assign({}, loc, {
-      entree: first.getFullYear() + '-' + String(first.getMonth() + 1).padStart(2, '0') + '-01'
-    });
+    // Utiliser la vraie date d'entrée si connue (cohérent avec la fiche officielle) ;
+    // ne recourir à la date du 1er paiement que si l'entrée est vraiment absente.
+    var locProxy = loc;
+    if (!loc.entree) {
+      var sorted = paiementsLoc.slice().sort(function(a, b) { return new Date(a.date_paiement) - new Date(b.date_paiement); });
+      var first = new Date(sorted[0].date_paiement);
+      locProxy = Object.assign({}, loc, {
+        entree: first.getFullYear() + '-' + String(first.getMonth() + 1).padStart(2, '0') + '-01'
+      });
+    }
     var fiche = calculerFiche(locProxy, paiementsLoc);
     var payes = fiche.filter(function(l) { return !l.horsBail && (l.statut === 'Payé' || l.statut === 'Payé (avance)'); }).length;
     var duNouv = fiche.filter(function(l) { return !l.futur; }).reduce(function(s, l) { return s + (l.reste || 0); }, 0);

@@ -792,6 +792,9 @@ window.IG.locataires = (function() {
   // Calcule le cumul total dû (toute la fiche depuis date entrée, pas seulement le mois courant)
   function _ficheDepuisPremierPay(loc, pays) {
     if (!pays.length) return [];
+    // Utiliser la vraie date d'entrée si connue (cohérent avec la fiche officielle) ;
+    // ne recourir à la date du 1er paiement que si l'entrée est vraiment absente.
+    if (loc.entree) return window.IG.paiements ? window.IG.paiements.calculerFiche(loc, pays) : [];
     var sorted = pays.slice().sort(function(a, b) { return new Date(a.date_paiement) - new Date(b.date_paiement); });
     var first = new Date(sorted[0].date_paiement);
     var locProxy = Object.assign({}, loc, {

@@ -15,11 +15,16 @@ window.IG.relances = (function() {
   // ── Calculer retard en mois ───────────────────────────────────
   function _ficheDepuisPremierPaiement(loc, paiements) {
     if (!paiements || !paiements.length) return [];
-    var sorted = paiements.slice().sort(function(a, b) { return new Date(a.date_paiement) - new Date(b.date_paiement); });
-    var first = new Date(sorted[0].date_paiement);
-    var locProxy = Object.assign({}, loc, {
-      entree: first.getFullYear() + '-' + String(first.getMonth() + 1).padStart(2, '0') + '-01'
-    });
+    // Utiliser la vraie date d'entrée si connue (cohérent avec la fiche officielle) ;
+    // ne recourir à la date du 1er paiement que si l'entrée est vraiment absente.
+    var locProxy = loc;
+    if (!loc.entree) {
+      var sorted = paiements.slice().sort(function(a, b) { return new Date(a.date_paiement) - new Date(b.date_paiement); });
+      var first = new Date(sorted[0].date_paiement);
+      locProxy = Object.assign({}, loc, {
+        entree: first.getFullYear() + '-' + String(first.getMonth() + 1).padStart(2, '0') + '-01'
+      });
+    }
     return window.IG.paiements ? window.IG.paiements.calculerFiche(locProxy, paiements) : [];
   }
 
