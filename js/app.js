@@ -3194,7 +3194,7 @@ window.IG.app = (function() {
       // Badges fonctionnalités
       '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:36px;">' +
       '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">✅ ' + t('Droit local conforme') + '</span>' +
-      '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">📶 Hors-ligne</span>' +
+      '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">📶 Fonctionne hors-ligne</span>' +
       '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">💳 Mobile Money</span>' +
       '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">📋 Documents juridiques</span>' +
       '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.75);">✍️ Signature électronique</span>' +

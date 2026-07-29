@@ -133,6 +133,7 @@ function _rateLimit(ip, route, max = 10, windowMs = 900000) {
 // ── CORS restrictif ────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
   'https://immogest-34w.pages.dev',
+  'https://immogest.afrisaas.com',
   'http://localhost:5500',
   'http://127.0.0.1:5500',
   'http://localhost:3000',
