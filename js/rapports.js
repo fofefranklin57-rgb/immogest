@@ -709,7 +709,7 @@ window.IG.rapports = (function() {
       return locs.some(function(l){ return l.id==p.locataire_id; }) && pd>=deb && pd<=fin;
     });
 
-    var nomCab   = session.nomCabinet || session.nom || 'Cabinet ImmoGest';
+    var nomCab   = session.nomCabinet || session.nom || t('Cabinet') + ' ImmoGest';
     var typePro  = session.type_profil || 'gestionnaire';
     var showCom  = typePro !== 'proprietaire';
     var ville    = im.ville || '';
@@ -918,39 +918,39 @@ window.IG.rapports = (function() {
       '.sig{border-top:1px solid #888;padding-top:6px;text-align:center;width:180px}' +
       '@media print{button{display:none}}';
 
-    var sigLabel = typePro==='cabinet'?'Le Gestionnaire du Cabinet':'Le Gestionnaire';
+    var sigLabel = typePro==='cabinet'? t('Le Gestionnaire du Cabinet') : t('Le Gestionnaire');
 
     return '<!DOCTYPE html><html><head><meta charset="utf-8">' +
-      '<title>Rapport — '+esc(nomImm)+'</title><style>'+css+'</style></head><body>' +
+      '<title>' + t('Rapport') + ' — '+esc(nomImm)+'</title><style>'+css+'</style></head><body>' +
 
       // En-tête cabinet
       '<div style="background:#1a2e4a;padding:10px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:0">' +
         '<div><div style="font-size:14px;font-weight:700;color:#fff">'+esc(nomCab)+'</div>' +
-          '<div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:1px">Gestion immobilière'+(ville?' · '+esc(ville):'')+'</div></div>' +
-        '<div style="text-align:right;font-size:9px;color:rgba(255,255,255,.5)">'+(tel?'Tél : '+esc(tel):'')+'</div>' +
+          '<div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:1px">' + t('Gestion immobilière') + (ville?' · '+esc(ville):'')+'</div></div>' +
+        '<div style="text-align:right;font-size:9px;color:rgba(255,255,255,.5)">'+(tel?t('Tél')+' : '+esc(tel):'')+'</div>' +
       '</div>' +
 
       // Titre
       '<div style="border-bottom:2px solid #1a2e4a;padding:10px 18px 8px;text-align:center">' +
         '<div style="font-size:13px;font-weight:700;text-decoration:underline;text-transform:uppercase;letter-spacing:.4px;color:#1a2e4a">' +
-          'Rapport du '+_fmtD(dateDebut)+' au '+_fmtD(dateFin)+'</div>' +
+          t('Rapport du') + ' '+_fmtD(dateDebut)+' ' + t('au') + ' '+_fmtD(dateFin)+'</div>' +
         '<div style="font-size:11px;font-style:italic;color:#555;margin-top:3px">'+esc(nomImm)+
           (bailleur?' — '+esc(bailleur):'')+
         '</div>' +
-        '<div style="font-size:9px;color:#aaa;margin-top:1px">Généré le '+now.toLocaleDateString('fr-FR')+'</div>' +
+        '<div style="font-size:9px;color:#aaa;margin-top:1px">' + t('Généré le') + ' '+now.toLocaleDateString('fr-FR')+'</div>' +
       '</div>' +
 
       // Tableau principal
       '<div style="padding:10px 18px 0">' +
       '<table>' +
         '<thead><tr>' +
-          '<th style="'+TH+';text-align:left;min-width:130px">Noms et prénoms<br><span style="font-weight:400;font-size:9px;opacity:.6">Tél · Local</span></th>' +
-          '<th style="'+TH+'">Loyer/mois</th>' +
-          '<th style="'+TH+'">Situation</th>' +
-          '<th style="'+TH+'">Caution</th>' +
-          '<th style="'+TH+';text-align:left;min-width:150px">Montants versés</th>' +
-          (showCom?'<th style="'+TH+'">Remis bailleur</th>':'') +
-          '<th style="'+TH+'">Passif</th>' +
+          '<th style="'+TH+';text-align:left;min-width:130px">' + t('Noms et prénoms') + '<br><span style="font-weight:400;font-size:9px;opacity:.6">' + t('Tél') + ' · ' + t('Local') + '</span></th>' +
+          '<th style="'+TH+'">' + t('Loyer/mois') + '</th>' +
+          '<th style="'+TH+'">' + t('Situation') + '</th>' +
+          '<th style="'+TH+'">' + t('Caution') + '</th>' +
+          '<th style="'+TH+';text-align:left;min-width:150px">' + t('Montants versés') + '</th>' +
+          (showCom?'<th style="'+TH+'">' + t('Remis bailleur') + '</th>':'') +
+          '<th style="'+TH+'">' + t('Passif') + '</th>' +
         '</tr></thead>' +
         '<tbody>'+rows+'</tbody>' +
         '<tfoot>'+totRow+'</tfoot>' +
@@ -964,19 +964,19 @@ window.IG.rapports = (function() {
       '<div style="padding:10px 18px 14px;display:flex;gap:18px;align-items:flex-start">' +
 
         '<table style="width:340px;min-width:280px;border-collapse:collapse;font-size:10.5px;border:1px solid #ccc;flex-shrink:0">' +
-          '<thead><tr style="background:#1a2e4a;color:#fff"><th style="padding:6px 14px;border:1px solid #2d4a6e;font-weight:500;text-align:left" colspan="2">Récapitulatif financier</th></tr></thead>' +
+          '<thead><tr style="background:#1a2e4a;color:#fff"><th style="padding:6px 14px;border:1px solid #2d4a6e;font-weight:500;text-align:left" colspan="2">' + t('Récapitulatif financier') + '</th></tr></thead>' +
           '<tbody>'+recapRows+'</tbody>' +
         '</table>' +
 
         '<div style="flex:1;display:flex;flex-direction:column;gap:10px">' +
           '<div style="border:0.5px solid #ccc;border-radius:4px;padding:9px 14px;font-size:10.5px;color:#555;font-style:italic;background:#f9f9f9">' +
-            'Arrêtée la présente à la somme de :<br>' +
+            t('Arrêtée la présente à la somme de') + ' :<br>' +
             '<strong style="font-style:normal;color:#1a2e4a;font-size:11px">'+lettres+' '+devise()+'</strong>' +
-            '<br><span style="font-size:9px;color:#aaa">(net remis au bailleur)</span>' +
+            '<br><span style="font-size:9px;color:#aaa">(' + t('net remis au bailleur') + ')</span>' +
           '</div>' +
           '<div style="display:flex;gap:30px;margin-top:8px">' +
-            '<div class="sig"><div style="font-size:10.5px;color:#444">'+sigLabel+'</div><div style="height:32px"></div><div style="font-size:9px;color:#bbb">(Nom, Signature, Cachet)</div></div>' +
-            '<div class="sig"><div style="font-size:10.5px;color:#444">Le Bailleur</div><div style="height:32px"></div><div style="font-size:9px;color:#bbb">(Nom, Signature)</div></div>' +
+            '<div class="sig"><div style="font-size:10.5px;color:#444">'+sigLabel+'</div><div style="height:32px"></div><div style="font-size:9px;color:#bbb">(' + t('Nom, Signature, Cachet') + ')</div></div>' +
+            '<div class="sig"><div style="font-size:10.5px;color:#444">' + t('Le Bailleur') + '</div><div style="height:32px"></div><div style="font-size:9px;color:#bbb">(' + t('Nom, Signature') + ')</div></div>' +
           '</div>' +
         '</div>' +
 
@@ -995,7 +995,7 @@ window.IG.rapports = (function() {
   // ── Export DOCX rapport annuel ────────────────────────────────
   function exporterRapportAnnuelDocx(annee) {
     try {
-      if (typeof docx === 'undefined') { window.IG.utils.showToast('Bibliothèque DOCX non chargée', 'red'); return; }
+      if (typeof docx === 'undefined') { window.IG.utils.showToast(t('Bibliothèque DOCX non chargée'), 'red'); return; }
       var now = new Date();
       var loc = window.IG.locataires ? window.IG.locataires.getCache() : [];
       var pay = window.IG.paiements ? window.IG.paiements.getCache() : [];
@@ -1020,23 +1020,23 @@ window.IG.rapports = (function() {
       }
 
       var doc2 = new docx.Document({ sections: [{ children: [
-        new docx.Paragraph({ text: (session.nomCabinet || 'ImmoGest') + ' — Rapport annuel ' + annee, heading: docx.HeadingLevel.HEADING_1 }),
-        new docx.Paragraph({ text: 'Généré le ' + now.toLocaleDateString('fr-FR') }),
+        new docx.Paragraph({ text: (session.nomCabinet || 'ImmoGest') + ' — ' + t('Rapport annuel') + ' ' + annee, heading: docx.HeadingLevel.HEADING_1 }),
+        new docx.Paragraph({ text: t('Généré le') + ' ' + now.toLocaleDateString('fr-FR') }),
         new docx.Paragraph({ text: '' }),
-        new docx.Paragraph({ text: 'Synthèse', heading: docx.HeadingLevel.HEADING_2 }),
-        new docx.Paragraph({ text: 'Locataires actifs : ' + actifs.length }),
-        new docx.Paragraph({ text: 'Loyer mensuel théorique : ' + fmt(loyerMensuel) }),
-        new docx.Paragraph({ text: 'Total encaissé ' + annee + ' : ' + fmt(totalAnnuel) }),
-        new docx.Paragraph({ text: 'Potentiel annuel : ' + fmt(loyerMensuel * 12) }),
-        new docx.Paragraph({ text: 'Taux de recouvrement : ' + (loyerMensuel * 12 > 0 ? Math.round(totalAnnuel / (loyerMensuel * 12) * 100) : 0) + '%' }),
+        new docx.Paragraph({ text: t('Synthèse'), heading: docx.HeadingLevel.HEADING_2 }),
+        new docx.Paragraph({ text: t('Locataires actifs') + ' : ' + actifs.length }),
+        new docx.Paragraph({ text: t('Loyer mensuel théorique') + ' : ' + fmt(loyerMensuel) }),
+        new docx.Paragraph({ text: t('Total encaissé') + ' ' + annee + ' : ' + fmt(totalAnnuel) }),
+        new docx.Paragraph({ text: t('Potentiel annuel') + ' : ' + fmt(loyerMensuel * 12) }),
+        new docx.Paragraph({ text: t('Taux de recouvrement') + ' : ' + (loyerMensuel * 12 > 0 ? Math.round(totalAnnuel / (loyerMensuel * 12) * 100) : 0) + '%' }),
         new docx.Paragraph({ text: '' }),
-        new docx.Paragraph({ text: 'Détail mensuel', heading: docx.HeadingLevel.HEADING_2 }),
+        new docx.Paragraph({ text: t('Détail mensuel'), heading: docx.HeadingLevel.HEADING_2 }),
         new docx.Table({ rows: [
           new docx.TableRow({ children: [
-            new docx.TableCell({ children: [new docx.Paragraph({ text: 'Mois', bold: true })] }),
-            new docx.TableCell({ children: [new docx.Paragraph({ text: 'Loyer théorique', bold: true })] }),
-            new docx.TableCell({ children: [new docx.Paragraph({ text: 'Encaissé', bold: true })] }),
-            new docx.TableCell({ children: [new docx.Paragraph({ text: 'Taux', bold: true })] }),
+            new docx.TableCell({ children: [new docx.Paragraph({ text: t('Mois'), bold: true })] }),
+            new docx.TableCell({ children: [new docx.Paragraph({ text: t('Loyer théorique'), bold: true })] }),
+            new docx.TableCell({ children: [new docx.Paragraph({ text: t('Encaissé'), bold: true })] }),
+            new docx.TableCell({ children: [new docx.Paragraph({ text: t('Taux'), bold: true })] }),
           ], tableHeader: true })
         ].concat(rows) })
       ]}] });
@@ -1046,9 +1046,9 @@ window.IG.rapports = (function() {
         link.href = URL.createObjectURL(blob);
         link.download = 'rapport-annuel-' + annee + '.docx';
         link.click();
-        window.IG.utils.showToast('Rapport DOCX téléchargé ✓', 'green');
+        window.IG.utils.showToast(t('Rapport DOCX téléchargé') + ' ✓', 'green');
       });
-    } catch(e) { window.IG.utils.showToast('Erreur DOCX: ' + e.message, 'red'); }
+    } catch(e) { window.IG.utils.showToast(t('Erreur DOCX') + ': ' + e.message, 'red'); }
   }
 
   // ── Rapport relances ─────────────────────────────────────────
@@ -1124,18 +1124,18 @@ window.IG.rapports = (function() {
         '</tr>';
     }).join('');
 
-    var html = '<h3 style="font-size:16px;margin-bottom:16px">🏢 État des lieux — ' + imms.length + ' immeuble(s)</h3>' +
+    var html = '<h3 style="font-size:16px;margin-bottom:16px">🏢 ' + t('État des lieux') + ' — ' + imms.length + ' ' + t('immeuble(s)') + '</h3>' +
       '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
       '<thead><tr style="background:var(--bg3);font-size:11px;text-transform:uppercase;color:var(--text3)">' +
-      '<th style="padding:8px 12px;text-align:left">Immeuble</th>' +
-      '<th style="padding:8px 12px;text-align:center">Total locaux</th>' +
-      '<th style="padding:8px 12px;text-align:center">Occupés</th>' +
-      '<th style="padding:8px 12px;text-align:center">Vacants</th>' +
-      '<th style="padding:8px 12px;text-align:center">Taux</th>' +
-      '<th style="padding:8px 12px;text-align:right">Loyers/mois</th>' +
+      '<th style="padding:8px 12px;text-align:left">' + t('Immeuble') + '</th>' +
+      '<th style="padding:8px 12px;text-align:center">' + t('Total locaux') + '</th>' +
+      '<th style="padding:8px 12px;text-align:center">' + t('Occupés') + '</th>' +
+      '<th style="padding:8px 12px;text-align:center">' + t('Vacants') + '</th>' +
+      '<th style="padding:8px 12px;text-align:center">' + t('Taux') + '</th>' +
+      '<th style="padding:8px 12px;text-align:right">' + t('Loyers/mois') + '</th>' +
       '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">' +
-      '<button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Fermer</button>' +
+      '<button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">' + t('Fermer') + '</button>' +
       '</div>';
 
     window.IG.utils.showModal(html, { width: '680px' });
@@ -1143,7 +1143,7 @@ window.IG.rapports = (function() {
 
   function _exportRelancesDocx() {
     try {
-      if (typeof docx === 'undefined') { window.IG.utils.showToast('Bibliothèque DOCX non chargée', 'red'); return; }
+      if (typeof docx === 'undefined') { window.IG.utils.showToast(t('Bibliothèque DOCX non chargée'), 'red'); return; }
       var loc = window.IG.locataires ? window.IG.locataires.getCache() : [];
       var pay = window.IG.paiements ? window.IG.paiements.getCache() : [];
       var alertes = loc.filter(function(l) { return l.statut !== 'libre'; }).map(function(l) {
@@ -1153,17 +1153,17 @@ window.IG.rapports = (function() {
         return { loc: l, retard: retard, du: du };
       }).filter(function(a) { return a.retard > 0; }).sort(function(a, b) { return b.retard - a.retard; });
 
-      var children = [new docx.Paragraph({ text: 'RAPPORT RELANCES — ImmoGest', heading: docx.HeadingLevel.HEADING_1 }),
-        new docx.Paragraph({ text: 'Généré le ' + new Date().toLocaleDateString('fr-FR') })];
+      var children = [new docx.Paragraph({ text: t('RAPPORT RELANCES') + ' — ImmoGest', heading: docx.HeadingLevel.HEADING_1 }),
+        new docx.Paragraph({ text: t('Généré le') + ' ' + new Date().toLocaleDateString('fr-FR') })];
       alertes.forEach(function(a) {
-        children.push(new docx.Paragraph({ text: a.loc.nom + ' — ' + a.retard + ' mois — ' + fmt(a.du) + ' dû' }));
+        children.push(new docx.Paragraph({ text: a.loc.nom + ' — ' + a.retard + ' ' + t('mois') + ' — ' + fmt(a.du) + ' ' + t('dû') }));
       });
       var doc2 = new docx.Document({ sections: [{ children: children }] });
       docx.Packer.toBlob(doc2).then(function(blob) {
         var link = document.createElement('a'); link.href = URL.createObjectURL(blob);
         link.download = 'rapport-relances-' + Date.now() + '.docx'; link.click();
       });
-    } catch(e) { window.IG.utils.showToast('Erreur DOCX: ' + e.message, 'red'); }
+    } catch(e) { window.IG.utils.showToast(t('Erreur DOCX') + ': ' + e.message, 'red'); }
   }
 
   // ── Rapport caisse (synthèse encaissements sur période) ──────
@@ -1227,7 +1227,7 @@ window.IG.rapports = (function() {
     var remis = filtered.filter(function(p) { return p.remisAuBailleur; }).reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
     var encaisseNet = total - remis;
     var dateEd = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-    var cabNom = params.nom_cabinet || session.nomCabinet || session.nom || 'Cabinet';
+    var cabNom = params.nom_cabinet || session.nomCabinet || session.nom || t('Cabinet');
 
     // Tableau lignes détail
     var lignes = filtered
@@ -1269,9 +1269,9 @@ window.IG.rapports = (function() {
       '<div style="font-size:11px;color:#555">Période du ' + _fmtD(debut) + ' au ' + _fmtD(fin) + ' · Édité le ' + dateEd + '</div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">' +
-      _metricCard('💰', fmt(total), 'Total encaissé') +
-      _metricCard('🏦', fmt(encaisseNet), 'Net cabinet') +
-      _metricCard('📋', filtered.length + '', 'Opérations') +
+      _metricCard('💰', fmt(total), t('Total encaissé')) +
+      _metricCard('🏦', fmt(encaisseNet), t('Net cabinet')) +
+      _metricCard('📋', filtered.length + '', t('Opérations')) +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">' +
       '<div style="background:#F5F9FD;border-radius:8px;padding:12px"><div style="font-size:10px;font-weight:700;color:#0E6AAF;margin-bottom:8px;text-transform:uppercase">Par mode de paiement</div>' + synthMode + '</div>' +
@@ -1311,7 +1311,7 @@ window.IG.rapports = (function() {
     var moisCur = now.getMonth() + 1;
     var annCur  = now.getFullYear();
     var dateEd  = now.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-    var cabNom  = params.nom_cabinet || session.nomCabinet || session.nom || 'Cabinet';
+    var cabNom  = params.nom_cabinet || session.nomCabinet || session.nom || t('Cabinet');
 
     // Totaux globaux
     var totalLocaux    = imms.reduce(function(s, i) { return s + (i.apparts||0) + (i.studios||0) + (i.chambres||0) + (i.duplex||0); }, 0);
@@ -1357,10 +1357,10 @@ window.IG.rapports = (function() {
       '</div></div>' +
       '<div style="font-size:11px;color:var(--text3);margin-bottom:14px">Édité le ' + dateEd + ' · ' + esc(cabNom) + '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">' +
-      _metricCard('🏢', imms.length + '', 'Immeubles') +
-      _metricCard('🔑', totalOccupes + '/' + totalLocaux, 'Occupation') +
-      _metricCard('📈', tauxGlobal + '%', 'Taux global') +
-      _metricCard('💰', fmt(totalEncMois), 'Encaissé ce mois') +
+      _metricCard('🏢', imms.length + '', t('Immeubles')) +
+      _metricCard('🔑', totalOccupes + '/' + totalLocaux, t('Occupation')) +
+      _metricCard('📈', tauxGlobal + '%', t('Taux global')) +
+      _metricCard('💰', fmt(totalEncMois), t('Encaissé ce mois')) +
       '</div>' +
       (totalArrieres > 0 ? '<div style="background:rgba(185,48,32,.08);border:1px solid var(--red);border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:12px">⚠️ Arriérés cumulés déclarés : <strong style="color:var(--red)">' + fmt(totalArrieres) + '</strong></div>' : '') +
       '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
