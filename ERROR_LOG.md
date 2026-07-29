@@ -454,3 +454,99 @@ doublon si deux sections étaient enregistrées en concurrence AVANT que la 1èr
   relisent la ligne existante et font un `update` à la place (aucun doublon, aucune erreur UI).
 - **Migration V019** : `ALTER TABLE parametres ADD CONSTRAINT uq_parametres_tenant UNIQUE (tenant_id)`.
   Garantie définitive au niveau base (0 doublon existant → posable sans échec).
+
+---
+## 2026-07-29 — Série de correctifs : locaux, fiche de suivi, paiements, CORS, i18n
+
+### `js/immeubles.js` — Locaux fantômes (ancien schéma A1/S1/C1/D1)
+- **Erreur** : la numérotation personnalisée d'un immeuble (ex: 1A, 1B, 2A) laissait des
+  locaux vides de l'ancien schéma auto (S16-S21, C1…) affichés indéfiniment dans la liste.
+- **Cause 1** : `_creerLocauxManquants` régénérait l'ancien schéma dès qu'aucune numérotation
+  personnalisée n'était formellement enregistrée dans `imm.locaux`.
+- **Cause 2** : `_candidatsNettoyage` (fonction de nettoyage ajoutée) exigeait elle aussi
+  `imm.locaux` défini formellement — ne détectait rien si la renumérotation avait été saisie
+  à la main sans passer par l'éditeur "Configurer".
+- **Solution** : `_creerLocauxManquants` utilise `imm.locaux` si défini, sinon fallback ancien
+  schéma. `_candidatsNettoyage` détecte aussi *de facto* : si un format `\d+[A-Za-z]+` (1A, 2B…)
+  est déjà utilisé sur des locaux occupés, l'ancien format `[ASCD]\d+` devient candidat à la
+  suppression, formalisé ou non. `nettoyerLocauxFantomes()` exposée en console pour purge manuelle.
+
+### `js/locataires.js` — Tri des locaux en désordre
+- **Erreur** : les locaux (1A, 1B, 1C…) ne restaient PAS triés dans l'ordre logique si saisis
+  dans le désordre — le tri codé en dur supposait l'ancien format lettre-puis-chiffre (A1, S2, C3)
+  avec une priorité de type (Duplex→Appart→Studio→Chambre), et sur une égalité de numéro
+  (ex: "1A" vs "1B") l'ordre d'affichage dépendait de l'ordre d'insertion, pas du suffixe.
+- **Solution** : remplacé par `_triAppt()`, un tri naturel générique (segmentation
+  numérique/alphabétique) qui fonctionne peu importe la convention (1A/1B/2A… ou A1/S2/C3…)
+  et peu importe l'ordre de saisie.
+
+### `js/paiements.js` — Fiche de suivi tronquée à l'année courante
+- **Erreur** : un locataire ayant payé plusieurs mois d'avance dépassant l'année civile
+  (ex: entré en 2026, payé jusqu'en 2027) voyait sa fiche et son sélecteur d'année plafonnés
+  à décembre de l'année en cours — les mois payés au-delà disparaissaient silencieusement.
+- **Cause** : `calculerFiche()` et le sélecteur d'année dans `renderFiche()` étaient bornés à
+  `new Date().getFullYear()`, jamais à la dernière année réellement couverte par un versement.
+- **Solution** : `renderFiche` calcule `anneeMaxVersements` (max des `annee` des versements,
+  plancher année courante) et l'utilise pour borner `calculerFiche` et générer le sélecteur.
+
+### `js/paiements.js` — Paiements d'avance invisibles sur les mois futurs
+- **Erreur** : un paiement couvrant des mois futurs (ex: payé en juillet pour août→avril)
+  n'apparaissait nulle part dans la fiche — les mois futurs affichaient "À venir" vide, et le
+  total "mois payés / FCFA" ignorait totalement l'argent déjà reçu.
+- **Cause** : la consommation FIFO de `calculerFiche()` ne s'applique qu'aux mois non-futurs ;
+  les versements déjà taggés `mois`/`annee` pour un mois futur n'étaient jamais affichés.
+- **Solution** : nouvelle branche `avancePreview` — pour un mois futur, recherche les versements
+  déjà tagués pour ce mois précis (sans consommer leur `_restant`, la vraie consommation FIFO se
+  fera normalement à échéance) et affiche `statut: 'Payé (avance)'`.
+
+### `js/locataires.js`, `js/relances.js`, `js/paiements.js` — Badge "Cas critique" figé
+- **Erreur** : un locataire payé jusqu'en 2027 restait affiché "🔴 Cas critique" en
+  contradiction avec son score de fiabilité "Bon" et son statut "À jour".
+- **Cause** : `_alerteLabel`, `calculerRetard` et `montantDu` ne créditaient le compteur
+  `mois_arrieres`/`arrieres` qu'avec les mois "Payé" non-futurs — les mois futurs déjà payés
+  d'avance (nouveau statut "Payé (avance)") n'étaient jamais comptés.
+- **Solution** : ces trois fonctions comptent désormais aussi "Payé (avance)" (mois non "hors
+  bail", peu importe futur ou non) pour créditer le compteur d'arriérés.
+
+### `js/paiements.js` — Répartition multi-mois calée sur la date du jour au lieu du 1er mois dû
+- **Erreur** : le formulaire "Nombre de mois à régler" étalait toujours les mois à partir de la
+  date du paiement (souvent aujourd'hui), pas à partir du premier mois réellement impayé —
+  un locataire en retard depuis janvier qui payait 5 mois en juillet se voyait étiqueter
+  juillet→novembre au lieu de janvier→mai.
+- **Solution** : `_moisDepartPaiement(loc)` dérive le vrai premier mois dû via `calculerFiche()`
+  (premier mois non "hors bail" et non "Payé"/"Payé (avance)"), utilisé pour l'aperçu de
+  répartition ET l'enregistrement réel — plus seulement la date de paiement.
+
+### `js/app.js` — Suppression de paiement en course avec le rafraîchissement
+- **Erreur** : après suppression d'un paiement (bouton × dans la liste Paiements), des restes
+  de ce paiement pouvaient réapparaître dans des calculs suivants (ex: mois de départ erroné
+  d'un nouveau paiement multi-mois).
+- **Cause** : le bouton appelait `window.IG.paiements.annuler(id)` (fonction async) **sans
+  l'attendre** avant de fermer la modale et de rafraîchir l'affichage — le rafraîchissement
+  pouvait s'exécuter avant que la suppression soit effective côté serveur.
+- **Solution** : le clic attend désormais la résolution de `annuler()` (`.then(...)`) avant de
+  fermer la modale et de rafraîchir.
+- **Note** : cette race n'efface pas rétroactivement des paiements déjà restés coincés en base
+  par une suppression antérieure ratée — il faut les repérer et les supprimer manuellement une
+  fois le correctif déployé (page Paiements, filtrer par mois concerné).
+
+### `workers/notif-cron.js` — CORS bloquait le nouveau domaine personnalisé
+- **Erreur** : après ajout du domaine `immogest.afrisaas.com`, le login échouait avec
+  `blocked by CORS policy` (`Access-Control-Allow-Origin` ne renvoyait que l'ancien domaine
+  `immogest-34w.pages.dev`).
+- **Cause** : `ALLOWED_ORIGINS` dans le Worker n'incluait pas le nouveau domaine.
+- **Solution** : ajout de `https://immogest.afrisaas.com` à `ALLOWED_ORIGINS`, Worker redéployé
+  (`wrangler deploy`).
+
+### `js/i18n.js` — Langues pt/es/ha/ar incomplètes
+- **Erreur** : portugais, espagnol, haoussa et arabe n'avaient que 205 clés contre 266 pour
+  l'anglais (sections mot de passe, rapport DOCX, thème jour/nuit, paramètres cabinet absentes).
+- **Solution** : 61 clés manquantes traduites et ajoutées aux 4 langues → 276 clés partout,
+  parité complète avec l'anglais.
+
+### `js/immeubles.js`, `js/locataires.js`, `js/rapports.js`, `js/relances.js`, `js/messages-wa.js`, `js/dashboard.js` — Textes français en dur
+- **Erreur** : ~150-180 chaînes françaises codées en dur (labels, boutons, messages toast,
+  validations) ne passaient pas par `t()` — invisibles au changement de langue.
+- **Solution** : chaînes UI enrobées avec `t()` dans ces 6 fichiers. Les corps des messages
+  WhatsApp sortants (templates envoyés aux locataires/bailleurs) laissés tels quels, hors
+  périmètre de cette passe.
