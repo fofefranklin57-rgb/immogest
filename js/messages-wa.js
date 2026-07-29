@@ -9,6 +9,7 @@ window.IG.messagesWA = (function() {
 
   function esc(s) { return window.IG.utils.esc(s); }
   function fmt(n) { return window.IG.utils.formatMontant(n); }
+  function t(k)   { return window.IG.i18n ? window.IG.i18n.t(k) : k; }
 
   // ── Helpers ──────────────────────────────────────────────────
 
@@ -30,7 +31,7 @@ window.IG.messagesWA = (function() {
 
   function _ouvrirWA(tel, msg) {
     var lien = _lienWA(tel, msg);
-    if (!lien) { window.IG.utils.showToast('Numéro manquant', 'orange'); return; }
+    if (!lien) { window.IG.utils.showToast(t('Numéro manquant'), 'orange'); return; }
     window.open(lien, '_blank');
   }
 
@@ -145,14 +146,14 @@ window.IG.messagesWA = (function() {
     if (!content) return;
 
     var html = '<div class="content">' +
-      '<h2 style="font-size:17px;font-weight:700;margin-bottom:20px">📱 Messages WhatsApp</h2>' +
+      '<h2 style="font-size:17px;font-weight:700;margin-bottom:20px">📱 ' + t('Messages WhatsApp') + '</h2>' +
       // Tabs
       '<div style="display:flex;gap:0;margin-bottom:0;overflow-x:auto;white-space:nowrap" id="wa-tabs">' +
-      _tab('rappels',    '🔔', 'Rappels loyer', true) +
-      _tab('recus',      '✅', 'Reçus') +
-      _tab('relances',   '⚠️', 'Relances') +
-      _tab('rapports',   '📊', 'Rapports bailleur') +
-      _tab('invitations','📨', 'Invitations') +
+      _tab('rappels',    '🔔', t('Rappels loyer'), true) +
+      _tab('recus',      '✅', t('Reçus')) +
+      _tab('relances',   '⚠️', t('Relances')) +
+      _tab('rapports',   '📊', t('Rapports bailleur')) +
+      _tab('invitations','📨', t('Invitations')) +
       '</div>' +
       '<div id="wa-tab-body" style="border:1px solid var(--border);border-radius:0 8px 8px 8px;padding:16px;background:var(--bg2)">' +
       '</div></div>';
@@ -217,21 +218,21 @@ window.IG.messagesWA = (function() {
     });
 
     if (!cibles.length) {
-      return '<div style="text-align:center;padding:40px;color:var(--text3)">🎉 Tous les locataires ont payé ce mois !</div>';
+      return '<div style="text-align:center;padding:40px;color:var(--text3)">🎉 ' + t('Tous les locataires ont payé ce mois !') + '</div>';
     }
 
     var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
-      '<div style="font-size:13px;color:var(--text2)">' + cibles.length + ' locataire(s) sans paiement ce mois</div>' +
+      '<div style="font-size:13px;color:var(--text2)">' + cibles.length + ' ' + t('locataire(s) sans paiement ce mois') + '</div>' +
       '<button onclick="window.IG.messagesWA.envoyerTousRappels()" ' +
         'style="padding:8px 16px;border-radius:8px;border:none;background:#25D366;color:#fff;font-size:12px;font-weight:700;cursor:pointer">' +
-        '📱 Envoyer à tous</button></div>' +
+        '📱 ' + t('Envoyer à tous') + '</button></div>' +
       '<div style="display:flex;flex-direction:column;gap:8px">';
 
     cibles.forEach(function(l) {
       var imm = imms.find(function(i) { return i.id == l.immeuble_id; });
       var msg = TEMPLATES.rappel_loyer(l, imm);
       html += _ligneMsg(l, imm, msg,
-        'Rappel loyer · ' + fmt(l.loyer),
+        t('Rappel loyer') + ' · ' + fmt(l.loyer),
         window.IG.utils.formatDate ? window.IG.utils.formatDate(l.entree) : '');
     });
 
@@ -246,10 +247,10 @@ window.IG.messagesWA = (function() {
     }).slice(0, 30);
 
     if (!recents.length) {
-      return '<div style="text-align:center;padding:40px;color:var(--text3)">Aucun paiement enregistré</div>';
+      return '<div style="text-align:center;padding:40px;color:var(--text3)">' + t('Aucun paiement enregistré') + '</div>';
     }
 
-    var html = '<div style="font-size:12px;color:var(--text3);margin-bottom:12px">30 derniers paiements — cliquez sur un locataire pour envoyer son reçu</div>';
+    var html = '<div style="font-size:12px;color:var(--text3);margin-bottom:12px">' + t('30 derniers paiements — cliquez sur un locataire pour envoyer son reçu') + '</div>';
     html += '<div style="display:flex;flex-direction:column;gap:8px">';
 
     recents.forEach(function(p) {
@@ -258,7 +259,7 @@ window.IG.messagesWA = (function() {
       var imm = imms.find(function(i) { return i.id == l.immeuble_id; });
       var msg = TEMPLATES.recu_paiement(l, p, imm);
       html += _ligneMsg(l, imm, msg,
-        'Reçu · ' + fmt(p.montant),
+        t('Reçu') + ' · ' + fmt(p.montant),
         p.date_paiement ? new Date(p.date_paiement).toLocaleDateString('fr-FR') : '');
     });
 
@@ -280,7 +281,7 @@ window.IG.messagesWA = (function() {
       .map(function(x) { return x.l; });
 
     if (!enRetard.length) {
-      return '<div style="text-align:center;padding:40px;color:var(--text3)">🎉 Aucun locataire en retard</div>';
+      return '<div style="text-align:center;padding:40px;color:var(--text3)">🎉 ' + t('Aucun locataire en retard') + '</div>';
     }
 
     var html = '<div style="display:flex;flex-direction:column;gap:8px">';
@@ -290,12 +291,12 @@ window.IG.messagesWA = (function() {
       var paysL = pays.filter(function(p) { return p.locataire_id == l.id; });
       var moisR = window.IG.relances ? window.IG.relances.calculerRetard(l, paysL) : (parseInt(l.mois_arrieres) || 0);
       var montantDuVal = window.IG.relances ? window.IG.relances.montantDu(l, paysL) : ((parseFloat(l.arrieres) || 0) || moisR * (parseFloat(l.loyer) || 0));
-      var niveauLabel = moisR === 1 ? '🟡 Relance' : moisR === 2 ? '🟠 Mise en demeure' : '🔴 Commandement';
+      var niveauLabel = moisR === 1 ? '🟡 ' + t('Relance') : moisR === 2 ? '🟠 ' + t('Mise en demeure') : '🔴 ' + t('Commandement');
       var msg = moisR >= 2
         ? TEMPLATES.mise_en_demeure(l, moisR, montantDuVal, imm)
         : TEMPLATES.rappel_loyer(l, imm);
       html += _ligneMsg(l, imm, msg,
-        niveauLabel + ' · ' + moisR + ' mois · ' + fmt(montantDuVal),
+        niveauLabel + ' · ' + moisR + ' ' + t('mois') + ' · ' + fmt(montantDuVal),
         '');
     });
 
@@ -306,36 +307,36 @@ window.IG.messagesWA = (function() {
 
   function _tabRapports(locs, imms, pays) {
     if (!imms.length) {
-      return '<div style="text-align:center;padding:40px;color:var(--text3)">Aucun immeuble</div>';
+      return '<div style="text-align:center;padding:40px;color:var(--text3)">' + t('Aucun immeuble') + '</div>';
     }
 
-    var html = '<div style="font-size:12px;color:var(--text3);margin-bottom:12px">Envoyer le rapport mensuel au propriétaire de chaque immeuble</div>';
+    var html = '<div style="font-size:12px;color:var(--text3);margin-bottom:12px">' + t('Envoyer le rapport mensuel au propriétaire de chaque immeuble') + '</div>';
     html += '<div style="display:flex;flex-direction:column;gap:8px">';
 
     imms.forEach(function(imm) {
       if (!imm.tel_proprio) return;
       var locsImm = locs.filter(function(l) { return l.immeuble_id == imm.id; });
       var msg = TEMPLATES.rapport_bailleur(imm, locsImm, pays);
-      var nom = esc(imm.nom_proprio || 'Propriétaire');
+      var nom = esc(imm.nom_proprio || t('Propriétaire'));
       var tel = imm.tel_proprio;
 
       html += '<div class="card" style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px">' +
         '<div>' +
         '<div style="font-weight:700;font-size:13px">' + esc(imm.nom_immeuble || imm.nom) + '</div>' +
-        '<div style="font-size:11px;color:var(--text3);margin-top:2px">Propriétaire : ' + nom + ' · ' + esc(tel) + '</div>' +
+        '<div style="font-size:11px;color:var(--text3);margin-top:2px">' + t('Propriétaire') + ' : ' + nom + ' · ' + esc(tel) + '</div>' +
         '</div>' +
         '<div style="display:flex;gap:8px">' +
         _btnPreview(msg) +
         '<a href="' + (_lienWA(tel, msg) || '#') + '" target="_blank" ' +
           'style="padding:7px 14px;border-radius:8px;background:#25D366;color:#fff;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">' +
-          '📱 Envoyer</a>' +
+          '📱 ' + t('Envoyer') + '</a>' +
         '</div></div>';
     });
 
     // Immeubles sans tel propriétaire
     var sansTel = imms.filter(function(i) { return !i.tel_proprio; });
     if (sansTel.length) {
-      html += '<div style="font-size:12px;color:var(--text3);margin-top:8px">⚠️ ' + sansTel.length + ' immeuble(s) sans numéro propriétaire : ' +
+      html += '<div style="font-size:12px;color:var(--text3);margin-top:8px">⚠️ ' + sansTel.length + ' ' + t('immeuble(s) sans numéro propriétaire') + ' : ' +
         sansTel.map(function(i) { return esc(i.nom_immeuble || i.nom); }).join(', ') + '</div>';
     }
 
@@ -351,33 +352,33 @@ window.IG.messagesWA = (function() {
       // Card locataire
       '<div class="card" style="padding:16px">' +
       '<div style="font-size:22px;margin-bottom:8px">👤</div>' +
-      '<div style="font-weight:700;font-size:14px;margin-bottom:4px">Locataire</div>' +
-      '<div style="font-size:12px;color:var(--text3);margin-bottom:12px">Envoyer l\'accès à un locataire existant</div>' +
+      '<div style="font-weight:700;font-size:14px;margin-bottom:4px">' + t('Locataire') + '</div>' +
+      '<div style="font-size:12px;color:var(--text3);margin-bottom:12px">' + t('Envoyer l\'accès à un locataire existant') + '</div>' +
       '<select id="inv-loc-sel" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:12px;color:var(--text);margin-bottom:10px">' +
-      '<option value="">Choisir un locataire...</option>' +
+      '<option value="">' + t('Choisir un locataire...') + '</option>' +
       locs.filter(function(l) { return l.telephone; }).map(function(l) {
         return '<option value="' + l.id + '">' + esc(l.nom) + '</option>';
       }).join('') +
       '</select>' +
-      '<input id="inv-loc-code" placeholder="Code invitation (ex: IMMO2024)" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:12px;color:var(--text);margin-bottom:10px">' +
+      '<input id="inv-loc-code" placeholder="' + t('Code invitation (ex: IMMO2024)') + '" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:12px;color:var(--text);margin-bottom:10px">' +
       '<button onclick="window.IG.messagesWA.envoyerInvLoc(\'' + appUrl + '\')" ' +
-        'style="width:100%;padding:9px;border-radius:8px;border:none;background:#25D366;color:#fff;font-size:12px;font-weight:700;cursor:pointer">📱 Envoyer invitation</button>' +
+        'style="width:100%;padding:9px;border-radius:8px;border:none;background:#25D366;color:#fff;font-size:12px;font-weight:700;cursor:pointer">📱 ' + t('Envoyer invitation') + '</button>' +
       '</div>' +
 
       // Card bailleur
       '<div class="card" style="padding:16px">' +
       '<div style="font-size:22px;margin-bottom:8px">🏢</div>' +
-      '<div style="font-weight:700;font-size:14px;margin-bottom:4px">Bailleur / Propriétaire</div>' +
-      '<div style="font-size:12px;color:var(--text3);margin-bottom:12px">Envoyer l\'accès bailleur pour un immeuble</div>' +
+      '<div style="font-weight:700;font-size:14px;margin-bottom:4px">' + t('Bailleur / Propriétaire') + '</div>' +
+      '<div style="font-size:12px;color:var(--text3);margin-bottom:12px">' + t('Envoyer l\'accès bailleur pour un immeuble') + '</div>' +
       '<select id="inv-imm-sel" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:12px;color:var(--text);margin-bottom:10px">' +
-      '<option value="">Choisir un immeuble...</option>' +
+      '<option value="">' + t('Choisir un immeuble...') + '</option>' +
       imms.filter(function(i) { return i.tel_proprio; }).map(function(i) {
         return '<option value="' + i.id + '">' + esc(i.nom_immeuble || i.nom) + ' (' + esc(i.nom_proprio || '?') + ')</option>';
       }).join('') +
       '</select>' +
-      '<input id="inv-imm-code" placeholder="Code invitation (ex: BAILxx)" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:12px;color:var(--text);margin-bottom:10px">' +
+      '<input id="inv-imm-code" placeholder="' + t('Code invitation (ex: BAILxx)') + '" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:12px;color:var(--text);margin-bottom:10px">' +
       '<button onclick="window.IG.messagesWA.envoyerInvImm(\'' + appUrl + '\')" ' +
-        'style="width:100%;padding:9px;border-radius:8px;border:none;background:#25D366;color:#fff;font-size:12px;font-weight:700;cursor:pointer">📱 Envoyer invitation</button>' +
+        'style="width:100%;padding:9px;border-radius:8px;border:none;background:#25D366;color:#fff;font-size:12px;font-weight:700;cursor:pointer">📱 ' + t('Envoyer invitation') + '</button>' +
       '</div></div>';
 
     return html;
@@ -400,7 +401,7 @@ window.IG.messagesWA = (function() {
       (tel ?
         '<a href="' + _lienWA(tel, msg) + '" target="_blank" ' +
           'style="padding:7px 14px;border-radius:8px;background:#25D366;color:#fff;font-size:12px;font-weight:700;text-decoration:none">📱</a>'
-        : '<span style="font-size:11px;color:var(--text3)">Pas de tel</span>') +
+        : '<span style="font-size:11px;color:var(--text3)">' + t('Pas de tel') + '</span>') +
       '</div></div>';
   }
 
@@ -417,7 +418,7 @@ window.IG.messagesWA = (function() {
     overlay.innerHTML =
       '<div style="background:var(--bg);border-radius:14px;padding:20px;max-width:400px;width:90%;max-height:80vh;overflow-y:auto">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
-      '<div style="font-weight:700;font-size:14px">📱 Aperçu WhatsApp</div>' +
+      '<div style="font-weight:700;font-size:14px">📱 ' + t('Aperçu WhatsApp') + '</div>' +
       '<button onclick="this.closest(\'[style*=inset]\').remove()" style="border:none;background:none;font-size:20px;cursor:pointer;color:var(--text2)">✕</button>' +
       '</div>' +
       '<div style="background:#e9fbe0;border-radius:12px;padding:14px;font-size:13px;line-height:1.6;white-space:pre-wrap;font-family:inherit;color:#111">' +
@@ -439,14 +440,14 @@ window.IG.messagesWA = (function() {
     var cibles = (data.locataires || []).filter(function(l) {
       return l.statut !== 'libre' && l.telephone && !payesIds.includes(l.id);
     });
-    if (!cibles.length) { window.IG.utils.showToast('Tous les locataires ont payé', 'green'); return; }
+    if (!cibles.length) { window.IG.utils.showToast(t('Tous les locataires ont payé'), 'green'); return; }
     var count = 0;
     cibles.forEach(function(l) {
       var imm = (data.immeubles || []).find(function(i) { return i.id == l.immeuble_id; });
       var msg = TEMPLATES.rappel_loyer(l, imm);
       setTimeout(function() { window.open(_lienWA(l.telephone, msg), '_blank'); }, count++ * 900);
     });
-    window.IG.utils.showToast(count + ' rappels WhatsApp ouverts', 'green');
+    window.IG.utils.showToast(count + ' ' + t('rappels WhatsApp ouverts'), 'green');
   }
 
   function envoyerInvLoc(appUrl) {
@@ -454,11 +455,11 @@ window.IG.messagesWA = (function() {
     var codeEl = document.getElementById('inv-loc-code');
     var locId = sel ? sel.value : '';
     var code = codeEl ? codeEl.value.trim() : '';
-    if (!locId) { window.IG.utils.showToast('Choisir un locataire', 'orange'); return; }
-    if (!code) { window.IG.utils.showToast('Entrer un code invitation', 'orange'); return; }
+    if (!locId) { window.IG.utils.showToast(t('Choisir un locataire'), 'orange'); return; }
+    if (!code) { window.IG.utils.showToast(t('Entrer un code invitation'), 'orange'); return; }
     var data = window.IG.app ? window.IG.app.getData() : { locataires: [] };
     var loc = (data.locataires || []).find(function(l) { return String(l.id) === String(locId); });
-    if (!loc || !loc.telephone) { window.IG.utils.showToast('Locataire sans numéro', 'orange'); return; }
+    if (!loc || !loc.telephone) { window.IG.utils.showToast(t('Locataire sans numéro'), 'orange'); return; }
     var msg = TEMPLATES.invitation_locataire(loc, code, appUrl);
     _ouvrirWA(loc.telephone, msg);
   }
@@ -468,11 +469,11 @@ window.IG.messagesWA = (function() {
     var codeEl = document.getElementById('inv-imm-code');
     var immId = sel ? sel.value : '';
     var code = codeEl ? codeEl.value.trim() : '';
-    if (!immId) { window.IG.utils.showToast('Choisir un immeuble', 'orange'); return; }
-    if (!code) { window.IG.utils.showToast('Entrer un code invitation', 'orange'); return; }
+    if (!immId) { window.IG.utils.showToast(t('Choisir un immeuble'), 'orange'); return; }
+    if (!code) { window.IG.utils.showToast(t('Entrer un code invitation'), 'orange'); return; }
     var data = window.IG.app ? window.IG.app.getData() : { immeubles: [] };
     var imm = (data.immeubles || []).find(function(i) { return String(i.id) === String(immId); });
-    if (!imm || !imm.tel_proprio) { window.IG.utils.showToast('Immeuble sans numéro propriétaire', 'orange'); return; }
+    if (!imm || !imm.tel_proprio) { window.IG.utils.showToast(t('Immeuble sans numéro propriétaire'), 'orange'); return; }
     var msg = TEMPLATES.invitation_bailleur(imm, code, appUrl);
     _ouvrirWA(imm.tel_proprio, msg);
   }

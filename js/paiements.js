@@ -185,7 +185,7 @@ window.IG.paiements = (function() {
     var loyer      = parseFloat(loc.loyer) || 0;
 
     // Paramètres cabinet (auto depuis settings)
-    var cabNom       = params.nom_cabinet  || session.nomCabinet || session.nom || 'Cabinet';
+    var cabNom       = params.nom_cabinet  || session.nomCabinet || session.nom || t('Cabinet');
     var cabAdresse   = params.adresse      || session.adresse    || '';
     var cabTel       = params.tel          || session.telephone  || '';
     var cabEmail     = params.email        || (params && params.email) || '';
@@ -208,7 +208,7 @@ window.IG.paiements = (function() {
     var nbPayesAll = lignesEligiblesScore.filter(function(l) { return l.statut === 'Payé'; }).length;
     var score      = nbMoisAll ? Math.round((nbPayesAll / nbMoisAll) * 100) : 100;
     var scoreCouleur = score >= 80 ? '#27ae60' : score >= 50 ? '#f39c12' : '#e74c3c';
-    var scoreLabel   = score >= 80 ? 'Fiable' : score >= 50 ? 'Moyen' : 'À risque';
+    var scoreLabel   = score >= 80 ? t('Fiable') : score >= 50 ? t('Moyen') : t('À risque');
 
     // Sélecteur d'années
     var entreeY = loc.entree ? new Date(loc.entree).getFullYear() : now.getFullYear();
@@ -283,9 +283,9 @@ window.IG.paiements = (function() {
 
     // Infos locataire
     html += '<table style="width:100%;border-collapse:collapse;margin-bottom:12px">';
-    html += _infoRow('Locataire',     esc(loc.nom),                                  'Immeuble',      esc(immNom));
-    html += _infoRow('Local',         esc(loc.appt || '—'),                          'Date d\'entrée', loc.entree ? window.IG.utils.formatDate(loc.entree) : '—');
-    html += _infoRow('Loyer mensuel', fmt(loyer) + ' F',                             'Caution versée', fmt(parseFloat(loc.caution) || 0) + ' F');
+    html += _infoRow(t('Locataire'),     esc(loc.nom),                                  t('Immeuble'),      esc(immNom));
+    html += _infoRow(t('Local'),         esc(loc.appt || '—'),                          t('Date d\'entrée'), loc.entree ? window.IG.utils.formatDate(loc.entree) : '—');
+    html += _infoRow(t('Loyer mensuel'), fmt(loyer) + ' F',                             t('Caution versée'), fmt(parseFloat(loc.caution) || 0) + ' F');
     html += '</table>';
 
     // Section Caution & avances
@@ -307,7 +307,7 @@ window.IG.paiements = (function() {
         var bg = i % 2 === 0 ? '' : 'background:#F5F9FD;';
         var moisCouverts = v.type === 'avance' ? Math.floor((parseFloat(v.montant) || 0) / loyer) + ' mois' : '—';
         html += '<tr style="' + bg + '">' +
-          '<td style="' + TD + 'font-weight:700">' + (v.type === 'caution' ? 'Caution' : 'Avance') + '</td>' +
+          '<td style="' + TD + 'font-weight:700">' + (v.type === 'caution' ? t('Caution') : t('Avance')) + '</td>' +
           '<td style="' + TD + '">' + (v.date_paiement ? window.IG.utils.formatDate(v.date_paiement) : '—') + '</td>' +
           '<td style="' + TD + '">' + fmt(v.montant) + ' F</td>' +
           '<td style="' + TD + '">' + esc(v.mode_paiement || 'espèces') + '</td>' +
@@ -477,11 +477,11 @@ window.IG.paiements = (function() {
       try {
         await window.IG.locataires.sauvegarder(Object.assign({}, loc, { observations_suivi: JSON.stringify(notes) }));
         modal.close();
-        window.IG.utils.showToast('Note enregistrée', 'green');
+        window.IG.utils.showToast(t('Note enregistrée'), 'green');
         // Rafraîchir la zone notes sans fermer la fiche
         var zone = document.getElementById('fiche-notes-zone');
         if (zone) {
-          var newHtml = '<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📝 Observations gestionnaire</div>';
+          var newHtml = '<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📝 ' + t('Observations gestionnaire') + '</div>';
           notes.slice().reverse().forEach(function(n) {
             newHtml += '<div style="background:var(--bg3);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:6px;font-size:12px">' +
               '<div style="color:var(--text3);font-size:10px;margin-bottom:3px">' + (window.IG.utils.esc(n.date || '')) + (n.auteur ? ' · ' + window.IG.utils.esc(n.auteur) : '') + '</div>' +
@@ -491,7 +491,7 @@ window.IG.paiements = (function() {
           zone.innerHTML = newHtml;
         }
       } catch(err) {
-        window.IG.utils.showToast('Erreur : ' + err.message, 'red');
+        window.IG.utils.showToast(t('Erreur') + ' : ' + err.message, 'red');
       }
     });
   }
@@ -534,7 +534,7 @@ window.IG.paiements = (function() {
   function imprimerFiche() {
     var zone = document.getElementById('fiche-print-zone');
     if (!zone) return;
-    var titre = 'Fiche de suivi';
+    var titre = t('Fiche de suivi');
     var h3 = zone.querySelector('h3');
     if (h3) titre = h3.textContent.replace('📋', '').trim();
     _apercuImprimer(titre, zone.innerHTML);
@@ -553,22 +553,22 @@ window.IG.paiements = (function() {
     var nomMois = window.IG.utils.nomMois(mois) + ' ' + annee;
 
     var bodyHtml =
-      '<h1 style="font-size:20px;text-align:center;margin-bottom:4px">REÇU DE LOYER</h1>' +
+      '<h1 style="font-size:20px;text-align:center;margin-bottom:4px">' + t('REÇU DE LOYER') + '</h1>' +
       '<div style="text-align:center;color:#666;font-size:12px;margin-bottom:30px">' + esc(cabinet) + ' — ' + new Date().toLocaleDateString('fr-FR') + '</div>' +
       '<table>' +
-      '<tr><td>Locataire</td><td><strong>' + esc(loc.nom) + '</strong></td></tr>' +
-      '<tr><td>Immeuble / Local</td><td>' + esc(imm ? (imm.nom_immeuble || imm.nom) : '') + ' — Local ' + esc(loc.appt || '?') + '</td></tr>' +
-      '<tr><td>Période</td><td>' + nomMois + '</td></tr>' +
-      '<tr><td>Loyer mensuel</td><td>' + fmt(loc.loyer) + '</td></tr>' +
+      '<tr><td>' + t('Locataire') + '</td><td><strong>' + esc(loc.nom) + '</strong></td></tr>' +
+      '<tr><td>' + t('Immeuble / Local') + '</td><td>' + esc(imm ? (imm.nom_immeuble || imm.nom) : '') + ' — ' + t('Local') + ' ' + esc(loc.appt || '?') + '</td></tr>' +
+      '<tr><td>' + t('Période') + '</td><td>' + nomMois + '</td></tr>' +
+      '<tr><td>' + t('Loyer mensuel') + '</td><td>' + fmt(loc.loyer) + '</td></tr>' +
       versements.map(function(v) {
-        return '<tr><td>Versement du ' + window.IG.utils.formatDate(v.date_paiement) + '</td><td>' + fmt(v.montant) + ' (' + esc(v.mode_paiement || 'espèces') + ')</td></tr>';
+        return '<tr><td>' + t('Versement du') + ' ' + window.IG.utils.formatDate(v.date_paiement) + '</td><td>' + fmt(v.montant) + ' (' + esc(v.mode_paiement || 'espèces') + ')</td></tr>';
       }).join('') +
-      '<tr style="font-weight:700;font-size:15px;background:#f0f7ff"><td>TOTAL VERSÉ</td><td>' + fmt(totalVerse) + '</td></tr>' +
-      (totalVerse < (parseFloat(loc.loyer)||0) ? '<tr><td style="color:#e74c3c">Reste dû</td><td style="color:#e74c3c;font-weight:700">' + fmt((parseFloat(loc.loyer)||0) - totalVerse) + '</td></tr>' : '') +
+      '<tr style="font-weight:700;font-size:15px;background:#f0f7ff"><td>' + t('TOTAL VERSÉ') + '</td><td>' + fmt(totalVerse) + '</td></tr>' +
+      (totalVerse < (parseFloat(loc.loyer)||0) ? '<tr><td style="color:#e74c3c">' + t('Reste dû') + '</td><td style="color:#e74c3c;font-weight:700">' + fmt((parseFloat(loc.loyer)||0) - totalVerse) + '</td></tr>' : '') +
       '</table>' +
-      '<div style="margin-top:40px;font-size:11px;color:#999;text-align:center">Document généré par ImmoGest · ' + new Date().toLocaleString('fr-FR') + '</div>';
+      '<div style="margin-top:40px;font-size:11px;color:#999;text-align:center">' + t('Document généré par ImmoGest') + ' · ' + new Date().toLocaleString('fr-FR') + '</div>';
 
-    _apercuImprimer('Reçu ' + nomMois + ' — ' + esc(loc.nom), bodyHtml);
+    _apercuImprimer(t('Reçu') + ' ' + nomMois + ' — ' + esc(loc.nom), bodyHtml);
   }
 
   // ── Paiement depuis la fiche → rouvre la fiche après succès ──
@@ -581,7 +581,7 @@ window.IG.paiements = (function() {
   // ── Formulaire enregistrement paiement ────────────────────────
   function afficherFormulaire(locId, onSuccess) {
     if (window.IG.perms && !window.IG.perms.canDo('paiements_edit')) {
-      toast('Accès non autorisé', 'red');
+      toast(t('Accès non autorisé'), 'red');
       return;
     }
     var loc = window.IG.locataires ? window.IG.locataires.getById(locId) : null;
@@ -594,7 +594,7 @@ window.IG.paiements = (function() {
 
     var html = '<h3 style="margin-bottom:14px;font-size:16px">💵 ' + t('Enregistrer un paiement') + '</h3>' +
       '<div style="background:var(--bg3);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px">' +
-      '<strong>' + esc(loc.nom) + '</strong> · Local <strong>' + esc(loc.appt || '?') + '</strong> · Loyer mensuel : <strong>' + fmt(loyer) + '</strong></div>' +
+      '<strong>' + esc(loc.nom) + '</strong> · ' + t('Local') + ' <strong>' + esc(loc.appt || '?') + '</strong> · ' + t('Loyer mensuel') + ' : <strong>' + fmt(loyer) + '</strong></div>' +
       '<form id="form-paiement">' +
       '<input type="hidden" name="locataire_id" value="' + loc.id + '">' +
       // Nb mois
@@ -604,7 +604,7 @@ window.IG.paiements = (function() {
       '<button type="button" onclick="window.IG.paiements._pNbMois(-1)" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">−</button>' +
       '<div style="text-align:center;min-width:60px">' +
       '<div id="p-nb-mois-val" style="font-size:22px;font-weight:700;color:var(--accent)">1</div>' +
-      '<div style="font-size:10px;color:var(--text3)">mois</div></div>' +
+      '<div style="font-size:10px;color:var(--text3)">' + t('mois') + '</div></div>' +
       '<button type="button" onclick="window.IG.paiements._pNbMois(1)" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">+</button>' +
       '<div id="p-total-preview" style="flex:1;text-align:right;font-size:13px;color:var(--green);font-weight:700">' + fmt(loyer) + '</div>' +
       '</div></div>' +

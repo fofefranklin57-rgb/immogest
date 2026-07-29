@@ -227,7 +227,7 @@ window.IG.locataires = (function() {
     var html = '';
     ordre.forEach(function(immId) {
       var imm = imms.find(function(i) { return i.id == immId; });
-      var nomImm = imm ? esc(imm.nom_immeuble || imm.nom) : 'Sans immeuble';
+      var nomImm = imm ? esc(imm.nom_immeuble || imm.nom) : t('Sans immeuble');
       var groupe = groupes[immId];
       var actifs = groupe.filter(function(l) { return l.statut !== 'libre'; }).length;
       html += '<div style="margin-bottom:20px">' +
@@ -310,7 +310,7 @@ window.IG.locataires = (function() {
   // ── Formulaire ajout/édition ──────────────────────────────────
   function afficherFormulaire(id, onSuccess) {
     if (window.IG.perms && !window.IG.perms.canDo('locataires_edit')) {
-      window.IG.utils.showToast('Accès non autorisé', 'red');
+      window.IG.utils.showToast(t('Accès non autorisé'), 'red');
       return;
     }
     if (window.IG.plans && window.IG.plans.estEnModeRetro()) {
@@ -345,7 +345,7 @@ window.IG.locataires = (function() {
     function _grp(inner) { return '<div style="margin-bottom:14px">' + inner + '</div>'; }
 
     function _stepper(actif) {
-      var etapes = ['Identité','Logement','Contrat','Accès'];
+      var etapes = [t('Identité'), t('Logement'), t('Contrat'), t('Accès')];
       return '<div style="display:flex;gap:0;margin-bottom:24px;border-radius:10px;overflow:hidden">' +
         etapes.map(function(e, i) {
           var n = i + 1;
@@ -363,64 +363,64 @@ window.IG.locataires = (function() {
       var html = '<div style="padding:20px 24px;max-width:500px;margin:0 auto">' + _stepper(n);
 
       if (n === 1) {
-        html += '<div style="font-size:15px;font-weight:700;margin-bottom:16px">👤 Identité du locataire</div>' +
-          _grp(_lbl('Nom complet', true) + '<input id="wz-nom" value="' + esc(_data.nom || '') + '" placeholder="Ex: Jean Dupont" style="' + _inp() + '">') +
-          _grp(_lbl('Téléphone', true) + '<input id="wz-tel" value="' + esc(_data.telephone || '') + '" placeholder="+237 6XX XXX XXX" style="' + _inp() + '" onblur="window.IG.locataires._checkDoublon()">') +
+        html += '<div style="font-size:15px;font-weight:700;margin-bottom:16px">👤 ' + t('Identité du locataire') + '</div>' +
+          _grp(_lbl(t('Nom complet'), true) + '<input id="wz-nom" value="' + esc(_data.nom || '') + '" placeholder="Ex: Jean Dupont" style="' + _inp() + '">') +
+          _grp(_lbl(t('Téléphone'), true) + '<input id="wz-tel" value="' + esc(_data.telephone || '') + '" placeholder="+237 6XX XXX XXX" style="' + _inp() + '" onblur="window.IG.locataires._checkDoublon()">') +
           '<div id="wz-doublon" style="display:none;margin:-10px 0 12px;padding:8px 12px;background:rgba(185,48,32,.1);border-radius:8px;color:var(--red);font-size:12px"></div>' +
-          _grp(_lbl('WhatsApp') + '<input id="wz-wa" value="' + esc(_data.whatsapp || '') + '" placeholder="Identique au téléphone si pareil" style="' + _inp() + '">');
+          _grp(_lbl('WhatsApp') + '<input id="wz-wa" value="' + esc(_data.whatsapp || '') + '" placeholder="' + t('Identique au téléphone si pareil') + '" style="' + _inp() + '">');
 
       } else if (n === 2) {
-        var immOptions = '<option value="">Sélectionner un immeuble...</option>' +
+        var immOptions = '<option value="">' + t('Sélectionner un immeuble...') + '</option>' +
           imms.map(function(i) {
             return '<option value="' + i.id + '"' + (_data.immeuble_id == i.id ? ' selected' : '') + '>' + esc(i.nom_immeuble || i.nom) + '</option>';
           }).join('');
-        html += '<div style="font-size:15px;font-weight:700;margin-bottom:16px">🏢 Logement</div>' +
-          _grp(_lbl('Immeuble', true) + '<select id="wz-imm" onchange="window.IG.locataires._chargerLocaux()" style="' + _inp() + '">' + immOptions + '</select>') +
-          _grp(_lbl('Numéro de local', true) +
+        html += '<div style="font-size:15px;font-weight:700;margin-bottom:16px">🏢 ' + t('Logement') + '</div>' +
+          _grp(_lbl(t('Immeuble'), true) + '<select id="wz-imm" onchange="window.IG.locataires._chargerLocaux()" style="' + _inp() + '">' + immOptions + '</select>') +
+          _grp(_lbl(t('Numéro de local'), true) +
             '<div style="display:flex;gap:8px;margin-top:4px">' +
             '<input id="wz-appt" value="' + esc(_data.appt || '') + '" placeholder="Ex: A1, S2, C3" style="' + _inp('flex:1;margin-top:0') + '" onblur="window.IG.locataires._checkLocalOccupe()">' +
-            '<button type="button" onclick="window.IG.locataires._voirLocaux()" style="padding:10px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;cursor:pointer;white-space:nowrap">Voir libres</button></div>') +
+            '<button type="button" onclick="window.IG.locataires._voirLocaux()" style="padding:10px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;cursor:pointer;white-space:nowrap">' + t('Voir libres') + '</button></div>') +
           '<div id="wz-occupe" style="display:none;margin:-10px 0 12px;padding:8px 12px;background:rgba(185,48,32,.1);border-radius:8px;color:var(--red);font-size:12px"></div>' +
-          _grp(_lbl('Type de local') + '<select id="wz-type" style="' + _inp() + '">' +
+          _grp(_lbl(t('Type de local')) + '<select id="wz-type" style="' + _inp() + '">' +
             ['appartement','studio','chambre','duplex','bureau','commerce'].map(function(tp) {
               return '<option value="' + tp + '"' + (_data.type_local === tp ? ' selected' : '') + '>' + tp.charAt(0).toUpperCase() + tp.slice(1) + '</option>';
             }).join('') + '</select>');
 
       } else if (n === 3) {
-        html += '<div style="font-size:15px;font-weight:700;margin-bottom:16px">📋 Contrat</div>' +
-          _grp(_lbl('Date d\'entrée', true) + '<input type="date" id="wz-entree" value="' + esc(_data.entree || '') + '" style="' + _inp() + '">') +
+        html += '<div style="font-size:15px;font-weight:700;margin-bottom:16px">📋 ' + t('Contrat') + '</div>' +
+          _grp(_lbl(t('Date d\'entrée'), true) + '<input type="date" id="wz-entree" value="' + esc(_data.entree || '') + '" style="' + _inp() + '">') +
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-          _grp(_lbl('Loyer mensuel (FCFA)', true) + '<input type="number" id="wz-loyer" value="' + (_data.loyer || '') + '" min="0" step="500" placeholder="Ex: 50000" style="' + _inp() + '">') +
-          _grp(_lbl('Caution') + '<input type="number" id="wz-caution" value="' + (_data.caution || '') + '" min="0" step="500" style="' + _inp() + '">') +
+          _grp(_lbl(t('Loyer mensuel (FCFA)'), true) + '<input type="number" id="wz-loyer" value="' + (_data.loyer || '') + '" min="0" step="500" placeholder="Ex: 50000" style="' + _inp() + '">') +
+          _grp(_lbl(t('Caution')) + '<input type="number" id="wz-caution" value="' + (_data.caution || '') + '" min="0" step="500" style="' + _inp() + '">') +
           '</div>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-          _grp(_lbl('Arriérés antérieurs (FCFA)') + '<input type="number" id="wz-arr" value="' + (_data.arrieres || 0) + '" min="0" step="500" oninput="window.IG.locataires._syncArrMois()" style="' + _inp() + '">') +
-          _grp(_lbl('Nb mois arriérés') + '<input type="number" id="wz-arr-mois" value="' + (_data.mois_arrieres || 0) + '" min="0" step="1" oninput="window.IG.locataires._syncArrMontant()" style="' + _inp() + '">') +
+          _grp(_lbl(t('Arriérés antérieurs (FCFA)')) + '<input type="number" id="wz-arr" value="' + (_data.arrieres || 0) + '" min="0" step="500" oninput="window.IG.locataires._syncArrMois()" style="' + _inp() + '">') +
+          _grp(_lbl(t('Nb mois arriérés')) + '<input type="number" id="wz-arr-mois" value="' + (_data.mois_arrieres || 0) + '" min="0" step="1" oninput="window.IG.locataires._syncArrMontant()" style="' + _inp() + '">') +
           '</div>' +
-          _grp(_lbl('Observations') + '<textarea id="wz-obs" rows="2" placeholder="Notes particulières..." style="' + _inp() + 'resize:vertical">' + esc(_data.observations || '') + '</textarea>');
+          _grp(_lbl(t('Observations')) + '<textarea id="wz-obs" rows="2" placeholder="' + t('Notes particulières...') + '" style="' + _inp() + 'resize:vertical">' + esc(_data.observations || '') + '</textarea>');
 
       } else if (n === 4) {
         html += '<div style="text-align:center;padding:10px 0">' +
           '<div style="font-size:40px;margin-bottom:12px">🎉</div>' +
-          '<div style="font-size:16px;font-weight:700;margin-bottom:6px">' + esc(_data.nom || '') + ' ajouté !</div>' +
+          '<div style="font-size:16px;font-weight:700;margin-bottom:6px">' + esc(_data.nom || '') + ' ' + t('ajouté !') + '</div>' +
           '<div style="font-size:13px;color:var(--text3);margin-bottom:20px">' + esc(_data.appt || '') + (imms.find(function(i) { return i.id == _data.immeuble_id; }) ? ' · ' + esc((imms.find(function(i) { return i.id == _data.immeuble_id; })).nom_immeuble || '') : '') + '</div>' +
-          '<div id="wz-invite-zone"><div style="font-size:13px;color:var(--text3)">Génération de l\'accès locataire...</div></div>' +
+          '<div id="wz-invite-zone"><div style="font-size:13px;color:var(--text3)">' + t('Génération de l\'accès locataire...') + '</div></div>' +
           '</div>';
       }
 
       // Boutons navigation
       html += '<div style="display:flex;gap:10px;justify-content:space-between;margin-top:20px">';
       if (n > 1 && n < 4) {
-        html += '<button onclick="window.IG.locataires._wzNav(-1)" style="padding:11px 20px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;cursor:pointer">← Retour</button>';
+        html += '<button onclick="window.IG.locataires._wzNav(-1)" style="padding:11px 20px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;cursor:pointer">← ' + t('Retour') + '</button>';
       } else {
         html += '<div></div>';
       }
       if (n < 3) {
-        html += '<button onclick="window.IG.locataires._wzNav(1)" style="padding:11px 24px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer">Suivant →</button>';
+        html += '<button onclick="window.IG.locataires._wzNav(1)" style="padding:11px 24px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer">' + t('Suivant') + ' →</button>';
       } else if (n === 3) {
-        html += '<button onclick="window.IG.locataires._wzSauvegarder()" style="padding:11px 24px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:13px;font-weight:700;cursor:pointer">✅ Enregistrer</button>';
+        html += '<button onclick="window.IG.locataires._wzSauvegarder()" style="padding:11px 24px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:13px;font-weight:700;cursor:pointer">✅ ' + t('Enregistrer') + '</button>';
       } else {
-        html += '<button onclick="window.IG.locataires._wzFermer()" style="padding:11px 24px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer">Terminer</button>';
+        html += '<button onclick="window.IG.locataires._wzFermer()" style="padding:11px 24px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer">' + t('Terminer') + '</button>';
       }
       html += '</div></div>';
       return html;
@@ -435,16 +435,16 @@ window.IG.locataires = (function() {
         if (_etape === 1) {
           var nom = (document.getElementById('wz-nom') || {}).value || '';
           var tel = (document.getElementById('wz-tel') || {}).value || '';
-          if (!nom.trim()) { toast('Nom obligatoire', 'red'); return; }
-          if (!tel.trim()) { toast('Téléphone obligatoire', 'red'); return; }
+          if (!nom.trim()) { toast(t('Nom obligatoire'), 'red'); return; }
+          if (!tel.trim()) { toast(t('Téléphone obligatoire'), 'red'); return; }
           _data.nom = nom.trim();
           _data.telephone = tel.trim();
           _data.whatsapp = (document.getElementById('wz-wa') || {}).value || '';
         } else if (_etape === 2) {
           var immId = (document.getElementById('wz-imm') || {}).value || '';
           var appt = (document.getElementById('wz-appt') || {}).value || '';
-          if (!immId) { toast('Immeuble obligatoire', 'red'); return; }
-          if (!appt.trim()) { toast('Numéro de local obligatoire', 'red'); return; }
+          if (!immId) { toast(t('Immeuble obligatoire'), 'red'); return; }
+          if (!appt.trim()) { toast(t('Numéro de local obligatoire'), 'red'); return; }
           _data.immeuble_id = parseInt(immId);
           _data.appt = appt.trim();
           _data.type_local = (document.getElementById('wz-type') || {}).value || 'appartement';
@@ -461,8 +461,8 @@ window.IG.locataires = (function() {
       var arr = parseFloat((document.getElementById('wz-arr') || {}).value || 0);
       var arrM = parseInt((document.getElementById('wz-arr-mois') || {}).value || 0);
       var obs = (document.getElementById('wz-obs') || {}).value || '';
-      if (!entree) { toast('Date d\'entrée obligatoire', 'red'); return; }
-      if (!loyer) { toast('Loyer obligatoire', 'red'); return; }
+      if (!entree) { toast(t('Date d\'entrée obligatoire'), 'red'); return; }
+      if (!loyer) { toast(t('Loyer obligatoire'), 'red'); return; }
       _data.entree = entree;
       _data.loyer = loyer;
       _data.caution = caution;
@@ -480,7 +480,7 @@ window.IG.locataires = (function() {
         if (box) box.innerHTML = _renderEtape(4);
         // Générer invitation et afficher code
         setTimeout(function() { _genererInvitationLocataire(_data); }, 400);
-      } catch(err) { toast('Erreur: ' + err.message, 'red'); }
+      } catch(err) { toast(t('Erreur') + ': ' + err.message, 'red'); }
     };
     window.IG.locataires._wzFermer = function() {
       var overlay = document.querySelector('[id="wz-overlay"]');
@@ -513,7 +513,7 @@ window.IG.locataires = (function() {
     };
     window.IG.locataires._voirLocaux = function() {
       var immId = (document.getElementById('wz-imm') || {}).value || '';
-      if (!immId) { toast('Choisir d\'abord un immeuble', 'orange'); return; }
+      if (!immId) { toast(t('Choisir d\'abord un immeuble'), 'orange'); return; }
       var imm = imms.find(function(i) { return i.id == immId; });
       if (!imm) return;
       var occupesIds = _cache.filter(function(l) { return l.immeuble_id == immId && l.statut !== 'libre'; }).map(function(l) { return String(l.appt || '').toUpperCase(); });
@@ -540,10 +540,10 @@ window.IG.locataires = (function() {
       var pop = document.createElement('div');
       pop.style.cssText = 'position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center';
       pop.innerHTML = '<div style="background:var(--bg);border-radius:14px;padding:20px;max-width:340px;width:90%">' +
-        '<div style="font-weight:700;font-size:14px;margin-bottom:12px">Locaux — ' + esc(imm.nom_immeuble || imm.nom) + '</div>' +
-        '<div style="margin-bottom:12px">' + (lignes.join('') || 'Aucun local configuré') + '</div>' +
-        '<div style="font-size:11px;color:var(--text3)">✓ libre — cliquer pour sélectionner &nbsp;|&nbsp; ✗ occupé</div>' +
-        '<button onclick="this.closest(\'[style*=z-index:950]\').remove()" style="margin-top:14px;width:100%;padding:9px;border-radius:8px;border:none;background:var(--bg3);color:var(--text);cursor:pointer">Fermer</button></div>';
+        '<div style="font-weight:700;font-size:14px;margin-bottom:12px">' + t('Locaux') + ' — ' + esc(imm.nom_immeuble || imm.nom) + '</div>' +
+        '<div style="margin-bottom:12px">' + (lignes.join('') || t('Aucun local configuré')) + '</div>' +
+        '<div style="font-size:11px;color:var(--text3)">✓ ' + t('libre — cliquer pour sélectionner') + ' &nbsp;|&nbsp; ✗ ' + t('occupé') + '</div>' +
+        '<button onclick="this.closest(\'[style*=z-index:950]\').remove()" style="margin-top:14px;width:100%;padding:9px;border-radius:8px;border:none;background:var(--bg3);color:var(--text);cursor:pointer">' + t('Fermer') + '</button></div>';
       document.body.appendChild(pop);
     };
     window.IG.locataires._syncArrMois = function() {
@@ -565,6 +565,19 @@ window.IG.locataires = (function() {
     overlay.style.cssText = 'position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px';
     overlay.innerHTML = '<div style="background:var(--bg);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto" id="wz-modal-body">' + _renderEtape(1) + '</div>';
     document.body.appendChild(overlay);
+  }
+
+  function _syncArrMoisEdit() {
+    var loyer = parseFloat((document.getElementById('edit-loyer') || {}).value || 0);
+    var arr = parseFloat((document.getElementById('edit-arr') || {}).value || 0);
+    var moisEl = document.getElementById('edit-arr-mois');
+    if (loyer > 0 && moisEl) moisEl.value = Math.round(arr / loyer);
+  }
+  function _syncArrMontantEdit() {
+    var loyer = parseFloat((document.getElementById('edit-loyer') || {}).value || 0);
+    var mois = parseInt((document.getElementById('edit-arr-mois') || {}).value || 0);
+    var arrEl = document.getElementById('edit-arr');
+    if (loyer > 0 && arrEl) arrEl.value = mois * loyer;
   }
 
   function _afficherFormulaireEdition(loc, onSuccess) {
@@ -592,13 +605,16 @@ window.IG.locataires = (function() {
         return '<option value="' + tp + '"' + (loc.type_local === tp ? ' selected' : '') + '>' + tp + '</option>';
       }).join('') + '</select></div></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-      _fieldNum('loyer', t('Loyer (FCFA)'), loc.loyer || 0) +
+      '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Loyer (FCFA)') + '</label>' +
+      '<input type="number" name="loyer" id="edit-loyer" value="' + (parseFloat(loc.loyer)||0) + '" min="0" step="500" oninput="window.IG.locataires._syncArrMontantEdit()" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
       _fieldNum('caution', t('Caution'), loc.caution || 0) +
       '</div>' +
       _field('entree', t('Date entrée'), loc.entree || '', false, 'date') +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-      _fieldNum('arrieres', t('Arriérés (FCFA)'), loc.arrieres || 0) +
-      _fieldNum('mois_arrieres', t('Nb mois arriérés'), loc.mois_arrieres || 0, 1) +
+      '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Arriérés (FCFA)') + '</label>' +
+      '<input type="number" name="arrieres" id="edit-arr" value="' + (parseFloat(loc.arrieres)||0) + '" min="0" step="500" oninput="window.IG.locataires._syncArrMoisEdit()" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Nb mois arriérés') + '</label>' +
+      '<input type="number" name="mois_arrieres" id="edit-arr-mois" value="' + (parseInt(loc.mois_arrieres)||0) + '" min="0" step="1" oninput="window.IG.locataires._syncArrMontantEdit()" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
       '</div>' +
       '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Observations') + '</label>' +
       '<textarea name="observations" rows="2" style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);resize:vertical">' + esc(loc.observations || '') + '</textarea></div>' +
@@ -660,31 +676,31 @@ window.IG.locataires = (function() {
       if (!res || res.error) return;
 
       var imm = window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null;
-      var titre = (loc.type_local || 'Local') + ' — ' + (imm ? (imm.nom_immeuble || imm.nom) : '') + ' / ' + (loc.appt || '');
+      var titre = (loc.type_local || t('Local')) + ' — ' + (imm ? (imm.nom_immeuble || imm.nom) : '') + ' / ' + (loc.appt || '');
       var score = res.score || 0;
       var statut = res.statut;
       var annonce_id = res.annonce_id;
       var MKTURL = window.APP_CONFIG ? window.APP_CONFIG.APP_URL + '/marketplace.html' : '#';
 
       var scoreColor = score >= 70 ? 'var(--green)' : score >= 40 ? '#E07800' : 'var(--red)';
-      var modeTxt = res.mode === 'auto' ? '⚡ Publiée automatiquement' : res.mode === 'proprio' ? '⏳ En attente validation propriétaire' : '📝 Brouillon créé';
+      var modeTxt = res.mode === 'auto' ? '⚡ ' + t('Publiée automatiquement') : res.mode === 'proprio' ? '⏳ ' + t('En attente validation propriétaire') : '📝 ' + t('Brouillon créé');
       var html = '<div style="text-align:center;padding:8px 0 16px">' +
         '<div style="font-size:40px;margin-bottom:12px">🏠</div>' +
         '<h3 style="margin-bottom:6px;font-size:16px">' + t('Local libéré — Publication marketplace') + '</h3>' +
         '<p style="color:var(--text3);font-size:13px;margin-bottom:16px">' + esc(titre) + '</p>' +
         '<div style="background:var(--bg3);border-radius:12px;padding:16px;margin-bottom:16px">' +
-        '<div style="font-size:12px;color:var(--text3);margin-bottom:4px">Score qualité de l\'annonce</div>' +
+        '<div style="font-size:12px;color:var(--text3);margin-bottom:4px">' + t('Score qualité de l\'annonce') + '</div>' +
         '<div style="font-size:32px;font-weight:700;color:' + scoreColor + '">' + score + '<span style="font-size:14px">/100</span></div>' +
         '<div style="margin-top:8px;font-size:11px;color:var(--text3)">' +
-        (score < 70 ? '💡 Ajoutez photos et description pour améliorer le score' : '✅ Annonce complète') + '</div>' +
+        (score < 70 ? '💡 ' + t('Ajoutez photos et description pour améliorer le score') : '✅ ' + t('Annonce complète')) + '</div>' +
         '</div>' +
         '<div style="margin-bottom:16px;padding:10px 14px;background:var(--bg3);border-radius:8px;font-size:13px">' + modeTxt + '</div>' +
         '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">';
       if (statut === 'brouillon' && annonce_id) {
-        html += '<button onclick="window.IG.locataires._publierAnnonce(' + annonce_id + ', this)" style="padding:10px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">🚀 Publier maintenant</button>';
+        html += '<button onclick="window.IG.locataires._publierAnnonce(' + annonce_id + ', this)" style="padding:10px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">🚀 ' + t('Publier maintenant') + '</button>';
       }
-      html += '<a href="' + MKTURL + '" target="_blank" style="padding:10px 18px;border-radius:8px;border:1px solid var(--border2);color:var(--text);text-decoration:none;font-size:13px;display:inline-flex;align-items:center;gap:6px">🌐 Voir Marketplace</a>' +
-        '<button data-modal-close style="padding:10px 18px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:13px">Fermer</button>' +
+      html += '<a href="' + MKTURL + '" target="_blank" style="padding:10px 18px;border-radius:8px;border:1px solid var(--border2);color:var(--text);text-decoration:none;font-size:13px;display:inline-flex;align-items:center;gap:6px">🌐 ' + t('Voir Marketplace') + '</a>' +
+        '<button data-modal-close style="padding:10px 18px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:13px">' + t('Fermer') + '</button>' +
         '</div></div>';
 
       window.IG.utils.showModal(html, { width: '440px' });
@@ -703,10 +719,10 @@ window.IG.locataires = (function() {
       });
       var res = r.ok ? await r.json() : null;
       if (res && res.success) {
-        toast('✅ Annonce publiée sur la marketplace !', 'green');
-        if (btn) { btn.textContent = '✓ Publiée'; btn.style.background = 'var(--green)'; }
+        toast('✅ ' + t('Annonce publiée sur la marketplace !'), 'green');
+        if (btn) { btn.textContent = '✓ ' + t('Publiée'); btn.style.background = 'var(--green)'; }
       } else {
-        toast('Erreur publication', 'red');
+        toast(t('Erreur publication'), 'red');
         if (btn) btn.disabled = false;
       }
     } catch(_) {
@@ -718,7 +734,7 @@ window.IG.locataires = (function() {
   function afficherFiche(id, annee) {
     var session = window.IG.auth ? window.IG.auth.getSession() : null;
     if (session && (session.role === 'bailleur' || session.role === 'proprietaire') && window.IG.perms && !window.IG.perms.canDo('voir_fiche_suivi')) {
-      window.IG.utils.showToast('Accès non autorisé', 'red');
+      window.IG.utils.showToast(t('Accès non autorisé'), 'red');
       return;
     }
     var loc = getById(id);
@@ -847,17 +863,17 @@ window.IG.locataires = (function() {
     if (isOpen && menu._locId === locId) return;
     menu._locId = locId;
     menu.innerHTML =
-      '<div class="action-dropdown-item" onclick="window.IG.paiements.afficherFormulaire(' + locId + ');window.IG.locataires._closeMenus()">💳 Paiement</div>' +
-      '<div class="action-dropdown-item" onclick="window.IG.locataires.afficherFormulaire(' + locId + ');window.IG.locataires._closeMenus()">📝 Modifier</div>' +
-      '<div class="action-dropdown-item" onclick="window.IG.locataires.afficherFiche(' + locId + ');window.IG.locataires._closeMenus()">📊 Fiche de suivi</div>' +
-      (hasTel ? '<div class="action-dropdown-item" onclick="window.IG.locataires.envoyerAccesWA(' + locId + ');window.IG.locataires._closeMenus()">📲 Envoyer accès WhatsApp</div>' : '') +
-      '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.genererDocument(' + locId + ');window.IG.locataires._closeMenus()">📄 Documents</div>' +
-      '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.afficherEtatDesLieux(window.IG.locataires.getById(' + locId + '),\'entree\');window.IG.locataires._closeMenus()">🏠 État des lieux entrée</div>' +
-      '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.afficherEtatDesLieux(window.IG.locataires.getById(' + locId + '),\'sortie\');window.IG.locataires._closeMenus()">🔑 État des lieux sortie</div>' +
-      '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.deposerPlainte(window.IG.locataires.getById(' + locId + '));window.IG.locataires._closeMenus()">📋 Déposer une plainte</div>' +
+      '<div class="action-dropdown-item" onclick="window.IG.paiements.afficherFormulaire(' + locId + ');window.IG.locataires._closeMenus()">💳 ' + t('Paiement') + '</div>' +
+      '<div class="action-dropdown-item" onclick="window.IG.locataires.afficherFormulaire(' + locId + ');window.IG.locataires._closeMenus()">📝 ' + t('Modifier') + '</div>' +
+      '<div class="action-dropdown-item" onclick="window.IG.locataires.afficherFiche(' + locId + ');window.IG.locataires._closeMenus()">📊 ' + t('Fiche de suivi') + '</div>' +
+      (hasTel ? '<div class="action-dropdown-item" onclick="window.IG.locataires.envoyerAccesWA(' + locId + ');window.IG.locataires._closeMenus()">📲 ' + t('Envoyer accès WhatsApp') + '</div>' : '') +
+      '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.genererDocument(' + locId + ');window.IG.locataires._closeMenus()">📄 ' + t('Documents') + '</div>' +
+      '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.afficherEtatDesLieux(window.IG.locataires.getById(' + locId + '),\'entree\');window.IG.locataires._closeMenus()">🏠 ' + t('État des lieux entrée') + '</div>' +
+      '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.afficherEtatDesLieux(window.IG.locataires.getById(' + locId + '),\'sortie\');window.IG.locataires._closeMenus()">🔑 ' + t('État des lieux sortie') + '</div>' +
+      '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.deposerPlainte(window.IG.locataires.getById(' + locId + '));window.IG.locataires._closeMenus()">📋 ' + t('Déposer une plainte') + '</div>' +
       '<div class="action-dropdown-sep"></div>' +
-      '<div class="action-dropdown-item danger" onclick="window.IG.locataires.liberer(' + locId + ');window.IG.locataires._closeMenus()">🔓 Libérer</div>' +
-      '<div class="action-dropdown-item danger" onclick="window.IG.locataires.supprimer(' + locId + ');window.IG.locataires._closeMenus()">🗑️ Supprimer</div>';
+      '<div class="action-dropdown-item danger" onclick="window.IG.locataires.liberer(' + locId + ');window.IG.locataires._closeMenus()">🔓 ' + t('Libérer') + '</div>' +
+      '<div class="action-dropdown-item danger" onclick="window.IG.locataires.supprimer(' + locId + ');window.IG.locataires._closeMenus()">🗑️ ' + t('Supprimer') + '</div>';
     menu.style.display = 'flex';
     var btnRect = btn.getBoundingClientRect();
     menu.style.right = (window.innerWidth - btnRect.right) + 'px';
@@ -879,7 +895,7 @@ window.IG.locataires = (function() {
     var loc = getById(locId);
     if (!loc) return;
     var tel = (loc.whatsapp || loc.telephone || '').replace(/\D/g,'');
-    if (!tel) { window.IG.utils.showToast('Pas de numéro WhatsApp', 'red'); return; }
+    if (!tel) { window.IG.utils.showToast(t('Pas de numéro WhatsApp'), 'red'); return; }
     if (tel.startsWith('0')) tel = tel.substring(1);
     var msg = 'Bonjour ' + loc.nom + ', voici votre accès au portail locataire ImmoGest : https://immogest-34w.pages.dev';
     window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(msg), '_blank');
@@ -928,7 +944,7 @@ window.IG.locataires = (function() {
         '</div>' +
         '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">' +
         (tel ? '<a href="' + waUrl + '" target="_blank" style="padding:10px 16px;border-radius:8px;border:none;background:#25D366;color:#fff;font-weight:700;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px">📱 Envoyer par WhatsApp</a>' : '') +
-        '<button onclick="navigator.clipboard.writeText(\'' + code + '\');window.IG.utils.showToast(\'Code copié ✓\',\'green\')" style="padding:10px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">📋 Copier le code</button>' +
+        '<button onclick="navigator.clipboard.writeText(\'' + code + '\');window.IG.utils.showToast(\'' + t('Code copié') + ' ✓\',\'green\')" style="padding:10px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">📋 ' + t('Copier le code') + '</button>' +
         '<button data-modal-close style="padding:10px 16px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:13px">Fermer</button>' +
         '</div></div>',
         { width: '420px' }
@@ -942,7 +958,7 @@ window.IG.locataires = (function() {
     charger, getCache, getById, getByImmeuble, sauvegarder,
     liberer, supprimer, renderListe, renderListeFiltree, afficherFormulaire, afficherFiche,
     lienWA, _libererConfirm, _toggleMenu, _closeMenus, envoyerAccesWA,
-    _publierAnnonce, rafraichirFiche
+    _publierAnnonce, rafraichirFiche, _syncArrMoisEdit, _syncArrMontantEdit
   };
 
 })();

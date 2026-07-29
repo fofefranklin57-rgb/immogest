@@ -132,7 +132,7 @@ window.IG.immeubles = (function() {
   // ── Formulaire ajout/édition ──────────────────────────────────
   function afficherFormulaire(id) {
     if (window.IG.perms && !window.IG.perms.canDo('immeubles_edit')) {
-      window.IG.utils.showToast('Accès non autorisé', 'red');
+      window.IG.utils.showToast(t('Accès non autorisé'), 'red');
       return;
     }
     if (window.IG.plans && window.IG.plans.estEnModeRetro()) {
@@ -273,7 +273,7 @@ window.IG.immeubles = (function() {
         '</div>' +
         '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">' +
         (tel ? '<a href="' + waUrl + '" target="_blank" style="padding:10px 16px;border-radius:8px;border:none;background:#25D366;color:#fff;font-weight:700;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px">📱 Envoyer par WhatsApp</a>' : '') +
-        '<button onclick="navigator.clipboard.writeText(\'' + code + '\');window.IG.utils.showToast(\'Code copié ✓\',\'green\')" style="padding:10px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">📋 Copier le code</button>' +
+        '<button onclick="navigator.clipboard.writeText(\'' + code + '\');window.IG.utils.showToast(\'' + t('Code copié') + ' ✓\',\'green\')" style="padding:10px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">📋 ' + t('Copier le code') + '</button>' +
         '<button data-modal-close style="padding:10px 16px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:13px">Fermer</button>' +
         '</div></div>',
         { width: '420px' }

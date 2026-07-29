@@ -40,9 +40,9 @@ window.IG.relances = (function() {
   // ── Niveaux de relance ────────────────────────────────────────
   function niveauRelance(moisRetard) {
     if (moisRetard === 0) return null;
-    if (moisRetard === 1) return { niveau: 1, label: 'Relance', color: 'var(--yellow)', bg: 'var(--yellow-bg)', emoji: '🟡' };
-    if (moisRetard === 2) return { niveau: 2, label: 'Mise en demeure', color: '#E05A00', bg: 'rgba(224,90,0,.10)', emoji: '🟠' };
-    return { niveau: 3, label: 'Commandement', color: 'var(--red)', bg: 'var(--red-bg)', emoji: '🔴' };
+    if (moisRetard === 1) return { niveau: 1, label: t('Relance'), color: 'var(--yellow)', bg: 'var(--yellow-bg)', emoji: '🟡' };
+    if (moisRetard === 2) return { niveau: 2, label: t('Mise en demeure'), color: '#E05A00', bg: 'rgba(224,90,0,.10)', emoji: '🟠' };
+    return { niveau: 3, label: t('Commandement'), color: 'var(--red)', bg: 'var(--red-bg)', emoji: '🔴' };
   }
 
   // ── Message WhatsApp par niveau ───────────────────────────────
@@ -88,7 +88,7 @@ window.IG.relances = (function() {
     var html = '<div class="content">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
       '<h2 style="font-size:17px;font-weight:700">🔔 ' + t('Relances & Alertes') + ' (' + alertes.length + ')</h2>' +
-      '<button onclick="window.IG.relances.envoyerTous()" style="padding:9px 16px;border-radius:10px;border:none;background:#25D366;color:#fff;cursor:pointer;font-size:13px;font-weight:600">📱 WhatsApp Tous</button>' +
+      '<button onclick="window.IG.relances.envoyerTous()" style="padding:9px 16px;border-radius:10px;border:none;background:#25D366;color:#fff;cursor:pointer;font-size:13px;font-weight:600">📱 ' + t('WhatsApp Tous') + '</button>' +
       '</div>';
 
     // Résumé par niveau
@@ -117,17 +117,17 @@ window.IG.relances = (function() {
         '<span style="font-size:11px;background:' + n.bg + ';color:' + n.color + ';padding:2px 8px;border-radius:99px;font-weight:700">' + n.label + '</span>' +
         '</div>' +
         '<div style="font-size:12px;color:var(--text3)">' +
-        esc(imm ? (imm.nom_immeuble || imm.nom) : '') + ' — Local ' + esc(a.loc.appt || '?') +
-        ' — ' + a.retard + ' mois de retard' +
+        esc(imm ? (imm.nom_immeuble || imm.nom) : '') + ' — ' + t('Local') + ' ' + esc(a.loc.appt || '?') +
+        ' — ' + a.retard + ' ' + t('mois de retard') +
         '</div></div>' +
         '<div style="text-align:right">' +
         '<div style="font-size:18px;font-weight:700;color:' + n.color + '">' + fmt(a.montant) + '</div>' +
-        '<div style="font-size:11px;color:var(--text3)">montant dû</div>' +
+        '<div style="font-size:11px;color:var(--text3)">' + t('montant dû') + '</div>' +
         '</div></div>' +
         '<div style="display:flex;gap:8px;margin-top:12px">' +
         (wa ? '<a href="' + wa + '" target="_blank" style="padding:7px 14px;border-radius:8px;background:#25D366;color:#fff;font-size:12px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px">📱 WhatsApp</a>' : '') +
-        '<button onclick="window.IG.paiements.afficherFormulaire(' + a.loc.id + ')" style="padding:7px 14px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:12px;font-weight:600;cursor:pointer">💵 Encaisser</button>' +
-        '<button onclick="window.IG.locataires.afficherFiche(' + a.loc.id + ')" style="padding:7px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;cursor:pointer">📋 Fiche</button>' +
+        '<button onclick="window.IG.paiements.afficherFormulaire(' + a.loc.id + ')" style="padding:7px 14px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:12px;font-weight:600;cursor:pointer">💵 ' + t('Encaisser') + '</button>' +
+        '<button onclick="window.IG.locataires.afficherFiche(' + a.loc.id + ')" style="padding:7px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;cursor:pointer">📋 ' + t('Fiche') + '</button>' +
         '</div></div>';
     });
     html += '</div></div>';
@@ -143,7 +143,7 @@ window.IG.relances = (function() {
 
   function envoyerTous() {
     if (!_dernieresAlertes.length) {
-      window.IG.utils.showToast('Aucune relance à envoyer', 'blue');
+      window.IG.utils.showToast(t('Aucune relance à envoyer'), 'blue');
       return;
     }
     var session = window.IG.auth ? window.IG.auth.getSession() : {};
@@ -154,7 +154,7 @@ window.IG.relances = (function() {
       var tel = a.loc.telephone.replace(/[^0-9+]/g, '');
       setTimeout(function() { window.open('https://wa.me/' + tel + '?text=' + msg, '_blank'); }, count++ * 800);
     });
-    window.IG.utils.showToast(count + ' messages WhatsApp ouverts', 'green');
+    window.IG.utils.showToast(count + ' ' + t('messages WhatsApp ouverts'), 'green');
   }
 
   return { renderPage, calculerRetard, montantDu, niveauRelance, messageWA, envoyerTous };
