@@ -115,6 +115,8 @@ window.IG.paiements = (function() {
       var cumul = 0;
       var versementsMois = [];
 
+      var avancePreview = false;
+
       if (!horsBail && !futur) {
         // 1. Consommer avance en premier
         if (cumulAvance >= loyer) {
@@ -133,6 +135,17 @@ window.IG.paiements = (function() {
           cumul += pris;
           versementsMois.push({ montant: pris, date: v.date_paiement, note: v.note, id: v.id, mode_paiement: v.mode_paiement || 'espèces' });
         });
+      } else if (futur) {
+        // Aperçu des versements déjà enregistrés d'avance pour ce mois précis
+        // (sans consommer v._restant : la vraie consommation FIFO se fera
+        // normalement une fois le mois échu).
+        var versFutur = loyers.filter(function(v) { return parseInt(v.mois) === m.mois && parseInt(v.annee) === m.annee; });
+        if (versFutur.length) {
+          var cumulF = versFutur.reduce(function(s, v) { return s + (parseFloat(v.montant) || 0); }, 0);
+          cumul = Math.min(cumulF, loyer);
+          avancePreview = cumul >= loyer;
+          versementsMois = versFutur.map(function(v) { return { montant: v.montant, date: v.date_paiement, note: v.note, id: v.id, mode_paiement: v.mode_paiement || 'espèces' }; });
+        }
       }
 
       var paye = !futur && cumul >= loyer;
@@ -142,7 +155,7 @@ window.IG.paiements = (function() {
         annee:      m.annee,
         horsBail:   horsBail,
         futur:      futur,
-        statut:     horsBail ? 'Hors bail' : (futur ? 'À venir' : (paye ? 'Payé' : (cumul > 0 ? 'Partiel' : 'Impayé'))),
+        statut:     horsBail ? 'Hors bail' : (futur ? (avancePreview ? 'Payé (avance)' : 'À venir') : (paye ? 'Payé' : (cumul > 0 ? 'Partiel' : 'Impayé'))),
         versements: versementsMois,
         cumul:      cumul,
         reste:      (horsBail || futur) ? 0 : (paye ? 0 : loyer - cumul)
@@ -200,12 +213,12 @@ window.IG.paiements = (function() {
     // Statistiques
     var now        = new Date();
     var todayYYMM  = now.getFullYear() * 100 + (now.getMonth() + 1);
-    var nbPayes    = lignes.filter(function(l) { return l.statut === 'Payé'; }).length;
+    var nbPayes    = lignes.filter(function(l) { return l.statut === 'Payé' || l.statut === 'Payé (avance)'; }).length;
     var totalVerse = lignes.reduce(function(s, l) { return s + (l.cumul  || 0); }, 0);
     var totalReste = lignes.reduce(function(s, l) { return s + (l.reste  || 0); }, 0);
     var lignesEligiblesScore = toutesLignes.filter(function(l) { return !l.horsBail; });
     var nbMoisAll  = lignesEligiblesScore.length;
-    var nbPayesAll = lignesEligiblesScore.filter(function(l) { return l.statut === 'Payé'; }).length;
+    var nbPayesAll = lignesEligiblesScore.filter(function(l) { return l.statut === 'Payé' || l.statut === 'Payé (avance)'; }).length;
     var score      = nbMoisAll ? Math.round((nbPayesAll / nbMoisAll) * 100) : 100;
     var scoreCouleur = score >= 80 ? '#27ae60' : score >= 50 ? '#f39c12' : '#e74c3c';
     var scoreLabel   = score >= 80 ? t('Fiable') : score >= 50 ? t('Moyen') : t('À risque');
@@ -336,15 +349,15 @@ window.IG.paiements = (function() {
       if (lg.horsBail) {
         html += '<tr style="' + bg + '">' +
           '<td style="' + TD + 'color:#999;font-style:italic">' + lg.periode + '</td>' +
-          '<td style="' + TD + '"><span style="color:#777;font-weight:700">Hors bail</span></td>' +
+          '<td style="' + TD + '"><span style="color:#777;font-weight:700">' + t('Hors bail') + '</span></td>' +
           '<td style="' + TD + 'color:#aaa">—</td>' +
           '<td style="' + TD + 'color:#aaa">—</td>' +
-          '<td style="' + TD + 'color:#777">Avant entrée du locataire</td>' +
+          '<td style="' + TD + 'color:#777">' + t('Avant entrée du locataire') + '</td>' +
           '</tr>';
         return;
       }
 
-      if (isFutur) {
+      if (isFutur && lg.statut !== 'Payé (avance)') {
         html += '<tr style="' + bg + '">' +
           '<td style="' + TD + 'color:#bbb;font-style:italic">' + lg.periode + '</td>' +
           '<td style="' + TD + '"></td><td style="' + TD + '"></td>' +
@@ -355,7 +368,9 @@ window.IG.paiements = (function() {
 
       // Statut : affiché uniquement si mois intégralement payé
       var statutCell = lg.statut === 'Payé'
-        ? '<span style="color:#1a7a3a;font-weight:700">Payé</span>'
+        ? '<span style="color:#1a7a3a;font-weight:700">' + t('Payé') + '</span>'
+        : lg.statut === 'Payé (avance)'
+        ? '<span style="color:#1a6a9a;font-weight:700">' + t('Payé (avance)') + '</span>'
         : '';
 
       // Versements empilés
@@ -368,19 +383,19 @@ window.IG.paiements = (function() {
             '</span>';
         }).join('');
       } else if (lg.cumul > 0) {
-        versCell = '<span style="color:#888;font-style:italic;font-size:9px">Couvert par avance</span>';
+        versCell = '<span style="color:#888;font-style:italic;font-size:9px">' + t('Couvert par avance') + '</span>';
       }
 
       var resteCell = (lg.reste > 0 && lg.cumul > 0)
         ? '<span style="color:#c0392b;font-weight:700">' + fmt(lg.reste) + ' F</span>'
-        : (lg.statut === 'Payé' ? '—' : '');
+        : ((lg.statut === 'Payé' || lg.statut === 'Payé (avance)') ? '—' : '');
 
       var obs = lg.versements && lg.versements.length > 1
-        ? lg.versements.length + ' versements'
+        ? lg.versements.length + ' ' + t('versements')
         : (lg.versements && lg.versements[0] ? esc(lg.versements[0].note || '') : '');
 
       var recuBtn = (lg.versements && lg.versements.length > 0)
-        ? ' <button onclick="window.IG.paiements.imprimerRecu(' + loc.id + ',' + lg.mois + ',' + lg.annee + ')" style="border:none;background:none;cursor:pointer;font-size:11px;padding:0;margin-left:4px" title="Reçu">🖨️</button>'
+        ? ' <button onclick="window.IG.paiements.imprimerRecu(' + loc.id + ',' + lg.mois + ',' + lg.annee + ')" style="border:none;background:none;cursor:pointer;font-size:11px;padding:0;margin-left:4px" title="' + t('Reçu') + '">🖨️</button>'
         : '';
 
       html += '<tr style="' + bg + '">' +
