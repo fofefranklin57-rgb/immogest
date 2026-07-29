@@ -1510,7 +1510,7 @@ window.IG.app = (function() {
       '<div style="font-size:13px;color:var(--text2);margin-bottom:20px">' + esc(nomLoc) + ' — ' + fmt(montant) + '<br>Cette action est irréversible.</div>' +
       '<div style="display:flex;gap:10px;justify-content:center">' +
       '<button onclick="this.closest(\'[style*=inset]\').remove()" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;cursor:pointer">Annuler</button>' +
-      '<button onclick="window.IG.paiements.annuler(' + id + ');this.closest(\'[style*=inset]\').remove();window.IG.app._refreshPaiements()" ' +
+      '<button onclick="var _btn=this;window.IG.paiements.annuler(' + id + ').then(async function(){_btn.closest(\'[style*=inset]\').remove();if(window.IG.app.refresh){await window.IG.app.refresh();}window.IG.app._refreshPaiements();})" ' +
         'style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--red);color:#fff;font-size:13px;font-weight:700;cursor:pointer">Supprimer</button>' +
       '</div></div>';
     document.body.appendChild(overlay);
