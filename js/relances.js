@@ -34,13 +34,7 @@ window.IG.relances = (function() {
   }
 
   function montantDu(loc, paiements) {
-    var loyer = parseFloat(loc.loyer) || 0;
-    var baseArrieres = parseFloat(loc.arrieres) || 0;
-    if (!paiements || paiements.length === 0) return baseArrieres;
-    var fiche = _ficheDepuisPremierPaiement(loc, paiements);
-    var payes = fiche.filter(function(l) { return !l.futur && l.statut === 'Payé'; }).length;
-    var duNouv = fiche.filter(function(l) { return !l.futur; }).reduce(function(s, l) { return s + (l.reste || 0); }, 0);
-    return Math.max(0, baseArrieres - payes * loyer) + duNouv;
+    return window.IG.paiements ? window.IG.paiements.montantDu(loc, paiements) : (parseFloat(loc.arrieres) || 0);
   }
 
   // ── Niveaux de relance ────────────────────────────────────────

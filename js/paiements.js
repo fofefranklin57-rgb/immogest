@@ -152,6 +152,24 @@ window.IG.paiements = (function() {
     return lignes;
   }
 
+  // ── Montant réellement dû (arriérés + reste calculé sur la fiche) ──
+  // paiementsLoc doit déjà être filtré sur ce locataire.
+  function montantDu(loc, paiementsLoc) {
+    if (!loc || loc.statut === 'libre') return 0;
+    var loyer = parseFloat(loc.loyer) || 0;
+    var baseArrieres = parseFloat(loc.arrieres) || 0;
+    if (!paiementsLoc || !paiementsLoc.length) return baseArrieres;
+    var sorted = paiementsLoc.slice().sort(function(a, b) { return new Date(a.date_paiement) - new Date(b.date_paiement); });
+    var first = new Date(sorted[0].date_paiement);
+    var locProxy = Object.assign({}, loc, {
+      entree: first.getFullYear() + '-' + String(first.getMonth() + 1).padStart(2, '0') + '-01'
+    });
+    var fiche = calculerFiche(locProxy, paiementsLoc);
+    var payes = fiche.filter(function(l) { return !l.futur && l.statut === 'Payé'; }).length;
+    var duNouv = fiche.filter(function(l) { return !l.futur; }).reduce(function(s, l) { return s + (l.reste || 0); }, 0);
+    return Math.max(0, baseArrieres - payes * loyer) + duNouv;
+  }
+
   // ── Rendu fiche de suivi V2 ──────────────────────────────────
   function renderFiche(loc, versements, anneeParam) {
     // Calculer d'abord toutes les lignes jusqu'à l'année courante
@@ -761,7 +779,7 @@ window.IG.paiements = (function() {
 
   return {
     charger, getCache, getByLocataire, enregistrer, annuler,
-    calculerFiche, renderFiche, afficherFormulaire, afficherFormulaireFiche,
+    calculerFiche, montantDu, renderFiche, afficherFormulaire, afficherFormulaireFiche,
     imprimerFiche, imprimerRecu, calculerStats, ajouterNote
   };
 

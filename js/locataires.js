@@ -784,14 +784,10 @@ window.IG.locataires = (function() {
     if (loc.statut === 'libre') return 0;
     if (!loc.entree || !loc.loyer) return 0;
     var pays = (paiements || []).filter(function(p) { return p.locataire_id == loc.id; });
-    var loyer = parseFloat(loc.loyer) || 0;
     var baseArrieres = parseFloat(loc.arrieres) || 0;
     if (pays.length === 0) return baseArrieres;
-    if (window.IG.paiements && window.IG.paiements.calculerFiche) {
-      var fiche = _ficheDepuisPremierPay(loc, pays);
-      var payes = fiche.filter(function(l) { return !l.futur && l.statut === 'Payé'; }).length;
-      var duNouv = fiche.filter(function(l) { return !l.futur; }).reduce(function(s, l) { return s + (l.reste || 0); }, 0);
-      return Math.max(0, baseArrieres - payes * loyer) + duNouv;
+    if (window.IG.paiements && window.IG.paiements.montantDu) {
+      return window.IG.paiements.montantDu(loc, pays);
     }
     // Fallback mois courant si paiements module non chargé
     var now = new Date();
