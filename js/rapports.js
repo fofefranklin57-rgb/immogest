@@ -146,8 +146,14 @@ window.IG.rapports = (function() {
         var remisLoc = lPays.filter(function(p) { return p.remisAuBailleur; });
         if (remisLoc.length) obs.push(fmt(remisLoc.reduce(function(s,p){return s+(parseFloat(p.montant)||0);},0)) + ' remis au bailleur');
       }
-      var notes = lPays.filter(function(p){ return p.note; }).map(function(p){ return p.note; });
-      if (notes.length) obs = obs.concat(notes);
+      var notesTous  = lPays.filter(function(p){ return p.note; });
+      var notesSplit = notesTous.filter(function(p){ return /\[\d+\/\d+\]/.test(p.note); });
+      var notesAutres = notesTous.filter(function(p){ return !/\[\d+\/\d+\]/.test(p.note); }).map(function(p){ return p.note; });
+      if (notesSplit.length) {
+        var totalSplit = notesSplit.reduce(function(s,p){ return s + (parseFloat(p.montant) || 0); }, 0);
+        obs.push(notesSplit.length + ' mois payés d\'avance (' + fmt(totalSplit) + ')');
+      }
+      if (notesAutres.length) obs = obs.concat(notesAutres);
       if (!obs.length) obs.push(reste <= 0 ? 'À jour' : 'Doit ' + MOIS_FR[fin.getMonth()]);
 
       s1Rows += '<tr style="'+(i%2?'background:#f9fafb;':'')+'">' +
@@ -174,6 +180,8 @@ window.IG.rapports = (function() {
       if (typeP === 'caution') totalCautions += montant; else totalLoyers += montant;
       if (p.remisAuBailleur && isCab) totalRemis += montant;
       var noteCell = p.note ? esc(p.note) : (typeP === 'caution' ? 'Caution' : typeP === 'avance' ? 'Avance' : 'Loyer');
+      var moisCouvert = (p.mois && p.annee) ? MOIS_FR[p.mois - 1] + ' ' + p.annee : '';
+      if (moisCouvert) noteCell += '<br><span style="font-size:9.5px;color:#888">' + t('mois') + ' : ' + moisCouvert + '</span>';
       s2Rows += '<tr style="'+(i%2?'background:#f9fafb;':'')+'">' +
         '<td style="'+TD+'">'+_fmtD(p.date_paiement)+'</td>' +
         '<td style="'+TD+'font-weight:700">'+esc(loc.appt||'—')+'</td>' +
