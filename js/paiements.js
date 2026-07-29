@@ -185,8 +185,15 @@ window.IG.paiements = (function() {
 
   // ── Rendu fiche de suivi V2 ──────────────────────────────────
   function renderFiche(loc, versements, anneeParam) {
-    // Calculer d'abord toutes les lignes jusqu'à l'année courante
-    var toutesLignes = calculerFiche(loc, versements, new Date().getFullYear());
+    // Étendre la fiche jusqu'à la derniere année couverte par un paiement
+    // (ex: 5 ans de loyer payés d'avance), pas seulement l'année courante.
+    var anneeCourante = new Date().getFullYear();
+    var anneeMaxVersements = (versements || []).reduce(function(max, v) {
+      var a = parseInt(v.annee) || 0;
+      return a > max ? a : max;
+    }, anneeCourante);
+    // Calculer d'abord toutes les lignes jusqu'à l'année la plus lointaine payée
+    var toutesLignes = calculerFiche(loc, versements, anneeMaxVersements);
     // Année par défaut = année du premier mois impayé (là où les paiements s'arrêtent)
     var annee = anneeParam || (function() {
       var firstUnpaid = toutesLignes.filter(function(l) { return !l.futur && l.statut !== 'Payé'; })[0];
@@ -223,9 +230,9 @@ window.IG.paiements = (function() {
     var scoreCouleur = score >= 80 ? '#27ae60' : score >= 50 ? '#f39c12' : '#e74c3c';
     var scoreLabel   = score >= 80 ? t('Fiable') : score >= 50 ? t('Moyen') : t('À risque');
 
-    // Sélecteur d'années
+    // Sélecteur d'années — inclut les années futures déjà payées d'avance
     var entreeY = loc.entree ? new Date(loc.entree).getFullYear() : now.getFullYear();
-    var curY    = now.getFullYear();
+    var curY    = Math.max(now.getFullYear(), anneeMaxVersements);
     var years   = [];
     for (var y = entreeY; y <= curY; y++) years.push(y);
 
