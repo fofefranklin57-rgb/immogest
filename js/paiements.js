@@ -183,6 +183,25 @@ window.IG.paiements = (function() {
     return Math.max(0, baseArrieres - payes * loyer) + duNouv;
   }
 
+  // ── Premier mois réellement dû pour un nouveau paiement ──────
+  // Renvoie le premier mois non "hors bail" et non déjà payé (en
+  // s'appuyant sur la fiche), pour que la répartition multi-mois
+  // du formulaire de paiement démarre au bon endroit plutôt qu'au
+  // mois de la date du paiement (souvent le mois en cours).
+  function _moisDepartPaiement(loc) {
+    if (!loc || !loc.entree) return new Date();
+    var pays = getByLocataire(loc.id);
+    var anneeMax = pays.reduce(function(m, p) { var a = parseInt(p.annee) || 0; return a > m ? a : m; }, new Date().getFullYear()) + 1;
+    var fiche = calculerFiche(loc, pays, anneeMax);
+    if (!fiche.length) return new Date(loc.entree);
+    var premierImpaye = fiche.find(function(l) { return !l.horsBail && l.statut !== 'Payé' && l.statut !== 'Payé (avance)'; });
+    if (premierImpaye) return new Date(premierImpaye.annee, premierImpaye.mois - 1, 1);
+    // Tout est déjà payé (même d'avance) sur toute la période générée -> continuer juste après
+    var lignesUtiles = fiche.filter(function(l) { return !l.horsBail; });
+    var dernier = lignesUtiles[lignesUtiles.length - 1];
+    return dernier ? new Date(dernier.annee, dernier.mois, 1) : new Date(loc.entree);
+  }
+
   // ── Rendu fiche de suivi V2 ──────────────────────────────────
   function renderFiche(loc, versements, anneeParam) {
     // Étendre la fiche jusqu'à la derniere année couverte par un paiement
@@ -611,6 +630,7 @@ window.IG.paiements = (function() {
 
     var now = new Date();
     var loyer = parseFloat(loc.loyer) || 0;
+    var moisDepart = _moisDepartPaiement(loc);
     var session = window.IG.auth ? window.IG.auth.getSession() : {};
     var profil = session.type_profil || '';
 
@@ -697,11 +717,9 @@ window.IG.paiements = (function() {
       zone.style.display = 'block';
       var par = Math.round(total / n);
       var reste = total - par * (n - 1);
-      var dateEl = document.getElementById('form-paiement') && document.querySelector('[name="date_paiement"]');
-      var d = dateEl ? new Date(dateEl.value) : new Date();
       var lignes = [];
       for (var i = 0; i < n; i++) {
-        var md = new Date(d.getFullYear(), d.getMonth() + i, 1);
+        var md = new Date(moisDepart.getFullYear(), moisDepart.getMonth() + i, 1);
         var mnt = (i === n - 1) ? reste : par;
         lignes.push(md.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) + ' : ' + fmt(mnt));
       }
@@ -715,7 +733,6 @@ window.IG.paiements = (function() {
       e.preventDefault();
       var fd = new FormData(e.target);
       var datePay = fd.get('date_paiement');
-      var dObj = datePay ? new Date(datePay) : new Date();
       var montantTotal = parseFloat(fd.get('montant')) || 0;
       var parMois = Math.round(montantTotal / _nbMois);
       var mode = fd.get('mode_paiement');
@@ -725,7 +742,7 @@ window.IG.paiements = (function() {
       var locId2 = parseInt(fd.get('locataire_id'));
       try {
         for (var i = 0; i < _nbMois; i++) {
-          var md = new Date(dObj.getFullYear(), dObj.getMonth() + i, 1);
+          var md = new Date(moisDepart.getFullYear(), moisDepart.getMonth() + i, 1);
           var mnt = (i === _nbMois - 1) ? (montantTotal - parMois * (_nbMois - 1)) : parMois;
           var pay = {
             id:             window.IG.utils.uid(),
