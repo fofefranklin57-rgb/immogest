@@ -268,9 +268,16 @@ window.IG.messagesWA = (function() {
   // ── Tab : Relances ────────────────────────────────────────────
 
   function _tabRelances(locs, imms, pays) {
+    function _retard(l) {
+      var paysL = pays.filter(function(p) { return p.locataire_id == l.id; });
+      return window.IG.relances ? window.IG.relances.calculerRetard(l, paysL) : (parseInt(l.mois_arrieres) || 0);
+    }
     var enRetard = locs
-      .filter(function(l) { return l.statut !== 'libre' && l.telephone && (parseInt(l.mois_arrieres) || 0) > 0; })
-      .sort(function(a, b) { return (parseInt(b.mois_arrieres) || 0) - (parseInt(a.mois_arrieres) || 0); });
+      .filter(function(l) { return l.statut !== 'libre' && l.telephone; })
+      .map(function(l) { return { l: l, retard: _retard(l) }; })
+      .filter(function(x) { return x.retard > 0; })
+      .sort(function(a, b) { return b.retard - a.retard; })
+      .map(function(x) { return x.l; });
 
     if (!enRetard.length) {
       return '<div style="text-align:center;padding:40px;color:var(--text3)">🎉 Aucun locataire en retard</div>';
@@ -280,14 +287,15 @@ window.IG.messagesWA = (function() {
 
     enRetard.forEach(function(l) {
       var imm = imms.find(function(i) { return i.id == l.immeuble_id; });
-      var moisR = parseInt(l.mois_arrieres) || 0;
-      var montantDu = (parseFloat(l.arrieres) || 0) || moisR * (parseFloat(l.loyer) || 0);
+      var paysL = pays.filter(function(p) { return p.locataire_id == l.id; });
+      var moisR = window.IG.relances ? window.IG.relances.calculerRetard(l, paysL) : (parseInt(l.mois_arrieres) || 0);
+      var montantDuVal = window.IG.relances ? window.IG.relances.montantDu(l, paysL) : ((parseFloat(l.arrieres) || 0) || moisR * (parseFloat(l.loyer) || 0));
       var niveauLabel = moisR === 1 ? '🟡 Relance' : moisR === 2 ? '🟠 Mise en demeure' : '🔴 Commandement';
       var msg = moisR >= 2
-        ? TEMPLATES.mise_en_demeure(l, moisR, montantDu, imm)
+        ? TEMPLATES.mise_en_demeure(l, moisR, montantDuVal, imm)
         : TEMPLATES.rappel_loyer(l, imm);
       html += _ligneMsg(l, imm, msg,
-        niveauLabel + ' · ' + moisR + ' mois · ' + fmt(montantDu),
+        niveauLabel + ' · ' + moisR + ' mois · ' + fmt(montantDuVal),
         '');
     });
 
