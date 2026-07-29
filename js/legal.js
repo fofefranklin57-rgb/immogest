@@ -20,7 +20,10 @@ window.IG.legal = (function() {
   function isActive() {
     var session = window.IG.auth ? window.IG.auth.getSession() : null;
     if (!session) return false;
-    return ['trial', 'pro', 'cabinet'].indexOf(session.plan) !== -1;
+    // session.plan reste 'gratuit' pendant les 30j d'essai — le vrai plan
+    // effectif (incluant la détection d'essai) vient de plans.getPlan().
+    var plan = window.IG.plans ? window.IG.plans.getPlan() : session.plan;
+    return ['trial', 'pro', 'cabinet'].indexOf(plan) !== -1;
   }
 
   // ── DOSSIERS JURIDIQUES ───────────────────────────────────────
