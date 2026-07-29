@@ -20,10 +20,15 @@ window.IG.legal = (function() {
   function isActive() {
     var session = window.IG.auth ? window.IG.auth.getSession() : null;
     if (!session) return false;
-    // session.plan reste 'gratuit' pendant les 30j d'essai — le vrai plan
-    // effectif (incluant la détection d'essai) vient de plans.getPlan().
-    var plan = window.IG.plans ? window.IG.plans.getPlan() : session.plan;
-    return ['trial', 'pro', 'cabinet'].indexOf(plan) !== -1;
+    var plan = (session.plan || '').toLowerCase();
+    if (plan === 'pro' || plan === 'cabinet') return true;
+    // Essai "gratuit" 30j auto (plans.js, base sur l'age du tenant)
+    if (window.IG.plans && window.IG.plans.getPlan() === 'trial') return true;
+    // Essai actif sur un autre plan (ex: "Starter 30 jours") tant que
+    // plan_expire n'est pas dépassé -- meme logique que le badge de
+    // periode d'essai dans app.js (_initEssai).
+    if (session.plan_expire && new Date(session.plan_expire).getTime() > Date.now()) return true;
+    return false;
   }
 
   // ── DOSSIERS JURIDIQUES ───────────────────────────────────────
