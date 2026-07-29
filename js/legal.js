@@ -14,11 +14,13 @@ window.IG.legal = (function() {
   function db() { return window.IG.db; }
 
   // ── Feature flag check ────────────────────────────────────────
+  // LegalOS disponible à partir du plan Pro (et pendant l'essai gratuit,
+  // qui donne un accès complet). session.features n'est jamais alimenté
+  // par le backend -- se baser sur le plan réel de l'utilisateur.
   function isActive() {
     var session = window.IG.auth ? window.IG.auth.getSession() : null;
     if (!session) return false;
-    var features = session.features || {};
-    return features.legalos === true;
+    return ['trial', 'pro', 'cabinet'].indexOf(session.plan) !== -1;
   }
 
   // ── DOSSIERS JURIDIQUES ───────────────────────────────────────
