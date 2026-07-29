@@ -598,7 +598,7 @@ window.IG.locataires = (function() {
       _field('entree', t('Date entrée'), loc.entree || '', false, 'date') +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
       _fieldNum('arrieres', t('Arriérés (FCFA)'), loc.arrieres || 0) +
-      _fieldNum('mois_arrieres', t('Nb mois arriérés'), loc.mois_arrieres || 0) +
+      _fieldNum('mois_arrieres', t('Nb mois arriérés'), loc.mois_arrieres || 0, 1) +
       '</div>' +
       '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Observations') + '</label>' +
       '<textarea name="observations" rows="2" style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);resize:vertical">' + esc(loc.observations || '') + '</textarea></div>' +
@@ -758,9 +758,9 @@ window.IG.locataires = (function() {
       ' style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>';
   }
 
-  function _fieldNum(name, label, val) {
+  function _fieldNum(name, label, val, step) {
     return '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + label + '</label>' +
-      '<input type="number" name="' + name + '" value="' + (parseFloat(val)||0) + '" min="0" step="500"' +
+      '<input type="number" name="' + name + '" value="' + (parseFloat(val)||0) + '" min="0" step="' + (step || 500) + '"' +
       ' style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>';
   }
 
