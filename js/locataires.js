@@ -825,8 +825,8 @@ window.IG.locataires = (function() {
       moisDus = base;
     } else if (window.IG.paiements && window.IG.paiements.calculerFiche) {
       var fiche = _ficheDepuisPremierPay(loc, pays);
-      var payesCnt = fiche.filter(function(l) { return !l.futur && l.statut === 'Payé'; }).length;
-      var impayesNouveaux = fiche.filter(function(l) { return !l.futur && l.statut !== 'Payé'; }).length;
+      var payesCnt = fiche.filter(function(l) { return !l.horsBail && (l.statut === 'Payé' || l.statut === 'Payé (avance)'); }).length;
+      var impayesNouveaux = fiche.filter(function(l) { return !l.futur && !l.horsBail && l.statut !== 'Payé'; }).length;
       moisDus = Math.max(0, base - payesCnt) + impayesNouveaux;
     } else {
       var reste = _resteCalc(loc, paiements);

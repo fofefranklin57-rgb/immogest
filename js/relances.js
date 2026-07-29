@@ -28,8 +28,8 @@ window.IG.relances = (function() {
     var base = parseInt(loc.mois_arrieres) || 0;
     if (!paiements || paiements.length === 0) return base;
     var fiche = _ficheDepuisPremierPaiement(loc, paiements);
-    var payes = fiche.filter(function(l) { return !l.futur && l.statut === 'Payé'; }).length;
-    var impayesNouveaux = fiche.filter(function(l) { return !l.futur && l.statut !== 'Payé'; }).length;
+    var payes = fiche.filter(function(l) { return !l.horsBail && (l.statut === 'Payé' || l.statut === 'Payé (avance)'); }).length;
+    var impayesNouveaux = fiche.filter(function(l) { return !l.futur && !l.horsBail && l.statut !== 'Payé'; }).length;
     return Math.max(0, base - payes) + impayesNouveaux;
   }
 

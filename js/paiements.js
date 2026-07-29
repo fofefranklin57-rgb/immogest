@@ -178,7 +178,7 @@ window.IG.paiements = (function() {
       entree: first.getFullYear() + '-' + String(first.getMonth() + 1).padStart(2, '0') + '-01'
     });
     var fiche = calculerFiche(locProxy, paiementsLoc);
-    var payes = fiche.filter(function(l) { return !l.futur && l.statut === 'Payé'; }).length;
+    var payes = fiche.filter(function(l) { return !l.horsBail && (l.statut === 'Payé' || l.statut === 'Payé (avance)'); }).length;
     var duNouv = fiche.filter(function(l) { return !l.futur; }).reduce(function(s, l) { return s + (l.reste || 0); }, 0);
     return Math.max(0, baseArrieres - payes * loyer) + duNouv;
   }
