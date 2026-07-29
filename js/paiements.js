@@ -212,8 +212,12 @@ window.IG.paiements = (function() {
     var toutesLignes = calculerFiche(loc, versements, anneeMaxVersements);
     // Année par défaut = année du premier mois impayé (là où les paiements s'arrêtent)
     var annee = anneeParam || (function() {
-      var firstUnpaid = toutesLignes.filter(function(l) { return !l.futur && l.statut !== 'Payé'; })[0];
-      return firstUnpaid ? firstUnpaid.annee : new Date().getFullYear();
+      var firstUnpaid = toutesLignes.filter(function(l) { return !l.horsBail && !l.futur && l.statut !== 'Payé'; })[0];
+      if (firstUnpaid) return firstUnpaid.annee;
+      // Tout est réglé (même d'avance) -> ouvrir sur la dernière année où il y a une activité réelle
+      var lignesUtiles = toutesLignes.filter(function(l) { return !l.horsBail && (l.statut === 'Payé' || l.statut === 'Payé (avance)'); });
+      if (lignesUtiles.length) return lignesUtiles[lignesUtiles.length - 1].annee;
+      return new Date().getFullYear();
     })();
     var imm        = window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null;
     var session    = window.IG.auth ? window.IG.auth.getSession() : {};
