@@ -158,6 +158,178 @@ const ALLOWED_TABLES = [
   'user_organisations','promo_codes','owner_logs','prestataires','signatures'
 ];
 
+// ══════════════════════════════════════════════════════════════
+//  Workflow de recouvrement automatique (LegalOS)
+//  Détecte les seuils de retard (J+15/30/45/60/90) et déclenche :
+//  - relance_1 / relance_2 : notification push au gestionnaire
+//    (l'envoi WhatsApp réel reste un clic humain — aucune API
+//    WhatsApp Business n'est connectée côté serveur)
+//  - mise_en_demeure / commandement_payer : notification (action
+//    manuelle, canal="document", comme prévu par le workflow)
+//  - ouverture_dossier (J+90) : entièrement automatique (insert DB)
+// ══════════════════════════════════════════════════════════════
+
+const ETAPES_DEFAUT = [
+  { jours: 15, action: 'relance_1',          canal: 'whatsapp', auto: true },
+  { jours: 30, action: 'relance_2',          canal: 'whatsapp', auto: true },
+  { jours: 45, action: 'mise_en_demeure',    canal: 'document', auto: false },
+  { jours: 60, action: 'commandement_payer', canal: 'document', auto: false },
+  { jours: 90, action: 'ouverture_dossier',  canal: 'system',   auto: true }
+];
+
+// Port fidèle (simplifié aux mois non-futurs) de calculerFiche() côté
+// client (js/paiements.js) : détermine le 1er mois non "hors bail" pas
+// intégralement couvert, et retourne le nombre de jours de retard depuis.
+function _joursRetardLocataire(loc, paiements) {
+  var loyer = parseFloat(loc.loyer) || 0;
+  if (!loc.entree || loyer <= 0) return 0;
+
+  var entree = new Date(loc.entree);
+  var now = new Date();
+  if (isNaN(entree.getTime())) return 0;
+
+  var loyers = (paiements || [])
+    .filter(function(p) { return p.type === 'loyer' || !p.type; })
+    .map(function(p) { return { montant: parseFloat(p.montant) || 0, _restant: parseFloat(p.montant) || 0 }; })
+    .sort(function(a, b) { return 0; }); // déjà trié par date_paiement en amont
+
+  var moisList = [];
+  var cur = new Date(entree.getFullYear(), entree.getMonth(), 1);
+  var end = new Date(now.getFullYear(), now.getMonth(), 1);
+  while (cur <= end) {
+    moisList.push({ mois: cur.getMonth() + 1, annee: cur.getFullYear(), date: new Date(cur) });
+    cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+  }
+  if (!moisList.length) return 0;
+
+  var moisArrieres = parseInt(loc.mois_arrieres) || 0;
+  var cumulAvance = 0;
+  if (moisArrieres > 0) {
+    var creditMois = Math.max(0, moisList.length - moisArrieres);
+    cumulAvance += creditMois * loyer;
+  }
+
+  for (var i = 0; i < moisList.length; i++) {
+    var cumul = 0;
+    if (cumulAvance >= loyer) { cumul = loyer; cumulAvance -= loyer; }
+    else if (cumulAvance > 0) { cumul += cumulAvance; cumulAvance = 0; }
+    for (var j = 0; j < loyers.length && cumul < loyer; j++) {
+      var v = loyers[j];
+      if (v._restant <= 0) continue;
+      var pris = Math.min(loyer - cumul, v._restant);
+      v._restant -= pris;
+      cumul += pris;
+    }
+    if (cumul < loyer) {
+      return Math.floor((now - moisList[i].date) / 86400000);
+    }
+  }
+  return 0;
+}
+
+async function _executerWorkflowRecouvrement(sbBase, headers, appId, restKey) {
+  var tRes = await fetch(sbBase + '/rest/v1/tenants?select=id,nom', { headers: headers });
+  var tenants = tRes.ok ? await tRes.json() : [];
+
+  for (var t = 0; t < tenants.length; t++) {
+    var tenant = tenants[t];
+    try {
+      var wRes = await fetch(sbBase + '/rest/v1/workflow_recouvrement?tenant_id=eq.' + tenant.id + '&actif=eq.true&select=etapes&limit=1', { headers: headers });
+      var wJson = wRes.ok ? await wRes.json() : [];
+      var etapes = (wJson[0] && wJson[0].etapes) || ETAPES_DEFAUT;
+
+      var lRes = await fetch(sbBase + '/rest/v1/locataires?tenant_id=eq.' + tenant.id + '&statut=neq.libre&select=*', { headers: headers });
+      var locs = lRes.ok ? await lRes.json() : [];
+      if (!locs.length) continue;
+
+      var pRes = await fetch(sbBase + '/rest/v1/paiements?tenant_id=eq.' + tenant.id + '&order=date_paiement.asc&select=locataire_id,montant,type,date_paiement', { headers: headers });
+      var allPays = pRes.ok ? await pRes.json() : [];
+
+      var alertesGestionnaire = 0;
+
+      for (var k = 0; k < locs.length; k++) {
+        var loc = locs[k];
+        var pays = allPays.filter(function(p) { return p.locataire_id == loc.id; });
+        var jours = _joursRetardLocataire(loc, pays);
+        if (jours <= 0) continue;
+
+        var etapesTriees = etapes.slice().sort(function(a, b) { return a.jours - b.jours; });
+        for (var e = 0; e < etapesTriees.length; e++) {
+          var etape = etapesTriees[e];
+          if (jours < etape.jours) continue;
+
+          var chkRes = await fetch(
+            sbBase + '/rest/v1/timeline_juridique?locataire_id=eq.' + loc.id +
+            '&type_action=eq.' + etape.action + '&select=id&limit=1',
+            { headers: headers }
+          );
+          var chkJson = chkRes.ok ? await chkRes.json() : [];
+          if (chkJson.length) continue; // étape déjà tracée pour ce locataire
+
+          if (etape.action === 'ouverture_dossier') {
+            var dRes = await fetch(sbBase + '/rest/v1/dossiers_juridiques', {
+              method: 'POST',
+              headers: Object.assign({}, headers, { 'Prefer': 'return=representation' }),
+              body: JSON.stringify({
+                tenant_id: tenant.id,
+                locataire_id: loc.id,
+                immeuble_id: loc.immeuble_id || null,
+                type_dossier: 'loyers_impayes',
+                statut: 'ouvert',
+                montant_reclame: 0,
+                notes: 'Dossier ouvert automatiquement — ' + jours + ' jours de retard (workflow de recouvrement).'
+              })
+            });
+            var dJson = dRes.ok ? await dRes.json() : [];
+            var dossierId = dJson[0] && dJson[0].id;
+            await fetch(sbBase + '/rest/v1/timeline_juridique', {
+              method: 'POST', headers: headers,
+              body: JSON.stringify({
+                tenant_id: tenant.id, dossier_id: dossierId || null, locataire_id: loc.id,
+                type_action: 'ouverture_dossier',
+                titre: 'Dossier juridique ouvert automatiquement',
+                description: jours + ' jours de retard atteints (seuil J+' + etape.jours + ').',
+                effectuee_par: 'system'
+              })
+            }).catch(function() {});
+            alertesGestionnaire++;
+          } else {
+            // relance_1 / relance_2 / mise_en_demeure / commandement_payer :
+            // action tracée + notif au gestionnaire, envoi reste manuel (WhatsApp/document).
+            await fetch(sbBase + '/rest/v1/timeline_juridique', {
+              method: 'POST', headers: headers,
+              body: JSON.stringify({
+                tenant_id: tenant.id, locataire_id: loc.id,
+                type_action: etape.action,
+                titre: 'Seuil J+' + etape.jours + ' atteint (' + loc.nom + ')',
+                description: jours + ' jours de retard — action "' + etape.action + '" à envoyer (' + etape.canal + ').',
+                effectuee_par: 'system'
+              })
+            }).catch(function() {});
+            alertesGestionnaire++;
+          }
+        }
+      }
+
+      if (alertesGestionnaire > 0 && appId && restKey) {
+        await fetch('https://onesignal.com/api/v1/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + restKey },
+          body: JSON.stringify({
+            app_id: appId,
+            headings: { fr: '⚖️ Recouvrement' },
+            contents: { fr: alertesGestionnaire + ' étape(s) de recouvrement à traiter (relance, dossier...).' },
+            url: 'https://immogest-34w.pages.dev/',
+            filters: [{ field: 'tag', key: 'tenant_id', relation: '=', value: tenant.id }]
+          })
+        }).catch(function() {});
+      }
+    } catch (e) {
+      console.log('workflow_recouvrement tenant error', tenant.id, e.message);
+    }
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -1787,6 +1959,15 @@ ${_footer()}
 
     const appId = env.ONESIGNAL_APP_ID;
     const restKey = env.ONESIGNAL_REST_KEY;
+
+    // ── Cron quotidien (0 7 * * *) : workflow de recouvrement LegalOS ──
+    if (event.cron === '0 7 * * *') {
+      try {
+        await _executerWorkflowRecouvrement(sbBase, sbHdrs(), appId, restKey);
+      } catch (e) {
+        console.log('workflow_recouvrement error', e.message);
+      }
+    }
 
     // ── Cron quotidien (0 7 * * *) : relances impayés ──────────
     if (event.cron === '0 7 * * *' && appId && restKey) {
