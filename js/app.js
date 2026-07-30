@@ -2686,10 +2686,19 @@ window.IG.app = (function() {
     var tx = kpis.txRecouvrement || 0;
 
     // ── Camembert statuts locataires ──────────────────────────
+    // statut en base ne connaît que 'libre'/'actif' -- impayé/à jour sont
+    // calculés (montantDu), pas stockés. Se baser sur le même calcul que
+    // partout ailleurs (badges, dashboard) pour rester cohérent.
     var locs = _data.locataires || [];
-    var nbActif = locs.filter(function(l){ return l.statut === 'actif' || l.statut === 'occupé'; }).length;
-    var nbImpaye = locs.filter(function(l){ return l.statut === 'impayé'; }).length;
-    var nbLibre  = locs.filter(function(l){ return l.statut === 'libre' || !l.statut; }).length;
+    var pays = _data.paiements || [];
+    var nbLibre = locs.filter(function(l) { return l.statut === 'libre'; }).length;
+    var actifsListe = locs.filter(function(l) { return l.statut !== 'libre'; });
+    var nbImpaye = actifsListe.filter(function(l) {
+      var pl = pays.filter(function(p) { return p.locataire_id == l.id; });
+      var du = window.IG.paiements ? window.IG.paiements.montantDu(l, pl) : 0;
+      return du > 0;
+    }).length;
+    var nbActif = actifsListe.length - nbImpaye;
     var nbTotal  = locs.length || 1;
     function _arc(cx, cy, r, startDeg, endDeg, color) {
       var s = startDeg * Math.PI / 180, e = endDeg * Math.PI / 180;
