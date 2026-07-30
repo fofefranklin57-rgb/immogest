@@ -34,6 +34,24 @@ window.IG.locataires = (function() {
     return 0;
   }
 
+  // Filtre locataires par ancienneté d'arriérés ("N mois et +") ou "en avance"
+  // (au moins un mois futur déjà payé d'avance). Réutilise le calcul officiel
+  // de retard (relances.js) pour rester cohérent avec les badges affichés.
+  function _filtrerParRetard(liste, paiements, retardFiltre) {
+    return liste.filter(function(l) {
+      if (l.statut === 'libre') return false;
+      var pays = (paiements || []).filter(function(p) { return p.locataire_id == l.id; });
+      if (retardFiltre === 'avance') {
+        if (!window.IG.paiements || !l.entree) return false;
+        var fiche = window.IG.paiements.calculerFiche(l, pays);
+        return fiche.some(function(lg) { return lg.statut === 'Payé (avance)'; });
+      }
+      var seuil = parseInt(retardFiltre) || 0;
+      var moisRetard = window.IG.relances ? window.IG.relances.calculerRetard(l, pays) : 0;
+      return moisRetard >= seuil;
+    });
+  }
+
   // ── CRUD ─────────────────────────────────────────────────────
   async function charger(filters) {
     try {
@@ -182,7 +200,7 @@ window.IG.locataires = (function() {
     container.innerHTML = html;
   }
 
-  function renderListeFiltree(paiements, immeubleId, statutFiltre) {
+  function renderListeFiltree(paiements, immeubleId, statutFiltre, retardFiltre) {
     var container = document.getElementById('locataires-liste');
     if (!container) return;
 
@@ -209,6 +227,8 @@ window.IG.locataires = (function() {
         });
       });
     }
+
+    if (retardFiltre) liste = _filtrerParRetard(liste, paiements, retardFiltre);
 
     if (q) liste = liste.filter(function(l) {
       return (l.nom || '').toLowerCase().includes(q) ||

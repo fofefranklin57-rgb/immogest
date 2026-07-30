@@ -1188,6 +1188,13 @@ window.IG.app = (function() {
         '<option value="impaye">⚠️ ' + t('Impayés') + '</option>' +
         '<option value="libre">🏠 ' + t('Libres') + '</option>' +
       '</select>' +
+      '<select id="loc-filtre-retard" onchange="window.IG.app._locFiltrer()" style="padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
+        '<option value="">' + t('Tous les arriérés') + '</option>' +
+        '<option value="1">🟡 ' + t('1 mois et +') + '</option>' +
+        '<option value="2">🟠 ' + t('2 mois et +') + '</option>' +
+        '<option value="4">🔴 ' + t('4 mois et +') + '</option>' +
+        '<option value="avance">✅ ' + t('En avance') + '</option>' +
+      '</select>' +
       '<input id="loc-search" placeholder="' + t('Rechercher...') + '" oninput="window.IG.app._locFiltrer()" ' +
         'style="padding:7px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;flex:1;min-width:140px;max-width:220px;color:var(--text)">' +
       '</div>' +
@@ -1201,8 +1208,9 @@ window.IG.app = (function() {
   function _locFiltrer() {
     var immId = (document.getElementById('loc-filtre-imm') || {}).value || '';
     var statut = (document.getElementById('loc-filtre-statut') || {}).value || '';
+    var retard = (document.getElementById('loc-filtre-retard') || {}).value || '';
     _currentImmeubleId = immId ? parseInt(immId) || immId : null;
-    if (window.IG.locataires) window.IG.locataires.renderListeFiltree(_data.paiements, _currentImmeubleId, statut);
+    if (window.IG.locataires) window.IG.locataires.renderListeFiltree(_data.paiements, _currentImmeubleId, statut, retard);
   }
 
   // ── Paiements ─────────────────────────────────────────────────
