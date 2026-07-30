@@ -267,6 +267,16 @@ async function _executerWorkflowRecouvrement(sbBase, headers, appId, restKey) {
           if (chkJson.length) continue; // étape déjà tracée pour ce locataire
 
           if (etape.action === 'ouverture_dossier') {
+            // Ne pas dupliquer si un dossier "loyers impayés" est déjà ouvert
+            // pour ce locataire (créé manuellement ou lors d'un run précédent).
+            var existRes = await fetch(
+              sbBase + '/rest/v1/dossiers_juridiques?locataire_id=eq.' + loc.id +
+              '&statut=eq.ouvert&type_dossier=eq.loyers_impayes&select=id&limit=1',
+              { headers: headers }
+            );
+            var existJson = existRes.ok ? await existRes.json() : [];
+            if (existJson.length) continue;
+
             var dRes = await fetch(sbBase + '/rest/v1/dossiers_juridiques', {
               method: 'POST',
               headers: Object.assign({}, headers, { 'Prefer': 'return=representation' }),
