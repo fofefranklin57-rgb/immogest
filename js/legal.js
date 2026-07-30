@@ -42,10 +42,11 @@ window.IG.legal = (function() {
     }
   }
 
-  async function creerDossier(locataireId, type, montant) {
+  async function creerDossier(locataireId, type, montant, immeubleId) {
     try {
       var result = await db().insert('dossiers_juridiques', {
-        locataire_id:     locataireId,
+        locataire_id:     locataireId || null,
+        immeuble_id:      immeubleId || null,
         type_dossier:     type || 'loyers_impayes',
         statut:           'ouvert',
         montant_reclame:  montant || 0,
@@ -279,16 +280,24 @@ window.IG.legal = (function() {
       html += '<div style="display:flex;flex-direction:column;gap:10px">';
       dossiers.forEach(function(d) {
         var statutColor = { ouvert:'var(--yellow)', en_cours:'var(--accent)', clos:'var(--text3)', gagne:'var(--green)', perdu:'var(--red)' }[d.statut] || 'var(--text3)';
+        var loc = (d.locataire_id && window.IG.locataires) ? window.IG.locataires.getById(d.locataire_id) : null;
+        var imm = (d.immeuble_id && window.IG.immeubles) ? window.IG.immeubles.getById(d.immeuble_id) : null;
+        var estAuto = (d.notes || '').indexOf('automatiquement') !== -1;
         html += '<div class="card" style="border-left:4px solid ' + statutColor + '">' +
-          '<div style="display:flex;justify-content:space-between">' +
+          '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">' +
           '<div>' +
-          '<div style="font-weight:700;font-size:14px">' + esc(d.type_dossier.replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();})) + '</div>' +
-          '<div style="font-size:12px;color:var(--text3)">Ouvert le ' + window.IG.utils.formatDate(d.date_ouverture) + '</div>' +
+          '<div style="font-weight:700;font-size:14px">' + esc(d.type_dossier.replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();})) +
+          (estAuto ? ' <span style="font-size:10px;font-weight:600;color:var(--text3);background:var(--bg3);padding:2px 6px;border-radius:99px">🤖 ' + t('Auto') + '</span>' : '') +
+          '</div>' +
+          (loc ? '<div style="font-size:13px;color:var(--text);margin-top:2px">' + esc(loc.nom) + (imm ? ' — ' + esc(imm.nom_immeuble || imm.nom) + (loc.appt ? ' / ' + esc(loc.appt) : '') : '') + '</div>' : '') +
+          '<div style="font-size:12px;color:var(--text3);margin-top:2px">' + t('Ouvert le') + ' ' + window.IG.utils.formatDate(d.date_ouverture) + '</div>' +
           '</div>' +
           '<div style="text-align:right">' +
           '<div style="font-size:15px;font-weight:700;color:var(--red)">' + fmt(d.montant_reclame) + '</div>' +
-          '<span style="font-size:11px;padding:2px 8px;border-radius:99px;background:' + statutColor + '22;color:' + statutColor + ';font-weight:600">' + d.statut + '</span>' +
-          '</div></div></div>';
+          '<span style="font-size:11px;padding:2px 8px;border-radius:99px;background:' + statutColor + '22;color:' + statutColor + ';font-weight:600">' + esc(d.statut) + '</span>' +
+          '</div></div>' +
+          (loc ? '<div style="margin-top:10px"><button onclick="window.IG.app.showPage(\'locataires\');window.IG.locataires.afficherFiche(' + loc.id + ')" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;cursor:pointer">👤 ' + t('Voir le locataire') + '</button></div>' : '') +
+          '</div>';
       });
       html += '</div>';
     }
@@ -298,38 +307,85 @@ window.IG.legal = (function() {
     if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-legal', 'ad2');
   }
 
-  function nouveauDossier() {
+  function nouveauDossier(locIdPreset) {
+    var locs = window.IG.locataires ? window.IG.locataires.getCache().filter(function(l) { return l.statut !== 'libre'; }) : [];
+    var locOptions = '<option value="">' + t('Aucun (dossier général)') + '</option>' +
+      locs.map(function(l) {
+        var imm = window.IG.immeubles ? window.IG.immeubles.getById(l.immeuble_id) : null;
+        return '<option value="' + l.id + '"' + (String(l.id) === String(locIdPreset) ? ' selected' : '') + '>' +
+          esc(l.nom) + (imm ? ' — ' + esc(imm.nom_immeuble || imm.nom) + (l.appt ? ' / ' + esc(l.appt) : '') : '') + '</option>';
+      }).join('');
     var modal = window.IG.utils.showModal(
-      '<h3 style="margin-bottom:16px;font-size:15px;font-weight:700">⚖️ Nouveau dossier juridique</h3>' +
+      '<h3 style="margin-bottom:16px;font-size:15px;font-weight:700">⚖️ ' + t('Nouveau dossier juridique') + '</h3>' +
       '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">Locataire</label>' +
-      '<input id="legal-loc" list="legal-loc-list" placeholder="Nom du locataire" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px">' +
+      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Locataire') + '</label>' +
+      '<select id="legal-loc" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px">' + locOptions + '</select>' +
       '</div>' +
-      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">Type de dossier</label>' +
+      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Type de dossier') + '</label>' +
       '<select id="legal-type" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px">' +
-      '<option value="loyers_impayes">Loyers impayés</option>' +
-      '<option value="expulsion">Expulsion</option>' +
-      '<option value="degradations">Dégradations</option>' +
-      '<option value="recouvrement">Recouvrement</option>' +
-      '<option value="mediation">Médiation</option>' +
-      '<option value="autre">Autre</option>' +
+      '<option value="loyers_impayes">' + t('Loyers impayés') + '</option>' +
+      '<option value="expulsion">' + t('Expulsion') + '</option>' +
+      '<option value="degradations">' + t('Dégradations') + '</option>' +
+      '<option value="recouvrement">' + t('Recouvrement') + '</option>' +
+      '<option value="mediation">' + t('Médiation') + '</option>' +
+      '<option value="autre">' + t('Autre') + '</option>' +
       '</select></div>' +
-      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">Montant réclamé (FCFA)</label>' +
+      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Montant réclamé (FCFA)') + '</label>' +
       '<input id="legal-montant" type="number" placeholder="0" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;margin-top:4px">' +
       '</div>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' +
-      '<button data-modal-close style="padding:9px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">Annuler</button>' +
-      '<button id="legal-save" style="padding:9px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">Ouvrir le dossier</button>' +
+      '<button data-modal-close style="padding:9px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">' + t('Annuler') + '</button>' +
+      '<button id="legal-save" style="padding:9px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">' + t('Ouvrir le dossier') + '</button>' +
       '</div></div>'
     );
     modal.box.querySelector('#legal-save').addEventListener('click', async function() {
+      var locId = modal.box.querySelector('#legal-loc').value || null;
+      var loc = locId ? window.IG.locataires.getById(locId) : null;
       var type = modal.box.querySelector('#legal-type').value;
       var montant = parseFloat(modal.box.querySelector('#legal-montant').value) || 0;
       modal.close();
-      await creerDossier(null, type, montant);
-      window.IG.utils.showToast('Dossier juridique ouvert', 'green');
+      await creerDossier(locId, type, montant, loc ? loc.immeuble_id : null);
+      window.IG.utils.showToast(t('Dossier juridique ouvert'), 'green');
       renderPage();
     });
+  }
+
+  // ── Pont locataire → dossier juridique ─────────────────────────
+  async function voirDossierLocataire(locId) {
+    var loc = window.IG.locataires ? window.IG.locataires.getById(locId) : null;
+    if (!loc) return;
+    var dossiers = await getDossiers({ locataire_id: locId });
+
+    if (!dossiers.length) {
+      window.IG.utils.confirm(
+        '⚖️ ' + t('Aucun dossier juridique pour') + ' ' + loc.nom + '. ' + t('En ouvrir un maintenant ?'),
+        function() { nouveauDossier(locId); }
+      );
+      return;
+    }
+
+    var statutColor = { ouvert:'var(--yellow)', en_cours:'var(--accent)', clos:'var(--text3)', gagne:'var(--green)', perdu:'var(--red)' };
+    var html = '<h3 style="margin-bottom:14px;font-size:15px;font-weight:700">⚖️ ' + t('Dossiers juridiques') + ' — ' + esc(loc.nom) + '</h3>' +
+      '<div style="display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto">' +
+      dossiers.map(function(d) {
+        var c = statutColor[d.statut] || 'var(--text3)';
+        return '<div class="card" style="border-left:4px solid ' + c + '">' +
+          '<div style="display:flex;justify-content:space-between">' +
+          '<div>' +
+          '<div style="font-weight:700;font-size:13px">' + esc(d.type_dossier.replace(/_/g,' ')) + '</div>' +
+          '<div style="font-size:11px;color:var(--text3)">' + t('Ouvert le') + ' ' + window.IG.utils.formatDate(d.date_ouverture) + '</div>' +
+          '</div>' +
+          '<div style="text-align:right">' +
+          '<div style="font-size:13px;font-weight:700;color:var(--red)">' + fmt(d.montant_reclame) + '</div>' +
+          '<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:' + c + '22;color:' + c + ';font-weight:600">' + esc(d.statut) + '</span>' +
+          '</div></div></div>';
+      }).join('') +
+      '</div>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">' +
+      '<button data-modal-close style="padding:9px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">' + t('Fermer') + '</button>' +
+      '<button onclick="this.closest(\'[style*=z-index]\').remove();window.IG.app.showPage(\'juridique\')" style="padding:9px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600">⚖️ ' + t('Voir dans LegalOS') + '</button>' +
+      '</div>';
+    window.IG.utils.showModal(html, { width: '440px' });
   }
 
   // ── GÉNÉRATION CONTRAT DE BAIL ─────────────────────────────────
@@ -359,21 +415,38 @@ window.IG.legal = (function() {
     if (btn) btn.onclick = function() { iframe.contentWindow.print(); };
   }
 
-  async function genererContratBail(locId) {
+  // Variables communes à tous les documents "locataire" (contrat, quittance,
+  // résiliation, avenant...) — les templates ignorent celles qu'ils n'utilisent pas.
+  function _variablesDocLocataire(loc, session) {
+    var imm = window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null;
+    var now = new Date();
+    var vars = variablesAutoLocataire(loc, session);
+    vars.nom_proprio  = imm ? (imm.nom_proprio || '') : '';
+    vars.date_entree  = loc.entree ? window.IG.utils.formatDate(loc.entree) : '';
+    vars.loyer        = fmt(loc.loyer || 0);
+    vars.montant       = fmt(loc.loyer || 0);
+    vars.caution       = fmt(loc.caution || 0);
+    vars.mois          = now.toLocaleDateString('fr-FR', { month: 'long' });
+    vars.annee         = String(now.getFullYear());
+    vars.date_resiliation = now.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    return vars;
+  }
+
+  async function genererDocumentPourLocataire(code, locId, titreDoc, extraVars) {
     var loc = window.IG.locataires ? window.IG.locataires.getById(locId) : null;
     if (!loc) return;
     var session = window.IG.auth ? window.IG.auth.getSession() : {};
-    var imm = window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null;
-    var template = await getTemplate('contrat_bail', 'CM', 'fr');
-    if (!template) { window.IG.utils.showToast(t('Modèle de contrat introuvable'), 'red'); return; }
-    var vars = variablesAutoLocataire(loc, session);
-    vars.nom_proprio = imm ? (imm.nom_proprio || '') : '';
-    vars.date_entree = loc.entree ? window.IG.utils.formatDate(loc.entree) : '';
-    vars.loyer   = fmt(loc.loyer || 0);
-    vars.caution = fmt(loc.caution || 0);
+    var template = await getTemplate(code, 'CM', 'fr');
+    if (!template) { window.IG.utils.showToast(t('Modèle de document introuvable') + ' (' + code + ')', 'red'); return; }
+    var vars = Object.assign(_variablesDocLocataire(loc, session), extraVars || {});
     var texte = genererDocument(template, vars);
-    _imprimerTexte(t('Contrat de bail') + ' — ' + loc.nom, texte);
+    _imprimerTexte((titreDoc || template.titre) + ' — ' + loc.nom, texte);
   }
+
+  function genererContratBail(locId)   { return genererDocumentPourLocataire('contrat_bail', locId, t('Contrat de bail')); }
+  function genererQuittance(locId)     { return genererDocumentPourLocataire('quittance_loyer', locId, t('Quittance de loyer')); }
+  function genererResiliation(locId)   { return genererDocumentPourLocataire('resiliation_bail', locId, t('Résiliation de bail')); }
+  function genererAvenant(locId)       { return genererDocumentPourLocataire('avenant_bail', locId, t('Avenant au contrat')); }
 
   return {
     isActive, getDossiers, creerDossier, cloturerDossier,
@@ -381,7 +454,9 @@ window.IG.legal = (function() {
     getTemplates, getTemplate, genererDocument, variablesAutoLocataire,
     prochainEtape, analyseIA,
     calculerScore, scoreBadge,
-    emit, renderPage, nouveauDossier, genererContratBail
+    emit, renderPage, nouveauDossier, voirDossierLocataire,
+    genererDocumentPourLocataire,
+    genererContratBail, genererQuittance, genererResiliation, genererAvenant
   };
 
 })();
