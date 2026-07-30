@@ -332,13 +332,56 @@ window.IG.legal = (function() {
     });
   }
 
+  // ── GÉNÉRATION CONTRAT DE BAIL ─────────────────────────────────
+
+  function _imprimerTexte(titre, texte) {
+    var css = 'body{font-family:Georgia,serif;font-size:13px;padding:30px;color:#111;max-width:780px;margin:auto;line-height:1.7;white-space:pre-wrap}';
+    var previewHtml =
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">' +
+      '<h3 style="font-size:15px;font-weight:700;margin:0">👁 ' + t('Aperçu') + ' — ' + esc(titre) + '</h3>' +
+      '<div style="display:flex;gap:8px">' +
+      '<button id="btn-contrat-imprimer" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer">🖨️ ' + t('Imprimer') + ' / PDF</button>' +
+      '<button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;cursor:pointer">✕ ' + t('Fermer') + '</button>' +
+      '</div></div>' +
+      '<div style="border:1px solid var(--border2);border-radius:8px;overflow:hidden">' +
+      '<iframe id="contrat-iframe" style="width:100%;height:520px;border:none;background:#fff"></iframe>' +
+      '</div>';
+
+    var modal = window.IG.utils.showModal(previewHtml, { width: '800px' });
+    var iframe = modal.box.querySelector('#contrat-iframe');
+    var doc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+    if (doc) {
+      doc.open();
+      doc.write('<html><head><style>' + css + '</style></head><body>' + esc(texte) + '</body></html>');
+      doc.close();
+    }
+    var btn = modal.box.querySelector('#btn-contrat-imprimer');
+    if (btn) btn.onclick = function() { iframe.contentWindow.print(); };
+  }
+
+  async function genererContratBail(locId) {
+    var loc = window.IG.locataires ? window.IG.locataires.getById(locId) : null;
+    if (!loc) return;
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var imm = window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null;
+    var template = await getTemplate('contrat_bail', 'CM', 'fr');
+    if (!template) { window.IG.utils.showToast(t('Modèle de contrat introuvable'), 'red'); return; }
+    var vars = variablesAutoLocataire(loc, session);
+    vars.nom_proprio = imm ? (imm.nom_proprio || '') : '';
+    vars.date_entree = loc.entree ? window.IG.utils.formatDate(loc.entree) : '';
+    vars.loyer   = fmt(loc.loyer || 0);
+    vars.caution = fmt(loc.caution || 0);
+    var texte = genererDocument(template, vars);
+    _imprimerTexte(t('Contrat de bail') + ' — ' + loc.nom, texte);
+  }
+
   return {
     isActive, getDossiers, creerDossier, cloturerDossier,
     getTimeline, ajouterAction,
     getTemplates, getTemplate, genererDocument, variablesAutoLocataire,
     prochainEtape, analyseIA,
     calculerScore, scoreBadge,
-    emit, renderPage, nouveauDossier
+    emit, renderPage, nouveauDossier, genererContratBail
   };
 
 })();

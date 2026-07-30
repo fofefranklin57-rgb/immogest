@@ -873,6 +873,7 @@ window.IG.locataires = (function() {
       '<div class="action-dropdown-item" onclick="window.IG.paiements.afficherFormulaire(' + locId + ');window.IG.locataires._closeMenus()">💳 ' + t('Paiement') + '</div>' +
       '<div class="action-dropdown-item" onclick="window.IG.locataires.afficherFormulaire(' + locId + ');window.IG.locataires._closeMenus()">📝 ' + t('Modifier') + '</div>' +
       '<div class="action-dropdown-item" onclick="window.IG.locataires.afficherFiche(' + locId + ');window.IG.locataires._closeMenus()">📊 ' + t('Fiche de suivi') + '</div>' +
+      '<div class="action-dropdown-item" onclick="window.IG.legal && window.IG.legal.genererContratBail(' + locId + ');window.IG.locataires._closeMenus()">🖋️ ' + t('Générer le contrat') + '</div>' +
       (hasTel ? '<div class="action-dropdown-item" onclick="window.IG.locataires.envoyerAccesWA(' + locId + ');window.IG.locataires._closeMenus()">📲 ' + t('Envoyer accès WhatsApp') + '</div>' : '') +
       '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.genererDocument(' + locId + ');window.IG.locataires._closeMenus()">📄 ' + t('Documents') + '</div>' +
       '<div class="action-dropdown-item" onclick="window.IG.juridique && window.IG.juridique.afficherEtatDesLieux(window.IG.locataires.getById(' + locId + '),\'entree\');window.IG.locataires._closeMenus()">🏠 ' + t('État des lieux entrée') + '</div>' +
