@@ -258,9 +258,9 @@ window.IG.utils = (function() {
       var m = value.match(/^(\+\d{1,4})\s*(.*)$/);
       if (m) { selCode = m[1]; numVal = m[2]; }
     }
-    var opts = PAYS_TEL.map(function(p) {
-      return '<option value="' + p.code + '"' + (p.code === selCode ? ' selected' : '') + '>' +
-        p.flag + ' ' + p.code + ' — ' + p.pays + '</option>';
+    var opts = PAYS_TEL.slice().sort(function(a, b) { return a.pays.localeCompare(b.pays, 'fr'); }).map(function(p) {
+      return '<option value="' + p.code + '"' + (p.code === selCode ? ' selected' : '') + ' title="' + p.pays + '">' +
+        p.flag + ' ' + p.code + '</option>';
     }).join('');
     return '<div style="margin-bottom:12px">' +
       (label ? '<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:4px">' + label + (required ? ' *' : '') + '</label>' : '') +

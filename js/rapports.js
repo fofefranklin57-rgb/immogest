@@ -398,6 +398,7 @@ window.IG.rapports = (function() {
       '<button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">' + t('Fermer') + '</button>' +
       '<button id="btn-word-rapport" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);cursor:pointer;font-size:13px;display:none">📄 Word</button>' +
       '<button id="btn-imprimer-rapport" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);cursor:pointer;font-size:13px;display:none">🖨️ ' + t('Imprimer') + '</button>' +
+      '<button id="btn-wa-rapport" style="padding:8px 16px;border-radius:8px;border:none;background:#25D366;color:#fff;cursor:pointer;font-size:13px;font-weight:600;display:none">📱 ' + t('Envoyer au bailleur') + '</button>' +
       '</div>';
 
     var modal = window.IG.utils.showModal(html, { width: '820px' });
@@ -416,6 +417,8 @@ window.IG.rapports = (function() {
       modal.box.querySelector('#rapport-contenu').innerHTML = _lastHtml;
       modal.box.querySelector('#btn-imprimer-rapport').style.display = 'inline-block';
       modal.box.querySelector('#btn-word-rapport').style.display = 'inline-block';
+      var immSel = imm.filter(function(i) { return i.id == immId; })[0] || {};
+      modal.box.querySelector('#btn-wa-rapport').style.display = immSel.tel_proprio ? 'inline-block' : 'none';
     }
 
     function _setPeriode(debut, fin) {
@@ -448,28 +451,78 @@ window.IG.rapports = (function() {
       exporterDocx(_lastHtml);
     });
 
+    modal.box.querySelector('#btn-wa-rapport').addEventListener('click', function() {
+      var immSel = imm.filter(function(i) { return i.id == modal.box.querySelector('#rapport-imm').value; })[0] || {};
+      envoyerRapportWhatsApp(_lastHtml, immSel);
+    });
+
     // Générer automatiquement si un immeuble est présélectionné
     if (immeubleIdPreselect && immOptions) generer();
   }
 
   // ── Export Word conservant la mise en page HTML du rapport ───
+  function _creerBlobDocx(htmlContent) {
+    var session = window.IG.auth ? window.IG.auth.getSession() : {};
+    var title = (session.nomCabinet || 'ImmoGest') + ' - ' + t('Rapport mensuel');
+    var wordHtml = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+      '<title>' + esc(title) + '</title>' +
+      '<style>body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111}table{border-collapse:collapse}img{max-width:100%}</style>' +
+      '</head><body>' + htmlContent + '</body></html>';
+    var blob = new Blob(['\ufeff', wordHtml], { type: 'application/msword;charset=utf-8' });
+    return { blob: blob, filename: 'rapport-immogest-' + Date.now() + '.doc' };
+  }
+
   function exporterDocx(htmlContent) {
     try {
-      var session = window.IG.auth ? window.IG.auth.getSession() : {};
-      var title = (session.nomCabinet || 'ImmoGest') + ' - ' + t('Rapport mensuel');
-      var wordHtml = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
-        '<title>' + esc(title) + '</title>' +
-        '<style>body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111}table{border-collapse:collapse}img{max-width:100%}</style>' +
-        '</head><body>' + htmlContent + '</body></html>';
-      var blob = new Blob(['\ufeff', wordHtml], { type: 'application/msword;charset=utf-8' });
+      var f = _creerBlobDocx(htmlContent);
       var link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'rapport-immogest-' + Date.now() + '.doc';
+      link.href = URL.createObjectURL(f.blob);
+      link.download = f.filename;
       link.click();
       setTimeout(function() { URL.revokeObjectURL(link.href); }, 1500);
     } catch(e) {
       window.IG.utils.showToast(t('Erreur export DOCX') + ': ' + e.message, 'red');
     }
+  }
+
+  // \u2500\u2500 Envoi direct du rapport au bailleur par WhatsApp \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  // Utilise le partage natif (Web Share API + fichier) si disponible :
+  // ouvre le s\u00e9lecteur d'apps avec le rapport d\u00e9j\u00e0 joint, sans passer
+  // par un t\u00e9l\u00e9chargement manuel pr\u00e9alable. Sinon, replie sur un lien
+  // wa.me pr\u00e9-rempli + t\u00e9l\u00e9chargement du fichier \u00e0 joindre \u00e0 la main.
+  async function envoyerRapportWhatsApp(htmlContent, immeuble) {
+    if (!htmlContent) { window.IG.utils.showToast(t('G\u00e9n\u00e9rez d\'abord le rapport'), 'orange'); return; }
+    var tel = (immeuble && immeuble.tel_proprio) || '';
+    if (!tel) { window.IG.utils.showToast(t('Aucun num\u00e9ro de bailleur enregistr\u00e9 pour cet immeuble'), 'orange'); return; }
+
+    var f = _creerBlobDocx(htmlContent);
+    var nomImm = immeuble.nom_immeuble || immeuble.nom || '';
+    var texte = t('Rapport') + ' \u2014 ' + nomImm;
+
+    var partageOk = false;
+    if (navigator.share) {
+      try {
+        var file = new File([f.blob], f.filename, { type: 'application/msword' });
+        if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: texte, text: texte });
+          partageOk = true;
+        }
+      } catch(e) {
+        if (e && e.name === 'AbortError') { partageOk = true; } // annul\u00e9 par l'utilisateur, pas une erreur
+      }
+    }
+    if (partageOk) return;
+
+    // Repli : t\u00e9l\u00e9chargement + ouverture WhatsApp pr\u00e9-rempli vers le bailleur
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(f.blob);
+    link.download = f.filename;
+    link.click();
+    setTimeout(function() { URL.revokeObjectURL(link.href); }, 1500);
+
+    var telClean = tel.replace(/[^0-9+]/g, '');
+    var msg = encodeURIComponent(texte + '\n\n' + t('Fichier t\u00e9l\u00e9charg\u00e9 \u2014 joignez-le \u00e0 ce message.'));
+    window.open('https://wa.me/' + (telClean.startsWith('+') ? telClean.slice(1) : telClean) + '?text=' + msg, '_blank');
   }
 
   // ── Rapport annuel — hub avec sélecteur de période libre ─────
