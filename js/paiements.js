@@ -730,8 +730,14 @@ window.IG.paiements = (function() {
     var modal = window.IG.utils.showModal(html, { width: '500px' });
     setTimeout(function() { if (window.IG.ads) window.IG.ads.injecterSlot('ig-ad-pay-form', 'ad1'); }, 80);
 
+    var _saving = false;
     modal.box.querySelector('#form-paiement').addEventListener('submit', async function(e) {
       e.preventDefault();
+      if (_saving) return;                          // verrou anti double-submit (clics multiples / réseau lent)
+      _saving = true;
+      var _btn = e.target.querySelector('#p-btn-submit');
+      var _lbl = _btn ? _btn.textContent : '';
+      if (_btn) { _btn.disabled = true; _btn.textContent = '⏳ ' + t('Enregistrement…'); }
       var fd = new FormData(e.target);
       var datePay = fd.get('date_paiement');
       var montantTotal = parseFloat(fd.get('montant')) || 0;
@@ -776,6 +782,9 @@ window.IG.paiements = (function() {
         }
       } catch(err) {
         toast(t('Erreur') + ': ' + err.message, 'red');
+      } finally {
+        _saving = false;
+        if (_btn) { _btn.disabled = false; _btn.textContent = _lbl; }
       }
     });
   }

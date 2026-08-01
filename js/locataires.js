@@ -456,7 +456,7 @@ window.IG.locataires = (function() {
       if (n < 3) {
         html += '<button onclick="window.IG.locataires._wzNav(1)" style="padding:11px 24px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer">' + t('Suivant') + ' →</button>';
       } else if (n === 3) {
-        html += '<button onclick="window.IG.locataires._wzSauvegarder()" style="padding:11px 24px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:13px;font-weight:700;cursor:pointer">✅ ' + t('Enregistrer') + '</button>';
+        html += '<button id="wz-btn-save" onclick="window.IG.locataires._wzSauvegarder()" style="padding:11px 24px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:13px;font-weight:700;cursor:pointer">✅ ' + t('Enregistrer') + '</button>';
       } else {
         html += '<button onclick="window.IG.locataires._wzFermer()" style="padding:11px 24px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer">' + t('Terminer') + '</button>';
       }
@@ -467,6 +467,7 @@ window.IG.locataires = (function() {
     // Accès depuis les fonctions inline
     window.IG.locataires._wzData = _data;
     window.IG.locataires._wzEtape = function() { return _etape; };
+    var _wzSaving = false;
     window.IG.locataires._wzNav = function(dir) {
       if (dir === 1) {
         // Valider étape courante
@@ -493,6 +494,7 @@ window.IG.locataires = (function() {
       if (box) box.innerHTML = _renderEtape(_etape);
     };
     window.IG.locataires._wzSauvegarder = async function() {
+      if (_wzSaving) return;                        // verrou anti double-submit (clics multiples / réseau lent)
       var entree = (document.getElementById('wz-entree') || {}).value || '';
       var loyer  = parseFloat((document.getElementById('wz-loyer') || {}).value || 0);
       var caution = parseFloat((document.getElementById('wz-caution') || {}).value || 0);
@@ -509,6 +511,9 @@ window.IG.locataires = (function() {
       _data.observations = obs;
       _data.statut = 'actif';
       _data.id = window.IG.utils.uid();
+      _wzSaving = true;
+      var _btn = document.getElementById('wz-btn-save');
+      if (_btn) { _btn.disabled = true; _btn.textContent = '⏳ ' + t('Enregistrement…'); }
       try {
         await sauvegarder(_data);
         if (window.IG.app && window.IG.app.refresh) window.IG.app.refresh();
@@ -518,7 +523,11 @@ window.IG.locataires = (function() {
         if (box) box.innerHTML = _renderEtape(4);
         // Générer invitation et afficher code
         setTimeout(function() { _genererInvitationLocataire(_data); }, 400);
-      } catch(err) { toast(t('Erreur') + ': ' + err.message, 'red'); }
+      } catch(err) {
+        toast(t('Erreur') + ': ' + err.message, 'red');
+        _wzSaving = false;
+        if (_btn) { _btn.disabled = false; _btn.textContent = '✅ ' + t('Enregistrer'); }
+      }
     };
     window.IG.locataires._wzFermer = function() {
       var overlay = document.querySelector('[id="wz-overlay"]');
