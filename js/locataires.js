@@ -69,6 +69,20 @@ window.IG.locataires = (function() {
 
   async function sauvegarder(loc) {
     if (!loc.id) loc.id = window.IG.utils.uid();
+    // Un vrai locataire qui occupe un local supprime le placeholder vide
+    // du même local (créé auto par la numérotation) au lieu de le laisser
+    // coexister en double dans la liste.
+    if (loc.statut !== 'libre' && loc.immeuble_id && loc.appt) {
+      var doublon = _cache.find(function(l) {
+        return l.id != loc.id && l.immeuble_id == loc.immeuble_id &&
+          String(l.appt || '').toUpperCase() === String(loc.appt).toUpperCase() &&
+          l.statut === 'libre' && (parseFloat(l.loyer) || 0) === 0;
+      });
+      if (doublon) {
+        try { await window.IG.db.remove('locataires', doublon.id); } catch(_) {}
+        _cache = _cache.filter(function(l) { return l.id !== doublon.id; });
+      }
+    }
     var result = await window.IG.db.upsert('locataires', [loc]);
     var idx = _cache.findIndex(function(l) { return l.id == loc.id; });
     if (idx >= 0) _cache[idx] = loc; else _cache.push(loc);
