@@ -175,78 +175,78 @@ window.IG.utils = (function() {
 
   // ── Sélecteur indicatif téléphonique ─────────────────────────
   var PAYS_TEL = [
-    { code: '+1',   pays: 'USA / Canada',        flag: '🇺🇸' },
-    { code: '+7',   pays: 'Russie / Kazakhstan',  flag: '🇷🇺' },
-    { code: '+20',  pays: 'Egypte',               flag: '🇪🇬' },
-    { code: '+27',  pays: 'Afrique du Sud',        flag: '🇿🇦' },
-    { code: '+30',  pays: 'Grèce',                flag: '🇬🇷' },
-    { code: '+31',  pays: 'Pays-Bas',             flag: '🇳🇱' },
-    { code: '+32',  pays: 'Belgique',             flag: '🇧🇪' },
-    { code: '+33',  pays: 'France',               flag: '🇫🇷' },
-    { code: '+34',  pays: 'Espagne',              flag: '🇪🇸' },
-    { code: '+39',  pays: 'Italie',               flag: '🇮🇹' },
-    { code: '+41',  pays: 'Suisse',               flag: '🇨🇭' },
-    { code: '+44',  pays: 'Royaume-Uni',          flag: '🇬🇧' },
-    { code: '+49',  pays: 'Allemagne',            flag: '🇩🇪' },
-    { code: '+55',  pays: 'Brésil',               flag: '🇧🇷' },
-    { code: '+57',  pays: 'Colombie',             flag: '🇨🇴' },
-    { code: '+58',  pays: 'Venezuela',            flag: '🇻🇪' },
-    { code: '+60',  pays: 'Malaisie',             flag: '🇲🇾' },
-    { code: '+62',  pays: 'Indonésie',            flag: '🇮🇩' },
-    { code: '+63',  pays: 'Philippines',          flag: '🇵🇭' },
-    { code: '+66',  pays: 'Thaïlande',            flag: '🇹🇭' },
-    { code: '+81',  pays: 'Japon',                flag: '🇯🇵' },
-    { code: '+82',  pays: 'Corée du Sud',         flag: '🇰🇷' },
-    { code: '+84',  pays: 'Vietnam',              flag: '🇻🇳' },
-    { code: '+86',  pays: 'Chine',                flag: '🇨🇳' },
-    { code: '+90',  pays: 'Turquie',              flag: '🇹🇷' },
-    { code: '+91',  pays: 'Inde',                 flag: '🇮🇳' },
-    { code: '+92',  pays: 'Pakistan',             flag: '🇵🇰' },
-    { code: '+212', pays: 'Maroc',                flag: '🇲🇦' },
-    { code: '+213', pays: 'Algérie',              flag: '🇩🇿' },
-    { code: '+216', pays: 'Tunisie',              flag: '🇹🇳' },
-    { code: '+221', pays: 'Sénégal',              flag: '🇸🇳' },
-    { code: '+225', pays: "Côte d'Ivoire",        flag: '🇨🇮' },
-    { code: '+226', pays: 'Burkina Faso',         flag: '🇧🇫' },
-    { code: '+227', pays: 'Niger',                flag: '🇳🇪' },
-    { code: '+228', pays: 'Togo',                 flag: '🇹🇬' },
-    { code: '+229', pays: 'Bénin',                flag: '🇧🇯' },
-    { code: '+233', pays: 'Ghana',                flag: '🇬🇭' },
-    { code: '+234', pays: 'Nigeria',              flag: '🇳🇬' },
-    { code: '+235', pays: 'Tchad',                flag: '🇹🇩' },
-    { code: '+236', pays: 'Centrafrique',         flag: '🇨🇫' },
-    { code: '+237', pays: 'Cameroun',             flag: '🇨🇲' },
-    { code: '+241', pays: 'Gabon',                flag: '🇬🇦' },
-    { code: '+242', pays: 'Congo',                flag: '🇨🇬' },
-    { code: '+243', pays: 'RD Congo',             flag: '🇨🇩' },
-    { code: '+244', pays: 'Angola',               flag: '🇦🇴' },
-    { code: '+245', pays: 'Guinée-Bissau',        flag: '🇬🇼' },
-    { code: '+248', pays: 'Seychelles',           flag: '🇸🇨' },
-    { code: '+249', pays: 'Soudan',               flag: '🇸🇩' },
-    { code: '+251', pays: 'Éthiopie',             flag: '🇪🇹' },
-    { code: '+254', pays: 'Kenya',                flag: '🇰🇪' },
-    { code: '+255', pays: 'Tanzanie',             flag: '🇹🇿' },
-    { code: '+256', pays: 'Ouganda',              flag: '🇺🇬' },
-    { code: '+257', pays: 'Burundi',              flag: '🇧🇮' },
-    { code: '+258', pays: 'Mozambique',           flag: '🇲🇿' },
-    { code: '+260', pays: 'Zambie',               flag: '🇿🇲' },
-    { code: '+261', pays: 'Madagascar',           flag: '🇲🇬' },
-    { code: '+263', pays: 'Zimbabwe',             flag: '🇿🇼' },
-    { code: '+264', pays: 'Namibie',              flag: '🇳🇦' },
-    { code: '+265', pays: 'Malawi',               flag: '🇲🇼' },
-    { code: '+266', pays: 'Lesotho',              flag: '🇱🇸' },
-    { code: '+267', pays: 'Botswana',             flag: '🇧🇼' },
-    { code: '+269', pays: 'Comores',              flag: '🇰🇲' },
-    { code: '+350', pays: 'Gibraltar',            flag: '🇬🇮' },
-    { code: '+351', pays: 'Portugal',             flag: '🇵🇹' },
-    { code: '+352', pays: 'Luxembourg',           flag: '🇱🇺' },
-    { code: '+353', pays: 'Irlande',              flag: '🇮🇪' },
-    { code: '+356', pays: 'Malte',                flag: '🇲🇹' },
-    { code: '+358', pays: 'Finlande',             flag: '🇫🇮' },
-    { code: '+420', pays: 'Tchéquie',             flag: '🇨🇿' },
-    { code: '+966', pays: 'Arabie Saoudite',      flag: '🇸🇦' },
-    { code: '+971', pays: 'Émirats Arabes Unis',  flag: '🇦🇪' },
-    { code: '+972', pays: 'Israël',               flag: '🇮🇱' },
+    { code: '+1',   pays: 'USA / Canada',        flag: '🇺🇸', ex: '201 555 0123' },
+    { code: '+7',   pays: 'Russie / Kazakhstan',  flag: '🇷🇺', ex: '912 345 67 89' },
+    { code: '+20',  pays: 'Egypte',               flag: '🇪🇬', ex: '100 123 4567' },
+    { code: '+27',  pays: 'Afrique du Sud',        flag: '🇿🇦', ex: '71 234 5678' },
+    { code: '+30',  pays: 'Grèce',                flag: '🇬🇷', ex: '691 234 5678' },
+    { code: '+31',  pays: 'Pays-Bas',             flag: '🇳🇱', ex: '6 12345678' },
+    { code: '+32',  pays: 'Belgique',             flag: '🇧🇪', ex: '470 12 34 56' },
+    { code: '+33',  pays: 'France',               flag: '🇫🇷', ex: '6 12 34 56 78' },
+    { code: '+34',  pays: 'Espagne',              flag: '🇪🇸', ex: '612 34 56 78' },
+    { code: '+39',  pays: 'Italie',               flag: '🇮🇹', ex: '312 345 6789' },
+    { code: '+41',  pays: 'Suisse',               flag: '🇨🇭', ex: '78 123 45 67' },
+    { code: '+44',  pays: 'Royaume-Uni',          flag: '🇬🇧', ex: '7911 123456' },
+    { code: '+49',  pays: 'Allemagne',            flag: '🇩🇪', ex: '151 23456789' },
+    { code: '+55',  pays: 'Brésil',               flag: '🇧🇷', ex: '11 91234 5678' },
+    { code: '+57',  pays: 'Colombie',             flag: '🇨🇴', ex: '321 234 5678' },
+    { code: '+58',  pays: 'Venezuela',            flag: '🇻🇪', ex: '412 123 4567' },
+    { code: '+60',  pays: 'Malaisie',             flag: '🇲🇾', ex: '12 345 6789' },
+    { code: '+62',  pays: 'Indonésie',            flag: '🇮🇩', ex: '812 345 678' },
+    { code: '+63',  pays: 'Philippines',          flag: '🇵🇭', ex: '917 123 4567' },
+    { code: '+66',  pays: 'Thaïlande',            flag: '🇹🇭', ex: '81 234 5678' },
+    { code: '+81',  pays: 'Japon',                flag: '🇯🇵', ex: '90 1234 5678' },
+    { code: '+82',  pays: 'Corée du Sud',         flag: '🇰🇷', ex: '10 1234 5678' },
+    { code: '+84',  pays: 'Vietnam',              flag: '🇻🇳', ex: '91 234 56 78' },
+    { code: '+86',  pays: 'Chine',                flag: '🇨🇳', ex: '138 0013 8000' },
+    { code: '+90',  pays: 'Turquie',              flag: '🇹🇷', ex: '532 123 45 67' },
+    { code: '+91',  pays: 'Inde',                 flag: '🇮🇳', ex: '98765 43210' },
+    { code: '+92',  pays: 'Pakistan',             flag: '🇵🇰', ex: '300 1234567' },
+    { code: '+212', pays: 'Maroc',                flag: '🇲🇦', ex: '612 345678' },
+    { code: '+213', pays: 'Algérie',              flag: '🇩🇿', ex: '551 23 45 67' },
+    { code: '+216', pays: 'Tunisie',              flag: '🇹🇳', ex: '20 123 456' },
+    { code: '+221', pays: 'Sénégal',              flag: '🇸🇳', ex: '77 123 45 67' },
+    { code: '+225', pays: "Côte d'Ivoire",        flag: '🇨🇮', ex: '07 12 34 56 78' },
+    { code: '+226', pays: 'Burkina Faso',         flag: '🇧🇫', ex: '70 12 34 56' },
+    { code: '+227', pays: 'Niger',                flag: '🇳🇪', ex: '90 12 34 56' },
+    { code: '+228', pays: 'Togo',                 flag: '🇹🇬', ex: '90 12 34 56' },
+    { code: '+229', pays: 'Bénin',                flag: '🇧🇯', ex: '90 12 34 56' },
+    { code: '+233', pays: 'Ghana',                flag: '🇬🇭', ex: '23 123 4567' },
+    { code: '+234', pays: 'Nigeria',              flag: '🇳🇬', ex: '802 123 4567' },
+    { code: '+235', pays: 'Tchad',                flag: '🇹🇩', ex: '63 12 34 56' },
+    { code: '+236', pays: 'Centrafrique',         flag: '🇨🇫', ex: '70 12 34 56' },
+    { code: '+237', pays: 'Cameroun',             flag: '🇨🇲', ex: '6XX XX XX XX' },
+    { code: '+241', pays: 'Gabon',                flag: '🇬🇦', ex: '06 12 34 56' },
+    { code: '+242', pays: 'Congo',                flag: '🇨🇬', ex: '06 123 4567' },
+    { code: '+243', pays: 'RD Congo',             flag: '🇨🇩', ex: '81 234 5678' },
+    { code: '+244', pays: 'Angola',               flag: '🇦🇴', ex: '923 123 456' },
+    { code: '+245', pays: 'Guinée-Bissau',        flag: '🇬🇼', ex: '955 123 456' },
+    { code: '+248', pays: 'Seychelles',           flag: '🇸🇨', ex: '2 510 123' },
+    { code: '+249', pays: 'Soudan',               flag: '🇸🇩', ex: '91 123 4567' },
+    { code: '+251', pays: 'Éthiopie',             flag: '🇪🇹', ex: '91 123 4567' },
+    { code: '+254', pays: 'Kenya',                flag: '🇰🇪', ex: '712 345678' },
+    { code: '+255', pays: 'Tanzanie',             flag: '🇹🇿', ex: '621 234 567' },
+    { code: '+256', pays: 'Ouganda',              flag: '🇺🇬', ex: '712 345678' },
+    { code: '+257', pays: 'Burundi',              flag: '🇧🇮', ex: '79 12 34 56' },
+    { code: '+258', pays: 'Mozambique',           flag: '🇲🇿', ex: '82 123 4567' },
+    { code: '+260', pays: 'Zambie',               flag: '🇿🇲', ex: '95 1234567' },
+    { code: '+261', pays: 'Madagascar',           flag: '🇲🇬', ex: '32 12 345 67' },
+    { code: '+263', pays: 'Zimbabwe',             flag: '🇿🇼', ex: '71 234 5678' },
+    { code: '+264', pays: 'Namibie',              flag: '🇳🇦', ex: '81 123 4567' },
+    { code: '+265', pays: 'Malawi',               flag: '🇲🇼', ex: '99 123 4567' },
+    { code: '+266', pays: 'Lesotho',              flag: '🇱🇸', ex: '5812 3456' },
+    { code: '+267', pays: 'Botswana',             flag: '🇧🇼', ex: '71 123 456' },
+    { code: '+269', pays: 'Comores',              flag: '🇰🇲', ex: '321 23 45' },
+    { code: '+350', pays: 'Gibraltar',            flag: '🇬🇮', ex: '200 12345' },
+    { code: '+351', pays: 'Portugal',             flag: '🇵🇹', ex: '912 345 678' },
+    { code: '+352', pays: 'Luxembourg',           flag: '🇱🇺', ex: '621 123 456' },
+    { code: '+353', pays: 'Irlande',              flag: '🇮🇪', ex: '85 123 4567' },
+    { code: '+356', pays: 'Malte',                flag: '🇲🇹', ex: '9912 3456' },
+    { code: '+358', pays: 'Finlande',             flag: '🇫🇮', ex: '41 234 5678' },
+    { code: '+420', pays: 'Tchéquie',             flag: '🇨🇿', ex: '601 123 456' },
+    { code: '+966', pays: 'Arabie Saoudite',      flag: '🇸🇦', ex: '50 123 4567' },
+    { code: '+971', pays: 'Émirats Arabes Unis',  flag: '🇦🇪', ex: '50 123 4567' },
+    { code: '+972', pays: 'Israël',               flag: '🇮🇱', ex: '50 123 4567' },
   ];
 
   // Retourne le HTML d'un champ téléphone avec sélecteur d'indicatif
@@ -258,10 +258,13 @@ window.IG.utils = (function() {
       var m = value.match(/^(\+\d{1,4})\s*(.*)$/);
       if (m) { selCode = m[1]; numVal = m[2]; }
     }
+    var exByCode = {};
     var opts = PAYS_TEL.slice().sort(function(a, b) { return a.pays.localeCompare(b.pays, 'fr'); }).map(function(p) {
-      return '<option value="' + p.code + '"' + (p.code === selCode ? ' selected' : '') + ' title="' + p.pays + '">' +
-        p.flag + ' ' + p.code + '</option>';
+      exByCode[p.code] = p.ex || '6XX XX XX XX';
+      return '<option value="' + p.code + '"' + (p.code === selCode ? ' selected' : '') + '>' +
+        p.flag + ' ' + p.code + ' — ' + p.pays + '</option>';
     }).join('');
+    var exInit = exByCode[selCode] || '6XX XX XX XX';
     return '<div style="margin-bottom:12px">' +
       (label ? '<label style="font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:4px">' + label + (required ? ' *' : '') + '</label>' : '') +
       '<div style="display:flex;gap:6px">' +
@@ -270,15 +273,17 @@ window.IG.utils = (function() {
         '</select>' +
         '<input type="tel" id="' + id + '_num" value="' + esc(numVal) + '"' +
         (required ? ' required' : '') +
-        ' placeholder="6XX XX XX XX" style="flex:1;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
+        ' placeholder="' + esc(exInit) + '" style="flex:1;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
       '</div>' +
       '<input type="hidden" id="' + id + '" name="' + id + '">' +
     '</div>' +
     '<script>void function(){' +
+      'var EX_' + id + '=' + JSON.stringify(exByCode) + ';' +
       'function _sync_' + id + '(){' +
         'var c=document.getElementById("' + id + '_code");' +
         'var n=document.getElementById("' + id + '_num");' +
         'var h=document.getElementById("' + id + '");' +
+        'if(n&&c)n.placeholder=EX_' + id + '[c.value]||"6XX XX XX XX";' +
         'if(c&&n&&h)h.value=(c.value+" "+n.value.replace(/^0+/,"")).trim();}' +
       'var c=document.getElementById("' + id + '_code");' +
       'var n=document.getElementById("' + id + '_num");' +

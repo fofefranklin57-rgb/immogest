@@ -558,16 +558,17 @@ window.IG.locataires = (function() {
         var libre = !occupesIds.includes(code.toUpperCase());
         var codeJs = code.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         return '<span style="display:inline-block;margin:3px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;background:' + (libre ? 'rgba(14,122,69,.15)' : 'rgba(185,48,32,.1)') + ';color:' + (libre ? 'var(--green)' : 'var(--red)') + ';cursor:' + (libre ? 'pointer' : 'default') + '"' +
-          (libre ? ' onclick="document.getElementById(\'wz-appt\').value=\'' + codeJs + '\';this.closest(\'[style*=z-index:950]\').remove()"' : '') + '>' +
+          (libre ? ' onclick="document.getElementById(\'wz-appt\').value=\'' + codeJs + '\';document.getElementById(\'wz-locaux-pop\').remove()"' : '') + '>' +
           esc(code) + (libre ? ' ✓' : ' ✗') + '</span>';
       });
       var pop = document.createElement('div');
+      pop.id = 'wz-locaux-pop';
       pop.style.cssText = 'position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center';
       pop.innerHTML = '<div style="background:var(--bg);border-radius:14px;padding:20px;max-width:340px;width:90%">' +
         '<div style="font-weight:700;font-size:14px;margin-bottom:12px">' + t('Locaux') + ' — ' + esc(imm.nom_immeuble || imm.nom) + '</div>' +
         '<div style="margin-bottom:12px">' + (lignes.join('') || t('Aucun local configuré')) + '</div>' +
         '<div style="font-size:11px;color:var(--text3)">✓ ' + t('libre — cliquer pour sélectionner') + ' &nbsp;|&nbsp; ✗ ' + t('occupé') + '</div>' +
-        '<button onclick="this.closest(\'[style*=z-index:950]\').remove()" style="margin-top:14px;width:100%;padding:9px;border-radius:8px;border:none;background:var(--bg3);color:var(--text);cursor:pointer">' + t('Fermer') + '</button></div>';
+        '<button onclick="document.getElementById(\'wz-locaux-pop\').remove()" style="margin-top:14px;width:100%;padding:9px;border-radius:8px;border:none;background:var(--bg3);color:var(--text);cursor:pointer">' + t('Fermer') + '</button></div>';
       document.body.appendChild(pop);
     };
     window.IG.locataires._syncArrMois = function() {
