@@ -18,6 +18,7 @@ window.IG.paiements = (function() {
   async function charger(filters) {
     try {
       _cache = await window.IG.db.select('paiements', filters || null);
+      _invaliderFicheCache();
       return _cache;
     } catch(e) {
       return [];
@@ -33,12 +34,14 @@ window.IG.paiements = (function() {
     var result = await window.IG.db.upsert('paiements', [paiement]);
     var idx = _cache.findIndex(function(p) { return p.id == paiement.id; });
     if (idx >= 0) _cache[idx] = paiement; else _cache.push(paiement);
+    _invaliderFicheCache();
     return result;
   }
 
   async function annuler(id) {
     await window.IG.db.remove('paiements', id);
     _cache = _cache.filter(function(p) { return p.id != id; });
+    _invaliderFicheCache();
     toast(t('Paiement supprimé'), 'orange');
   }
 
@@ -59,8 +62,28 @@ window.IG.paiements = (function() {
            '<td style="' + lbl + '">' + l2 + '</td><td style="' + cell + '">' + v2 + '</td></tr>';
   }
 
-  // ── Algorithme cumul FIFO (du plus ancien au plus récent) ────
+  // ── Cache mémoire de calculerFiche() ──────────────────────────
+  // Ce calcul FIFO est rappelé plusieurs fois pour le même locataire à
+  // chaque rendu (dashboard, liste locataires, badges) -- on évite de le
+  // relancer tant que rien n'a changé (invalidé à chaque enregistrement/
+  // annulation de paiement).
+  var _ficheCacheVersion = 0;
+  var _ficheCache = new Map();
+  function _invaliderFicheCache() { _ficheCacheVersion++; _ficheCache.clear(); }
+
   function calculerFiche(locataire, versements, anneeMax) {
+    if (!locataire || !locataire.entree) return [];
+    var cleFiche = _ficheCacheVersion + '|' + locataire.id + '|' + locataire.loyer + '|' + locataire.entree +
+      '|' + (locataire.mois_arrieres || 0) + '|' + (anneeMax || '') + '|' + versements.length;
+    var enCache = _ficheCache.get(cleFiche);
+    if (enCache) return enCache;
+    var lignes = _calculerFicheReel(locataire, versements, anneeMax);
+    _ficheCache.set(cleFiche, lignes);
+    return lignes;
+  }
+
+  // ── Algorithme cumul FIFO (du plus ancien au plus récent) ────
+  function _calculerFicheReel(locataire, versements, anneeMax) {
     if (!locataire || !locataire.entree) return [];
 
     var annee = anneeMax || new Date().getFullYear();

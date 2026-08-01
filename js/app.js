@@ -193,10 +193,10 @@ window.IG.app = (function() {
       '<button class="pwa-install-btn" onclick="installPWA()" title="Installer l\'app" style="display:none;padding:5px 10px;border-radius:8px;border:1px solid rgba(14,106,175,0.3);background:rgba(14,106,175,0.1);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;">⬇ ' + t('Installer') + '</button>' +
       '<button class="topbar-deconnexion" onclick="window.IG.auth.logout()" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(185,48,32,0.3);background:var(--red-bg);color:var(--red);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0;">⏻ ' + t('Déco') + '</button>' +
       // Sélecteurs mois/année
-      '<select id="sel-mois" onchange="window.IG.app.refresh()" style="background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:6px 10px;font-family:var(--font);">' +
+      '<select id="sel-mois" onchange="window.IG.app.renderCurrentPage()" style="background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:6px 10px;font-family:var(--font);">' +
       Array.from({length:12}, function(_,i) { var mn = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'][i]; return '<option value="' + (i+1) + '"' + ((i+1) === mois ? ' selected' : '') + '>' + t(mn) + '</option>'; }).join('') +
       '</select>' +
-      '<select id="sel-annee" onchange="window.IG.app.refresh()" style="background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:6px 10px;font-family:var(--font);">' +
+      '<select id="sel-annee" onchange="window.IG.app.renderCurrentPage()" style="background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:6px 10px;font-family:var(--font);">' +
       [2024,2025,2026,2027].map(function(y) { return '<option value="' + y + '"' + (y === annee ? ' selected' : '') + '>' + y + '</option>'; }).join('') +
       '</select>' +
       '<button class="btn btn-primary btn-sm" id="topbar-main-btn" onclick="window.IG.app.topbarAction()">＋ ' + t('Nouveau') + '</button>' +
@@ -1195,7 +1195,7 @@ window.IG.app = (function() {
         '<option value="4">🔴 ' + t('4 mois et +') + '</option>' +
         '<option value="avance">✅ ' + t('En avance') + '</option>' +
       '</select>' +
-      '<input id="loc-search" placeholder="' + t('Rechercher...') + '" oninput="window.IG.app._locFiltrer()" ' +
+      '<input id="loc-search" placeholder="' + t('Rechercher...') + '" oninput="window.IG.app._locFiltrerDebounce()" ' +
         'style="padding:7px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;flex:1;min-width:140px;max-width:220px;color:var(--text)">' +
       '</div>' +
       '<div id="locataires-liste" style="overflow-x:auto"></div>' +
@@ -1211,6 +1211,12 @@ window.IG.app = (function() {
     var retard = (document.getElementById('loc-filtre-retard') || {}).value || '';
     _currentImmeubleId = immId ? parseInt(immId) || immId : null;
     if (window.IG.locataires) window.IG.locataires.renderListeFiltree(_data.paiements, _currentImmeubleId, statut, retard);
+  }
+
+  var _locFiltrerTimer = null;
+  function _locFiltrerDebounce() {
+    clearTimeout(_locFiltrerTimer);
+    _locFiltrerTimer = setTimeout(_locFiltrer, 250);
   }
 
   // ── Paiements ─────────────────────────────────────────────────
@@ -3420,7 +3426,7 @@ window.IG.app = (function() {
     _ouvrirSelLocataire, _filtrerSelLoc, _selLoc, _confirmerSupprPaiement,
     _restaurer, _supprimerDefinitivement, _viderCorbeille, _loadCorbeille,
     _restaurerImmeuble, _restaurerLocataire,
-    _locFiltrer,
+    _locFiltrer, _locFiltrerDebounce,
     _genererInvitation, _toggleUser, _equipeTab, _resetCodeUser, _appliquerPromo,
     _loadDeclarations, _validerDeclaration,
     _loadMessages, _nouveauMessage, _marquerLu,
