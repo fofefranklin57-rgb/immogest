@@ -133,15 +133,34 @@ window.IG.rapports = (function() {
         return (parseInt(p.locataire_id) == parseInt(loc.id) || p.locataire_id == loc.id) &&
                (p.type || 'loyer') !== 'caution';
       });
-      var dernierPay = lPays.length ? lPays[lPays.length - 1] : null;
+      // Continuité : le dernier versement affiché est le dernier versement
+      // RÉEL du locataire, même s'il date d'avant la période du rapport.
+      var lPaysAll = paiements.filter(function(p) {
+        return (parseInt(p.locataire_id) == parseInt(loc.id) || p.locataire_id == loc.id) &&
+               (p.type || 'loyer') !== 'caution' && p.date_paiement;
+      }).sort(function(a, b) { return new Date(a.date_paiement) - new Date(b.date_paiement); });
+
+      var dernierPay = lPaysAll.length ? lPaysAll[lPaysAll.length - 1] : null;
+      var horsPeriode = dernierPay && (new Date(dernierPay.date_paiement) < debut || new Date(dernierPay.date_paiement) > fin);
       var dernierStr = dernierPay
-        ? _fmtD(dernierPay.date_paiement) + '<br><span style="color:#555">' + fmt(dernierPay.montant) + '</span>'
+        ? _fmtD(dernierPay.date_paiement) + '<br><span style="color:#555">' + fmt(dernierPay.montant) + '</span>' +
+          (horsPeriode ? '<br><span style="font-size:9px;color:#999">(' + t('hors période') + ')</span>' : '')
         : '—';
       var totalPaye = lPays.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
       var reste     = Math.max(0, loyer - totalPaye);
       totalResteS1 += reste;
 
       var obs = [];
+      // Nombre de mois dus + action recommandée
+      var moisDus = window.IG.relances ? window.IG.relances.calculerRetard(loc, lPaysAll) : 0;
+      if (moisDus > 0) {
+        var reco = moisDus >= 7 ? t('à expulser')
+                 : moisDus >= 4 ? t('à sommer')
+                 : moisDus >= 2 ? t('à surveiller')
+                 : t('à relancer');
+        var recoCouleur = moisDus >= 7 ? '#b71c1c' : moisDus >= 4 ? '#e65100' : moisDus >= 2 ? '#f57f17' : '#555';
+        obs.push('<strong style="color:' + recoCouleur + '">' + moisDus + ' ' + t('mois dû(s)') + ' — ' + reco + '</strong>');
+      }
       if (isCab) {
         var remisLoc = lPays.filter(function(p) { return p.remisAuBailleur; });
         if (remisLoc.length) obs.push(fmt(remisLoc.reduce(function(s,p){return s+(parseFloat(p.montant)||0);},0)) + ' remis au bailleur');
