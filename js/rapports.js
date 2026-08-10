@@ -80,7 +80,7 @@ window.IG.rapports = (function() {
   }
 
   // ── Rapport mensuel HTML — spec V2 (juin 2026) ──────────────
-  function genererRapportMensuelHTML(immeubleId, dateDebut, dateFin, immeubles, locataires, paiements) {
+  function genererRapportMensuelHTML(immeubleId, dateDebut, dateFin, immeubles, locataires, paiements, filtreLoc) {
     var session  = window.IG.auth ? window.IG.auth.getSession() : {};
     var params   = session.parametres || {};
     var typeProfil = session.type_profil || 'gestionnaire';
@@ -113,6 +113,22 @@ window.IG.rapports = (function() {
     var locsImm = locataires.filter(function(l) {
       return l.immeuble_id == immeubleId && l.statut !== 'libre';
     });
+
+    // Filtre optionnel : mois dus (seuil) ou locataires ayant payé d'avance.
+    // Réutilise le calcul officiel (relances/calculerFiche) pour rester
+    // cohérent avec les badges et le filtre de la page Locataires.
+    if (filtreLoc) {
+      locsImm = locsImm.filter(function(l) {
+        var pl = paiements.filter(function(p) { return p.locataire_id == l.id; });
+        if (filtreLoc === 'avance') {
+          if (!window.IG.paiements || !l.entree) return false;
+          return window.IG.paiements.calculerFiche(l, pl).some(function(lg) { return lg.statut === 'Payé (avance)'; });
+        }
+        var seuil = parseInt(filtreLoc) || 0;
+        var retard = window.IG.relances ? window.IG.relances.calculerRetard(l, pl) : 0;
+        return retard >= seuil;
+      });
+    }
     var locIds = locsImm.map(function(l) { return l.id; });
     var paysP  = paiements.filter(function(p) {
       if (locIds.indexOf(parseInt(p.locataire_id)) < 0 && locIds.indexOf(p.locataire_id) < 0) return false;
@@ -316,7 +332,11 @@ window.IG.rapports = (function() {
       '</div>';
 
     // Section 1
-    html += '<div style="font-size:11.5px;font-weight:800;text-transform:uppercase;color:#0E6AAF;margin-bottom:8px;border-left:4px solid #0E6AAF;padding-left:8px">' + t('LISTE DES LOCATAIRES ET SITUATION LOCATIVE') + '</div>' +
+    var libelleFiltre = filtreLoc
+      ? (filtreLoc === 'avance' ? t('locataires ayant payé d\'avance') : filtreLoc + ' ' + t('mois dus et +'))
+      : '';
+    html += '<div style="font-size:11.5px;font-weight:800;text-transform:uppercase;color:#0E6AAF;margin-bottom:8px;border-left:4px solid #0E6AAF;padding-left:8px">' + t('LISTE DES LOCATAIRES ET SITUATION LOCATIVE') +
+      (libelleFiltre ? ' <span style="font-weight:600;text-transform:none;color:#666">— ' + t('filtre') + ' : ' + esc(libelleFiltre) + ' (' + locsImm.length + ')</span>' : '') + '</div>' +
       '<table style="width:100%;border-collapse:collapse;margin-bottom:18px"><thead><tr>' +
       '<th style="'+TH+'">' + t('Local') + '</th>' +
       '<th style="'+TH+'">' + t('Nom & Téléphone') + '</th>' +
@@ -406,6 +426,17 @@ window.IG.rapports = (function() {
       '<input id="rapport-fin" type="date" value="' + _iso(defFin) + '" style="width:100%;margin-top:4px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
       '</div>' +
 
+      '<div style="margin-bottom:8px">' +
+      '<label style="font-size:11px;font-weight:600;color:var(--text2)">' + t('Filtrer les locataires').toUpperCase() + '</label>' +
+      '<select id="rapport-filtre" style="width:100%;margin-top:4px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
+      '<option value="">' + t('Tous les locataires') + '</option>' +
+      '<option value="1">🟡 ' + t('1 mois dû et +') + '</option>' +
+      '<option value="2">🟠 ' + t('2 mois dus et +') + '</option>' +
+      '<option value="4">🔴 ' + t('4 mois dus et +') + '</option>' +
+      '<option value="7">⛔ ' + t('7 mois dus et + (à expulser)') + '</option>' +
+      '<option value="avance">✅ ' + t('Ayant payé d\'avance') + '</option>' +
+      '</select></div>' +
+
       '<div style="margin-bottom:12px;display:flex;gap:8px">' +
       '<button id="btn-mois-courant" style="padding:5px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--bg3);font-size:11px;cursor:pointer">' + t('Mois courant') + '</button>' +
       '<button id="btn-mois-prec" style="padding:5px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--bg3);font-size:11px;cursor:pointer">' + t('Mois précédent') + '</button>' +
@@ -432,7 +463,8 @@ window.IG.rapports = (function() {
         modal.box.querySelector('#rapport-contenu').innerHTML = '<p style="padding:20px;text-align:center;color:var(--text3)">' + t('Sélectionnez un immeuble.') + '</p>';
         return;
       }
-      _lastHtml = genererRapportMensuelHTML(immId, debut, fin, imm, loc, pay);
+      var filtre = (modal.box.querySelector('#rapport-filtre') || {}).value || '';
+      _lastHtml = genererRapportMensuelHTML(immId, debut, fin, imm, loc, pay, filtre);
       modal.box.querySelector('#rapport-contenu').innerHTML = _lastHtml;
       modal.box.querySelector('#btn-imprimer-rapport').style.display = 'inline-block';
       modal.box.querySelector('#btn-word-rapport').style.display = 'inline-block';
