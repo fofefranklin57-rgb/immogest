@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Test DOCX</title></head>
+<body>
+<h1>Test génération DOCX</h1>
+<pre id="out">…</pre>
+<script src="docx.bundle.js"></script>
+<script>
+var log = function (s) { document.getElementById('out').textContent += '\n' + s; };
+document.getElementById('out').textContent = 'docx: ' + (typeof docx);
+
+var lignes = [
+  [{ texte: 'LOCAL', span: 1 }, { texte: 'NOM', span: 1 }, { texte: 'LOYER', span: 1 }, { texte: 'RESTE', span: 1 }],
+  [{ texte: '1B', span: 1 }, { texte: 'YITAMBE', span: 1 }, { texte: '130 000', span: 1 }, { texte: '2 340 000', span: 1 }],
+  [{ texte: 'TOTAL RESTE À PAYER', span: 3 }, { texte: '4 443 000', span: 1 }]
+];
+
+var nbCols = lignes.reduce(function (m, l) { return Math.max(m, l.reduce(function (s, c) { return s + c.span; }, 0)); }, 0);
+log('nbCols=' + nbCols);
+
+var rows = lignes.map(function (ligne) {
+  var cells = ligne.map(function (c) {
+    var opts = { children: [new docx.Paragraph({ text: c.texte })] };
+    if (c.span > 1) opts.columnSpan = c.span;
+    return new docx.TableCell(opts);
+  });
+  var total = ligne.reduce(function (s, c) { return s + c.span; }, 0);
+  for (var k = total; k < nbCols; k++) cells.push(new docx.TableCell({ children: [new docx.Paragraph({ text: '' })] }));
+  return new docx.TableRow({ children: cells });
+});
+
+var largeurCol = Math.floor(9360 / nbCols);
+var tableOpts = { rows: rows, columnWidths: new Array(nbCols).fill(largeurCol) };
+if (docx.WidthType && docx.WidthType.PERCENTAGE) tableOpts.width = { size: 100, type: docx.WidthType.PERCENTAGE };
+
+var doc = new docx.Document({ sections: [{ children: [
+  new docx.Paragraph({ text: 'Rapport test', heading: docx.HeadingLevel.HEADING_1 }),
+  new docx.Table(tableOpts)
+] }] });
+
+docx.Packer.toBlob(doc).then(function (blob) {
+  log('blob size=' + blob.size + ' type=' + blob.type);
+  return blob.arrayBuffer();
+}).then(function (ab) {
+  var u = new Uint8Array(ab).slice(0, 4);
+  var hex = Array.from(u).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+  log('4 premiers octets: ' + hex + ' (504b0304 attendu)');
+  window.__resultat = hex;
+}).catch(function (e) {
+  log('ERREUR: ' + e.message);
+  window.__resultat = 'ERR:' + e.message;
+});
+</script>
+</body></html>
