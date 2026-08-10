@@ -565,21 +565,57 @@ window.IG.rapports = (function() {
         new docx.Paragraph({ text: '' })
       ];
 
-      Array.prototype.forEach.call(docHtml.body.querySelectorAll('table'), function(tbl) {
-        var rows = [];
+      // Ne garder que les tableaux de premier niveau : un tableau imbriqué
+      // serait sinon exporté deux fois (et son contenu dupliqué).
+      var tables = Array.prototype.filter.call(docHtml.body.querySelectorAll('table'), function(tbl) {
+        return !(tbl.parentElement && tbl.parentElement.closest('table'));
+      });
+
+      tables.forEach(function(tbl) {
+        // 1re passe : extraire le texte et les colspan, ligne par ligne
+        var brut = [];
         Array.prototype.forEach.call(tbl.querySelectorAll('tr'), function(tr) {
-          var cells = [];
-          Array.prototype.forEach.call(tr.querySelectorAll('th,td'), function(td) {
-            cells.push(new docx.TableCell({
-              children: [new docx.Paragraph({ text: (td.textContent || '').replace(/\s+/g, ' ').trim() })]
-            }));
+          var ligne = [];
+          Array.prototype.forEach.call(tr.children, function(td) {
+            if (td.tagName !== 'TD' && td.tagName !== 'TH') return;
+            ligne.push({
+              texte: (td.textContent || '').replace(/\s+/g, ' ').trim(),
+              span:  Math.max(1, parseInt(td.getAttribute('colspan')) || 1)
+            });
           });
-          if (cells.length) rows.push(new docx.TableRow({ children: cells }));
+          if (ligne.length) brut.push(ligne);
         });
-        if (rows.length) {
-          children.push(new docx.Table({ rows: rows, width: { size: 100, type: docx.WidthType.PERCENTAGE } }));
-          children.push(new docx.Paragraph({ text: '' }));
+        if (!brut.length) return;
+
+        // Word refuse une grille irrégulière : toutes les lignes doivent
+        // totaliser le même nombre de colonnes.
+        var nbCols = brut.reduce(function(max, ligne) {
+          var total = ligne.reduce(function(s, c) { return s + c.span; }, 0);
+          return Math.max(max, total);
+        }, 0);
+        if (!nbCols) return;
+
+        var rows = brut.map(function(ligne) {
+          var cells = ligne.map(function(c) {
+            var opts = { children: [new docx.Paragraph({ text: c.texte })] };
+            if (c.span > 1) opts.columnSpan = c.span;
+            return new docx.TableCell(opts);
+          });
+          // Compléter la ligne si elle est plus courte que la grille
+          var total = ligne.reduce(function(s, c) { return s + c.span; }, 0);
+          for (var k = total; k < nbCols; k++) {
+            cells.push(new docx.TableCell({ children: [new docx.Paragraph({ text: '' })] }));
+          }
+          return new docx.TableRow({ children: cells });
+        });
+
+        var largeurCol = Math.floor(9360 / nbCols); // largeur page utile en twips
+        var tableOpts = { rows: rows, columnWidths: new Array(nbCols).fill(largeurCol) };
+        if (docx.WidthType && docx.WidthType.PERCENTAGE) {
+          tableOpts.width = { size: 100, type: docx.WidthType.PERCENTAGE };
         }
+        children.push(new docx.Table(tableOpts));
+        children.push(new docx.Paragraph({ text: '' }));
       });
 
       docx.Packer.toBlob(new docx.Document({ sections: [{ children: children }] })).then(function(blob) {
