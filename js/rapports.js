@@ -464,12 +464,20 @@ window.IG.rapports = (function() {
         return;
       }
       var filtre = (modal.box.querySelector('#rapport-filtre') || {}).value || '';
-      _lastHtml = genererRapportMensuelHTML(immId, debut, fin, imm, loc, pay, filtre);
-      modal.box.querySelector('#rapport-contenu').innerHTML = _lastHtml;
-      modal.box.querySelector('#btn-imprimer-rapport').style.display = 'inline-block';
-      modal.box.querySelector('#btn-word-rapport').style.display = 'inline-block';
-      var immSel = imm.filter(function(i) { return i.id == immId; })[0] || {};
-      modal.box.querySelector('#btn-wa-rapport').style.display = immSel.tel_proprio ? 'inline-block' : 'none';
+      try {
+        _lastHtml = genererRapportMensuelHTML(immId, debut, fin, imm, loc, pay, filtre);
+        modal.box.querySelector('#rapport-contenu').innerHTML = _lastHtml;
+        modal.box.querySelector('#btn-imprimer-rapport').style.display = 'inline-block';
+        modal.box.querySelector('#btn-word-rapport').style.display = 'inline-block';
+        var immSel = imm.filter(function(i) { return i.id == immId; })[0] || {};
+        modal.box.querySelector('#btn-wa-rapport').style.display = immSel.tel_proprio ? 'inline-block' : 'none';
+      } catch(e) {
+        // Ne jamais échouer en silence : afficher l'erreur dans le modal
+        console.error('Rapport mensuel:', e);
+        modal.box.querySelector('#rapport-contenu').innerHTML =
+          '<p style="padding:20px;text-align:center;color:var(--red)">' + t('Erreur lors de la génération du rapport') + ' : ' + esc(e.message) + '</p>';
+        window.IG.utils.showToast(t('Erreur rapport') + ' : ' + e.message, 'red');
+      }
     }
 
     function _setPeriode(debut, fin) {
