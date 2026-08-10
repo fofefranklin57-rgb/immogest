@@ -415,7 +415,7 @@ window.IG.rapports = (function() {
       '<div id="rapport-contenu"></div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">' +
       '<button data-modal-close style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);cursor:pointer;font-size:13px">' + t('Fermer') + '</button>' +
-      '<button id="btn-word-rapport" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);cursor:pointer;font-size:13px;display:none">📄 Word</button>' +
+      '<button id="btn-word-rapport" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);cursor:pointer;font-size:13px;display:none">📄 ' + t('Télécharger') + ' DOCX</button>' +
       '<button id="btn-imprimer-rapport" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);cursor:pointer;font-size:13px;display:none">🖨️ ' + t('Imprimer') + '</button>' +
       '<button id="btn-wa-rapport" style="padding:8px 16px;border-radius:8px;border:none;background:#25D366;color:#fff;cursor:pointer;font-size:13px;font-weight:600;display:none">📱 ' + t('Envoyer au bailleur') + '</button>' +
       '</div>';
@@ -467,7 +467,11 @@ window.IG.rapports = (function() {
 
     modal.box.querySelector('#btn-word-rapport').addEventListener('click', function() {
       if (!_lastHtml) generer();
-      exporterDocx(_lastHtml);
+      var immSelW = imm.filter(function(i) { return i.id == modal.box.querySelector('#rapport-imm').value; })[0] || {};
+      var session = window.IG.auth ? window.IG.auth.getSession() : {};
+      var titreDoc = (session.nomCabinet || 'ImmoGest') + ' — ' + t('Rapport mensuel') +
+        (immSelW.nom_immeuble || immSelW.nom ? ' — ' + (immSelW.nom_immeuble || immSelW.nom) : '');
+      exporterRapportMensuelDocx(_lastHtml, titreDoc);
     });
 
     modal.box.querySelector('#btn-wa-rapport').addEventListener('click', function() {
@@ -491,14 +495,69 @@ window.IG.rapports = (function() {
     return { blob: blob, filename: 'rapport-immogest-' + Date.now() + '.doc' };
   }
 
+  // Téléchargement fiable : certains navigateurs (mobile notamment)
+  // ignorent un link.click() si le lien n'est pas attaché au document.
+  function _telechargerBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(function() {
+      URL.revokeObjectURL(url);
+      if (link.parentNode) link.parentNode.removeChild(link);
+    }, 2000);
+  }
+
+  // Vrai fichier .docx à partir du rapport affiché (réutilise la
+  // bibliothèque docx déjà chargée pour le rapport annuel). On relit
+  // les tableaux du HTML généré : le DOCX reflète exactement l'écran.
+  function exporterRapportMensuelDocx(htmlContent, titreDoc) {
+    if (typeof docx === 'undefined') { exporterDocx(htmlContent); return; }
+    try {
+      var session = window.IG.auth ? window.IG.auth.getSession() : {};
+      var docHtml = new DOMParser().parseFromString(htmlContent, 'text/html');
+      var children = [
+        new docx.Paragraph({ text: titreDoc || ((session.nomCabinet || 'ImmoGest') + ' — ' + t('Rapport mensuel')), heading: docx.HeadingLevel.HEADING_1 }),
+        new docx.Paragraph({ text: t('Généré le') + ' ' + new Date().toLocaleDateString('fr-FR') }),
+        new docx.Paragraph({ text: '' })
+      ];
+
+      Array.prototype.forEach.call(docHtml.body.querySelectorAll('table'), function(tbl) {
+        var rows = [];
+        Array.prototype.forEach.call(tbl.querySelectorAll('tr'), function(tr) {
+          var cells = [];
+          Array.prototype.forEach.call(tr.querySelectorAll('th,td'), function(td) {
+            cells.push(new docx.TableCell({
+              children: [new docx.Paragraph({ text: (td.textContent || '').replace(/\s+/g, ' ').trim() })]
+            }));
+          });
+          if (cells.length) rows.push(new docx.TableRow({ children: cells }));
+        });
+        if (rows.length) {
+          children.push(new docx.Table({ rows: rows, width: { size: 100, type: docx.WidthType.PERCENTAGE } }));
+          children.push(new docx.Paragraph({ text: '' }));
+        }
+      });
+
+      docx.Packer.toBlob(new docx.Document({ sections: [{ children: children }] })).then(function(blob) {
+        _telechargerBlob(blob, 'rapport-immogest-' + Date.now() + '.docx');
+        window.IG.utils.showToast(t('Rapport DOCX téléchargé') + ' ✓', 'green');
+      }).catch(function(e) {
+        window.IG.utils.showToast(t('Erreur DOCX') + ': ' + e.message, 'red');
+      });
+    } catch(e) {
+      window.IG.utils.showToast(t('Erreur DOCX') + ': ' + e.message, 'red');
+    }
+  }
+
   function exporterDocx(htmlContent) {
     try {
       var f = _creerBlobDocx(htmlContent);
-      var link = document.createElement('a');
-      link.href = URL.createObjectURL(f.blob);
-      link.download = f.filename;
-      link.click();
-      setTimeout(function() { URL.revokeObjectURL(link.href); }, 1500);
+      _telechargerBlob(f.blob, f.filename);
+      window.IG.utils.showToast(t('Rapport téléchargé') + ' ✓', 'green');
     } catch(e) {
       window.IG.utils.showToast(t('Erreur export DOCX') + ': ' + e.message, 'red');
     }
