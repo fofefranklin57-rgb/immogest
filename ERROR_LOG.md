@@ -693,3 +693,51 @@ doublon si deux sections étaient enregistrées en concurrence AVANT que la 1èr
 - **Vérifié** : pile à jour → « À jour » ; avance 3 mois → « À jour jusqu'en
   octobre » ; avance débordant sur 2027 → « À jour jusqu'en février 2027 » ;
   avance avec trou → s'arrête au trou ; débiteur → inchangé.
+
+---
+
+## 2026-08-11 — Onglet Encaissements refondu par locataire + verrou comptable
+
+### `js/app.js` — la liste plate rendait la vérification impossible
+
+- **Symptôme signalé** : « je constate des erreurs sur l'état d'un locataire sur sa
+  fiche et sur son rapport », le plus souvent dues à une mauvaise comptabilisation
+  des loyers, sans moyen simple de les retrouver ni de les corriger.
+- **Cause d'usage** : l'onglet listait les paiements à plat, filtrés par mois/année.
+  Un versement couvrant plusieurs mois est stocké en une ligne PAR MOIS : il
+  apparaissait donc éclaté sur plusieurs mois différents, invisible depuis le mois
+  où il avait réellement été encaissé. Impossible de voir d'un coup ce qu'un
+  locataire a versé.
+- **Solution** : une fiche dépliable par locataire. En-tête = local, nom, immeuble,
+  nombre de versements, total encaissé, montant dû. Dépliée = un récapitulatif de
+  TOUS ses versements (date, montant, type, mois couverts, mode) avec suppression.
+  Filtres : immeuble, recherche, « uniquement ceux qui doivent ». Les débiteurs
+  remontent en tête de liste.
+- **`grouperVersements()`** recompose les lignes DB éclatées en versements réels ;
+  **`annulerLot()`** supprime le groupe entier — supprimer ligne par ligne laissait
+  un demi-paiement en base et faussait durablement la fiche.
+
+### `js/paiements.js`, `js/relances.js` — un locataire sans AUCUN versement passait « à jour »
+
+- **Erreur** : `montantDu()` et `calculerRetard()` renvoyaient les seuls arriérés
+  saisis à la main (souvent 0) dès qu'il n'y avait aucun paiement enregistré —
+  `if (!paiements.length) return base;`. Un locataire entré en janvier et n'ayant
+  jamais payé était donc affiché « À jour / 0 FCFA », alors que sa fiche de suivi
+  montrait bien 8 mois impayés. C'est une cause directe des incohérences
+  fiche ↔ rapport signalées.
+- **Solution** : le raccourci ne s'applique plus que si la date d'entrée est
+  également absente (là, la fiche est réellement incalculable). Sinon on laisse la
+  fiche compter les mois échus.
+- **Vérifié** : 8 mois sans versement → 8 mois dus / 1 040 000 FCFA ; locataire à
+  jour → 0 ; locataire libre → 0 ; sans date d'entrée → arriérés manuels.
+
+### `workers/notif-cron.js` — le verrou UI était contournable
+
+- **Erreur** : masquer le bouton de suppression ne protège rien — le rôle `agent`
+  avait `paiements` dans `WRITE_ALLOWED` et pouvait donc supprimer ou modifier un
+  versement via l'API, et `coordinateur` passait par `FULL_ACCESS_ROLES`.
+- **Solution** : `delete` et `update` sur la table `paiements` sont refusés (403)
+  à tout rôle autre que `admin` et `comptable`, avant tout autre contrôle.
+- **⚠️ À déployer** : ce contrôle n'est actif qu'après `wrangler deploy` du Worker.
+- **À retenir** : une restriction qui n'existe que dans le HTML n'est pas une
+  restriction. Toute règle d'accès doit être doublée côté serveur.

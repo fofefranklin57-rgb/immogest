@@ -14,7 +14,11 @@ window.IG.relances = (function() {
 
   // ── Calculer retard en mois ───────────────────────────────────
   function _ficheDepuisPremierPaiement(loc, paiements) {
-    if (!paiements || !paiements.length) return [];
+    paiements = paiements || [];
+    // Sans versement ET sans date d'entrée, il n'y a aucun point de départ :
+    // la fiche n'est pas calculable. Avec une date d'entrée, elle l'est —
+    // tous les mois écoulés sont simplement impayés.
+    if (!paiements.length && !loc.entree) return [];
     // Utiliser la vraie date d'entrée si connue (cohérent avec la fiche officielle) ;
     // ne recourir à la date du 1er paiement que si l'entrée est vraiment absente.
     var locProxy = loc;
@@ -31,8 +35,10 @@ window.IG.relances = (function() {
   function calculerRetard(loc, paiements) {
     if (!loc.entree || loc.statut === 'libre') return 0;
     var base = parseInt(loc.mois_arrieres) || 0;
-    if (!paiements || paiements.length === 0) return base;
-    var fiche = _ficheDepuisPremierPaiement(loc, paiements);
+    // Sans aucun versement, tous les mois écoulés depuis l'entrée sont dus :
+    // on laisse la fiche les compter au lieu de renvoyer les seuls arriérés
+    // saisis à la main, qui déclaraient le locataire à jour.
+    var fiche = _ficheDepuisPremierPaiement(loc, paiements || []);
     var payes = fiche.filter(function(l) { return !l.horsBail && (l.statut === 'Payé' || l.statut === 'Payé (avance)'); }).length;
     var impayesNouveaux = fiche.filter(function(l) { return !l.futur && !l.horsBail && l.statut !== 'Payé'; }).length;
     return Math.max(0, base - payes) + impayesNouveaux;

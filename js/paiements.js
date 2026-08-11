@@ -45,6 +45,53 @@ window.IG.paiements = (function() {
     toast(t('Paiement supprimé'), 'orange');
   }
 
+  // Un versement couvrant plusieurs mois est stocké en une ligne par mois.
+  // Le supprimer ligne par ligne laisserait un demi-paiement en base et
+  // fausserait la fiche : on supprime toujours le groupe entier.
+  async function annulerLot(ids) {
+    if (!ids || !ids.length) return;
+    for (var i = 0; i < ids.length; i++) {
+      await window.IG.db.remove('paiements', ids[i]);
+    }
+    _cache = _cache.filter(function(p) { return ids.indexOf(p.id) < 0; });
+    _invaliderFicheCache();
+    toast(ids.length > 1
+      ? t('Versement supprimé') + ' (' + ids.length + ' ' + t('mois') + ')'
+      : t('Paiement supprimé'), 'orange');
+  }
+
+  // ── Regroupement des versements réels ─────────────────────────
+  // La DB éclate un paiement multi-mois en une ligne par mois (note
+  // « [1/3] »…). Pour l'utilisateur, c'est UN versement : on recompose
+  // les groupes par locataire + date + type afin que l'écran reflète ce
+  // qui s'est réellement passé à la caisse.
+  function grouperVersements(paiements) {
+    var groupes = [], index = {};
+    (paiements || []).slice()
+      .sort(function(a, b) { return new Date(b.date_paiement) - new Date(a.date_paiement); })
+      .forEach(function(p) {
+        var estSplit = /\[\d+\/\d+\]/.test(p.note || '');
+        var cle = p.locataire_id + '|' + p.date_paiement + '|' + (p.type || 'loyer') +
+                  (estSplit ? '' : '|' + p.id);
+        if (!index.hasOwnProperty(cle)) {
+          index[cle] = groupes.length;
+          groupes.push({
+            ids: [], montant: 0, mois: [], date: p.date_paiement,
+            type: p.type || 'loyer', mode: p.mode_paiement || 'espèces',
+            note: estSplit ? '' : (p.note || ''), locataire_id: p.locataire_id
+          });
+        }
+        var g = groupes[index[cle]];
+        g.ids.push(p.id);
+        g.montant += parseFloat(p.montant) || 0;
+        if (p.mois && p.annee) g.mois.push({ mois: parseInt(p.mois), annee: parseInt(p.annee) });
+      });
+    groupes.forEach(function(g) {
+      g.mois.sort(function(a, b) { return (a.annee * 100 + a.mois) - (b.annee * 100 + b.mois); });
+    });
+    return groupes;
+  }
+
   // ── Helpers fiche ────────────────────────────────────────────
   function _formatPeriode(mois, annee) {
     var debut = new Date(annee, mois - 1, 1);
@@ -186,18 +233,22 @@ window.IG.paiements = (function() {
     if (!loc || loc.statut === 'libre') return 0;
     var loyer = parseFloat(loc.loyer) || 0;
     var baseArrieres = parseFloat(loc.arrieres) || 0;
-    if (!paiementsLoc || !paiementsLoc.length) return baseArrieres;
+    var versements = paiementsLoc || [];
+    // Un locataire sans AUCUN versement doit tous les mois écoulés depuis son
+    // entrée. Renvoyer les seuls arriérés saisis à la main le déclarait « à
+    // jour » alors que sa fiche de suivi affichait bien des mois impayés.
+    if (!versements.length && !loc.entree) return baseArrieres;
     // Utiliser la vraie date d'entrée si connue (cohérent avec la fiche officielle) ;
     // ne recourir à la date du 1er paiement que si l'entrée est vraiment absente.
     var locProxy = loc;
     if (!loc.entree) {
-      var sorted = paiementsLoc.slice().sort(function(a, b) { return new Date(a.date_paiement) - new Date(b.date_paiement); });
+      var sorted = versements.slice().sort(function(a, b) { return new Date(a.date_paiement) - new Date(b.date_paiement); });
       var first = new Date(sorted[0].date_paiement);
       locProxy = Object.assign({}, loc, {
         entree: first.getFullYear() + '-' + String(first.getMonth() + 1).padStart(2, '0') + '-01'
       });
     }
-    var fiche = calculerFiche(locProxy, paiementsLoc);
+    var fiche = calculerFiche(locProxy, versements);
     var payes = fiche.filter(function(l) { return !l.horsBail && (l.statut === 'Payé' || l.statut === 'Payé (avance)'); }).length;
     var duNouv = fiche.filter(function(l) { return !l.futur; }).reduce(function(s, l) { return s + (l.reste || 0); }, 0);
     return Math.max(0, baseArrieres - payes * loyer) + duNouv;
@@ -850,7 +901,7 @@ window.IG.paiements = (function() {
   }
 
   return {
-    charger, getCache, getByLocataire, enregistrer, annuler,
+    charger, getCache, getByLocataire, enregistrer, annuler, annulerLot, grouperVersements,
     calculerFiche, montantDu, renderFiche, afficherFormulaire, afficherFormulaireFiche,
     imprimerFiche, imprimerRecu, calculerStats, ajouterNote
   };

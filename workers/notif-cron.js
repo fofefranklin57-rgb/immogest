@@ -987,6 +987,12 @@ ${_footer()}</body></html>`;
 
         } else if (action === 'delete') {
           if (WRITE_ALLOWED[payload.role] && !WRITE_ALLOWED[payload.role].includes(table)) return json({ error: 'Action non autorisée' }, 403);
+          // Un versement déjà enregistré engage la comptabilité du cabinet :
+          // seuls l'administrateur et le comptable peuvent le supprimer.
+          // Cacher le bouton côté client ne suffit pas, l'API doit refuser.
+          if (table === 'paiements' && !['admin','comptable'].includes(payload.role)) {
+            return json({ error: 'Suppression d\'un versement réservée à l\'administrateur et au comptable' }, 403);
+          }
           if (!FULL_ACCESS_ROLES.includes(payload.role)) {
             const existing = await existingRowsForFilters(table, filters);
             if (!existing.length || !(await inAssignedScope(table, existing))) return json({ error: 'Action hors périmètre' }, 403);
@@ -998,6 +1004,11 @@ ${_footer()}</body></html>`;
 
         } else if (action === 'update' || action === 'patch') {
           if (WRITE_ALLOWED[payload.role] && !WRITE_ALLOWED[payload.role].includes(table)) return json({ error: 'Action non autorisée' }, 403);
+          // Modifier un versement déjà saisi revient à réécrire l'historique
+          // comptable : même restriction que la suppression.
+          if (table === 'paiements' && !['admin','comptable'].includes(payload.role)) {
+            return json({ error: 'Modification d\'un versement réservée à l\'administrateur et au comptable' }, 403);
+          }
           if (!FULL_ACCESS_ROLES.includes(payload.role)) {
             const existing = await existingRowsForFilters(table, filters);
             if (!existing.length || !(await inAssignedScope(table, existing))) return json({ error: 'Action hors périmètre' }, 403);

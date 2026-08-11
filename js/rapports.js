@@ -231,11 +231,9 @@ window.IG.rapports = (function() {
       }).sort(function(a, b) { return new Date(a.date_paiement) - new Date(b.date_paiement); });
 
       var dernierPay = lPaysAll.length ? lPaysAll[lPaysAll.length - 1] : null;
-      var horsPeriode = dernierPay && (new Date(dernierPay.date_paiement) < debut || new Date(dernierPay.date_paiement) > fin);
       var dernierStr = dernierPay
         ? '<strong>' + _fmtD(dernierPay.date_paiement) + '</strong>' +
-          '<br><span style="color:' + C_GRIS + '">' + fmt(dernierPay.montant) + '</span>' +
-          (horsPeriode ? '<br><span style="font-size:8pt;color:#999">(' + t('hors période') + ')</span>' : '')
+          '<br><span style="color:' + C_GRIS + '">' + fmt(dernierPay.montant) + '</span>'
         : '—';
       // Montant dû et mois dus arrêtés à la clôture, via l'allocation
       // officielle de la fiche de suivi (consommation chronologique des

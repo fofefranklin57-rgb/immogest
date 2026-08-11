@@ -1224,9 +1224,6 @@ window.IG.app = (function() {
     var content = document.getElementById('page-content');
     if (!content) return;
     _syncCaches();
-    var now = new Date();
-    var mois = now.getMonth() + 1;
-    var annee = now.getFullYear();
 
     var immOptions = '<option value="">Tous les immeubles</option>' +
       _data.immeubles.map(function(i) {
@@ -1244,34 +1241,19 @@ window.IG.app = (function() {
       '<button onclick="window.IG.app._ouvrirSelLocataire()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--green);color:#fff;cursor:pointer;font-size:13px;font-weight:600">+ Nouveau</button>' +
       '</div></div>' +
       '<div id="pay-tab-body" style="border:1px solid var(--border);border-radius:0 8px 8px 8px;padding:16px;background:var(--bg2)">' +
-      // Onglet Encaissements
+      // Onglet Encaissements — un récapitulatif par locataire
       '<div id="pay-enc-filters" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">' +
-      '<select id="pay-mois" onchange="window.IG.app._refreshPaiements()" style="padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
-      Array.from({length:12}, function(_,i) {
-        var m = i+1;
-        return '<option value="' + m + '"' + (m === mois ? ' selected' : '') + '>' + window.IG.utils.nomMois(m) + '</option>';
-      }).join('') +
-      '</select>' +
-      '<input id="pay-annee" type="number" value="' + annee + '" min="2020" max="2035" onchange="window.IG.app._refreshPaiements()" ' +
-        'style="width:80px;padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
       '<select id="pay-imm" onchange="window.IG.app._refreshPaiements()" style="padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)">' +
       immOptions + '</select>' +
-      '<input id="pay-search" type="text" placeholder="' + t('Rechercher...') + '" oninput="window.IG.app._refreshPaiements()" ' +
-        'style="padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);width:160px">' +
+      '<input id="pay-search" type="text" placeholder="' + t('Rechercher un locataire...') + '" oninput="window.IG.app._refreshPaiements()" ' +
+        'style="padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);width:200px">' +
+      '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer">' +
+      '<input id="pay-only-du" type="checkbox" onchange="window.IG.app._refreshPaiements()" style="cursor:pointer">' +
+      t('Uniquement ceux qui doivent') + '</label>' +
       '</div>' +
       '<div id="pay-total-bar" style="margin-bottom:12px"></div>' +
       '<div id="ig-ad-paiements" style="margin-bottom:16px;text-align:center"></div>' +
-      '<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table id="pay-table" style="width:100%;border-collapse:collapse;font-size:13px">' +
-      '<thead><tr style="background:var(--bg3);font-size:11px;text-transform:uppercase;color:var(--text3)">' +
-      '<th style="padding:10px 14px;text-align:left">' + t('Locataire') + '</th>' +
-      '<th style="padding:10px 14px;text-align:left">Immeuble</th>' +
-      '<th style="padding:10px 14px;text-align:left">Local</th>' +
-      '<th style="padding:10px 14px;text-align:right">' + t('Montant') + '</th>' +
-      '<th style="padding:10px 14px;text-align:left">' + t('Mode') + '</th>' +
-      '<th style="padding:10px 14px;text-align:left">' + t('Date') + '</th>' +
-      '<th style="padding:10px 14px;text-align:left">Type</th>' +
-      '<th style="padding:10px 14px;text-align:center">✕</th>' +
-      '</tr></thead><tbody id="pay-tbody"></tbody></table></div></div>' +
+      '<div id="pay-locs"></div>' +
       '</div></div>';
 
     content.innerHTML = html;
@@ -1460,72 +1442,172 @@ window.IG.app = (function() {
     });
   }
 
-  function _refreshPaiements() {
-    var mois   = parseInt((document.getElementById('pay-mois')   || {}).value  || (new Date().getMonth()+1));
-    var annee  = parseInt((document.getElementById('pay-annee')  || {}).value  || new Date().getFullYear());
-    var immId  = (document.getElementById('pay-imm')    || {}).value  || '';
-    var q      = ((document.getElementById('pay-search') || {}).value || '').toLowerCase();
-    var fmt    = window.IG.utils.formatMontant;
+  // Mémorise quelles fiches locataires sont dépliées, pour que le rendu
+  // survive à un rafraîchissement (après une suppression notamment).
+  var _payOuverts = {};
 
-    var liste = _data.paiements.filter(function(p) {
-      if (parseInt(p.mois) !== mois || parseInt(p.annee) !== annee) return false;
-      if (immId) {
-        var loc = _data.locataires.find(function(l) { return l.id == p.locataire_id; });
-        if (!loc || String(loc.immeuble_id) !== String(immId)) return false;
-      }
+  function _togglePayLoc(locId) {
+    _payOuverts[locId] = !_payOuverts[locId];
+    _refreshPaiements();
+  }
+
+  function _refreshPaiements() {
+    var immId   = (document.getElementById('pay-imm')     || {}).value || '';
+    var q       = ((document.getElementById('pay-search') || {}).value || '').toLowerCase();
+    var onlyDu  = !!(document.getElementById('pay-only-du') || {}).checked;
+    var fmt     = window.IG.utils.formatMontant;
+    var peutSupprimer = window.IG.perms ? window.IG.perms.canDo('paiements_edit') : false;
+
+    var locs = _data.locataires.filter(function(l) {
+      if (l.statut === 'libre') return false;
+      if (immId && String(l.immeuble_id) !== String(immId)) return false;
       if (q) {
-        var loc2 = _data.locataires.find(function(l) { return l.id == p.locataire_id; });
-        var nom = loc2 ? (loc2.nom || '').toLowerCase() : '';
-        if (!nom.includes(q)) return false;
+        var champs = ((l.nom || '') + ' ' + (l.appt || '') + ' ' + (l.telephone || '')).toLowerCase();
+        if (champs.indexOf(q) < 0) return false;
       }
       return true;
-    }).slice().reverse();
+    });
 
-    var total = liste.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
+    // Situation de chaque locataire : total versé, dette, versements groupés
+    var fiches = locs.map(function(loc) {
+      var pays = _data.paiements.filter(function(p) { return p.locataire_id == loc.id; });
+      var groupes = window.IG.paiements ? window.IG.paiements.grouperVersements(pays) : [];
+      return {
+        loc: loc,
+        imm: window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null,
+        groupes: groupes,
+        totalVerse: groupes.reduce(function(s, g) { return s + g.montant; }, 0),
+        du: window.IG.paiements ? window.IG.paiements.montantDu(loc, pays) : 0
+      };
+    }).filter(function(f) { return onlyDu ? f.du > 0 : true; });
+
+    fiches.sort(function(a, b) {
+      if ((b.du > 0) !== (a.du > 0)) return (b.du > 0) ? 1 : -1; // les débiteurs d'abord
+      return String(a.loc.appt || '').localeCompare(String(b.loc.appt || ''), 'fr', { numeric: true });
+    });
+
+    var totalVerseTous = fiches.reduce(function(s, f) { return s + f.totalVerse; }, 0);
+    var totalDuTous    = fiches.reduce(function(s, f) { return s + f.du; }, 0);
 
     var totalBar = document.getElementById('pay-total-bar');
     if (totalBar) {
-      totalBar.innerHTML = '<div class="card" style="padding:12px 18px;display:flex;justify-content:space-between;align-items:center">' +
-        '<span style="font-size:13px;color:var(--text2)">' + liste.length + ' paiement(s) — ' + window.IG.utils.nomMois(mois) + ' ' + annee + '</span>' +
-        '<span style="font-size:18px;font-weight:700;color:var(--green)">' + fmt(total) + '</span>' +
-        '</div>';
+      totalBar.innerHTML = '<div class="card" style="padding:12px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">' +
+        '<span style="font-size:13px;color:var(--text2)">' + fiches.length + ' ' + t('locataire(s)') + '</span>' +
+        '<span style="display:flex;gap:18px;align-items:center">' +
+        '<span style="font-size:12px;color:var(--text3)">' + t('Total encaissé') + ' : <strong style="font-size:15px;color:var(--green)">' + fmt(totalVerseTous) + '</strong></span>' +
+        '<span style="font-size:12px;color:var(--text3)">' + t('Total dû') + ' : <strong style="font-size:15px;color:var(--red)">' + fmt(totalDuTous) + '</strong></span>' +
+        '</span></div>';
     }
 
-    var tbody = document.getElementById('pay-tbody');
-    if (!tbody) return;
-    if (!liste.length) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text3)">Aucun paiement pour cette période</td></tr>';
+    var zone = document.getElementById('pay-locs');
+    if (!zone) return;
+    if (!fiches.length) {
+      zone.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">' + t('Aucun locataire') + '</div>';
       return;
     }
-    tbody.innerHTML = liste.map(function(p) {
-      var loc = _data.locataires.find(function(l) { return l.id == p.locataire_id; });
-      var imm = loc ? (window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null) : null;
-      return '<tr style="border-bottom:1px solid var(--border2)">' +
-        '<td style="padding:10px 14px;font-weight:600">' + esc(loc ? loc.nom : '?') + '</td>' +
-        '<td style="padding:10px 14px;color:var(--text3);font-size:12px">' + esc(imm ? (imm.nom_immeuble || imm.nom) : '—') + '</td>' +
-        '<td style="padding:10px 14px;color:var(--text3);font-size:12px">' + esc(loc ? (loc.appt || '—') : '—') + '</td>' +
-        '<td style="padding:10px 14px;text-align:right;font-weight:700;color:var(--green)">' + fmt(p.montant) + '</td>' +
-        '<td style="padding:10px 14px;color:var(--text3)">' + esc(p.mode_paiement || 'espèces') + '</td>' +
-        '<td style="padding:10px 14px;color:var(--text3)">' + window.IG.utils.formatDate(p.date_paiement) + '</td>' +
-        '<td style="padding:10px 14px;color:var(--text3);font-size:11px">' + esc(p.type || 'loyer') + '</td>' +
-        '<td style="padding:10px 14px;text-align:center">' +
-        '<button onclick="window.IG.app._confirmerSupprPaiement(' + p.id + ',\'' + esc(loc ? loc.nom : '?') + '\',' + (parseFloat(p.montant)||0) + ')" ' +
-          'style="border:none;background:none;color:var(--red);cursor:pointer;font-size:18px;font-weight:700">×</button></td></tr>';
+
+    zone.innerHTML = fiches.map(function(f) {
+      var loc = f.loc;
+      var ouvert = !!_payOuverts[loc.id];
+      var couleurDu = f.du > 0 ? 'var(--red)' : 'var(--green)';
+
+      var entete = '<div onclick="window.IG.app._togglePayLoc(' + loc.id + ')" ' +
+        'style="display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;flex-wrap:wrap">' +
+        '<span style="font-size:12px;font-weight:700;color:var(--accent);min-width:38px">' + esc(loc.appt || '—') + '</span>' +
+        '<span style="flex:1;min-width:150px">' +
+          '<span style="font-size:14px;font-weight:600;display:block">' + esc(loc.nom) + '</span>' +
+          '<span style="font-size:11px;color:var(--text3)">' + esc(f.imm ? (f.imm.nom_immeuble || f.imm.nom) : '—') +
+          ' · ' + f.groupes.length + ' ' + t('versement(s)') + '</span>' +
+        '</span>' +
+        '<span style="text-align:right;min-width:110px">' +
+          '<span style="font-size:10px;color:var(--text3);text-transform:uppercase;display:block">' + t('Total encaissé') + '</span>' +
+          '<strong style="font-size:13px;color:var(--green)">' + fmt(f.totalVerse) + '</strong>' +
+        '</span>' +
+        '<span style="text-align:right;min-width:110px">' +
+          '<span style="font-size:10px;color:var(--text3);text-transform:uppercase;display:block">' + t('Montant dû') + '</span>' +
+          '<strong style="font-size:13px;color:' + couleurDu + '">' + (f.du > 0 ? fmt(f.du) : t('À jour')) + '</strong>' +
+        '</span>' +
+        '<span style="color:var(--text3);font-size:12px">' + (ouvert ? '▲' : '▼') + '</span>' +
+        '</div>';
+
+      if (!ouvert) {
+        return '<div class="card" style="padding:0;margin-bottom:8px;overflow:hidden">' + entete + '</div>';
+      }
+
+      var lignes = f.groupes.length
+        ? f.groupes.map(function(g) {
+            var couverture = '';
+            if (g.mois.length === 1) {
+              couverture = window.IG.utils.nomMois(g.mois[0].mois) + ' ' + g.mois[0].annee;
+            } else if (g.mois.length > 1) {
+              var p0 = g.mois[0], pN = g.mois[g.mois.length - 1];
+              couverture = '<strong>' + g.mois.length + ' ' + t('mois') + '</strong> : ' +
+                window.IG.utils.nomMois(p0.mois) + ' ' + p0.annee + ' → ' +
+                window.IG.utils.nomMois(pN.mois) + ' ' + pN.annee;
+            } else {
+              couverture = '<span style="color:var(--text3)">—</span>';
+            }
+            var libelle = g.type === 'caution' ? t('Caution') : g.type === 'avance' ? t('Avance') : t('Loyer');
+            var btnSuppr = peutSupprimer
+              ? '<button onclick="window.IG.app._confirmerSupprVersement(\'' + g.ids.join(',') + '\',' +
+                  JSON.stringify(esc(loc.nom)) + ',' + g.montant + ',' + g.mois.length + ')" ' +
+                  'title="' + t('Supprimer ce versement') + '" ' +
+                  'style="border:none;background:none;color:var(--red);cursor:pointer;font-size:17px;font-weight:700;padding:0 4px">×</button>'
+              : '<span title="' + t('Réservé à l\'administrateur et au comptable') + '" style="color:var(--text3);font-size:13px">🔒</span>';
+
+            return '<tr style="border-top:1px solid var(--border2)">' +
+              '<td style="padding:8px 14px;white-space:nowrap">' + window.IG.utils.formatDate(g.date) + '</td>' +
+              '<td style="padding:8px 14px;text-align:right;font-weight:700;color:var(--green);white-space:nowrap">' + fmt(g.montant) + '</td>' +
+              '<td style="padding:8px 14px;font-size:12px;color:var(--text2)">' + libelle + '</td>' +
+              '<td style="padding:8px 14px;font-size:12px;color:var(--text2)">' + couverture + '</td>' +
+              '<td style="padding:8px 14px;font-size:11px;color:var(--text3)">' + esc(g.mode) +
+                (g.note ? ' · ' + esc(g.note) : '') + '</td>' +
+              '<td style="padding:8px 14px;text-align:center">' + btnSuppr + '</td>' +
+              '</tr>';
+          }).join('')
+        : '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text3);font-style:italic">' +
+          t('Aucun versement enregistré') + '</td></tr>';
+
+      return '<div class="card" style="padding:0;margin-bottom:8px;overflow:hidden">' + entete +
+        '<div style="border-top:1px solid var(--border);background:var(--bg3);padding:0 0 6px">' +
+        '<div style="display:flex;justify-content:flex-end;padding:8px 14px">' +
+        '<button onclick="window.IG.paiements.afficherFormulaire(' + loc.id + ', function(){ window.IG.app._refreshPaiements(); })" ' +
+          'style="padding:6px 12px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:12px;font-weight:600;cursor:pointer">+ ' + t('Paiement') + '</button>' +
+        '<button onclick="window.IG.locataires.afficherFiche(' + loc.id + ')" ' +
+          'style="margin-left:6px;padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:12px;cursor:pointer">📄 ' + t('Fiche de suivi') + '</button>' +
+        '</div>' +
+        '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
+        '<thead><tr style="font-size:10px;text-transform:uppercase;color:var(--text3)">' +
+        '<th style="padding:6px 14px;text-align:left">' + t('Date') + '</th>' +
+        '<th style="padding:6px 14px;text-align:right">' + t('Montant') + '</th>' +
+        '<th style="padding:6px 14px;text-align:left">Type</th>' +
+        '<th style="padding:6px 14px;text-align:left">' + t('Mois couverts') + '</th>' +
+        '<th style="padding:6px 14px;text-align:left">' + t('Mode') + '</th>' +
+        '<th style="padding:6px 14px;text-align:center">' + (peutSupprimer ? '✕' : '🔒') + '</th>' +
+        '</tr></thead><tbody>' + lignes + '</tbody></table></div></div></div>';
     }).join('');
   }
 
-  function _confirmerSupprPaiement(id, nomLoc, montant) {
+  function _confirmerSupprVersement(idsStr, nomLoc, montant, nbMois) {
+    if (window.IG.perms && !window.IG.perms.canDo('paiements_edit')) {
+      window.IG.utils.showToast(t('Seuls l\'administrateur et le comptable peuvent supprimer un versement'), 'red');
+      return;
+    }
     var fmt = window.IG.utils.formatMontant;
+    var ids = String(idsStr).split(',');
     var overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;z-index:910;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center';
-    overlay.innerHTML = '<div style="background:var(--bg);border-radius:14px;padding:24px;max-width:360px;width:90%;text-align:center">' +
+    overlay.innerHTML = '<div style="background:var(--bg);border-radius:14px;padding:24px;max-width:380px;width:90%;text-align:center">' +
       '<div style="font-size:32px;margin-bottom:12px">⚠️</div>' +
-      '<div style="font-size:15px;font-weight:700;margin-bottom:8px">Supprimer ce paiement ?</div>' +
-      '<div style="font-size:13px;color:var(--text2);margin-bottom:20px">' + esc(nomLoc) + ' — ' + fmt(montant) + '<br>Cette action est irréversible.</div>' +
+      '<div style="font-size:15px;font-weight:700;margin-bottom:8px">' + t('Supprimer ce versement ?') + '</div>' +
+      '<div style="font-size:13px;color:var(--text2);margin-bottom:20px">' + esc(nomLoc) + ' — ' + fmt(montant) +
+        (nbMois > 1 ? '<br><strong>' + t('Ce versement couvre') + ' ' + nbMois + ' ' + t('mois') + '</strong> — ' +
+                      t('ils seront tous rouverts.') : '') +
+        '<br>' + t('Cette action est irréversible.') + '</div>' +
       '<div style="display:flex;gap:10px;justify-content:center">' +
-      '<button onclick="this.closest(\'[style*=inset]\').remove()" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;cursor:pointer">Annuler</button>' +
-      '<button onclick="var _btn=this;window.IG.paiements.annuler(' + id + ').then(async function(){_btn.closest(\'[style*=inset]\').remove();if(window.IG.app.refresh){await window.IG.app.refresh();}window.IG.app._refreshPaiements();})" ' +
-        'style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--red);color:#fff;font-size:13px;font-weight:700;cursor:pointer">Supprimer</button>' +
+      '<button onclick="this.closest(\'[style*=inset]\').remove()" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);color:var(--text);font-size:13px;cursor:pointer">' + t('Annuler') + '</button>' +
+      '<button onclick="var _btn=this;window.IG.paiements.annulerLot([' + ids.map(function(i){ return JSON.stringify(i); }).join(',') + ']).then(async function(){_btn.closest(\'[style*=inset]\').remove();if(window.IG.app.refresh){await window.IG.app.refresh();}window.IG.app._refreshPaiements();})" ' +
+        'style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--red);color:#fff;font-size:13px;font-weight:700;cursor:pointer">' + t('Supprimer') + '</button>' +
       '</div></div>';
     document.body.appendChild(overlay);
   }
@@ -3423,7 +3505,7 @@ window.IG.app = (function() {
     toggleAIChat, sendAIMessage, aiQuickAction,
     _renderDashboardBailleur,
     _refreshPaiements, _payTab, _renderCaisseJour, _exportCaisseWA,
-    _ouvrirSelLocataire, _filtrerSelLoc, _selLoc, _confirmerSupprPaiement,
+    _ouvrirSelLocataire, _filtrerSelLoc, _selLoc, _confirmerSupprVersement, _togglePayLoc,
     _restaurer, _supprimerDefinitivement, _viderCorbeille, _loadCorbeille,
     _restaurerImmeuble, _restaurerLocataire,
     _locFiltrer, _locFiltrerDebounce,
