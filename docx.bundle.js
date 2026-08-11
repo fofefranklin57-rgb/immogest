@@ -16444,7 +16444,7 @@ var __async = (__this, __arguments, generator) => {
           return n.checkSupport(t2), "string" !== t2 || i.uint8array ? "nodebuffer" === t2 ? new o(e2) : i.uint8array ? new h(n.transformTo("uint8array", e2)) : new s(n.transformTo("array", e2)) : new a(e2);
         };
       }, { "../support": 30, "../utils": 32, "./ArrayReader": 17, "./NodeBufferReader": 19, "./StringReader": 20, "./Uint8ArrayReader": 21 }], 23: [function(e, t, r) {
-        r.LOCAL_FILE_HEADER = "PK", r.CENTRAL_FILE_HEADER = "PK", r.CENTRAL_DIRECTORY_END = "PK", r.ZIP64_CENTRAL_DIRECTORY_LOCATOR = "PK\x07", r.ZIP64_CENTRAL_DIRECTORY_END = "PK", r.DATA_DESCRIPTOR = "PK\x07\b";
+        r.LOCAL_FILE_HEADER = "PK\x03\x04", r.CENTRAL_FILE_HEADER = "PK\x01\x02", r.CENTRAL_DIRECTORY_END = "PK\x05\x06", r.ZIP64_CENTRAL_DIRECTORY_LOCATOR = "PK\x06\x07", r.ZIP64_CENTRAL_DIRECTORY_END = "PK\x06\x06", r.DATA_DESCRIPTOR = "PK\x07\b";
       }, {}], 24: [function(e, t, r) {
         var n = e("./GenericWorker"), i = e("../utils");
         function s(e2) {

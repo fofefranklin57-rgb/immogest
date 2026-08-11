@@ -550,3 +550,35 @@ doublon si deux sections étaient enregistrées en concurrence AVANT que la 1èr
 - **Solution** : chaînes UI enrobées avec `t()` dans ces 6 fichiers. Les corps des messages
   WhatsApp sortants (templates envoyés aux locataires/bailleurs) laissés tels quels, hors
   périmètre de cette passe.
+
+---
+
+## 2026-08-11 — CAUSE RACINE : tous les .docx générés étaient corrompus
+
+### `docx.bundle.js` — signatures ZIP amputées dans la bibliothèque
+
+- **Erreur** : Word refusait d'ouvrir tout fichier généré par l'appli —
+  « The file is corrupt and cannot be opened » (rapport mensuel, rapport annuel,
+  contrats… tout ce qui passe par `docx.Packer`).
+- **Symptôme trompeur** : on a d'abord soupçonné le code d'export du rapport mensuel
+  (grille de tableau irrégulière, commit `be870cf`). Ce correctif était juste et
+  nécessaire, mais il ne pouvait pas résoudre ce bug-ci : le problème était en
+  dessous, dans la bibliothèque.
+- **Cause** : le fichier `docx.bundle.js` versionné dans le repo avait perdu ses
+  octets de contrôle bruts `0x01`–`0x06` (fichier binaire passé un jour dans un
+  filtre texte). Les constantes de signature ZIP de JSZip s'en trouvaient amputées :
+  `LOCAL_FILE_HEADER = "PK"` au lieu de `"PK\x03\x04"`, `CENTRAL_FILE_HEADER = "PK"`
+  au lieu de `"PK\x01\x02"`, `CENTRAL_DIRECTORY_END = "PK"` au lieu de `"PK\x05\x06"`,
+  etc. Un `.docx` est un ZIP : sans en-têtes valides, **aucun** fichier produit
+  n'était ouvrable, quel que soit son contenu.
+- **Solution** : restauration des 5 constantes de signature dans `docx.bundle.js`.
+  Vérifié dans le navigateur : le blob produit commence bien par `50 4B 03 04` et se
+  termine par `50 4B 05 06`, et l'archive se décompresse en paquet OOXML complet
+  (`[Content_Types].xml`, `_rels/.rels`, `word/document.xml`…).
+- **Effet de bord obligatoire** : `docx.bundle.js` est en cache-first dans le Service
+  Worker. `CACHE_NAME` bumpé `v40` → `v41`, sinon les utilisateurs existants gardent
+  la bibliothèque cassée.
+- **À retenir** : ne jamais faire transiter un asset binaire (bundle, police, image)
+  par un outil qui normalise le texte. En cas de « fichier corrompu » sur un format
+  ZIP (.docx, .xlsx, .pptx, .epub), vérifier les 4 premiers octets **avant**
+  de suspecter le code métier qui remplit le document.
