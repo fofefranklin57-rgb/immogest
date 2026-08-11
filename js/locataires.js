@@ -652,6 +652,7 @@ window.IG.locataires = (function() {
     if (!moisEl || !dateEl) return;
     dateEl.value = _moisVersDate(moisEl.value, (document.getElementById('edit-entree') || {}).value);
     if (apercu) apercu.textContent = _libelleMois(dateEl.value);
+    _recalculerDette();
   }
   // …ou il corrige la date directement, et le nombre de mois suit.
   function _syncMoisDepuisDate() {
@@ -661,6 +662,44 @@ window.IG.locataires = (function() {
     if (!moisEl || !dateEl) return;
     moisEl.value = _dateVersMois(dateEl.value);
     if (apercu) apercu.textContent = _libelleMois(dateEl.value);
+    _recalculerDette();
+  }
+
+  // ── Total vivant, recalculé à chaque frappe ───────────────────
+  // Cette ligne affichait la dette du locataire TEL QU'ENREGISTRÉ, sans
+  // bouger quand on modifiait les champs juste au-dessus : on lisait un
+  // total qui ne correspondait pas à ce qu'on venait de saisir.
+  // Elle détaille maintenant son calcul, ce qui rend visible le piège
+  // principal — mois dus ET solde reporté s'ADDITIONNENT.
+  function _recalculerDette() {
+    var zone = document.getElementById('edit-dette-live');
+    if (!zone) return;
+    var loyer = parseFloat((document.getElementById('edit-loyer')      || {}).value) || 0;
+    var mois  = parseInt((document.getElementById('edit-mois-dus')     || {}).value) || 0;
+    var rep   = parseFloat((document.getElementById('edit-solde-rep')  || {}).value) || 0;
+    var total = mois * loyer + rep;
+
+    var detail = [];
+    if (mois) detail.push(mois + ' × ' + window.IG.utils.formatMontant(loyer));
+    if (rep)  detail.push(window.IG.utils.formatMontant(rep) + ' ' + t('reporté'));
+
+    zone.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">' +
+      '<span style="font-size:12px;color:var(--text2);font-weight:600">' + t('Dette au moment de la reprise') + '</span>' +
+      '<strong style="font-size:15px;color:' + (total > 0 ? 'var(--red)' : 'var(--green)') + '">' +
+        (total > 0 ? window.IG.utils.formatMontant(total) : t('À jour')) + '</strong>' +
+      '</div>' +
+      (detail.length > 1
+        ? '<div style="font-size:11px;color:var(--text3);margin-top:3px">' + detail.join('  +  ') + '</div>'
+        : '') +
+      // Un reliquat supérieur à un loyer n'en est pas un : c'est presque
+      // toujours le montant total des arriérés saisi au mauvais endroit,
+      // qui vient alors s'ajouter aux mois déjà comptés.
+      (rep >= loyer && loyer > 0
+        ? '<div style="margin-top:7px;padding:7px 9px;border-radius:6px;background:var(--red-bg);color:var(--red);font-size:11px;line-height:1.5">⚠️ ' +
+          t('Le solde reporté dépasse un mois de loyer. Ce champ ne sert qu\'au reliquat : si vous y avez mis le total des arriérés, saisissez-les plutôt en mois dus, sinon la dette est comptée deux fois.') +
+          '</div>'
+        : '');
   }
 
   function _afficherFormulaireEdition(loc, onSuccess) {
@@ -689,7 +728,7 @@ window.IG.locataires = (function() {
       }).join('') + '</select></div></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
       '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Loyer (FCFA)') + '</label>' +
-      '<input type="number" name="loyer" id="edit-loyer" value="' + (parseFloat(loc.loyer)||0) + '" min="0" step="500" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
+      '<input type="number" name="loyer" id="edit-loyer" value="' + (parseFloat(loc.loyer)||0) + '" min="0" step="500" oninput="window.IG.locataires._recalculerDette()" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
       _fieldNum('caution', t('Caution'), loc.caution || 0) +
       '</div>' +
       _field('entree', t('Date entrée'), loc.entree || '', false, 'date') +
@@ -704,21 +743,24 @@ window.IG.locataires = (function() {
       '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Mois dus aujourd\'hui') + '</label>' +
       '<input type="number" id="edit-mois-dus" value="' + _dateVersMois(loc.suivi_depuis || loc.entree) + '" min="0" step="1" oninput="window.IG.locataires._syncSuiviEdit()" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
       '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Solde reporté (reliquat)') + '</label>' +
-      '<input type="number" name="solde_reporte" id="edit-solde-rep" value="' + (parseFloat(loc.solde_reporte)||0) + '" min="0" step="500" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
+      '<input type="number" name="solde_reporte" id="edit-solde-rep" value="' + (parseFloat(loc.solde_reporte)||0) + '" min="0" step="500" oninput="window.IG.locataires._recalculerDette()" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
       '</div>' +
       '<div style="margin-top:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
       '<span style="font-size:11px;color:var(--text3)">' + t('Comptabilisé depuis') + '</span>' +
       '<strong id="edit-suivi-apercu" style="font-size:12px;color:var(--accent)">' + esc(_libelleMois(loc.suivi_depuis || loc.entree)) + '</strong>' +
       '<input type="date" name="suivi_depuis" id="edit-suivi" value="' + esc(loc.suivi_depuis || loc.entree || '') + '" onchange="window.IG.locataires._syncMoisDepuisDate()" style="margin-left:auto;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);font-size:11px;color:var(--text2)">' +
       '</div>' +
-      '<div style="margin-top:10px;padding-top:9px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">' +
-      '<span style="font-size:12px;color:var(--text2);font-weight:600">' + t('Dette réelle aujourd\'hui') + '</span>' +
+      // Total de ce qui est en train d'être saisi (recalculé à la frappe),
+      // puis, distinctement, la dette du locataire tel qu'enregistré.
+      '<div id="edit-dette-live" style="margin-top:10px;padding-top:9px;border-top:1px solid var(--border)"></div>' +
       (function() {
         var du = _resteCalc(loc, window.IG.paiements ? window.IG.paiements.getCache() : []);
-        return '<strong style="font-size:14px;color:' + (du > 0 ? 'var(--red)' : 'var(--green)') + '">' +
-          (du > 0 ? window.IG.utils.formatMontant(du) : t('À jour')) + '</strong>';
+        return '<div style="margin-top:7px;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
+          '<span style="font-size:11px;color:var(--text3)">' + t('Dette actuelle enregistrée (versements déduits)') + '</span>' +
+          '<span style="font-size:12px;font-weight:700;color:' + (du > 0 ? 'var(--red)' : 'var(--green)') + '">' +
+          (du > 0 ? window.IG.utils.formatMontant(du) : t('À jour')) + '</span></div>';
       })() +
-      '</div></div>' +
+      '</div>' +
       '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Observations') + '</label>' +
       '<textarea name="observations" rows="2" style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);resize:vertical">' + esc(loc.observations || '') + '</textarea></div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">' +
@@ -728,6 +770,7 @@ window.IG.locataires = (function() {
       '</div></form>';
 
     var modal = window.IG.utils.showModal(html, { width: '540px' });
+    _recalculerDette();   // total initial, avant toute frappe
     modal.box.querySelector('#form-locataire').addEventListener('submit', async function(e) {
       e.preventDefault();
       var fd = new FormData(e.target);
@@ -1075,7 +1118,7 @@ window.IG.locataires = (function() {
     charger, getCache, getById, getByImmeuble, sauvegarder,
     liberer, supprimer, renderListe, renderListeFiltree, afficherFormulaire, afficherFiche,
     lienWA, _libererConfirm, _toggleMenu, _closeMenus, envoyerAccesWA,
-    _publierAnnonce, rafraichirFiche, _syncSuiviEdit, _syncMoisDepuisDate
+    _publierAnnonce, rafraichirFiche, _syncSuiviEdit, _syncMoisDepuisDate, _recalculerDette
   };
 
 })();

@@ -876,3 +876,32 @@ doublon si deux sections étaient enregistrées en concurrence AVANT que la 1èr
   fenêtre glissait, gelant la dette à jamais (voir la fiche V024 ci-dessus).
 - **Vérifié** sur un locataire entré en 2016, sans aucun versement enregistré :
   0 → 0 FCFA · 1 → 150 000 · 3 → 450 000 · 16 → 2 400 000.
+
+---
+
+## 2026-08-11 — Le total affiché sous les champs ne suivait pas la saisie
+
+### `js/locataires.js` — « Dette réelle aujourd'hui » figée et trompeuse
+
+- **Erreur** : la ligne « Dette réelle aujourd'hui », placée juste sous les champs
+  de reprise, affichait la dette du locataire TEL QU'ENREGISTRÉ et ne bougeait pas
+  quand on modifiait les champs au-dessus. Sur FONTEM Vanessa : champs à
+  7 mois + 2 550 000 de solde reporté, total affiché 1 640 000 — trois nombres
+  sans rapport les uns avec les autres, dans le même encadré.
+- **Conséquence** : impossible de voir qu'on est en train de saisir 4 160 000, et
+  donc impossible de repérer le double comptage.
+- **Piège de fond** : `mois dus` et `solde reporté` s'ADDITIONNENT. Saisir le
+  montant total des arriérés dans « solde reporté » tout en gardant des mois dus
+  compte la dette deux fois. Rien ne le signalait.
+- **Solution** :
+  - le total se recalcule à chaque frappe (mois, solde reporté, loyer) ;
+  - il détaille son calcul quand les deux champs sont remplis
+    (« 3 × 230 000 + 45 000 reporté ») ;
+  - un avertissement apparaît dès que le solde reporté dépasse un mois de loyer —
+    ce n'est alors plus un reliquat, c'est presque toujours le total des arriérés
+    saisi au mauvais endroit ;
+  - la dette enregistrée reste affichée, mais en second et clairement nommée
+    « Dette actuelle enregistrée (versements déduits) ».
+- **À retenir** : un total posé sous un formulaire est lu comme le résultat de ce
+  formulaire. S'il vient d'ailleurs, il ment — soit il suit la saisie, soit il
+  dit d'où il vient.
