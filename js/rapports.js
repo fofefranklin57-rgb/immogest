@@ -93,7 +93,10 @@ window.IG.rapports = (function() {
   // date d'entrée) — l'appelant se replie alors sur l'ancien calcul.
   function _situationAuFiche(loc, versementsLoc, dateFin) {
     if (!window.IG.paiements || !window.IG.paiements.calculerFiche || !loc || !loc.entree) return null;
-    var lignes = window.IG.paiements.calculerFiche(loc, versementsLoc, dateFin.getFullYear());
+    // On calcule une année de plus que la clôture : une avance versée en
+    // décembre peut couvrir des mois de l'année suivante, qu'il faut voir
+    // pour annoncer « à jour jusqu'en mars ».
+    var lignes = window.IG.paiements.calculerFiche(loc, versementsLoc, dateFin.getFullYear() + 1);
     if (!lignes || !lignes.length) return null;
 
     var moisFin = dateFin.getMonth() + 1, anneeFin = dateFin.getFullYear();
@@ -113,7 +116,25 @@ window.IG.rapports = (function() {
       var payes = echues.filter(function(l) { return (l.reste || 0) <= 0; }).length;
       duCumule += Math.max(0, baseArrieres - payes * loyer);
     }
-    return { moisDus: moisDus, montantDu: duCumule };
+
+    // Jusqu'où le locataire est-il couvert au-delà de la clôture ? On avance
+    // mois par mois tant qu'ils sont intégralement réglés, et on s'arrête au
+    // premier trou : « à jour jusqu'en octobre » ne doit pas sauter septembre.
+    // On lit `cumul` et non `reste`, car la fiche force `reste` à 0 sur les
+    // mois futurs — seul `cumul` dit s'ils sont réellement payés.
+    var couvertJusqu = null;
+    var loyerRef = parseFloat(loc.loyer) || 0;
+    if (loyerRef > 0) {
+      var apres = lignes.filter(function(l) {
+        return !l.horsBail && (l.annee > anneeFin || (l.annee === anneeFin && l.mois > moisFin));
+      });
+      for (var k = 0; k < apres.length; k++) {
+        if ((apres[k].cumul || 0) < loyerRef) break;
+        couvertJusqu = { mois: apres[k].mois, annee: apres[k].annee };
+      }
+    }
+
+    return { moisDus: moisDus, montantDu: duCumule, couvertJusqu: couvertJusqu };
   }
 
   // ── Rapport mensuel HTML — spec V2 (juin 2026) ──────────────
@@ -227,7 +248,9 @@ window.IG.rapports = (function() {
       totalDuS1 += reste;
 
       var obs = [];
-      // Mois dus à la clôture + action recommandée
+      // Verdict en tête de cellule : soit le retard et l'action à mener,
+      // soit « à jour », précisé jusqu'à quel mois si le locataire a payé
+      // d'avance. Le lecteur doit connaître la situation avant les détails.
       if (moisDus > 0) {
         var reco = moisDus >= 7 ? t('à expulser')
                  : moisDus >= 4 ? t('à sommer')
@@ -235,6 +258,11 @@ window.IG.rapports = (function() {
                  : t('à relancer');
         var recoCouleur = moisDus >= 7 ? '#8E1B10' : moisDus >= 4 ? '#B34700' : moisDus >= 2 ? '#8A6100' : C_ROUGE;
         obs.push('<strong style="color:' + recoCouleur + '">' + moisDus + ' ' + t('mois dû(s)') + ' — ' + reco + '</strong>');
+      } else {
+        var cj = situ && situ.couvertJusqu;
+        obs.push('<strong>' + (cj
+          ? t('À jour jusqu\'en') + ' ' + MOIS_FR[cj.mois - 1] + (cj.annee !== fin.getFullYear() ? ' ' + cj.annee : '')
+          : t('À jour')) + '</strong>');
       }
       if (isCab) {
         var remisLoc = lPays.filter(function(p) { return p.remisAuBailleur; });
@@ -248,7 +276,6 @@ window.IG.rapports = (function() {
         obs.push(notesSplit.length + ' mois payés d\'avance (' + fmt(totalSplit) + ')');
       }
       if (notesAutres.length) obs = obs.concat(notesAutres);
-      if (!obs.length) obs.push(reste <= 0 ? t('À jour') : t('Doit') + ' ' + MOIS_FR[fin.getMonth()]);
 
       // La couleur de l'observation porte le verdict : vert si le mois est
       // soldé, rouge s'il reste dû. Le lecteur balaie la colonne, pas le texte.

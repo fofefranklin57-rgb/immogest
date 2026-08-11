@@ -668,3 +668,28 @@ doublon si deux sections étaient enregistrées en concurrence AVANT que la 1èr
 - **Vérifié** : 1 mois → 80 000, 2 mois → 160 000, 7 mois → 560 000, payé
   d'avance → 0, et le TOTAL correspond bien à la somme de la colonne.
 - **i18n** : clé « Montant dû » ajoutée aux 5 langues.
+
+---
+
+## 2026-08-11 — Rapport mensuel : « à jour jusqu'en… » pour les avances
+
+### `js/rapports.js` — la colonne Observations ne distinguait pas les avances
+
+- **Demande** : un locataire ayant payé d'avance doit afficher jusqu'à quel mois
+  il est couvert ; celui qui a réglé le seul mois en cours, simplement « À jour ».
+- **Avant** : les deux cas se ressemblaient, et la cellule affichait souvent la
+  note du versement (« Loyer juillet ») à la place d'un verdict.
+- **Solution** : `_situationAuFiche()` retourne en plus `couvertJusqu`, obtenu en
+  avançant mois par mois après la clôture tant qu'ils sont intégralement réglés.
+  Le verdict passe en tête de cellule, les notes viennent après.
+  L'année n'est affichée que si elle diffère de celle de la clôture.
+- **Deux pièges traités** :
+  - la fiche force `reste` à 0 sur les mois futurs — il faut lire `cumul`, seul
+    indicateur du paiement réel d'un mois à venir ;
+  - le balayage s'arrête au premier mois non soldé : une avance couvrant août
+    puis octobre affiche « jusqu'en août », jamais « jusqu'en octobre ».
+  - la fiche est calculée sur une année de plus que la clôture, sinon une avance
+    versée en fin d'année serait invisible.
+- **Vérifié** : pile à jour → « À jour » ; avance 3 mois → « À jour jusqu'en
+  octobre » ; avance débordant sur 2027 → « À jour jusqu'en février 2027 » ;
+  avance avec trou → s'arrête au trou ; débiteur → inchangé.
