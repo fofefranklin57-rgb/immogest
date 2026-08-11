@@ -329,6 +329,20 @@ window.IG.rapports = (function() {
     var totalLoyers = 0, totalCautions = 0, totalRemis = 0;
     var groupes2 = [];
     var indexGroupe = {};
+
+    // Mois réellement imputés par la fiche de suivi, par versement. Les
+    // colonnes `mois`/`annee` du paiement ne sont qu'une étiquette de saisie :
+    // s'en servir ici faisait annoncer au rapport des mois différents de ceux
+    // de la fiche pour un même versement.
+    var moisReels = {};
+    if (window.IG.paiements && window.IG.paiements.moisReelsParVersement) {
+      locsImm.forEach(function(l) {
+        var pl = paiements.filter(function(p) { return p.locataire_id == l.id; });
+        var m = window.IG.paiements.moisReelsParVersement(l, pl);
+        Object.keys(m).forEach(function(k) { moisReels[k] = m[k]; });
+      });
+    }
+
     paysP.forEach(function(p) {
       var estSplit = /\[\d+\/\d+\]/.test(p.note || '');
       var cle = p.locataire_id + '|' + p.date_paiement + '|' + (p.type || 'loyer') + (estSplit ? '' : '|' + p.id);
@@ -338,7 +352,14 @@ window.IG.rapports = (function() {
       }
       var g = groupes2[indexGroupe[cle]];
       g.montant += parseFloat(p.montant) || 0;
-      if (p.mois && p.annee) g.mois.push(MOIS_FR[p.mois - 1] + ' ' + p.annee);
+      if (moisReels[p.id]) {
+        moisReels[p.id].forEach(function(m) {
+          var lbl = MOIS_FR[m.mois - 1] + ' ' + m.annee;
+          if (g.mois.indexOf(lbl) < 0) g.mois.push(lbl);
+        });
+      } else if (p.mois && p.annee) {
+        g.mois.push(MOIS_FR[p.mois - 1] + ' ' + p.annee);
+      }
       var montant = parseFloat(p.montant) || 0;
       var typeP = (p.type || 'loyer').toLowerCase();
       if (typeP === 'caution') totalCautions += montant; else totalLoyers += montant;

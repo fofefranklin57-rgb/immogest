@@ -90,9 +90,12 @@ window.IG.messagesWA = (function() {
       var moisNom = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
 
       var locsActifs = locs.filter(function(l) { return l.statut !== 'libre'; });
+      // Encaissé du mois : date réelle du versement, pas l'étiquette.
       var pays = paiements.filter(function(p) {
-        return parseInt(p.mois) === mois && parseInt(p.annee) === annee &&
-          locsActifs.some(function(l) { return l.id == p.locataire_id; });
+        var duMois = window.IG.paiements && window.IG.paiements.estEncaisseLe
+          ? window.IG.paiements.estEncaisseLe(p, mois, annee)
+          : (parseInt(p.mois) === mois && parseInt(p.annee) === annee);
+        return duMois && locsActifs.some(function(l) { return l.id == p.locataire_id; });
       });
 
       var totalAttendu = locsActifs.reduce(function(s, l) { return s + (parseFloat(l.loyer) || 0); }, 0);
@@ -208,13 +211,13 @@ window.IG.messagesWA = (function() {
     var mois = now.getMonth() + 1;
     var annee = now.getFullYear();
 
-    // Locataires actifs qui n'ont PAS encore payé ce mois
-    var payesIds = pays
-      .filter(function(p) { return parseInt(p.mois) === mois && parseInt(p.annee) === annee && (p.type === 'loyer' || !p.type); })
-      .map(function(p) { return p.locataire_id; });
-
+    // Qui relancer : ceux qui doivent réellement quelque chose. Filtrer sur
+    // « pas de versement étiqueté ce mois-ci » envoyait une relance à un
+    // locataire ayant réglé plusieurs mois d'avance.
     var cibles = locs.filter(function(l) {
-      return l.statut !== 'libre' && l.telephone && !payesIds.includes(l.id);
+      if (l.statut === 'libre' || !l.telephone) return false;
+      var pl = pays.filter(function(p) { return p.locataire_id == l.id; });
+      return window.IG.relances ? window.IG.relances.montantDu(l, pl) > 0 : true;
     });
 
     if (!cibles.length) {
@@ -434,11 +437,12 @@ window.IG.messagesWA = (function() {
     var now = new Date();
     var mois = now.getMonth() + 1;
     var annee = now.getFullYear();
-    var payesIds = (data.paiements || [])
-      .filter(function(p) { return parseInt(p.mois) === mois && parseInt(p.annee) === annee; })
-      .map(function(p) { return p.locataire_id; });
+    // Même règle que ci-dessus : on relance sur la dette réelle, pas sur
+    // l'absence d'un versement étiqueté du mois courant.
     var cibles = (data.locataires || []).filter(function(l) {
-      return l.statut !== 'libre' && l.telephone && !payesIds.includes(l.id);
+      if (l.statut === 'libre' || !l.telephone) return false;
+      var pl = (data.paiements || []).filter(function(p) { return p.locataire_id == l.id; });
+      return window.IG.relances ? window.IG.relances.montantDu(l, pl) > 0 : true;
     });
     if (!cibles.length) { window.IG.utils.showToast(t('Tous les locataires ont payé'), 'green'); return; }
     var count = 0;

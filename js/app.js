@@ -1009,8 +1009,11 @@ window.IG.app = (function() {
 
     var imms = _data.immeubles;
     var locs = _data.locataires.filter(function(l) { return l.statut !== 'libre'; });
+    // Encaissé du mois = date réelle du versement, pas l'étiquette de saisie.
     var pays = _data.paiements.filter(function(p) {
-      return parseInt(p.mois) === mois && parseInt(p.annee) === annee;
+      return window.IG.paiements && window.IG.paiements.estEncaisseLe
+        ? window.IG.paiements.estEncaisseLe(p, mois, annee)
+        : (parseInt(p.mois) === mois && parseInt(p.annee) === annee);
     });
 
     var totalAttendu = locs.reduce(function(s, l) { return s + (parseFloat(l.loyer) || 0); }, 0);
@@ -1474,7 +1477,9 @@ window.IG.app = (function() {
     // Situation de chaque locataire : total versé, dette, versements groupés
     var fiches = locs.map(function(loc) {
       var pays = _data.paiements.filter(function(p) { return p.locataire_id == loc.id; });
-      var groupes = window.IG.paiements ? window.IG.paiements.grouperVersements(pays) : [];
+      // `loc` passé : les mois couverts affichés sont ceux que la fiche de
+      // suivi impute réellement, pas l'étiquette saisie au guichet.
+      var groupes = window.IG.paiements ? window.IG.paiements.grouperVersements(pays, loc) : [];
       return {
         loc: loc,
         imm: window.IG.immeubles ? window.IG.immeubles.getById(loc.immeuble_id) : null,

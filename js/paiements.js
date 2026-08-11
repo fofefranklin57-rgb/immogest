@@ -65,7 +65,40 @@ window.IG.paiements = (function() {
   // « [1/3] »…). Pour l'utilisateur, c'est UN versement : on recompose
   // les groupes par locataire + date + type afin que l'écran reflète ce
   // qui s'est réellement passé à la caisse.
-  function grouperVersements(paiements) {
+  // Un versement a-t-il été encaissé pendant ce mois ? On lit la date réelle
+  // du versement, jamais l'étiquette mois/année saisie au guichet.
+  function _estEncaisseLe(p, mois, annee) {
+    if (!p || !p.date_paiement) return false;
+    var d = new Date(p.date_paiement);
+    if (isNaN(d)) return false;
+    return (d.getMonth() + 1) === mois && d.getFullYear() === annee;
+  }
+
+  // ── Mois réellement couverts par chaque versement ─────────────
+  // Les colonnes `mois`/`annee` d'un paiement ne sont qu'une étiquette saisie
+  // au guichet. La fiche de suivi, elle, impute l'argent au mois impayé le plus
+  // ancien : si un mois antérieur traînait, tout se décale. Afficher l'étiquette
+  // ailleurs faisait dire à l'écran des encaissements et au rapport le contraire
+  // de la fiche pour le même versement. On rend donc partout ce que la fiche
+  // a réellement imputé.
+  function moisReelsParVersement(loc, versements) {
+    var map = {};
+    if (!loc || !loc.entree) return map;
+    var lignes = calculerFiche(loc, versements, new Date().getFullYear() + 1);
+    lignes.forEach(function(l) {
+      if (l.horsBail || l.anterieur) return;
+      (l.versements || []).forEach(function(v) {
+        if (v.id === undefined || v.id === null) return;
+        (map[v.id] = map[v.id] || []).push({ mois: l.mois, annee: l.annee, montant: v.montant });
+      });
+    });
+    return map;
+  }
+
+  // `loc` optionnel : fourni, les mois affichés viennent de la fiche plutôt
+  // que des étiquettes de saisie.
+  function grouperVersements(paiements, loc) {
+    var reels = loc ? moisReelsParVersement(loc, paiements || []) : null;
     var groupes = [], index = {};
     (paiements || []).slice()
       .sort(function(a, b) { return new Date(b.date_paiement) - new Date(a.date_paiement); })
@@ -84,10 +117,20 @@ window.IG.paiements = (function() {
         var g = groupes[index[cle]];
         g.ids.push(p.id);
         g.montant += parseFloat(p.montant) || 0;
-        if (p.mois && p.annee) g.mois.push({ mois: parseInt(p.mois), annee: parseInt(p.annee) });
+        if (reels && reels[p.id]) {
+          // Imputation réelle de la fiche, source de vérité
+          reels[p.id].forEach(function(m) { g.mois.push({ mois: m.mois, annee: m.annee }); });
+        } else if (p.mois && p.annee) {
+          g.mois.push({ mois: parseInt(p.mois), annee: parseInt(p.annee) });
+        }
       });
     groupes.forEach(function(g) {
       g.mois.sort(function(a, b) { return (a.annee * 100 + a.mois) - (b.annee * 100 + b.mois); });
+      // Un versement peut couvrir deux fois le même mois (versement partiel
+      // puis complément) — on ne l'affiche qu'une fois.
+      g.mois = g.mois.filter(function(m, i, arr) {
+        return i === 0 || m.mois !== arr[i-1].mois || m.annee !== arr[i-1].annee;
+      });
     });
     return groupes;
   }
@@ -950,17 +993,18 @@ window.IG.paiements = (function() {
     var aJour  = 0;
     var impayes = 0;
 
+    // « À jour » = ne doit plus rien, d'après la fiche — et non « a un versement
+    // étiqueté du mois en cours », qui classait impayé un locataire en avance.
     actifs.forEach(function(loc) {
-      var pays = paiements.filter(function(p) {
-        return p.locataire_id == loc.id && parseInt(p.mois) === mois && parseInt(p.annee) === annee;
-      });
-      var total = pays.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
-      if (total >= (parseFloat(loc.loyer) || 0)) aJour++;
-      else impayes++;
+      var pl = paiements.filter(function(p) { return p.locataire_id == loc.id; });
+      if (montantDu(loc, pl) <= 0) aJour++; else impayes++;
     });
 
+    // Recette du mois = argent réellement encaissé pendant le mois, donc la
+    // date du versement. L'étiquette dit quel mois il couvre, pas quand il est
+    // entré en caisse : un règlement de juin encaissé en août appartient à août.
     var recetteMois = paiements
-      .filter(function(p) { return parseInt(p.mois) === mois && parseInt(p.annee) === annee; })
+      .filter(function(p) { return _estEncaisseLe(p, mois, annee); })
       .reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
 
     return { actifs: actifs.length, aJour, impayes, recetteMois };
@@ -979,7 +1023,7 @@ window.IG.paiements = (function() {
   }
 
   return {
-    charger, getCache, getByLocataire, enregistrer, annuler, annulerLot, grouperVersements,
+    charger, getCache, getByLocataire, enregistrer, annuler, annulerLot, grouperVersements, moisReelsParVersement, estEncaisseLe: _estEncaisseLe,
     calculerFiche, montantDu, renderFiche, afficherFormulaire, afficherFormulaireFiche,
     imprimerFiche, imprimerRecu, calculerStats, ajouterNote
   };

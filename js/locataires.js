@@ -334,12 +334,10 @@ window.IG.locataires = (function() {
 
   function _statutBadge(loc, paiements) {
     var pays = (paiements || []).filter(function(p) { return p.locataire_id == loc.id; });
-    var now = new Date();
-    var mois = now.getMonth() + 1;
-    var annee = now.getFullYear();
-    var paye = pays.some(function(p) {
-      return parseInt(p.mois) === mois && parseInt(p.annee) === annee;
-    });
+    // Le badge suit la dette réelle, pas la présence d'un versement étiqueté du
+    // mois courant : un locataire ayant réglé six mois d'avance était affiché
+    // « Impayé » faute de versement portant l'étiquette de ce mois-ci.
+    var paye = _resteCalc(loc, paiements || []) <= 0;
     if (loc.statut === 'libre') return '<span style="background:var(--bg3);color:var(--text3);padding:3px 8px;border-radius:99px;font-size:11px;font-weight:600">' + t('Libre') + '</span>';
     if (paye) return '<span style="background:var(--green-bg);color:var(--green);padding:3px 8px;border-radius:99px;font-size:11px;font-weight:600">✓ ' + t('À jour') + '</span>';
     return '<span style="background:var(--red-bg);color:var(--red);padding:3px 8px;border-radius:99px;font-size:11px;font-weight:600">⚠ ' + t('Impayé') + '</span>';

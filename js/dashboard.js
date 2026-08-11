@@ -24,10 +24,13 @@ window.IG.dashboard = (function() {
     // Recettes par mois (année courante)
     var recettesParMois = {};
     for (var m = 1; m <= 12; m++) recettesParMois[m] = 0;
+    // Courbe de trésorerie : on ventile sur la date d'encaissement réelle.
+    // L'étiquette dit quel mois le versement couvre, pas quand il est entré.
     paiements.forEach(function(p) {
-      if (parseInt(p.annee) === annee && p.mois >= 1 && p.mois <= 12) {
-        recettesParMois[parseInt(p.mois)] += parseFloat(p.montant) || 0;
-      }
+      if (!p.date_paiement) return;
+      var dp = new Date(p.date_paiement);
+      if (isNaN(dp) || dp.getFullYear() !== annee) return;
+      recettesParMois[dp.getMonth() + 1] += parseFloat(p.montant) || 0;
     });
 
     // Taux de recouvrement mois courant
