@@ -612,3 +612,38 @@ doublon si deux sections étaient enregistrées en concurrence AVANT que la 1èr
   qui affiche un solde doit passer par `paiements.calculerFiche()` /
   `paiements.montantDu()` / `relances.calculerRetard()`, sinon deux écrans de
   l'appli finissent par se contredire devant le client.
+
+---
+
+## 2026-08-11 — Rapport mensuel : refonte visuelle sur le modèle Word CRAA
+
+### `js/rapports.js` — mise en page alignée sur le rapport Oyom Abang
+
+- **Demande** : le rapport de l'appli devait reprendre la présentation du modèle
+  Word utilisé par le cabinet (`Rapport_Oyom_Abang_du 30.06.2026 Au 31.07.2026.docx`).
+- **Écarts corrigés** :
+  - bandeaux de section : filet bleu à gauche → bandeau bleu pleine largeur,
+    texte blanc majuscule ;
+  - tableaux : grille fine sur toutes les cellules, alternance `#EEF6FC`/blanc,
+    largeurs de colonnes fixes, alignements par colonne (local centré,
+    montants à droite, libellés à gauche) ;
+  - code du local en bleu gras — repère visuel de lecture du tableau ;
+  - ligne TOTAL : bandeau sombre → fond `#D6E9F6`, texte bleu, libellé « TOTAL » ;
+  - récapitulatif financier : bloc séparé à droite → lignes de pied INTÉGRÉES au
+    tableau des encaissements, sous-totaux alignés sous la colonne des montants ;
+  - pied de page reprenant l'adresse du cabinet et le nom du bailleur.
+- **Code couleur** : bleu `#0E6AAF` = repère, vert `#1A6B45` = encaissé / à jour,
+  rouge `#C0392B` = dû. Le lecteur balaie les colonnes, il ne lit pas le texte.
+
+### `js/rapports.js` — les mois dus étaient comptés à AUJOURD'HUI
+
+- **Erreur** : sur un rapport édité le 11 août mais portant sur juillet, un
+  locataire à jour au 31/07 affichait « 1 mois dû(s) — à relancer » en face d'un
+  reste à payer vide. Le document se contredisait à l'intérieur d'une même ligne.
+- **Cause** : `relances.calculerRetard()` compte les impayés à la date du jour,
+  alors que tout le reste du rapport parle de la période close.
+- **Solution** : `_moisDusAuFiche(loc, versements, dateFin)` compte les mois non
+  soldés jusqu'au mois de clôture inclus. Repli sur `calculerRetard()` si la
+  fiche n'est pas calculable.
+- **À retenir** : même famille que le bug du reste à payer — un rapport daté doit
+  répondre à « où en était-on à la clôture ? », jamais à « où en est-on ce matin ? ».

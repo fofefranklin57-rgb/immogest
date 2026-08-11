@@ -96,6 +96,24 @@ window.IG.rapports = (function() {
     return ligne.horsBail ? 0 : (parseFloat(ligne.reste) || 0);
   }
 
+  // ── Mois dus à la date de clôture du rapport ──────────────────
+  // `relances.calculerRetard()` compte les impayés à AUJOURD'HUI. Sur un
+  // rapport édité en août mais portant sur juillet, il annonçait « 1 mois dû »
+  // en face d'un « reste à payer » nul — le document se contredisait.
+  // Ici on compte les mois non soldés jusqu'au mois de clôture inclus, pour
+  // que toute la ligne parle de la même date.
+  function _moisDusAuFiche(loc, versementsLoc, dateFin) {
+    if (!window.IG.paiements || !window.IG.paiements.calculerFiche || !loc || !loc.entree) return null;
+    var lignes = window.IG.paiements.calculerFiche(loc, versementsLoc, dateFin.getFullYear());
+    if (!lignes || !lignes.length) return null;
+    var moisFin = dateFin.getMonth() + 1, anneeFin = dateFin.getFullYear();
+    return lignes.filter(function(l) {
+      if (l.horsBail || l.futur) return false;
+      if (l.annee > anneeFin || (l.annee === anneeFin && l.mois > moisFin)) return false;
+      return (l.reste || 0) > 0;
+    }).length;
+  }
+
   // ── Rapport mensuel HTML — spec V2 (juin 2026) ──────────────
   function genererRapportMensuelHTML(immeubleId, dateDebut, dateFin, immeubles, locataires, paiements, filtreLoc) {
     var session  = window.IG.auth ? window.IG.auth.getSession() : {};
@@ -154,8 +172,24 @@ window.IG.rapports = (function() {
       return d >= debut && d <= fin;
     }).sort(function(a, b) { return new Date(a.date_paiement) - new Date(b.date_paiement); });
 
-    var TH = 'padding:7px 9px;background:#0E6AAF;color:#fff;font-size:10.5px;font-weight:700;border:1px solid #0d5fa0;text-align:left;';
-    var TD = 'padding:6px 9px;border:1px solid #e0e0e0;font-size:11px;vertical-align:top;';
+    // ── Charte du rapport, calquée sur le modèle Word CRAA ────────
+    // Grille fine sur toutes les cellules, alternance de lignes bleutée,
+    // codes couleur porteurs de sens : bleu = repère (local, totaux),
+    // vert = encaissé / à jour, rouge = dû.
+    var C_BLEU = '#0E6AAF', C_BLEU_PALE = '#EEF6FC', C_BLEU_TOTAL = '#D6E9F6';
+    var C_VERT = '#1A6B45', C_ROUGE = '#C0392B';
+    var C_TEXTE = '#333333', C_GRIS = '#666666', C_TRAIT = '#7f7f7f';
+
+    var TH = 'padding:5px 7px;background:' + C_BLEU + ';color:#fff;font-size:9pt;font-weight:700;' +
+             'border:1px solid ' + C_TRAIT + ';text-transform:uppercase;';
+    var TD = 'padding:4px 7px;border:1px solid ' + C_TRAIT + ';font-size:9pt;vertical-align:middle;';
+
+    // Fond alterné : une ligne sur deux en bleu très pâle
+    function _bg(i) { return 'background:' + (i % 2 ? C_BLEU_PALE : '#FFFFFF') + ';'; }
+    // Cellule « code du local » : bleu, gras, centré — le repère visuel du tableau
+    function _tdLocal(i, v) {
+      return '<td style="' + TD + _bg(i) + 'text-align:center;font-weight:700;color:' + C_BLEU + '">' + v + '</td>';
+    }
 
     // ── Section 1 : locataires ───────────────────────────────────
     var totalResteS1 = 0;
@@ -176,8 +210,9 @@ window.IG.rapports = (function() {
       var dernierPay = lPaysAll.length ? lPaysAll[lPaysAll.length - 1] : null;
       var horsPeriode = dernierPay && (new Date(dernierPay.date_paiement) < debut || new Date(dernierPay.date_paiement) > fin);
       var dernierStr = dernierPay
-        ? _fmtD(dernierPay.date_paiement) + '<br><span style="color:#555">' + fmt(dernierPay.montant) + '</span>' +
-          (horsPeriode ? '<br><span style="font-size:9px;color:#999">(' + t('hors période') + ')</span>' : '')
+        ? '<strong>' + _fmtD(dernierPay.date_paiement) + '</strong>' +
+          '<br><span style="color:' + C_GRIS + '">' + fmt(dernierPay.montant) + '</span>' +
+          (horsPeriode ? '<br><span style="font-size:8pt;color:#999">(' + t('hors période') + ')</span>' : '')
         : '—';
       // Reste à payer pour le mois du rapport : on réutilise l'allocation
       // officielle de la fiche de suivi (consommation chronologique des
@@ -193,14 +228,15 @@ window.IG.rapports = (function() {
       totalResteS1 += reste;
 
       var obs = [];
-      // Nombre de mois dus + action recommandée
-      var moisDus = window.IG.relances ? window.IG.relances.calculerRetard(loc, lPaysAll) : 0;
+      // Nombre de mois dus à la clôture + action recommandée
+      var moisDus = _moisDusAuFiche(loc, lPaysAll, fin);
+      if (moisDus === null) moisDus = window.IG.relances ? window.IG.relances.calculerRetard(loc, lPaysAll) : 0;
       if (moisDus > 0) {
         var reco = moisDus >= 7 ? t('à expulser')
                  : moisDus >= 4 ? t('à sommer')
                  : moisDus >= 2 ? t('à surveiller')
                  : t('à relancer');
-        var recoCouleur = moisDus >= 7 ? '#b71c1c' : moisDus >= 4 ? '#e65100' : moisDus >= 2 ? '#f57f17' : '#555';
+        var recoCouleur = moisDus >= 7 ? '#8E1B10' : moisDus >= 4 ? '#B34700' : moisDus >= 2 ? '#8A6100' : C_ROUGE;
         obs.push('<strong style="color:' + recoCouleur + '">' + moisDus + ' ' + t('mois dû(s)') + ' — ' + reco + '</strong>');
       }
       if (isCab) {
@@ -217,18 +253,23 @@ window.IG.rapports = (function() {
       if (notesAutres.length) obs = obs.concat(notesAutres);
       if (!obs.length) obs.push(reste <= 0 ? t('À jour') : t('Doit') + ' ' + MOIS_FR[fin.getMonth()]);
 
-      s1Rows += '<tr style="'+(i%2?'background:#f9fafb;':'')+'">' +
-        '<td style="'+TD+'font-weight:700">'+esc(loc.appt||'—')+'</td>' +
-        '<td style="'+TD+'">'+esc(loc.nom)+(loc.telephone?'<br><span style="font-size:10px;color:#888">'+esc(loc.telephone)+'</span>':'')+'</td>' +
-        '<td style="'+TD+'text-align:right">'+fmt(loyer)+'</td>' +
-        '<td style="'+TD+'font-size:10.5px">'+dernierStr+'</td>' +
-        '<td style="'+TD+'font-size:10px;color:#555">'+obs.join('<br>')+'</td>' +
-        '<td style="'+TD+'text-align:right;font-weight:700;color:'+(reste>0?'#c62828':'#aaa')+'">'+( reste>0?fmt(reste):'—')+'</td>' +
+      // La couleur de l'observation porte le verdict : vert si le mois est
+      // soldé, rouge s'il reste dû. Le lecteur balaie la colonne, pas le texte.
+      var obsCouleur = reste > 0 ? C_ROUGE : C_VERT;
+
+      s1Rows += '<tr>' +
+        _tdLocal(i, esc(loc.appt || '—')) +
+        '<td style="'+TD+_bg(i)+'font-size:9.5pt;font-weight:700;color:'+C_TEXTE+'">'+esc(loc.nom)+
+          (loc.telephone?'<br><span style="font-size:8pt;font-weight:400;color:#888">'+esc(loc.telephone)+'</span>':'')+'</td>' +
+        '<td style="'+TD+_bg(i)+'text-align:right;color:'+C_TEXTE+'">'+fmt(loyer)+'</td>' +
+        '<td style="'+TD+_bg(i)+'color:'+C_TEXTE+'">'+dernierStr+'</td>' +
+        '<td style="'+TD+_bg(i)+'font-size:8.5pt;font-style:italic;color:'+obsCouleur+'">'+obs.join('<br>')+'</td>' +
+        '<td style="'+TD+_bg(i)+'text-align:right;font-weight:700;color:'+(reste>0?C_ROUGE:C_VERT)+'">'+(reste>0?fmt(reste):'–')+'</td>' +
       '</tr>';
     });
-    s1Rows += '<tr style="background:#1a2e4a;color:#fff;font-weight:700">' +
-      '<td style="padding:7px 9px;border:1px solid #2d4a6e" colspan="5">' + t('TOTAL RESTE À PAYER') + '</td>' +
-      '<td style="padding:7px 9px;border:1px solid #2d4a6e;text-align:right;color:#f1948a">'+fmt(totalResteS1)+'</td>' +
+    s1Rows += '<tr>' +
+      '<td style="'+TD+'background:'+C_BLEU_TOTAL+';text-align:right;font-size:9.5pt;font-weight:700;color:'+C_BLEU+'" colspan="5">' + t('TOTAL') + '</td>' +
+      '<td style="'+TD+'background:'+C_BLEU_TOTAL+';text-align:right;font-size:9.5pt;font-weight:700;color:'+(totalResteS1>0?C_ROUGE:C_BLEU)+'">'+fmt(totalResteS1)+'</td>' +
     '</tr>';
 
     // ── Section 2 : encaissements ────────────────────────────────
@@ -266,16 +307,16 @@ window.IG.rapports = (function() {
       } else if (g.mois.length === 1) {
         noteCell += '<br><span style="font-size:9.5px;color:#888">' + t('mois') + ' : ' + esc(g.mois[0]) + '</span>';
       }
-      s2Rows += '<tr style="'+(i%2?'background:#f9fafb;':'')+'">' +
-        '<td style="'+TD+'">'+_fmtD(p.date_paiement)+'</td>' +
-        '<td style="'+TD+'font-weight:700">'+esc(loc.appt||'—')+'</td>' +
-        '<td style="'+TD+'">'+esc(loc.nom||'—')+'</td>' +
-        '<td style="'+TD+'font-size:10px;color:#555">'+noteCell+'</td>' +
-        '<td style="'+TD+'text-align:right;font-weight:700">'+fmt(g.montant)+'</td>' +
+      s2Rows += '<tr>' +
+        '<td style="'+TD+_bg(i)+'text-align:center;color:'+C_GRIS+'">'+_fmtD(p.date_paiement)+'</td>' +
+        _tdLocal(i, esc(loc.appt || '—')) +
+        '<td style="'+TD+_bg(i)+'font-size:9.5pt;font-weight:700;color:'+C_TEXTE+'">'+esc(loc.nom||'—')+'</td>' +
+        '<td style="'+TD+_bg(i)+'font-size:8.5pt;font-style:italic;color:'+C_GRIS+'">'+noteCell+'</td>' +
+        '<td style="'+TD+_bg(i)+'text-align:right;font-weight:700;color:'+C_VERT+'">'+fmt(g.montant)+'</td>' +
       '</tr>';
     });
     if (!paysP.length) {
-      s2Rows = '<tr><td colspan="5" style="padding:14px;text-align:center;color:#999;font-style:italic">' + t('Aucun encaissement dans cette période') + '</td></tr>';
+      s2Rows = '<tr><td colspan="5" style="'+TD+'padding:14px;text-align:center;color:#999;font-style:italic">' + t('Aucun encaissement dans cette période') + '</td></tr>';
     }
 
     // ── Récapitulatif financier ──────────────────────────────────
@@ -291,31 +332,35 @@ window.IG.rapports = (function() {
     var totalCab    = totalBrut - totalRemis;
     var netAPer     = totalCab - honoraires;
 
+    // Le récapitulatif prolonge le tableau des encaissements au lieu de
+    // former un bloc séparé : les sous-totaux restent alignés sous la
+    // colonne des montants qu'ils additionnent (conforme au modèle Word).
     function _rl(lbl, val, opts) {
       var o = opts || {};
-      var color = o.color || '#111';
-      var valStr = (o.neg ? '— ' : '') + fmt(val);
-      return '<tr style="border-bottom:1px solid #eee">' +
-        '<td style="padding:5px 10px;font-size:11px;'+(o.bold?'font-weight:700':'')+'">'+lbl+'</td>' +
-        '<td style="padding:5px 10px;text-align:right;font-size:11px;font-weight:700;color:'+color+'">'+valStr+'</td></tr>';
+      var valStr = (o.neg ? '– ' : '') + fmt(val);
+      return '<tr>' +
+        '<td colspan="4" style="'+TD+'background:#F5F5F5;text-align:right;font-size:8.5pt;font-style:italic;color:'+C_GRIS+';'+
+          (o.bold ? 'font-weight:700;' : '')+'">'+lbl+'</td>' +
+        '<td style="'+TD+'background:#F5F5F5;text-align:right;font-size:8.5pt;font-weight:700;color:'+(o.color||C_TEXTE)+'">'+valStr+'</td>' +
+      '</tr>';
+    }
+    function _rlFinal(lbl, val) {
+      return '<tr>' +
+        '<td colspan="4" style="'+TD+'background:'+C_BLEU_TOTAL+';text-align:right;font-size:9.5pt;font-weight:700;color:'+C_BLEU+'">'+lbl+'</td>' +
+        '<td style="'+TD+'background:'+C_BLEU_TOTAL+';text-align:right;font-size:9.5pt;font-weight:700;color:'+C_BLEU+'">'+fmt(val)+'</td>' +
+      '</tr>';
     }
 
-    var recapHtml = '<table style="width:100%;border-collapse:collapse;border:1px solid #ddd">' +
-      _rl(t('Loyers encaissés'), totalLoyers) +
+    var recapRows = _rl(t('Loyers encaissés'), totalLoyers) +
       _rl(t('Cautions reçues'), totalCautions) +
-      '<tr style="background:#e8f4fd"><td style="padding:6px 10px;font-size:11px;font-weight:800">' + t('TOTAL LOYER') + '</td>' +
-      '<td style="padding:6px 10px;text-align:right;font-size:12px;font-weight:800">'+fmt(totalBrut)+'</td></tr>';
+      _rl(t('TOTAL LOYER'), totalBrut, { bold: true });
     if (isCab) {
-      recapHtml += _rl(t('Loyer reçu par le bailleur'), totalRemis, { neg: true, color: '#c62828' }) +
-        _rl(t('Total collecté au cabinet'), totalCab, { bold: true }) +
-        _rl(t('Paiement cabinet (honoraires)'), honoraires, { neg: true, color: '#c62828' });
-      recapHtml += '<tr style="background:#1a2e4a"><td style="padding:8px 10px;font-size:13px;font-weight:900;color:#fff">NET À PERCEVOIR</td>' +
-        '<td style="padding:8px 10px;text-align:right;font-size:14px;font-weight:900;color:#7ecba0">'+fmt(netAPer)+'</td></tr>';
+      if (totalRemis) recapRows += _rl(t('Loyer reçu par le bailleur'), totalRemis, { neg: true, color: C_ROUGE });
+      if (honoraires) recapRows += _rl(t('Paiement cabinet (honoraires)'), honoraires, { neg: true, color: C_ROUGE });
+      recapRows += _rlFinal(t('NET À VERSER AU BAILLEUR'), netAPer);
     } else {
-      recapHtml += '<tr style="background:#e8f5e9"><td style="padding:8px 10px;font-size:13px;font-weight:900">NET ENCAISSÉ</td>' +
-        '<td style="padding:8px 10px;text-align:right;font-size:14px;font-weight:900;color:#1a6b3a">'+fmt(totalBrut)+'</td></tr>';
+      recapRows += _rlFinal(t('NET ENCAISSÉ'), totalBrut);
     }
-    recapHtml += '</table>';
 
     var montantPhrase = isCab ? netAPer : totalBrut;
     var lettres       = _enLettres(Math.abs(montantPhrase));
@@ -352,60 +397,72 @@ window.IG.rapports = (function() {
       '</td></tr></table>';
 
     // Titre centré
-    html += '<div style="text-align:center;margin-bottom:16px">' +
-      '<div style="font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.3px">' + esc(t('Rapport mensuel').toUpperCase()) + ' - ' + esc(t('Immeuble').toUpperCase()) + ' ' + esc(nomImm.toUpperCase()) + '</div>' +
-      '<div style="font-style:italic;color:#555;font-size:11px;margin-top:4px">'+esc(quartier||nomImm)+' · '+t('du')+' '+fmtDebut+' · '+t('Au')+' '+fmtFin+'</div>' +
+    html += '<div style="text-align:center;margin-bottom:14px">' +
+      '<div style="font-size:13pt;font-weight:700;text-transform:uppercase;color:'+C_BLEU+';letter-spacing:0.3px">' + esc(t('Rapport mensuel').toUpperCase()) + ' – ' + esc(t('Immeuble').toUpperCase()) + ' ' + esc(nomImm.toUpperCase()) + '</div>' +
+      '<div style="color:'+C_GRIS+';font-size:10pt;margin-top:3px">'+esc(quartier||nomImm)+'  ·  '+t('du')+' '+fmtDebut+'  ·  '+t('Au')+' '+fmtFin+'</div>' +
       '</div>';
 
-    // Section 1
+    // Bandeau de section pleine largeur, comme dans le modèle Word
+    function _bandeau(titre, suffixe) {
+      return '<div style="background:'+C_BLEU+';color:#fff;font-size:11pt;font-weight:700;text-transform:uppercase;' +
+        'padding:5px 9px;margin-bottom:0">' + titre +
+        (suffixe ? ' <span style="font-weight:400;text-transform:none;font-size:9pt;opacity:.9">' + suffixe + '</span>' : '') +
+        '</div>';
+    }
+    var TBL = 'width:100%;border-collapse:collapse;margin-bottom:16px;table-layout:fixed;';
+
+    // Section 1 — situation locative
     var libelleFiltre = filtreLoc
       ? (filtreLoc === 'avance' ? t('locataires ayant payé d\'avance') : filtreLoc + ' ' + t('mois dus et +'))
       : '';
-    html += '<div style="font-size:11.5px;font-weight:800;text-transform:uppercase;color:#0E6AAF;margin-bottom:8px;border-left:4px solid #0E6AAF;padding-left:8px">' + t('LISTE DES LOCATAIRES ET SITUATION LOCATIVE') +
-      (libelleFiltre ? ' <span style="font-weight:600;text-transform:none;color:#666">— ' + t('filtre') + ' : ' + esc(libelleFiltre) + ' (' + locsImm.length + ')</span>' : '') + '</div>' +
-      '<table style="width:100%;border-collapse:collapse;margin-bottom:18px"><thead><tr>' +
-      '<th style="'+TH+'">' + t('Local') + '</th>' +
-      '<th style="'+TH+'">' + t('Nom & Téléphone') + '</th>' +
+    html += _bandeau(t('LISTE DES LOCATAIRES ET SITUATION LOCATIVE'),
+        libelleFiltre ? '— ' + t('filtre') + ' : ' + esc(libelleFiltre) + ' (' + locsImm.length + ')' : '') +
+      '<table style="'+TBL+'">' +
+      '<colgroup><col style="width:7%"><col style="width:26%"><col style="width:11%">' +
+      '<col style="width:18%"><col style="width:23%"><col style="width:15%"></colgroup>' +
+      '<thead><tr>' +
+      '<th style="'+TH+'text-align:center">' + t('Local') + '</th>' +
+      '<th style="'+TH+'text-align:left">' + t('Nom & Téléphone') + '</th>' +
       '<th style="'+TH+'text-align:right">' + t('Loyer') + '</th>' +
-      '<th style="'+TH+'">' + t('Dernier paiement') + '</th>' +
-      '<th style="'+TH+'">' + t('Observations') + '</th>' +
+      '<th style="'+TH+'text-align:center">' + t('Dernier paiement') + '</th>' +
+      '<th style="'+TH+'text-align:left">' + t('Observations') + '</th>' +
       '<th style="'+TH+'text-align:right">' + t('Reste à payer') + '</th>' +
       '</tr></thead><tbody>'+s1Rows+'</tbody></table>';
 
-    // Section 2
-    html += '<div style="font-size:11.5px;font-weight:800;text-transform:uppercase;color:#0E6AAF;margin-bottom:8px;border-left:4px solid #0E6AAF;padding-left:8px">' + t('ENCAISSEMENTS') + ' - '+esc(periodeEncL)+'</div>' +
-      '<table style="width:100%;border-collapse:collapse;margin-bottom:18px"><thead><tr>' +
-      '<th style="'+TH+'">' + t('Date') + '</th>' +
-      '<th style="'+TH+'">' + t('Local') + '</th>' +
-      '<th style="'+TH+'">' + t('Locataire') + '</th>' +
-      '<th style="'+TH+'">' + t('Note') + '</th>' +
+    // Section 2 — encaissements, récapitulatif financier inclus en pied
+    html += _bandeau(t('ENCAISSEMENTS') + ' – ' + esc(periodeEncL)) +
+      '<table style="'+TBL+'">' +
+      '<colgroup><col style="width:14%"><col style="width:9%"><col style="width:36%">' +
+      '<col style="width:23%"><col style="width:18%"></colgroup>' +
+      '<thead><tr>' +
+      '<th style="'+TH+'text-align:center">' + t('Date') + '</th>' +
+      '<th style="'+TH+'text-align:center">' + t('Local') + '</th>' +
+      '<th style="'+TH+'text-align:left">' + t('Locataire') + '</th>' +
+      '<th style="'+TH+'text-align:left">' + t('Note') + '</th>' +
       '<th style="'+TH+'text-align:right">' + t('Montant') + '</th>' +
-      '</tr></thead><tbody>'+s2Rows+'</tbody></table>';
-
-    // Récapitulatif aligné à droite
-    html += '<div style="max-width:380px;margin-left:auto;margin-bottom:18px">' + recapHtml + '</div>';
+      '</tr></thead><tbody>'+s2Rows+recapRows+'</tbody></table>';
 
     // Arrêté en lettres
-    html += '<div style="font-size:11px;color:#333;font-style:italic;margin-bottom:22px;line-height:1.5">' +
+    html += '<div style="font-size:9.5pt;color:'+C_TEXTE+';font-style:italic;margin-bottom:18px;line-height:1.5">' +
       t('Soit') + ' : '+esc(lettres)+' ' + t('nets à percevoir au titre des loyers de') + ' '+MOIS_FR[fin.getMonth()]+' '+fin.getFullYear()+'.' +
       '</div>';
 
-    // Signatures
-    html += '<div style="border-top:1px solid #ddd;padding-top:14px;display:flex;justify-content:space-between">' +
-      '<div style="text-align:center;width:44%">' +
-      '<div style="font-size:10.5px;font-weight:700">' + t('Le Gestionnaire') + '</div>' +
-      '<div style="font-size:10px;color:#555">'+esc(docInfo.signataire || docInfo.sigle || nomCab)+'</div>' +
-      '<div style="height:38px"></div>' +
-      '<div style="border-top:1px solid #555;padding-top:3px;font-size:9px;color:#888;font-style:italic">' + t('Signature & Cachet') + '</div>' +
-      '</div>' +
-      '<div style="text-align:center;width:44%">' +
-      '<div style="font-size:10.5px;font-weight:700">' + t('Lu et approuvé - Le Propriétaire') + '</div>' +
-      '<div style="font-size:10px;color:#555">'+esc(nomProprio||nomImm)+'</div>' +
-      '<div style="height:38px"></div>' +
-      '<div style="border-top:1px solid #555;padding-top:3px;font-size:9px;color:#888;font-style:italic">' + t('Signature') + '</div>' +
-      '</div></div>';
+    // Signatures — tableau à deux volets, comme le pied du modèle Word
+    var SIG = TD + 'padding:9px 10px;font-size:9pt;color:'+C_BLEU+';font-weight:700;font-style:italic;';
+    html += '<table style="width:100%;border-collapse:collapse;margin-bottom:10px"><tr>' +
+      '<td style="'+SIG+'width:38%">' + t('Le Gestionnaire') +
+        '<br><span style="font-style:normal;color:'+C_TEXTE+'">'+esc(docInfo.signataire || docInfo.sigle || nomCab)+'</span>' +
+        '<div style="height:34px"></div>' + t('Signature & Cachet') + ' :</td>' +
+      '<td style="'+SIG+'">' + t('Lu et approuvé - Le Propriétaire') +
+        '<br><span style="font-style:normal;color:'+C_TEXTE+'">'+esc(nomProprio||nomImm)+'</span>' +
+        '<div style="height:34px"></div>' + t('Signature') + ' :</td>' +
+      '</tr></table>';
 
-    html += '<div style="text-align:center;color:#999;font-size:9px;margin-top:20px;border-top:1px solid #f0f0f0;padding-top:8px">' + t('Document généré le') + ' '+_fmtD(new Date().toISOString().slice(0,10))+' ' + t('par') + ' ImmoGest · '+esc(docInfo.sigle || nomCab)+'</div>';
+    // Pied de page : adresse du cabinet et bailleur, comme le footer du modèle
+    var piedLigne = [adresse, nomProprio].filter(Boolean).join('  ·  ');
+    html += '<div style="text-align:center;color:'+C_GRIS+';font-size:8pt;margin-top:12px;border-top:1px solid '+C_BLEU+';padding-top:6px">' +
+      (piedLigne ? esc(piedLigne) + '<br>' : '') +
+      '<span style="color:#aaa">' + t('Document généré le') + ' '+_fmtD(new Date().toISOString().slice(0,10))+' ' + t('par') + ' ImmoGest · '+esc(docInfo.sigle || nomCab)+'</span></div>';
     html += '</div>';
     return html;
   }
