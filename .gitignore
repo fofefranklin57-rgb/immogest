@@ -44,3 +44,11 @@ PROMESSE_DE_VENTE_*.docx
 # Divers
 .DS_Store
 Thumbs.db
+
+# Fichiers personnels / autres projets deposes a la racine — pas du code ImmoGest
+.transcribe-venv/
+transcribe_whatsapp.py
+scripts/create_reglement_obili.py
+*.mp3
+REGLEMENT_INTERIEUR_*
+cahier-des-charges-*.md
