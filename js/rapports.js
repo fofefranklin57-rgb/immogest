@@ -79,6 +79,23 @@ window.IG.rapports = (function() {
     };
   }
 
+  // ── Reste dû sur le mois de clôture, vu par la fiche de suivi ──
+  // Source unique de vérité pour « qui doit quoi » : la fiche consomme les
+  // versements dans l'ordre chronologique, donc un règlement de juillet qui
+  // couvre août est correctement imputé à août. Retourne null si la fiche
+  // n'est pas calculable (module absent, pas de date d'entrée) — l'appelant
+  // se replie alors sur l'ancien calcul.
+  function _resteMoisFiche(loc, versementsLoc, dateFin) {
+    if (!window.IG.paiements || !window.IG.paiements.calculerFiche || !loc || !loc.entree) return null;
+    var lignes = window.IG.paiements.calculerFiche(loc, versementsLoc, dateFin.getFullYear());
+    if (!lignes || !lignes.length) return null;
+    var moisCible  = dateFin.getMonth() + 1;
+    var anneeCible = dateFin.getFullYear();
+    var ligne = lignes.filter(function(l) { return l.mois === moisCible && l.annee === anneeCible; })[0];
+    if (!ligne) return null;
+    return ligne.horsBail ? 0 : (parseFloat(ligne.reste) || 0);
+  }
+
   // ── Rapport mensuel HTML — spec V2 (juin 2026) ──────────────
   function genererRapportMensuelHTML(immeubleId, dateDebut, dateFin, immeubles, locataires, paiements, filtreLoc) {
     var session  = window.IG.auth ? window.IG.auth.getSession() : {};
@@ -162,8 +179,17 @@ window.IG.rapports = (function() {
         ? _fmtD(dernierPay.date_paiement) + '<br><span style="color:#555">' + fmt(dernierPay.montant) + '</span>' +
           (horsPeriode ? '<br><span style="font-size:9px;color:#999">(' + t('hors période') + ')</span>' : '')
         : '—';
-      var totalPaye = lPays.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
-      var reste     = Math.max(0, loyer - totalPaye);
+      // Reste à payer pour le mois du rapport : on réutilise l'allocation
+      // officielle de la fiche de suivi (consommation chronologique des
+      // versements, avances comprises) au lieu de sommer les versements
+      // tombant dans la fenêtre du rapport. Un locataire qui a réglé août
+      // par un versement de juillet est à jour — la fenêtre seule le
+      // déclarait à tort débiteur.
+      var reste = _resteMoisFiche(loc, lPaysAll, fin);
+      if (reste === null) {
+        var totalPaye = lPays.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
+        reste = Math.max(0, loyer - totalPaye);
+      }
       totalResteS1 += reste;
 
       var obs = [];

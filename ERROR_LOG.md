@@ -582,3 +582,33 @@ doublon si deux sections étaient enregistrées en concurrence AVANT que la 1èr
   par un outil qui normalise le texte. En cas de « fichier corrompu » sur un format
   ZIP (.docx, .xlsx, .pptx, .epub), vérifier les 4 premiers octets **avant**
   de suspecter le code métier qui remplit le document.
+
+---
+
+## 2026-08-11 — Rapport mensuel et fiche de suivi se contredisaient
+
+### `js/rapports.js` — « reste à payer » calculé sur la fenêtre du rapport
+
+- **Erreur** : pour un même locataire, la fiche de suivi affichait « À JOUR — 0 FCFA »
+  pendant que le rapport mensuel annonçait « Doit août — 230 000 FCFA ».
+  Cas témoin : ESSOLA NGUIDJOL (local 2A, Teukeu Makepe), qui avait réglé août ET
+  septembre d'avance par un versement unique du 10/07/2026.
+- **Cause** : le rapport calculait `reste = loyer - somme des versements tombant
+  entre dateDebut et dateFin`. Un règlement effectué AVANT l'ouverture de la fenêtre
+  — donc toute avance — était invisible, et le locataire déclaré débiteur.
+  La ligne se contredisait d'ailleurs elle-même : la colonne OBSERVATIONS utilise
+  `relances.calculerRetard()` sur l'historique complet et affichait bien 0 mois dû,
+  pendant que la colonne RESTE À PAYER réclamait un mois entier.
+- **Solution** : le reste est désormais tiré de `paiements.calculerFiche()`, la même
+  allocation chronologique FIFO que la fiche de suivi — source unique de vérité.
+  Nouvelle fonction `_resteMoisFiche(loc, versements, dateFin)` qui retourne le
+  `reste` de la ligne du mois de clôture. Repli sur l'ancien calcul si la fiche
+  n'est pas calculable (pas de date d'entrée).
+- **Corrigé au passage** : un locataire dont le bail commence après la période
+  (`horsBail`) se voyait facturer un mois entier de loyer.
+- **Vérifié** : débiteur total, paiement dans la fenêtre, mois partiel, hors bail
+  et locataire sans date d'entrée — valeurs conformes à la fiche dans les 5 cas.
+- **À retenir** : « qui doit quoi » ne se recalcule jamais localement. Tout écran
+  qui affiche un solde doit passer par `paiements.calculerFiche()` /
+  `paiements.montantDu()` / `relances.calculerRetard()`, sinon deux écrans de
+  l'appli finissent par se contredire devant le client.
