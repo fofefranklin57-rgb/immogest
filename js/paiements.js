@@ -162,8 +162,13 @@ window.IG.paiements = (function() {
     var anneeCourante = aujourdhui.getFullYear();
 
     // Crédit implicite : si mois_arrieres > 0, les mois avant la "période due"
-    // sont considérés réglés → FIFO démarre au bon mois
+    // sont considérés réglés → FIFO démarre au bon mois.
+    // Ces mois-là précèdent la reprise du dossier : AUCUN versement ne les
+    // justifie dans ImmoGest. On les compte pour ne pas les réclamer, mais on
+    // les marque `anterieur` pour ne jamais les afficher « Payé » — une fiche
+    // de suivi signée ne peut pas attester un paiement qu'elle ne prouve pas.
     var moisArrieres = parseInt(locataire.mois_arrieres) || 0;
+    var moisAnterieurs = 0;
     if (moisArrieres > 0 && loyer > 0) {
       var totalPasse = moisList.filter(function(m) {
         var avantEntree = (m.annee < entree.getFullYear()) ||
@@ -172,7 +177,8 @@ window.IG.paiements = (function() {
         return !((m.annee > anneeCourante) || (m.annee === anneeCourante && m.mois > moisCourant));
       }).length;
       var creditMois = Math.max(0, totalPasse - moisArrieres);
-      cumulAvance += creditMois * loyer;
+      cumulAvance   += creditMois * loyer;
+      moisAnterieurs = creditMois;
     }
 
     moisList.forEach(function(m) {
@@ -211,13 +217,26 @@ window.IG.paiements = (function() {
       }
 
       var paye = cumul >= loyer;
+
+      // Mois couvert par le crédit d'ouverture, sans aucun versement réel :
+      // il précède la reprise du dossier. Ni « payé », ni dû — hors suivi.
+      var anterieur = !horsBail && !futur && moisAnterieurs > 0 && !versementsMois.length && paye;
+      if (anterieur) moisAnterieurs--;
+
       lignes.push({
         periode:    _formatPeriode(m.mois, m.annee),
         mois:       m.mois,
         annee:      m.annee,
         horsBail:   horsBail,
         futur:      futur,
-        statut:     horsBail ? 'Hors bail' : (paye ? (futur ? 'Payé (avance)' : 'Payé') : (futur ? 'À venir' : (cumul > 0 ? 'Partiel' : 'Impayé'))),
+        anterieur:  anterieur,
+        // `solde` = ce mois ne doit plus rien. Payé, payé d'avance, ou
+        // antérieur à la reprise. Tous les compteurs de l'app lisent ce
+        // drapeau plutôt que de comparer des libellés de statut.
+        solde:      !horsBail && (paye || anterieur),
+        statut:     horsBail ? 'Hors bail'
+                  : anterieur ? 'Antérieur au suivi'
+                  : (paye ? (futur ? 'Payé (avance)' : 'Payé') : (futur ? 'À venir' : (cumul > 0 ? 'Partiel' : 'Impayé'))),
         versements: versementsMois,
         cumul:      cumul,
         reste:      (horsBail || futur) ? 0 : (paye ? 0 : loyer - cumul)
@@ -249,7 +268,7 @@ window.IG.paiements = (function() {
       });
     }
     var fiche = calculerFiche(locProxy, versements);
-    var payes = fiche.filter(function(l) { return !l.horsBail && (l.statut === 'Payé' || l.statut === 'Payé (avance)'); }).length;
+    var payes = fiche.filter(function(l) { return l.solde; }).length;
     var duNouv = fiche.filter(function(l) { return !l.futur; }).reduce(function(s, l) { return s + (l.reste || 0); }, 0);
     return Math.max(0, baseArrieres - payes * loyer) + duNouv;
   }
@@ -265,7 +284,7 @@ window.IG.paiements = (function() {
     var anneeMax = pays.reduce(function(m, p) { var a = parseInt(p.annee) || 0; return a > m ? a : m; }, new Date().getFullYear()) + 1;
     var fiche = calculerFiche(loc, pays, anneeMax);
     if (!fiche.length) return new Date(loc.entree);
-    var premierImpaye = fiche.find(function(l) { return !l.horsBail && l.statut !== 'Payé' && l.statut !== 'Payé (avance)'; });
+    var premierImpaye = fiche.find(function(l) { return !l.horsBail && !l.solde; });
     if (premierImpaye) return new Date(premierImpaye.annee, premierImpaye.mois - 1, 1);
     // Tout est déjà payé (même d'avance) sur toute la période générée -> continuer juste après
     var lignesUtiles = fiche.filter(function(l) { return !l.horsBail; });
@@ -286,10 +305,10 @@ window.IG.paiements = (function() {
     var toutesLignes = calculerFiche(loc, versements, anneeMaxVersements);
     // Année par défaut = année du premier mois impayé (là où les paiements s'arrêtent)
     var annee = anneeParam || (function() {
-      var firstUnpaid = toutesLignes.filter(function(l) { return !l.horsBail && !l.futur && l.statut !== 'Payé'; })[0];
+      var firstUnpaid = toutesLignes.filter(function(l) { return !l.horsBail && !l.futur && !l.solde; })[0];
       if (firstUnpaid) return firstUnpaid.annee;
       // Tout est réglé (même d'avance) -> ouvrir sur la dernière année où il y a une activité réelle
-      var lignesUtiles = toutesLignes.filter(function(l) { return !l.horsBail && (l.statut === 'Payé' || l.statut === 'Payé (avance)'); });
+      var lignesUtiles = toutesLignes.filter(function(l) { return l.solde; });
       if (lignesUtiles.length) return lignesUtiles[lignesUtiles.length - 1].annee;
       return new Date().getFullYear();
     })();
@@ -314,12 +333,14 @@ window.IG.paiements = (function() {
     // Statistiques
     var now        = new Date();
     var todayYYMM  = now.getFullYear() * 100 + (now.getMonth() + 1);
-    var nbPayes    = lignes.filter(function(l) { return l.statut === 'Payé' || l.statut === 'Payé (avance)'; }).length;
-    var totalVerse = lignes.reduce(function(s, l) { return s + (l.cumul  || 0); }, 0);
+    var nbPayes    = lignes.filter(function(l) { return l.solde && !l.anterieur; }).length;
+    var totalVerse = lignes.reduce(function(s, l) { return s + (l.anterieur ? 0 : (l.cumul || 0)); }, 0);
     var totalReste = lignes.reduce(function(s, l) { return s + (l.reste  || 0); }, 0);
-    var lignesEligiblesScore = toutesLignes.filter(function(l) { return !l.horsBail; });
+    // Les mois antérieurs à la reprise sortent du score : on n'a aucune donnée
+    // sur eux, les compter « payés » gonflerait artificiellement la note.
+    var lignesEligiblesScore = toutesLignes.filter(function(l) { return !l.horsBail && !l.anterieur; });
     var nbMoisAll  = lignesEligiblesScore.length;
-    var nbPayesAll = lignesEligiblesScore.filter(function(l) { return l.statut === 'Payé' || l.statut === 'Payé (avance)'; }).length;
+    var nbPayesAll = lignesEligiblesScore.filter(function(l) { return l.solde; }).length;
     var score      = nbMoisAll ? Math.round((nbPayesAll / nbMoisAll) * 100) : 100;
     var scoreCouleur = score >= 80 ? '#27ae60' : score >= 50 ? '#f39c12' : '#e74c3c';
     var scoreLabel   = score >= 80 ? t('Fiable') : score >= 50 ? t('Moyen') : t('À risque');
@@ -463,6 +484,20 @@ window.IG.paiements = (function() {
           '<td style="' + TD + 'color:#bbb;font-style:italic">' + lg.periode + '</td>' +
           '<td style="' + TD + '"></td><td style="' + TD + '"></td>' +
           '<td style="' + TD + '"></td><td style="' + TD + '"></td>' +
+          '</tr>';
+        return;
+      }
+
+      // Mois antérieur à la reprise du dossier : aucun versement ne le
+      // justifie dans ImmoGest. On ne l'atteste pas payé — on dit ce qu'il
+      // est, et on ne le réclame pas non plus.
+      if (lg.anterieur) {
+        html += '<tr style="' + bg + '">' +
+          '<td style="' + TD + 'color:#999;font-style:italic">' + lg.periode + '</td>' +
+          '<td style="' + TD + '"><span style="color:#777;font-style:italic">' + t('Antérieur au suivi') + '</span></td>' +
+          '<td style="' + TD + 'color:#aaa">—</td>' +
+          '<td style="' + TD + 'color:#aaa">—</td>' +
+          '<td style="' + TD + 'color:#777;font-size:9px">' + t('Réglé avant la reprise du dossier') + '</td>' +
           '</tr>';
         return;
       }

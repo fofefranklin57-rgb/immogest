@@ -194,7 +194,7 @@ window.IG.legal = (function() {
   function analyseIA(loc, paiements) {
     var pays = paiements.filter(function(p) { return p.locataire_id == loc.id; });
     var fiche = window.IG.paiements ? window.IG.paiements.calculerFiche(loc, pays) : [];
-    var impayes = fiche.filter(function(l) { return !l.futur && l.statut !== 'Payé'; });
+    var impayes = fiche.filter(function(l) { return !l.futur && !l.solde; });
     var montant = impayes.reduce(function(s, l) { return s + (l.reste || 0); }, 0);
     var moisRetard = impayes.length;
 
@@ -233,7 +233,7 @@ window.IG.legal = (function() {
     var fiche = window.IG.paiements ? window.IG.paiements.calculerFiche(loc, pays) : [];
     var fichePasse = fiche.filter(function(l) { return !l.futur; });
     var total = fichePasse.length;
-    var payes = fichePasse.filter(function(l) { return l.statut === 'Payé'; }).length;
+    var payes = fichePasse.filter(function(l) { return l.solde; }).length;
     if (!total) return 100;
     var taux = payes / total;
     var score = Math.round(taux * 100);

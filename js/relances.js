@@ -39,8 +39,8 @@ window.IG.relances = (function() {
     // on laisse la fiche les compter au lieu de renvoyer les seuls arriérés
     // saisis à la main, qui déclaraient le locataire à jour.
     var fiche = _ficheDepuisPremierPaiement(loc, paiements || []);
-    var payes = fiche.filter(function(l) { return !l.horsBail && (l.statut === 'Payé' || l.statut === 'Payé (avance)'); }).length;
-    var impayesNouveaux = fiche.filter(function(l) { return !l.futur && !l.horsBail && l.statut !== 'Payé'; }).length;
+    var payes = fiche.filter(function(l) { return l.solde; }).length;
+    var impayesNouveaux = fiche.filter(function(l) { return !l.futur && !l.horsBail && !l.solde; }).length;
     return Math.max(0, base - payes) + impayesNouveaux;
   }
 

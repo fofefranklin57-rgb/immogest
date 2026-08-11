@@ -40,12 +40,12 @@ window.IG.portail = (function() {
 
     var paiements = data.paiements.filter(function(p) { return p.locataire_id == loc.id; });
     var fiche = window.IG.paiements ? window.IG.paiements.calculerFiche(loc, paiements) : [];
-    var impayes = fiche.filter(function(l) { return l.statut !== 'Payé'; });
+    var impayes = fiche.filter(function(l) { return !l.solde; });
     var montantDu = impayes.reduce(function(s, l) { return s + (l.reste || 0); }, 0);
     var lastPay = paiements.length ? paiements.slice().sort(function(a, b) {
       return new Date(b.date_paiement || b.created_at || 0) - new Date(a.date_paiement || a.created_at || 0);
     })[0] : null;
-    var prochaineLigne = fiche.find(function(l) { return l.statut !== 'Payé'; }) || fiche[fiche.length - 1] || null;
+    var prochaineLigne = fiche.find(function(l) { return !l.solde; }) || fiche[fiche.length - 1] || null;
     var canDeclare = !window.IG.perms || window.IG.perms.canDo('declarer_paiement');
     var canViewFiche = !window.IG.perms || window.IG.perms.canDo('voir_fiche_locataire');
     var canViewRecus = !window.IG.perms || window.IG.perms.canDo('voir_recus');
@@ -104,7 +104,7 @@ window.IG.portail = (function() {
       '<th style="padding:8px 10px;text-align:right;font-weight:600">' + t('Reste') + '</th>' +
       '</tr></thead><tbody>' +
       (fiche.length ? fiche.slice().reverse().map(function(ligne) {
-        var paye = ligne.statut === 'Payé';
+        var paye = ligne.solde;
         return '<tr style="border-bottom:1px solid var(--border2)">' +
           '<td style="padding:8px 10px">' + esc(ligne.periode) + '</td>' +
           '<td style="padding:8px 10px;text-align:right">' + fmt(loc.loyer) + '</td>' +

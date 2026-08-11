@@ -778,3 +778,37 @@ doublon si deux sections étaient enregistrées en concurrence AVANT que la 1èr
 - **À retenir** : ne jamais stocker en base une valeur qui se périme, puis
   l'afficher à côté de son équivalent calculé. `arrieres` est un point de départ
   historique, pas un solde.
+
+---
+
+## 2026-08-11 — La fiche de suivi attestait des paiements qu'elle ne pouvait pas prouver
+
+### `js/paiements.js` — statut « Antérieur au suivi »
+
+- **Erreur** : pour un locataire ayant des arriérés à la reprise du dossier, la
+  fiche affichait « Payé » sur tous les mois antérieurs, **sans aucun versement
+  en face**. Sur FONTEM Vanessa (entrée 10/2023, 16 mois d'arriérés), 19 lignes
+  affirmaient « Payé » avec la colonne versements vide.
+- **Pourquoi c'est grave** : la fiche de suivi est signée par le cabinet et remise
+  au bailleur. Elle attestait un règlement qu'aucune écriture ne justifie —
+  indéfendable en cas de litige sur cette période.
+- **Cause** : `mois_arrieres` génère un crédit implicite (`creditMois × loyer`)
+  qui solde les mois les plus anciens pour que le FIFO démarre au bon endroit.
+  Ce crédit est un artifice de calcul, il était rendu comme un vrai paiement.
+- **Solution** : ces mois portent le drapeau `anterieur` et le statut
+  « Antérieur au suivi », avec la mention « Réglé avant la reprise du dossier ».
+  Ni attestés payés, ni réclamés.
+- **Aucun chiffre ne bouge** : un drapeau `solde` a été ajouté sur chaque ligne
+  (payé, payé d'avance OU antérieur) et tous les compteurs de l'app le lisent
+  désormais au lieu de comparer des libellés de statut — `paiements.montantDu`,
+  `relances.calculerRetard`, `locataires`, `legal`, `portail`.
+  Vérifié sur Vanessa : montantDu 1 640 000 et 8 mois de retard avant ET après.
+- **Score de fiabilité** : les mois antérieurs sortent du calcul (numérateur ET
+  dénominateur) — on n'a aucune donnée sur eux, les compter « payés » gonflait
+  artificiellement la note.
+- **Effet de bord utile** : un locataire dont `mois_arrieres` est renseigné ALORS
+  QUE son historique de versements couvre déjà ces mois affiche beaucoup de lignes
+  « Antérieur au suivi ». C'est le signe que le champ arriérés est surévalué —
+  l'incohérence était déjà là, elle était simplement invisible.
+- **À retenir** : un artifice de calcul ne doit jamais ressortir tel quel dans un
+  document signé. Si l'app ne peut pas prouver une affirmation, elle ne la fait pas.
