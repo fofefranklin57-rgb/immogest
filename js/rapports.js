@@ -137,6 +137,27 @@ window.IG.rapports = (function() {
     return { moisDus: moisDus, montantDu: duCumule, couvertJusqu: couvertJusqu };
   }
 
+  // ── Dette réelle d'un locataire, source unique ────────────────
+  // `loc.arrieres` est le solde d'ouverture saisi à la reprise du dossier :
+  // il ne bouge JAMAIS ensuite. L'utiliser comme dette courante faisait
+  // diverger les rapports de la fiche de suivi et de la liste des locataires.
+  // Tout écran qui affiche « ce que doit ce locataire » passe par ici.
+  function _duReel(loc, tousLesPaiements) {
+    if (!loc || loc.statut === 'libre') return 0;
+    var pays = (tousLesPaiements || (window.IG.paiements ? window.IG.paiements.getCache() : []))
+      .filter(function(p) { return p.locataire_id == loc.id; });
+    return window.IG.paiements && window.IG.paiements.montantDu
+      ? window.IG.paiements.montantDu(loc, pays)
+      : (parseFloat(loc.arrieres) || 0);
+  }
+
+  function _moisDusReel(loc, tousLesPaiements) {
+    if (!loc || loc.statut === 'libre') return 0;
+    var pays = (tousLesPaiements || (window.IG.paiements ? window.IG.paiements.getCache() : []))
+      .filter(function(p) { return p.locataire_id == loc.id; });
+    return window.IG.relances ? window.IG.relances.calculerRetard(loc, pays) : 0;
+  }
+
   // ── Rapport mensuel HTML — spec V2 (juin 2026) ──────────────
   function genererRapportMensuelHTML(immeubleId, dateDebut, dateFin, immeubles, locataires, paiements, filtreLoc) {
     var session  = window.IG.auth ? window.IG.auth.getSession() : {};
@@ -914,16 +935,16 @@ window.IG.rapports = (function() {
     });
 
     // ── Résumé cards dans l'app ──────────────────────────────────
+    // Le passif vient de `paiements.montantDu()`, comme partout ailleurs.
+    // L'ancienne formule maison (loyer × mois + champ `arrieres` − versements
+    // de la période) double-comptait la dette : `arrieres` est un solde
+    // d'ouverture figé, déjà réglé en partie par les versements postérieurs.
     var totVerse = 0, totPassif = 0;
     var locsAct  = locs.filter(function(l){ return l.statut !== 'libre'; });
     locsAct.forEach(function(l) {
-      var v = pays.filter(function(p){ return p.locataire_id==l.id; }).reduce(function(s,p){ return s+(parseFloat(p.montant)||0); },0);
-      totVerse  += v;
-      var attendu = (parseFloat(l.loyer)||0) * (function() {
-        var n=0, cur=new Date(debD.getFullYear(),debD.getMonth(),1);
-        while(cur<=finD){n++;cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);}return n;
-      })() + (parseFloat(l.arrieres)||0);
-      totPassif += Math.max(0, attendu - v);
+      totVerse  += pays.filter(function(p){ return p.locataire_id==l.id; })
+                       .reduce(function(s,p){ return s+(parseFloat(p.montant)||0); },0);
+      totPassif += _duReel(l, allPays);
     });
     var tauxR = totVerse+totPassif > 0 ? Math.round(totVerse/(totVerse+totPassif)*100) : 0;
     var tauxC = tauxR>=80?'#0f6e56':tauxR>=50?'#ba7517':'#a32d2d';
@@ -964,16 +985,8 @@ window.IG.rapports = (function() {
           var loyer  = parseFloat(l.loyer) || 0;
           var lPays  = pays.filter(function(p){ return p.locataire_id==l.id; });
           var verse  = lPays.reduce(function(s,p){ return s+(parseFloat(p.montant)||0); },0);
-          var moisC  = (function(){
-            var n=0,cur=new Date(debD.getFullYear(),debD.getMonth(),1);
-            var e=l.entree?new Date(l.entree):null;
-            while(cur<=finD){var mf=new Date(cur.getFullYear(),cur.getMonth()+1,0);
-              if(!e||e<=mf)n++;
-              cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);}return n;
-          })();
-          var attendu= loyer*moisC+(parseFloat(l.arrieres)||0);
-          var passif = Math.max(0, attendu-verse);
-          var moisDus= loyer>0 ? Math.ceil(passif/loyer) : 0;
+          var passif = _duReel(l, allPays);
+          var moisDus= _moisDusReel(l, allPays);
           gtVerse+=verse; gtPassif+=passif;
           var badge = passif<=0
             ? '<span style="background:#e1f5ee;color:#0f6e56;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:500">À jour</span>'
@@ -1055,10 +1068,8 @@ window.IG.rapports = (function() {
       var mc     = _moisCouv(l);
       var lPays  = pays.filter(function(p){ return p.locataire_id==l.id; });
       var verse  = lPays.reduce(function(s,p){ return s+(parseFloat(p.montant)||0); },0);
-      var arrIni = parseFloat(l.arrieres)||0;
-      var attendu= loyer*mc+arrIni;
-      var passif = Math.max(0,attendu-verse);
-      var moisD  = loyer>0?Math.ceil(passif/loyer):0;
+      var passif = _duReel(l, allPays);
+      var moisD  = _moisDusReel(l, allPays);
       var caution= parseFloat(l.caution||l.depot_garantie)||0;
 
       // Commission individuelle sur ce que ce locataire a versé
@@ -1630,7 +1641,7 @@ window.IG.rapports = (function() {
     var totalOccupes   = locs.filter(function(l) { return l.statut !== 'libre'; }).length;
     var totalLoyersMRC = locs.filter(function(l) { return l.statut !== 'libre'; }).reduce(function(s, l) { return s + (parseFloat(l.loyer)||0); }, 0);
     var totalEncMois   = pay.filter(function(p) { return parseInt(p.mois) === moisCur && parseInt(p.annee) === annCur; }).reduce(function(s, p) { return s + (parseFloat(p.montant)||0); }, 0);
-    var totalArrieres  = locs.filter(function(l) { return l.statut !== 'libre'; }).reduce(function(s, l) { return s + (parseFloat(l.arrieres)||0); }, 0);
+    var totalArrieres  = locs.filter(function(l) { return l.statut !== 'libre'; }).reduce(function(s, l) { return s + _duReel(l, pay); }, 0);
     var tauxGlobal     = totalLocaux > 0 ? Math.round(totalOccupes / totalLocaux * 100) : 0;
 
     // Lignes par immeuble
@@ -1674,7 +1685,7 @@ window.IG.rapports = (function() {
       _metricCard('📈', tauxGlobal + '%', t('Taux global')) +
       _metricCard('💰', fmt(totalEncMois), t('Encaissé ce mois')) +
       '</div>' +
-      (totalArrieres > 0 ? '<div style="background:rgba(185,48,32,.08);border:1px solid var(--red);border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:12px">⚠️ Arriérés cumulés déclarés : <strong style="color:var(--red)">' + fmt(totalArrieres) + '</strong></div>' : '') +
+      (totalArrieres > 0 ? '<div style="background:rgba(185,48,32,.08);border:1px solid var(--red);border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:12px">⚠️ ' + t('Arriérés cumulés') + ' : <strong style="color:var(--red)">' + fmt(totalArrieres) + '</strong></div>' : '') +
       '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
       '<thead><tr>' +
       '<th style="' + TH + '">Immeuble</th>' +

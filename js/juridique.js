@@ -135,6 +135,15 @@ window.IG.juridique = (function() {
   }
 
   // ── Score de fiabilité locataire (0–100) ─────────────────────
+  // Dette réelle à aujourd'hui — jamais le champ `loc.arrieres`, qui est un
+  // solde d'ouverture figé à la reprise du dossier et ne bouge plus ensuite.
+  function _duActuel(loc, paiements) {
+    if (window.IG.paiements && window.IG.paiements.montantDu) {
+      return window.IG.paiements.montantDu(loc, paiements || []);
+    }
+    return parseFloat(loc.arrieres) || 0;
+  }
+
   function calculerScore(loc) {
     var paiements = _getPaiementsLoc(loc.id);
     if (!paiements.length) return { score: 50, label: 'Nouveau', color: 'var(--text3)', detail: 'Pas encore d\'historique' };
@@ -152,7 +161,7 @@ window.IG.juridique = (function() {
     var score = Math.round(
       tauxPonctualite * 60 +                          // 60 pts ponctualité
       Math.min(moisPresence / 12, 1) * 20 +           // 20 pts ancienneté (max 1 an)
-      (loc.arrieres === 0 || !loc.arrieres ? 20 : 0)  // 20 pts aucun arriéré actuel
+      (_duActuel(loc, paiements) <= 0 ? 20 : 0)       // 20 pts aucun arriéré actuel
     );
     score = Math.max(0, Math.min(100, score));
 

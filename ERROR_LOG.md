@@ -741,3 +741,40 @@ doublon si deux sections étaient enregistrées en concurrence AVANT que la 1èr
 - **⚠️ À déployer** : ce contrôle n'est actif qu'après `wrangler deploy` du Worker.
 - **À retenir** : une restriction qui n'existe que dans le HTML n'est pas une
   restriction. Toute règle d'accès doit être doublée côté serveur.
+
+---
+
+## 2026-08-11 — CAUSE RACINE des contradictions : deux définitions de la dette
+
+### Toute l'app — `loc.arrieres` figé vs `montantDu()` calculé
+
+- **Symptôme signalé** : la fiche d'enregistrement de FONTEM Vanessa (local 1D)
+  affichait 3 680 000 FCFA d'arriérés, la liste des locataires 1 640 000 pour la
+  même personne. « Et ça se répète un peu partout. »
+- **Cause** : `locataires.arrieres` et `locataires.mois_arrieres` sont un **solde
+  d'OUVERTURE**, saisi une fois à la reprise du dossier. Ils ne bougent jamais
+  ensuite. Or la moitié de l'app les affichait comme s'il s'agissait de la dette
+  courante, l'autre moitié affichait `paiements.montantDu()`, qui est vivant.
+  Les deux ne pouvaient que diverger dès le premier loyer encaissé.
+- **Pire** : trois écrans de rapport recalculaient la dette avec une formule
+  maison — `loyer × nb_mois + arrieres − versements` — qui additionne le solde
+  d'ouverture ET tous les mois de la période, alors que les versements
+  postérieurs ont déjà soldé une partie de ce même arriéré. Sur Vanessa, cette
+  formule donnait **9 690 000 FCFA** contre 1 640 000 réels : un facteur 6.
+- **Solution** : `paiements.montantDu()` devient la source unique. Corrigés :
+  - `js/rapports.js` — résumé annuel, tableau par locataire, portefeuille,
+    total arriérés (helpers `_duReel()` / `_moisDusReel()`) ;
+  - `js/locataires.js` — `_resteCalc()` ne renvoie plus le champ figé quand le
+    locataire n'a aucun versement ;
+  - `js/juridique.js` — le score de fiabilité notait « aucun arriéré » sur le
+    champ figé.
+- **Formulaire clarifié** : les deux champs sont regroupés dans un encadré
+  « Situation au moment de la reprise du dossier — ces deux champs ne changent
+  pas quand un loyer est encaissé », renommés « Arriérés à la reprise », avec la
+  **dette réelle du jour affichée juste en dessous**. Plus aucune ambiguïté entre
+  ce qu'on saisit et ce que l'app calcule.
+- **Vérifié** : Vanessa → 1 640 000 partout (formulaire, liste, rapports) ;
+  locataire sans aucun versement → 800 000 au lieu de « — ».
+- **À retenir** : ne jamais stocker en base une valeur qui se périme, puis
+  l'afficher à côté de son équivalent calculé. `arrieres` est un point de départ
+  historique, pas un solde.

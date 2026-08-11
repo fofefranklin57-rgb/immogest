@@ -658,12 +658,27 @@ window.IG.locataires = (function() {
       _fieldNum('caution', t('Caution'), loc.caution || 0) +
       '</div>' +
       _field('entree', t('Date entrée'), loc.entree || '', false, 'date') +
+      // Ces deux champs sont le solde d'OUVERTURE, figé à la reprise du
+      // dossier. Ils ne bougent pas quand un loyer est encaissé — d'où la
+      // confusion avec la dette courante affichée partout ailleurs. On le dit
+      // explicitement et on affiche la dette réelle juste en dessous.
+      '<div style="background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:12px">' +
+      '<div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.5">' +
+      '⚠️ ' + t('Situation au moment de la reprise du dossier — ces deux champs ne changent pas quand un loyer est encaissé.') + '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-      '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Arriérés (FCFA)') + '</label>' +
+      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Arriérés à la reprise (FCFA)') + '</label>' +
       '<input type="number" name="arrieres" id="edit-arr" value="' + (parseFloat(loc.arrieres)||0) + '" min="0" step="500" oninput="window.IG.locataires._syncArrMoisEdit()" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
-      '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Nb mois arriérés') + '</label>' +
+      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Nb mois arriérés') + '</label>' +
       '<input type="number" name="mois_arrieres" id="edit-arr-mois" value="' + (parseInt(loc.mois_arrieres)||0) + '" min="0" step="1" oninput="window.IG.locataires._syncArrMontantEdit()" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
       '</div>' +
+      '<div style="margin-top:10px;padding-top:9px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">' +
+      '<span style="font-size:12px;color:var(--text2);font-weight:600">' + t('Dette réelle aujourd\'hui') + '</span>' +
+      (function() {
+        var du = _resteCalc(loc, window.IG.paiements ? window.IG.paiements.getCache() : []);
+        return '<strong style="font-size:14px;color:' + (du > 0 ? 'var(--red)' : 'var(--green)') + '">' +
+          (du > 0 ? window.IG.utils.formatMontant(du) : t('À jour')) + '</strong>';
+      })() +
+      '</div></div>' +
       '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Observations') + '</label>' +
       '<textarea name="observations" rows="2" style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text);resize:vertical">' + esc(loc.observations || '') + '</textarea></div>' +
       '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">' +
@@ -852,10 +867,13 @@ window.IG.locataires = (function() {
     if (!loc.entree || !loc.loyer) return 0;
     var pays = (paiements || []).filter(function(p) { return p.locataire_id == loc.id; });
     var baseArrieres = parseFloat(loc.arrieres) || 0;
-    if (pays.length === 0) return baseArrieres;
+    // Même sans aucun versement, la dette se calcule : les mois écoulés depuis
+    // l'entrée sont dus. Renvoyer le champ `arrieres` figé déclarait « à jour »
+    // un locataire n'ayant jamais rien payé.
     if (window.IG.paiements && window.IG.paiements.montantDu) {
       return window.IG.paiements.montantDu(loc, pays);
     }
+    if (pays.length === 0) return baseArrieres;
     // Fallback mois courant si paiements module non chargé
     var now = new Date();
     var mois = now.getMonth() + 1;
