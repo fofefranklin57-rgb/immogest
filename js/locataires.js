@@ -431,9 +431,15 @@ window.IG.locataires = (function() {
           _grp(_lbl(t('Loyer mensuel (FCFA)'), true) + '<input type="number" id="wz-loyer" value="' + (_data.loyer || '') + '" min="0" step="500" placeholder="Ex: 50000" style="' + _inp() + '">') +
           _grp(_lbl(t('Caution')) + '<input type="number" id="wz-caution" value="' + (_data.caution || '') + '" min="0" step="500" style="' + _inp() + '">') +
           '</div>' +
+          '<div style="background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:12px">' +
+          '<div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.5">💡 ' +
+          t('Indiquez simplement combien de mois il doit aujourd\'hui. Aucun historique à ressaisir : tout ce qui précède sort du suivi.') + '</div>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-          _grp(_lbl(t('Arriérés antérieurs (FCFA)')) + '<input type="number" id="wz-arr" value="' + (_data.arrieres || 0) + '" min="0" step="500" oninput="window.IG.locataires._syncArrMois()" style="' + _inp() + '">') +
-          _grp(_lbl(t('Nb mois arriérés')) + '<input type="number" id="wz-arr-mois" value="' + (_data.mois_arrieres || 0) + '" min="0" step="1" oninput="window.IG.locataires._syncArrMontant()" style="' + _inp() + '">') +
+          _grp(_lbl(t('Mois dus aujourd\'hui')) + '<input type="number" id="wz-mois-dus" value="' + (_data.mois_arrieres || 0) + '" min="0" step="1" oninput="window.IG.locataires._syncSuiviWz()" style="' + _inp() + '">') +
+          _grp(_lbl(t('Solde reporté (reliquat)')) + '<input type="number" id="wz-solde-rep" value="' + (_data.solde_reporte || 0) + '" min="0" step="500" style="' + _inp() + '">') +
+          '</div>' +
+          '<div style="font-size:11px;color:var(--text3)">' + t('Comptabilisé depuis') +
+          ' <strong id="wz-suivi-apercu" style="color:var(--accent)">—</strong></div>' +
           '</div>' +
           _grp(_lbl(t('Observations')) + '<textarea id="wz-obs" rows="2" placeholder="' + t('Notes particulières...') + '" style="' + _inp() + 'resize:vertical">' + esc(_data.observations || '') + '</textarea>');
 
@@ -498,16 +504,16 @@ window.IG.locataires = (function() {
       var entree = (document.getElementById('wz-entree') || {}).value || '';
       var loyer  = parseFloat((document.getElementById('wz-loyer') || {}).value || 0);
       var caution = parseFloat((document.getElementById('wz-caution') || {}).value || 0);
-      var arr = parseFloat((document.getElementById('wz-arr') || {}).value || 0);
-      var arrM = parseInt((document.getElementById('wz-arr-mois') || {}).value || 0);
+      var moisDus = parseInt((document.getElementById('wz-mois-dus') || {}).value || 0);
+      var soldeRep = parseFloat((document.getElementById('wz-solde-rep') || {}).value || 0);
       var obs = (document.getElementById('wz-obs') || {}).value || '';
       if (!entree) { toast(t('Date d\'entrée obligatoire'), 'red'); return; }
       if (!loyer) { toast(t('Loyer obligatoire'), 'red'); return; }
       _data.entree = entree;
       _data.loyer = loyer;
       _data.caution = caution;
-      _data.arrieres = arr;
-      _data.mois_arrieres = arrM;
+      _data.suivi_depuis = _moisVersDate(moisDus, entree);
+      _data.solde_reporte = soldeRep;
       _data.observations = obs;
       _data.statut = 'actif';
       _data.id = window.IG.utils.uid();
@@ -594,17 +600,11 @@ window.IG.locataires = (function() {
         '<button onclick="document.getElementById(\'wz-locaux-pop\').remove()" style="margin-top:14px;width:100%;padding:9px;border-radius:8px;border:none;background:var(--bg3);color:var(--text);cursor:pointer">' + t('Fermer') + '</button></div>';
       document.body.appendChild(pop);
     };
-    window.IG.locataires._syncArrMois = function() {
-      var loyer = parseFloat((document.getElementById('wz-loyer') || {}).value || 0);
-      var arr = parseFloat((document.getElementById('wz-arr') || {}).value || 0);
-      var moisEl = document.getElementById('wz-arr-mois');
-      if (loyer > 0 && moisEl) moisEl.value = Math.round(arr / loyer);
-    };
-    window.IG.locataires._syncArrMontant = function() {
-      var loyer = parseFloat((document.getElementById('wz-loyer') || {}).value || 0);
-      var mois = parseInt((document.getElementById('wz-arr-mois') || {}).value || 0);
-      var arrEl = document.getElementById('wz-arr');
-      if (loyer > 0 && arrEl) arrEl.value = mois * loyer;
+    window.IG.locataires._syncSuiviWz = function() {
+      var n = (document.getElementById('wz-mois-dus') || {}).value;
+      var e = (document.getElementById('wz-entree') || {}).value;
+      var ap = document.getElementById('wz-suivi-apercu');
+      if (ap) ap.textContent = _libelleMois(_moisVersDate(n, e));
     };
 
     // Créer l'overlay
@@ -615,17 +615,52 @@ window.IG.locataires = (function() {
     document.body.appendChild(overlay);
   }
 
-  function _syncArrMoisEdit() {
-    var loyer = parseFloat((document.getElementById('edit-loyer') || {}).value || 0);
-    var arr = parseFloat((document.getElementById('edit-arr') || {}).value || 0);
-    var moisEl = document.getElementById('edit-arr-mois');
-    if (loyer > 0 && moisEl) moisEl.value = Math.round(arr / loyer);
+  // ── Mois dus ⇄ date de début de suivi ─────────────────────────
+  // On saisit ce qu'on connaît — « il doit 16 mois » — et l'app en déduit la
+  // date à partir de laquelle elle compte. Aucun historique à ressaisir : tout
+  // ce qui précède cette date sort du suivi. La date est ensuite figée, si bien
+  // que la dette grandit normalement mois après mois.
+  function _moisVersDate(nbMois, entree) {
+    var n = parseInt(nbMois) || 0;
+    var d = new Date();
+    // 0 mois dû = à jour, mois en cours compris → le suivi démarre le mois
+    // suivant. 1 mois dû = le mois en cours est impayé, etc.
+    d = new Date(d.getFullYear(), d.getMonth() - (n - 1), 1);
+    if (entree) {
+      var e = new Date(entree);
+      if (!isNaN(e) && d < e) d = new Date(e.getFullYear(), e.getMonth(), 1);
+    }
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01';
   }
-  function _syncArrMontantEdit() {
-    var loyer = parseFloat((document.getElementById('edit-loyer') || {}).value || 0);
-    var mois = parseInt((document.getElementById('edit-arr-mois') || {}).value || 0);
-    var arrEl = document.getElementById('edit-arr');
-    if (loyer > 0 && arrEl) arrEl.value = mois * loyer;
+  function _dateVersMois(iso) {
+    if (!iso) return 0;
+    var d = new Date(iso); if (isNaN(d)) return 0;
+    var n = new Date();
+    return Math.max(0, (n.getFullYear() - d.getFullYear()) * 12 + (n.getMonth() - d.getMonth()) + 1);
+  }
+  function _libelleMois(iso) {
+    var d = new Date(iso); if (isNaN(d)) return '';
+    var M = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+    return M[d.getMonth()] + ' ' + d.getFullYear();
+  }
+
+  // Édition : l'utilisateur tape un nombre de mois, on affiche la date déduite.
+  function _syncSuiviEdit() {
+    var moisEl  = document.getElementById('edit-mois-dus');
+    var dateEl  = document.getElementById('edit-suivi');
+    var apercu  = document.getElementById('edit-suivi-apercu');
+    if (!moisEl || !dateEl) return;
+    dateEl.value = _moisVersDate(moisEl.value, (document.getElementById('edit-entree') || {}).value);
+    if (apercu) apercu.textContent = _libelleMois(dateEl.value);
+  }
+  // …ou il corrige la date directement, et le nombre de mois suit.
+  function _syncMoisDepuisDate() {
+    var moisEl = document.getElementById('edit-mois-dus');
+    var dateEl = document.getElementById('edit-suivi');
+    var apercu = document.getElementById('edit-suivi-apercu');
+    if (!moisEl || !dateEl) return;
+    moisEl.value = _dateVersMois(dateEl.value);
+    if (apercu) apercu.textContent = _libelleMois(dateEl.value);
   }
 
   function _afficherFormulaireEdition(loc, onSuccess) {
@@ -664,12 +699,17 @@ window.IG.locataires = (function() {
       // explicitement et on affiche la dette réelle juste en dessous.
       '<div style="background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:12px">' +
       '<div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.5">' +
-      '⚠️ ' + t('Point de départ de la comptabilité ImmoGest. Les mois antérieurs ne sont ni réclamés, ni attestés payés.') + '</div>' +
+      '💡 ' + t('Indiquez simplement combien de mois il doit aujourd\'hui. Aucun historique à ressaisir : tout ce qui précède sort du suivi.') + '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Suivi ImmoGest depuis') + '</label>' +
-      '<input type="date" name="suivi_depuis" id="edit-suivi" value="' + esc(loc.suivi_depuis || loc.entree || '') + '" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
-      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Solde reporté à cette date') + '</label>' +
+      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Mois dus aujourd\'hui') + '</label>' +
+      '<input type="number" id="edit-mois-dus" value="' + _dateVersMois(loc.suivi_depuis || loc.entree) + '" min="0" step="1" oninput="window.IG.locataires._syncSuiviEdit()" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
+      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Solde reporté (reliquat)') + '</label>' +
       '<input type="number" name="solde_reporte" id="edit-solde-rep" value="' + (parseFloat(loc.solde_reporte)||0) + '" min="0" step="500" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
+      '</div>' +
+      '<div style="margin-top:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+      '<span style="font-size:11px;color:var(--text3)">' + t('Comptabilisé depuis') + '</span>' +
+      '<strong id="edit-suivi-apercu" style="font-size:12px;color:var(--accent)">' + esc(_libelleMois(loc.suivi_depuis || loc.entree)) + '</strong>' +
+      '<input type="date" name="suivi_depuis" id="edit-suivi" value="' + esc(loc.suivi_depuis || loc.entree || '') + '" onchange="window.IG.locataires._syncMoisDepuisDate()" style="margin-left:auto;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--bg4);font-size:11px;color:var(--text2)">' +
       '</div>' +
       '<div style="margin-top:10px;padding-top:9px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">' +
       '<span style="font-size:12px;color:var(--text2);font-weight:600">' + t('Dette réelle aujourd\'hui') + '</span>' +
@@ -836,7 +876,7 @@ window.IG.locataires = (function() {
 
   function _field(name, label, val, required, type) {
     return '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + label + (required ? ' *' : '') + '</label>' +
-      '<input type="' + (type || 'text') + '" name="' + name + '" value="' + esc(val || '') + '"' + (required ? ' required' : '') +
+      '<input type="' + (type || 'text') + '" name="' + name + '" id="edit-' + name + '" value="' + esc(val || '') + '"' + (required ? ' required' : '') +
       ' style="width:100%;margin-top:4px;padding:9px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>';
   }
 
@@ -1035,7 +1075,7 @@ window.IG.locataires = (function() {
     charger, getCache, getById, getByImmeuble, sauvegarder,
     liberer, supprimer, renderListe, renderListeFiltree, afficherFormulaire, afficherFiche,
     lienWA, _libererConfirm, _toggleMenu, _closeMenus, envoyerAccesWA,
-    _publierAnnonce, rafraichirFiche, _syncArrMoisEdit, _syncArrMontantEdit
+    _publierAnnonce, rafraichirFiche, _syncSuiviEdit, _syncMoisDepuisDate
   };
 
 })();

@@ -850,3 +850,29 @@ doublon si deux sections étaient enregistrées en concurrence AVANT que la 1èr
   d'origine, plus lus par aucun calcul et retirés du formulaire.
 - **À retenir** : une dette est un fait daté. La calculer par rapport à
   « aujourd'hui » la rend mouvante — ici, immobile.
+
+---
+
+## 2026-08-11 — Saisie des arriérés : on saisit des MOIS, pas une date
+
+### `js/locataires.js` — ergonomie de la reprise d'un locataire ancien
+
+- **Retour utilisateur** : « un locataire chez nous depuis 10 ans, je ne vais pas
+  enregistrer tous ses versements. Je réglais ça en saisissant le nombre de mois
+  qu'il devait. »
+- **Le modèle V024 répondait déjà au fond du problème** — les mois avant
+  `suivi_depuis` sortent du calcul, aucun historique n'est à ressaisir — mais le
+  formulaire demandait une DATE, ce qui obligeait à un calcul mental
+  (16 mois en arrière depuis aujourd'hui = mai 2025).
+- **Solution** : le champ de saisie redevient « Mois dus aujourd'hui ». L'app en
+  déduit `suivi_depuis` et affiche le mois obtenu en clair (« Comptabilisé depuis
+  mai 2025 »). Le champ date reste accessible en petit à côté pour corriger au
+  besoin, et les deux se synchronisent dans les deux sens.
+- **Convention** : 0 mois dû = à jour, mois en cours compris → le suivi démarre
+  le mois SUIVANT. 1 mois dû = le mois en cours est impayé. Sans cette règle,
+  saisir 0 facturait quand même le mois courant.
+- **Différence avec l'ancien `mois_arrieres`** : la saisie est identique, mais
+  elle est convertie UNE FOIS en date fixe. Avant, le nombre restait vivant et la
+  fenêtre glissait, gelant la dette à jamais (voir la fiche V024 ci-dessus).
+- **Vérifié** sur un locataire entré en 2016, sans aucun versement enregistré :
+  0 → 0 FCFA · 1 → 150 000 · 3 → 450 000 · 16 → 2 400 000.
