@@ -1,0 +1,9 @@
+# Les bundles et assets binaires ne doivent JAMAIS passer par un filtre texte.
+# docx.bundle.js contient des octets de controle bruts (signatures ZIP de JSZip) :
+# une normalisation de fin de ligne ou d'encodage les detruit et tous les .docx
+# generes deviennent illisibles par Word. Voir ERROR_LOG.md 2026-08-11.
+docx.bundle.js -text -diff
+
+*.pdf  -text -diff
+*.docx -text -diff
+*.mp3  -text -diff
