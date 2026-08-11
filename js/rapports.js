@@ -85,33 +85,35 @@ window.IG.rapports = (function() {
   // couvre août est correctement imputé à août. Retourne null si la fiche
   // n'est pas calculable (module absent, pas de date d'entrée) — l'appelant
   // se replie alors sur l'ancien calcul.
-  function _resteMoisFiche(loc, versementsLoc, dateFin) {
+  // Retourne { moisDus, montantDu } arrêtés au mois de CLÔTURE du rapport —
+  // pas à aujourd'hui : un rapport de juillet édité en août ne doit pas
+  // réclamer août. Le montant dû est le cumul de TOUS les mois non soldés
+  // depuis l'entrée (les arriérés complets), pas le seul mois de clôture.
+  // Retourne null si la fiche n'est pas calculable (module absent, pas de
+  // date d'entrée) — l'appelant se replie alors sur l'ancien calcul.
+  function _situationAuFiche(loc, versementsLoc, dateFin) {
     if (!window.IG.paiements || !window.IG.paiements.calculerFiche || !loc || !loc.entree) return null;
     var lignes = window.IG.paiements.calculerFiche(loc, versementsLoc, dateFin.getFullYear());
     if (!lignes || !lignes.length) return null;
-    var moisCible  = dateFin.getMonth() + 1;
-    var anneeCible = dateFin.getFullYear();
-    var ligne = lignes.filter(function(l) { return l.mois === moisCible && l.annee === anneeCible; })[0];
-    if (!ligne) return null;
-    return ligne.horsBail ? 0 : (parseFloat(ligne.reste) || 0);
-  }
 
-  // ── Mois dus à la date de clôture du rapport ──────────────────
-  // `relances.calculerRetard()` compte les impayés à AUJOURD'HUI. Sur un
-  // rapport édité en août mais portant sur juillet, il annonçait « 1 mois dû »
-  // en face d'un « reste à payer » nul — le document se contredisait.
-  // Ici on compte les mois non soldés jusqu'au mois de clôture inclus, pour
-  // que toute la ligne parle de la même date.
-  function _moisDusAuFiche(loc, versementsLoc, dateFin) {
-    if (!window.IG.paiements || !window.IG.paiements.calculerFiche || !loc || !loc.entree) return null;
-    var lignes = window.IG.paiements.calculerFiche(loc, versementsLoc, dateFin.getFullYear());
-    if (!lignes || !lignes.length) return null;
     var moisFin = dateFin.getMonth() + 1, anneeFin = dateFin.getFullYear();
-    return lignes.filter(function(l) {
+    var echues = lignes.filter(function(l) {
       if (l.horsBail || l.futur) return false;
-      if (l.annee > anneeFin || (l.annee === anneeFin && l.mois > moisFin)) return false;
-      return (l.reste || 0) > 0;
-    }).length;
+      return !(l.annee > anneeFin || (l.annee === anneeFin && l.mois > moisFin));
+    });
+
+    var duCumule = echues.reduce(function(s, l) { return s + (parseFloat(l.reste) || 0); }, 0);
+    var moisDus  = echues.filter(function(l) { return (l.reste || 0) > 0; }).length;
+
+    // Arriérés antérieurs saisis à la main sur la fiche locataire : on les
+    // ajoute, diminués des mois déjà réglés (même règle que paiements.montantDu).
+    var baseArrieres = parseFloat(loc.arrieres) || 0;
+    if (baseArrieres > 0) {
+      var loyer = parseFloat(loc.loyer) || 0;
+      var payes = echues.filter(function(l) { return (l.reste || 0) <= 0; }).length;
+      duCumule += Math.max(0, baseArrieres - payes * loyer);
+    }
+    return { moisDus: moisDus, montantDu: duCumule };
   }
 
   // ── Rapport mensuel HTML — spec V2 (juin 2026) ──────────────
@@ -192,7 +194,7 @@ window.IG.rapports = (function() {
     }
 
     // ── Section 1 : locataires ───────────────────────────────────
-    var totalResteS1 = 0;
+    var totalDuS1 = 0;
     var s1Rows = '';
     locsImm.forEach(function(loc, i) {
       var loyer = parseFloat(loc.loyer) || 0;
@@ -214,23 +216,18 @@ window.IG.rapports = (function() {
           '<br><span style="color:' + C_GRIS + '">' + fmt(dernierPay.montant) + '</span>' +
           (horsPeriode ? '<br><span style="font-size:8pt;color:#999">(' + t('hors période') + ')</span>' : '')
         : '—';
-      // Reste à payer pour le mois du rapport : on réutilise l'allocation
+      // Montant dû et mois dus arrêtés à la clôture, via l'allocation
       // officielle de la fiche de suivi (consommation chronologique des
-      // versements, avances comprises) au lieu de sommer les versements
-      // tombant dans la fenêtre du rapport. Un locataire qui a réglé août
-      // par un versement de juillet est à jour — la fenêtre seule le
+      // versements, avances comprises). Un locataire qui a réglé août par un
+      // versement de juillet est à jour — la seule fenêtre du rapport le
       // déclarait à tort débiteur.
-      var reste = _resteMoisFiche(loc, lPaysAll, fin);
-      if (reste === null) {
-        var totalPaye = lPays.reduce(function(s, p) { return s + (parseFloat(p.montant) || 0); }, 0);
-        reste = Math.max(0, loyer - totalPaye);
-      }
-      totalResteS1 += reste;
+      var situ    = _situationAuFiche(loc, lPaysAll, fin);
+      var moisDus = situ ? situ.moisDus : (window.IG.relances ? window.IG.relances.calculerRetard(loc, lPaysAll) : 0);
+      var reste   = situ ? situ.montantDu : moisDus * loyer;
+      totalDuS1 += reste;
 
       var obs = [];
-      // Nombre de mois dus à la clôture + action recommandée
-      var moisDus = _moisDusAuFiche(loc, lPaysAll, fin);
-      if (moisDus === null) moisDus = window.IG.relances ? window.IG.relances.calculerRetard(loc, lPaysAll) : 0;
+      // Mois dus à la clôture + action recommandée
       if (moisDus > 0) {
         var reco = moisDus >= 7 ? t('à expulser')
                  : moisDus >= 4 ? t('à sommer')
@@ -269,7 +266,7 @@ window.IG.rapports = (function() {
     });
     s1Rows += '<tr>' +
       '<td style="'+TD+'background:'+C_BLEU_TOTAL+';text-align:right;font-size:9.5pt;font-weight:700;color:'+C_BLEU+'" colspan="5">' + t('TOTAL') + '</td>' +
-      '<td style="'+TD+'background:'+C_BLEU_TOTAL+';text-align:right;font-size:9.5pt;font-weight:700;color:'+(totalResteS1>0?C_ROUGE:C_BLEU)+'">'+fmt(totalResteS1)+'</td>' +
+      '<td style="'+TD+'background:'+C_BLEU_TOTAL+';text-align:right;font-size:9.5pt;font-weight:700;color:'+(totalDuS1>0?C_ROUGE:C_BLEU)+'">'+fmt(totalDuS1)+'</td>' +
     '</tr>';
 
     // ── Section 2 : encaissements ────────────────────────────────
@@ -426,7 +423,7 @@ window.IG.rapports = (function() {
       '<th style="'+TH+'text-align:right">' + t('Loyer') + '</th>' +
       '<th style="'+TH+'text-align:center">' + t('Dernier paiement') + '</th>' +
       '<th style="'+TH+'text-align:left">' + t('Observations') + '</th>' +
-      '<th style="'+TH+'text-align:right">' + t('Reste à payer') + '</th>' +
+      '<th style="'+TH+'text-align:right">' + t('Montant dû') + '</th>' +
       '</tr></thead><tbody>'+s1Rows+'</tbody></table>';
 
     // Section 2 — encaissements, récapitulatif financier inclus en pied

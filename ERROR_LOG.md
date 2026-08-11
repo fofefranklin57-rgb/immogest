@@ -647,3 +647,24 @@ doublon si deux sections étaient enregistrées en concurrence AVANT que la 1èr
   fiche n'est pas calculable.
 - **À retenir** : même famille que le bug du reste à payer — un rapport daté doit
   répondre à « où en était-on à la clôture ? », jamais à « où en est-on ce matin ? ».
+
+---
+
+## 2026-08-11 — Rapport mensuel : « Reste à payer » → « Montant dû »
+
+### `js/rapports.js` — la colonne ne montrait qu'un mois de loyer
+
+- **Demande** : la colonne devait afficher la dette RÉELLE du locataire, pas le
+  solde du seul mois de clôture.
+- **Avant** : un locataire devant 7 mois affichait « 80 000 FCFA » — le loyer d'un
+  mois — alors que la colonne Observations annonçait « 7 mois dû(s) — à expulser ».
+  Le total de bas de tableau sous-estimait donc massivement l'encours de l'immeuble.
+- **Solution** : colonne renommée « Montant dû ». `_resteMoisFiche()` et
+  `_moisDusAuFiche()` fusionnées en `_situationAuFiche()`, qui retourne
+  `{ moisDus, montantDu }` — le montant étant le cumul de tous les mois non
+  soldés depuis l'entrée, arrêtés au mois de clôture. Les arriérés saisis à la
+  main sur la fiche locataire (`loc.arrieres`) sont intégrés selon la même règle
+  que `paiements.montantDu()`.
+- **Vérifié** : 1 mois → 80 000, 2 mois → 160 000, 7 mois → 560 000, payé
+  d'avance → 0, et le TOTAL correspond bien à la somme de la colonne.
+- **i18n** : clé « Montant dû » ajoutée aux 5 langues.
