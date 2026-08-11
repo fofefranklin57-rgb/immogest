@@ -675,6 +675,9 @@ window.IG.app = (function() {
       l.caution = _num(l.caution, 0);
       l.arrieres = _num(l.arrieres, 0);
       l.mois_arrieres = parseInt(l.mois_arrieres || l.nb_impayes || l.retard_mois) || 0;
+      // V024 : frontière du suivi + à-nouveau à cette date
+      l.suivi_depuis = l.suivi_depuis ? _dateIso(l.suivi_depuis) : null;
+      l.solde_reporte = _num(l.solde_reporte, 0);
       l.appt = l.appt || l.local || l.appartement || l.numero_local || '';
       l.statut = l.statut || 'actif';
       return l;

@@ -34,7 +34,9 @@ window.IG.relances = (function() {
 
   function calculerRetard(loc, paiements) {
     if (!loc.entree || loc.statut === 'libre') return 0;
-    var base = parseInt(loc.mois_arrieres) || 0;
+    // V024 : la fiche compte elle-même les mois dus depuis `suivi_depuis`.
+    // `mois_arrieres` n'est lu que sur les fiches non encore migrées.
+    var base = loc.suivi_depuis ? 0 : (parseInt(loc.mois_arrieres) || 0);
     // Sans aucun versement, tous les mois écoulés depuis l'entrée sont dus :
     // on laisse la fiche les compter au lieu de renvoyer les seuls arriérés
     // saisis à la main, qui déclaraient le locataire à jour.

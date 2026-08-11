@@ -812,3 +812,41 @@ doublon si deux sections étaient enregistrées en concurrence AVANT que la 1èr
   l'incohérence était déjà là, elle était simplement invisible.
 - **À retenir** : un artifice de calcul ne doit jamais ressortir tel quel dans un
   document signé. Si l'app ne peut pas prouver une affirmation, elle ne la fait pas.
+
+---
+
+## 2026-08-11 — CAUSE RACINE : la dette d'un locataire ne montait jamais
+
+### `js/paiements.js` + migration V024 — arriérés ancrés à une date fixe
+
+- **Erreur** : la dette d'un locataire ayant des arriérés de reprise était
+  **gelée**. Elle n'augmentait pas avec le temps, quel que soit le nombre de mois
+  non payés qui s'écoulaient.
+- **Preuve** : deux locataires identiques (loyer 100 000, `mois_arrieres` = 6),
+  aucun versement, l'un entré en 2022 et l'autre en 2024 — donc 24 mois d'impayés
+  d'écart. Tous deux devaient exactement **600 000**.
+- **Cause** : le crédit implicite valait `mois_écoulés_jusqu'à_AUJOURD'HUI −
+  mois_arrieres`. Chaque mois qui passait ajoutait un mois au crédit en même
+  temps qu'un mois de loyer dû : la fenêtre des impayés glissait indéfiniment et
+  gardait exactement `mois_arrieres` mois. Le compteur tournait à vide.
+- **Portée** : tout locataire avec `mois_arrieres > 0`. Les mauvais payeurs — les
+  seuls qui comptent pour du recouvrement — étaient précisément ceux dont la
+  dette était sous-évaluée, et l'écart se creusait chaque mois.
+- **Solution** : nouveau modèle comptable ancré à une date.
+  - `suivi_depuis` (DATE) : premier mois réellement suivi dans ImmoGest ;
+  - `solde_reporte` (NUMERIC) : à-nouveau, ce qui restait dû à cette date.
+  Les mois antérieurs sortent du suivi une fois pour toutes (statut « Antérieur
+  au suivi »), et la dette s'accumule normalement à partir de `suivi_depuis`.
+- **Migration sans perte** : V024 fige la frontière exactement là où le calcul
+  glissant la plaçait le jour de la migration
+  (`suivi_depuis = début du mois courant − (mois_arrieres − 1) mois`, jamais
+  avant l'entrée), et met `solde_reporte` à 0 — l'ancien modèle exprimait la
+  dette de reprise en mois entiers.
+  Vérifié sur 4 profils : montants et mois de retard **identiques** avant/après.
+  Après migration, 30 mois d'impayés donnent bien 3 000 000 au lieu de 600 000.
+- **Compatibilité** : tant que `suivi_depuis` est absent, l'ancien calcul
+  s'applique — l'app fonctionne avant comme après l'exécution du SQL.
+- **`arrieres` / `mois_arrieres`** : conservés en base comme archive de la saisie
+  d'origine, plus lus par aucun calcul et retirés du formulaire.
+- **À retenir** : une dette est un fait daté. La calculer par rapport à
+  « aujourd'hui » la rend mouvante — ici, immobile.

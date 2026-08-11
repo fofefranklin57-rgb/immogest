@@ -121,7 +121,8 @@ window.IG.paiements = (function() {
   function calculerFiche(locataire, versements, anneeMax) {
     if (!locataire || !locataire.entree) return [];
     var cleFiche = _ficheCacheVersion + '|' + locataire.id + '|' + locataire.loyer + '|' + locataire.entree +
-      '|' + (locataire.mois_arrieres || 0) + '|' + (anneeMax || '') + '|' + versements.length;
+      '|' + (locataire.mois_arrieres || 0) + '|' + (locataire.suivi_depuis || '') +
+      '|' + (locataire.solde_reporte || 0) + '|' + (anneeMax || '') + '|' + versements.length;
     var enCache = _ficheCache.get(cleFiche);
     if (enCache) return enCache;
     var lignes = _calculerFicheReel(locataire, versements, anneeMax);
@@ -161,25 +162,45 @@ window.IG.paiements = (function() {
     var moisCourant = aujourdhui.getMonth() + 1;
     var anneeCourante = aujourdhui.getFullYear();
 
-    // Crédit implicite : si mois_arrieres > 0, les mois avant la "période due"
-    // sont considérés réglés → FIFO démarre au bon mois.
-    // Ces mois-là précèdent la reprise du dossier : AUCUN versement ne les
-    // justifie dans ImmoGest. On les compte pour ne pas les réclamer, mais on
-    // les marque `anterieur` pour ne jamais les afficher « Payé » — une fiche
-    // de suivi signée ne peut pas attester un paiement qu'elle ne prouve pas.
-    var moisArrieres = parseInt(locataire.mois_arrieres) || 0;
+    // ── Frontière du suivi ────────────────────────────────────────
+    // Les mois antérieurs à la reprise du dossier sortent du champ du suivi :
+    // aucun versement ne les justifie dans ImmoGest, on ne les réclame pas et
+    // on ne les atteste pas payés (statut « Antérieur au suivi »).
+    //
+    // `suivi_depuis` fige cette frontière à une DATE. L'ancien `mois_arrieres`
+    // la recalculait par rapport à aujourd'hui : la fenêtre glissait chaque
+    // mois, si bien qu'un locataire qui ne payait plus devait éternellement le
+    // même nombre de mois — sa dette n'augmentait jamais (corrigé en V024).
+    // Repli sur l'ancien calcul tant que la migration n'est pas appliquée.
+    var suivi = locataire.suivi_depuis ? new Date(locataire.suivi_depuis) : null;
     var moisAnterieurs = 0;
-    if (moisArrieres > 0 && loyer > 0) {
-      var totalPasse = moisList.filter(function(m) {
+    if (suivi && !isNaN(suivi)) {
+      moisAnterieurs = moisList.filter(function(m) {
         var avantEntree = (m.annee < entree.getFullYear()) ||
                           (m.annee === entree.getFullYear() && m.mois < (entree.getMonth() + 1));
         if (avantEntree) return false;
-        return !((m.annee > anneeCourante) || (m.annee === anneeCourante && m.mois > moisCourant));
+        return (m.annee < suivi.getFullYear()) ||
+               (m.annee === suivi.getFullYear() && m.mois < (suivi.getMonth() + 1));
       }).length;
-      var creditMois = Math.max(0, totalPasse - moisArrieres);
-      cumulAvance   += creditMois * loyer;
-      moisAnterieurs = creditMois;
+      cumulAvance += moisAnterieurs * loyer;
+    } else {
+      var moisArrieres = parseInt(locataire.mois_arrieres) || 0;
+      if (moisArrieres > 0 && loyer > 0) {
+        var totalPasse = moisList.filter(function(m) {
+          var avantEntree = (m.annee < entree.getFullYear()) ||
+                            (m.annee === entree.getFullYear() && m.mois < (entree.getMonth() + 1));
+          if (avantEntree) return false;
+          return !((m.annee > anneeCourante) || (m.annee === anneeCourante && m.mois > moisCourant));
+        }).length;
+        var creditMois = Math.max(0, totalPasse - moisArrieres);
+        cumulAvance   += creditMois * loyer;
+        moisAnterieurs = creditMois;
+      }
     }
+
+    // Solde reporté (à-nouveau) : ce qui restait dû à la date de reprise.
+    // Il s'ajoute à la dette et ne se périme pas.
+    var soldeReporte = parseFloat(locataire.solde_reporte) || 0;
 
     moisList.forEach(function(m) {
       var horsBail = (m.annee < entree.getFullYear()) ||
@@ -251,7 +272,12 @@ window.IG.paiements = (function() {
   function montantDu(loc, paiementsLoc) {
     if (!loc || loc.statut === 'libre') return 0;
     var loyer = parseFloat(loc.loyer) || 0;
-    var baseArrieres = parseFloat(loc.arrieres) || 0;
+    // Après V024, la dette de reprise est portée par `solde_reporte` (à-nouveau
+    // à la date `suivi_depuis`). Le champ `arrieres` reste en base à titre
+    // d'archive de la saisie d'origine mais n'entre plus dans aucun calcul.
+    var moderne = !!loc.suivi_depuis;
+    var baseArrieres = moderne ? (parseFloat(loc.solde_reporte) || 0)
+                               : (parseFloat(loc.arrieres) || 0);
     var versements = paiementsLoc || [];
     // Un locataire sans AUCUN versement doit tous les mois écoulés depuis son
     // entrée. Renvoyer les seuls arriérés saisis à la main le déclarait « à
@@ -268,8 +294,13 @@ window.IG.paiements = (function() {
       });
     }
     var fiche = calculerFiche(locProxy, versements);
-    var payes = fiche.filter(function(l) { return l.solde; }).length;
     var duNouv = fiche.filter(function(l) { return !l.futur; }).reduce(function(s, l) { return s + (l.reste || 0); }, 0);
+    // Modèle V024 : le solde reporté est un à-nouveau daté, il s'ajoute
+    // simplement à ce que la fiche calcule depuis `suivi_depuis`.
+    if (moderne) return baseArrieres + duNouv;
+    // Ancien modèle : `arrieres` exprimait la même dette que les mois impayés
+    // de la fiche — on en retranche les mois soldés pour ne pas compter deux fois.
+    var payes = fiche.filter(function(l) { return l.solde; }).length;
     return Math.max(0, baseArrieres - payes * loyer) + duNouv;
   }
 

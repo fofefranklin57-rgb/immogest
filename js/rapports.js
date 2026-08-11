@@ -108,13 +108,19 @@ window.IG.rapports = (function() {
     var duCumule = echues.reduce(function(s, l) { return s + (parseFloat(l.reste) || 0); }, 0);
     var moisDus  = echues.filter(function(l) { return (l.reste || 0) > 0; }).length;
 
-    // Arriérés antérieurs saisis à la main sur la fiche locataire : on les
-    // ajoute, diminués des mois déjà réglés (même règle que paiements.montantDu).
-    var baseArrieres = parseFloat(loc.arrieres) || 0;
-    if (baseArrieres > 0) {
-      var loyer = parseFloat(loc.loyer) || 0;
-      var payes = echues.filter(function(l) { return (l.reste || 0) <= 0; }).length;
-      duCumule += Math.max(0, baseArrieres - payes * loyer);
+    // Dette de reprise, même règle que `paiements.montantDu`.
+    // V024 : `solde_reporte` est un à-nouveau daté, il s'ajoute tel quel.
+    // Ancien modèle : `arrieres` exprimait la même dette que les mois impayés
+    // de la fiche, on en retranche les mois soldés pour ne pas compter deux fois.
+    if (loc.suivi_depuis) {
+      duCumule += parseFloat(loc.solde_reporte) || 0;
+    } else {
+      var baseArrieres = parseFloat(loc.arrieres) || 0;
+      if (baseArrieres > 0) {
+        var loyer = parseFloat(loc.loyer) || 0;
+        var payes = echues.filter(function(l) { return (l.reste || 0) <= 0; }).length;
+        duCumule += Math.max(0, baseArrieres - payes * loyer);
+      }
     }
 
     // Jusqu'où le locataire est-il couvert au-delà de la clôture ? On avance

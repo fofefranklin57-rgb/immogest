@@ -654,7 +654,7 @@ window.IG.locataires = (function() {
       }).join('') + '</select></div></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
       '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Loyer (FCFA)') + '</label>' +
-      '<input type="number" name="loyer" id="edit-loyer" value="' + (parseFloat(loc.loyer)||0) + '" min="0" step="500" oninput="window.IG.locataires._syncArrMontantEdit()" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
+      '<input type="number" name="loyer" id="edit-loyer" value="' + (parseFloat(loc.loyer)||0) + '" min="0" step="500" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
       _fieldNum('caution', t('Caution'), loc.caution || 0) +
       '</div>' +
       _field('entree', t('Date entrée'), loc.entree || '', false, 'date') +
@@ -664,12 +664,12 @@ window.IG.locataires = (function() {
       // explicitement et on affiche la dette réelle juste en dessous.
       '<div style="background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:12px">' +
       '<div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.5">' +
-      '⚠️ ' + t('Situation au moment de la reprise du dossier — ces deux champs ne changent pas quand un loyer est encaissé.') + '</div>' +
+      '⚠️ ' + t('Point de départ de la comptabilité ImmoGest. Les mois antérieurs ne sont ni réclamés, ni attestés payés.') + '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Arriérés à la reprise (FCFA)') + '</label>' +
-      '<input type="number" name="arrieres" id="edit-arr" value="' + (parseFloat(loc.arrieres)||0) + '" min="0" step="500" oninput="window.IG.locataires._syncArrMoisEdit()" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
-      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Nb mois arriérés') + '</label>' +
-      '<input type="number" name="mois_arrieres" id="edit-arr-mois" value="' + (parseInt(loc.mois_arrieres)||0) + '" min="0" step="1" oninput="window.IG.locataires._syncArrMontantEdit()" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
+      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Suivi ImmoGest depuis') + '</label>' +
+      '<input type="date" name="suivi_depuis" id="edit-suivi" value="' + esc(loc.suivi_depuis || loc.entree || '') + '" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
+      '<div><label style="font-size:12px;color:var(--text2);font-weight:600">' + t('Solde reporté à cette date') + '</label>' +
+      '<input type="number" name="solde_reporte" id="edit-solde-rep" value="' + (parseFloat(loc.solde_reporte)||0) + '" min="0" step="500" style="width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg4);font-size:13px;color:var(--text)"></div>' +
       '</div>' +
       '<div style="margin-top:10px;padding-top:9px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">' +
       '<span style="font-size:12px;color:var(--text2);font-weight:600">' + t('Dette réelle aujourd\'hui') + '</span>' +
@@ -701,8 +701,11 @@ window.IG.locataires = (function() {
       data.loyer        = parseFloat(fd.get('loyer')) || 0;
       data.caution      = parseFloat(fd.get('caution')) || 0;
       data.entree       = fd.get('entree');
-      data.arrieres     = parseFloat(fd.get('arrieres')) || 0;
-      data.mois_arrieres = parseInt(fd.get('mois_arrieres')) || 0;
+      // V024 : la dette de reprise est ancrée à une date. `arrieres` et
+      // `mois_arrieres` restent en base tels quels (archive de la saisie
+      // d'origine) et ne sont plus modifiés par ce formulaire.
+      data.suivi_depuis  = fd.get('suivi_depuis') || loc.entree || null;
+      data.solde_reporte = parseFloat(fd.get('solde_reporte')) || 0;
       data.observations = fd.get('observations');
       try {
         await sauvegarder(data);
@@ -889,8 +892,9 @@ window.IG.locataires = (function() {
     if (!loc.entree) return '';
     var pays = (paiements || []).filter(function(p) { return p.locataire_id == loc.id; });
     var moisDus = 0;
-    var base = parseInt(loc.mois_arrieres) || 0;
-    if (pays.length === 0) {
+    // V024 : la fiche compte elle-même les mois dus depuis `suivi_depuis`.
+    var base = loc.suivi_depuis ? 0 : (parseInt(loc.mois_arrieres) || 0);
+    if (pays.length === 0 && !loc.entree) {
       moisDus = base;
     } else if (window.IG.paiements && window.IG.paiements.calculerFiche) {
       var fiche = _ficheDepuisPremierPay(loc, pays);
