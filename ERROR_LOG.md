@@ -905,3 +905,31 @@ doublon si deux sections étaient enregistrées en concurrence AVANT que la 1èr
 - **À retenir** : un total posé sous un formulaire est lu comme le résultat de ce
   formulaire. S'il vient d'ailleurs, il ment — soit il suit la saisie, soit il
   dit d'où il vient.
+
+---
+
+## 2026-08-11 — CAUSE RACINE : les vieux versements soldaient les mois récents
+
+### `js/paiements.js` — versements antérieurs au début du suivi
+
+- **Erreur** : un locataire déclaré à **16 mois dus, sans aucun versement depuis**,
+  s'affichait **à jour, 0 FCFA**. Cas FONTEM Vanessa.
+- **Cause** : la répartition FIFO consommait TOUS les versements du locataire,
+  y compris ceux encaissés bien avant `suivi_depuis`. Les mois antérieurs étant
+  déjà couverts par le crédit d'ouverture, ces vieux versements ne trouvaient
+  rien à régler et retombaient sur les mois suivis. Vérifié : un versement du
+  **05/10/2023** apparaissait comme soldant **mai 2025**.
+- **Pourquoi c'était invisible** : le montant obtenu (1 640 000 sur la fiche de
+  Vanessa) ressemblait à un chiffre plausible. C'était en réalité 3 680 000 moins
+  2 040 000 de versements des années précédentes, déjà consommés hors ImmoGest.
+- **Solution** : les versements dont la `date_paiement` précède `suivi_depuis`
+  sortent de la répartition. Ils appartiennent à la période close — celle que le
+  cabinet ne suit pas et n'atteste pas. Ils restent visibles dans l'onglet
+  Encaissements, mais ne réduisent plus la dette suivie.
+- **Vérifié** : 16 mois dus sans versement récent → 3 680 000 et 16 mois ;
+  après 2 versements postérieurs à `suivi_depuis` → 3 220 000 et 14 mois ;
+  locataire sans `suivi_depuis` → inchangé ; locataire suivi depuis son entrée
+  et à jour → 0.
+- **À retenir** : poser une frontière de suivi ne suffit pas, il faut l'appliquer
+  des DEUX côtés — aux mois **et** à l'argent. Ne filtrer que les mois laissait
+  l'argent d'avant traverser la frontière et fausser tout ce qui suit.

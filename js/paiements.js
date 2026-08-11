@@ -136,12 +136,24 @@ window.IG.paiements = (function() {
 
     var annee = anneeMax || new Date().getFullYear();
 
+    // Les versements encaissés AVANT le début du suivi appartiennent à la
+    // période close : ils ont déjà réglé ce qu'ils avaient à régler, hors
+    // ImmoGest. Les laisser dans la répartition les faisait retomber sur les
+    // mois suivis — un paiement d'octobre 2023 soldait mai 2025, et un
+    // locataire devant 16 mois s'affichait à jour.
+    var debutSuivi = locataire.suivi_depuis ? new Date(locataire.suivi_depuis) : null;
+    if (debutSuivi && isNaN(debutSuivi)) debutSuivi = null;
+    function _dansLeSuivi(v) {
+      if (!debutSuivi || !v.date_paiement) return true;
+      return new Date(v.date_paiement) >= debutSuivi;
+    }
+
     var loyers = versements
-      .filter(function(v) { return v.type === 'loyer' || !v.type; })
+      .filter(function(v) { return (v.type === 'loyer' || !v.type) && _dansLeSuivi(v); })
       .map(function(v) { return Object.assign({}, v, { _restant: parseFloat(v.montant) || 0 }); })
       .sort(function(a, b) { return new Date(a.date_paiement) - new Date(b.date_paiement); });
 
-    var avances     = versements.filter(function(v) { return v.type === 'avance'; });
+    var avances     = versements.filter(function(v) { return v.type === 'avance' && _dansLeSuivi(v); });
     var cumulAvance = avances.reduce(function(s, v) { return s + (parseFloat(v.montant) || 0); }, 0);
 
     // Générer les années complètes : la fiche doit toujours afficher janvier → décembre.
