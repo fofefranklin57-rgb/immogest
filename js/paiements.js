@@ -161,11 +161,27 @@ window.IG.paiements = (function() {
   var _ficheCache = new Map();
   function _invaliderFicheCache() { _ficheCacheVersion++; _ficheCache.clear(); }
 
+  // La clé de cache ne comptait que le NOMBRE de versements. Deux jeux
+  // différents de même longueur pour le même locataire se confondaient : une
+  // caution seule renvoyait la fiche calculée juste avant pour une avance
+  // seule, et un versement partiel renvoyait celle d'un mois soldé. Il faut
+  // une empreinte du contenu — montants, dates, types et identifiants.
+  function _empreinte(versements) {
+    var n = 0, somme = 0, sig = 0;
+    (versements || []).forEach(function(v) {
+      n++;
+      somme += parseFloat(v.montant) || 0;
+      var s = String(v.id) + '|' + (v.date_paiement || '') + '|' + (v.type || 'loyer');
+      for (var i = 0; i < s.length; i++) sig = ((sig << 5) - sig + s.charCodeAt(i)) | 0;
+    });
+    return n + ':' + somme + ':' + sig;
+  }
+
   function calculerFiche(locataire, versements, anneeMax) {
     if (!locataire || !locataire.entree) return [];
     var cleFiche = _ficheCacheVersion + '|' + locataire.id + '|' + locataire.loyer + '|' + locataire.entree +
       '|' + (locataire.mois_arrieres || 0) + '|' + (locataire.suivi_depuis || '') +
-      '|' + (locataire.solde_reporte || 0) + '|' + (anneeMax || '') + '|' + versements.length;
+      '|' + (locataire.solde_reporte || 0) + '|' + (anneeMax || '') + '|' + _empreinte(versements);
     var enCache = _ficheCache.get(cleFiche);
     if (enCache) return enCache;
     var lignes = _calculerFicheReel(locataire, versements, anneeMax);

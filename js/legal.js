@@ -231,7 +231,9 @@ window.IG.legal = (function() {
     var pays = paiements.filter(function(p) { return p.locataire_id == loc.id; });
     if (!pays.length) return 100;
     var fiche = window.IG.paiements ? window.IG.paiements.calculerFiche(loc, pays) : [];
-    var fichePasse = fiche.filter(function(l) { return !l.futur; });
+    // Les mois antérieurs à la reprise du dossier sortent du score : aucune
+    // donnée ne les documente, les compter « payés » gonflait la note.
+    var fichePasse = fiche.filter(function(l) { return !l.futur && !l.horsBail && !l.anterieur; });
     var total = fichePasse.length;
     var payes = fichePasse.filter(function(l) { return l.solde; }).length;
     if (!total) return 100;

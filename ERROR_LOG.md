@@ -933,3 +933,41 @@ doublon si deux sections étaient enregistrées en concurrence AVANT que la 1èr
 - **À retenir** : poser une frontière de suivi ne suffit pas, il faut l'appliquer
   des DEUX côtés — aux mois **et** à l'argent. Ne filtrer que les mois laissait
   l'argent d'avant traverser la frontière et fausser tout ce qui suit.
+
+---
+
+## 2026-08-12 — Audit général du moteur de calcul
+
+### `js/paiements.js` — collision dans le cache de la fiche
+
+- **Erreur** : la clé du cache de `calculerFiche()` ne retenait que le NOMBRE de
+  versements. Deux jeux différents de même longueur pour le même locataire se
+  confondaient : une caution seule renvoyait la fiche calculée juste avant pour
+  une avance seule, un versement partiel renvoyait celle d'un mois soldé.
+- **Découvert par** : l'audit — trois tests échouaient en renvoyant 0 au lieu du
+  montant dû. Le premier diagnostic (« la caution solde un loyer ») était faux :
+  la cause était le cache, pas la répartition.
+- **Risque en production** : corriger le montant d'un versement sans changer leur
+  nombre, ou appeler `montantDu()` avec deux sous-ensembles de même taille
+  (période filtrée vs historique complet, ce que font les rapports), renvoyait un
+  résultat périmé.
+- **Solution** : empreinte du contenu (nombre + somme des montants + hachage des
+  id/dates/types) au lieu de la seule longueur.
+
+### `js/legal.js` — score de fiabilité gonflé
+
+- Les mois antérieurs à la reprise du dossier comptaient comme « payés » dans le
+  score. Ils sortent désormais du numérateur ET du dénominateur, comme dans la
+  fiche de suivi.
+
+### Résultats de l'audit
+
+- **Moteur** : 14/14 après correction — locataire neuf, tout payé, mois partiel,
+  avance sur 12 mois, reprise avec et sans vieux versements, solde reporté,
+  caution, locataire libéré, loyer à 0, collision de cache, ordre de saisie
+  indifférent, entrée en cours de mois, montant en chaîne de caractères.
+- **Cohérence inter-écrans** vérifiée sur 4 locataires : liste, fiche de suivi,
+  onglet encaissements, rapport mensuel, rapport annuel et dashboard annoncent
+  tous les mêmes montants (total dû 1 300 000).
+- **Non-régression** : `js/_onboarding.js` a une erreur de syntaxe préexistante,
+  mais n'est chargé nulle part — code mort, signalé pour suppression séparée.
