@@ -971,3 +971,34 @@ doublon si deux sections étaient enregistrées en concurrence AVANT que la 1èr
   tous les mêmes montants (total dû 1 300 000).
 - **Non-régression** : `js/_onboarding.js` a une erreur de syntaxe préexistante,
   mais n'est chargé nulle part — code mort, signalé pour suppression séparée.
+
+---
+
+## 2026-08-12 — Le .docx du rapport ne ressemblait plus au rapport
+
+### `js/rapports.js` — l'export Word ne recopiait que le texte
+
+- **Erreur** : le rapport téléchargé n'avait plus rien à voir avec celui affiché.
+  Vérifié sur le fichier de Franklin (`rapport-immogest-1786622842792.docx`) :
+  **zéro** attribut de couleur, **zéro** fond, **zéro** gras, **zéro** bordure
+  dans `word/document.xml`. Ni en-tête cabinet, ni bandeaux de section.
+- **Cause** : `exporterRapportMensuelDocx()` ne récupérait que
+  `td.textContent` des tableaux et reconstruisait des cellules nues. Toute la
+  mise en forme de l'écran était jetée, et les blocs hors tableau (en-tête,
+  titre, bandeaux, signatures, pied) n'étaient pas exportés du tout.
+- **Solution** : l'exporteur relit les **styles inline** du HTML généré et les
+  transpose en propriétés Word — couleur de texte, fond de cellule, gras,
+  italique, taille, alignement, largeurs de colonnes issues du `<colgroup>`,
+  bordures fines. Il parcourt les blocs de premier niveau dans l'ordre du
+  document, si bien que le Word reprend l'enchaînement exact de l'écran.
+- **Pourquoi relire les styles plutôt que redéfinir la charte ici** : la mise en
+  forme n'existe qu'à un seul endroit. Toute évolution de l'écran suit
+  automatiquement dans le Word, sans risque de divergence.
+- **Piège traité** : un bloc imbriqué (titre + sous-titre, lignes de l'en-tête)
+  doit ouvrir sa propre ligne, sinon Word colle les textes
+  (« …TEUKEU MAKEPEMakepe · du 31/07/2026 »). Les balises de bloc déclenchent
+  donc un saut de ligne, comme `<br>`.
+- **Vérifié** sur le fichier produit : couleurs `0E6AAF`, `1A6B45`, `C0392B`,
+  `333333`, `666666` présentes ; fonds `0E6AAF`, `D6E9F6`, `EEF6FC`, `F5F5F5` ;
+  39 passages en gras ; 4 tableaux avec bordures ; enchaînement en-tête → titre
+  → bandeau → tableau → bandeau → tableau + récapitulatif → signatures → pied.

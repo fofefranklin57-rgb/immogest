@@ -707,71 +707,234 @@ window.IG.rapports = (function() {
   // Vrai fichier .docx à partir du rapport affiché (réutilise la
   // bibliothèque docx déjà chargée pour le rapport annuel). On relit
   // les tableaux du HTML généré : le DOCX reflète exactement l'écran.
+  // ── Export Word fidèle à l'écran ──────────────────────────────
+  // L'ancien export ne recopiait que le TEXTE des tableaux : le .docx sortait
+  // sans une seule couleur, sans gras, sans bordure — méconnaissable à côté du
+  // rapport affiché. Plutôt que de redéfinir la mise en forme une deuxième fois
+  // ici (et de la voir diverger au premier changement d'écran), on relit les
+  // styles inline du HTML généré et on les transpose en propriétés Word.
+
+  function _styleMap(el) {
+    var m = {};
+    ((el && el.getAttribute && el.getAttribute('style')) || '')
+      .split(';').forEach(function(d) {
+        var i = d.indexOf(':');
+        if (i > 0) m[d.slice(0, i).trim().toLowerCase()] = d.slice(i + 1).trim();
+      });
+    return m;
+  }
+
+  // Word veut RRGGBB sans dièse. Gère #abc, #aabbcc et rgb(r,g,b).
+  function _hexDocx(v) {
+    if (!v) return null;
+    v = String(v).trim();
+    var rgb = v.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/i);
+    if (rgb) {
+      return [1,2,3].map(function(i) {
+        return ('0' + parseInt(rgb[i]).toString(16)).slice(-2);
+      }).join('').toUpperCase();
+    }
+    var h = v.replace('#', '');
+    if (/^[0-9a-f]{3}$/i.test(h)) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    return /^[0-9a-f]{6}$/i.test(h) ? h.toUpperCase() : null;
+  }
+
+  function _tailleDocx(v) {
+    if (!v) return null;
+    var m = String(v).match(/([\d.]+)\s*(pt|px)?/);
+    if (!m) return null;
+    var pt = parseFloat(m[1]);
+    if (m[2] === 'px') pt = pt * 0.75;          // approximation usuelle
+    return Math.round(pt * 2);                   // Word compte en demi-points
+  }
+
+  function _alignDocx(v) {
+    if (!docx.AlignmentType) return undefined;
+    if (v === 'right')  return docx.AlignmentType.RIGHT;
+    if (v === 'center') return docx.AlignmentType.CENTER;
+    if (v === 'justify')return docx.AlignmentType.JUSTIFIED;
+    return undefined;
+  }
+
+  // Format hérité par un nœud, enrichi par ses propres styles et sa balise.
+  function _fmtHerite(el, parent) {
+    var st = _styleMap(el);
+    var f = {
+      bold:   parent.bold,
+      italics: parent.italics,
+      color:  parent.color,
+      size:   parent.size
+    };
+    var tag = (el.tagName || '').toUpperCase();
+    if (tag === 'STRONG' || tag === 'B' || tag === 'TH') f.bold = true;
+    if (tag === 'EM' || tag === 'I') f.italics = true;
+    if (st['font-weight']) f.bold = (parseInt(st['font-weight']) >= 600 || st['font-weight'] === 'bold');
+    if (st['font-style'])  f.italics = st['font-style'] === 'italic';
+    if (st['color'])       f.color = _hexDocx(st['color']) || f.color;
+    if (st['font-size'])   f.size  = _tailleDocx(st['font-size']) || f.size;
+    return f;
+  }
+
+  // Découpe un élément HTML en lignes de TextRun : un <br> ouvre une ligne.
+  function _lignesDeRuns(el, fmtBase) {
+    var lignes = [[]];
+    (function parcourir(noeud, fmt) {
+      Array.prototype.forEach.call(noeud.childNodes, function(n) {
+        if (n.nodeType === 3) {                                  // texte
+          var txt = (n.nodeValue || '').replace(/\s+/g, ' ');
+          if (txt.trim() || lignes[lignes.length - 1].length) {
+            lignes[lignes.length - 1].push({ texte: txt, fmt: fmt });
+          }
+          return;
+        }
+        if (n.nodeType !== 1) return;
+        var tg = (n.tagName || '').toUpperCase();
+        if (tg === 'BR') { lignes.push([]); return; }
+        // Un bloc imbriqué (titre + sous-titre, lignes d'un en-tête) forme sa
+        // propre ligne : sans ça, Word collait « …TEUKEU MAKEPEMakepe · du… ».
+        var estBloc = ['DIV','P','H1','H2','H3','H4','H5','H6','LI','TR'].indexOf(tg) >= 0;
+        if (estBloc && lignes[lignes.length - 1].length) lignes.push([]);
+        parcourir(n, _fmtHerite(n, fmt));
+        if (estBloc && lignes[lignes.length - 1].length) lignes.push([]);
+      });
+    })(el, fmtBase);
+
+    return lignes.map(function(l) {
+      return l.filter(function(r) { return r.texte.length; }).map(function(r) {
+        return new docx.TextRun({
+          text: r.texte,
+          bold: !!r.fmt.bold,
+          italics: !!r.fmt.italics,
+          color: r.fmt.color || undefined,
+          size: r.fmt.size || undefined
+        });
+      });
+    });
+  }
+
+  // …puis en paragraphes Word, avec fond et alignement optionnels.
+  function _parasDepuisHtml(el, fmtBase, alignement, fond) {
+    var ombrage = (fond && docx.ShadingType)
+      ? { type: docx.ShadingType.CLEAR, color: 'auto', fill: fond }
+      : undefined;
+    return _lignesDeRuns(el, fmtBase).map(function(runs) {
+      return new docx.Paragraph({
+        children: runs.length ? runs : [new docx.TextRun({ text: '' })],
+        alignment: alignement,
+        shading: ombrage,
+        spacing: { before: 20, after: 20 }
+      });
+    });
+  }
+
+  function _bordureFine(couleur) {
+    if (!docx.BorderStyle) return undefined;
+    var b = { style: docx.BorderStyle.SINGLE, size: 4, color: couleur || '7F7F7F' };
+    return { top: b, bottom: b, left: b, right: b, insideHorizontal: b, insideVertical: b };
+  }
+
+  // Un <table> HTML → un docx.Table, styles compris.
+  function _tableDocx(tbl) {
+    var brut = [];
+    Array.prototype.forEach.call(tbl.querySelectorAll('tr'), function(tr) {
+      var ligne = [];
+      Array.prototype.forEach.call(tr.children, function(td) {
+        var tag = (td.tagName || '').toUpperCase();
+        if (tag !== 'TD' && tag !== 'TH') return;
+        var st = _styleMap(td);
+        ligne.push({
+          el: td,
+          span: Math.max(1, parseInt(td.getAttribute('colspan')) || 1),
+          fond: _hexDocx(st['background'] || st['background-color']),
+          align: _alignDocx(st['text-align']),
+          fmt: _fmtHerite(td, { bold: tag === 'TH', italics: false, color: null, size: null })
+        });
+      });
+      if (ligne.length) brut.push(ligne);
+    });
+    if (!brut.length) return null;
+
+    // Word refuse une grille irrégulière : toutes les lignes doivent totaliser
+    // le même nombre de colonnes.
+    var nbCols = brut.reduce(function(max, l) {
+      return Math.max(max, l.reduce(function(s, c) { return s + c.span; }, 0));
+    }, 0);
+    if (!nbCols) return null;
+
+    var rows = brut.map(function(ligne) {
+      var cells = ligne.map(function(c) {
+        var opts = {
+          children: _parasDepuisHtml(c.el, c.fmt, c.align),
+          margins: { top: 40, bottom: 40, left: 80, right: 80 }
+        };
+        if (c.span > 1) opts.columnSpan = c.span;
+        if (c.fond && docx.ShadingType) {
+          opts.shading = { type: docx.ShadingType.CLEAR, color: 'auto', fill: c.fond };
+        }
+        return new docx.TableCell(opts);
+      });
+      var total = ligne.reduce(function(s, c) { return s + c.span; }, 0);
+      for (var k = total; k < nbCols; k++) {
+        cells.push(new docx.TableCell({ children: [new docx.Paragraph({ text: '' })] }));
+      }
+      return new docx.TableRow({ children: cells });
+    });
+
+    // Largeurs proportionnelles au <colgroup> quand il existe, sinon égales.
+    var largeurUtile = 9360;                       // twips, A4 marges comprises
+    var cols = tbl.querySelectorAll('col');
+    var largeurs = new Array(nbCols).fill(Math.floor(largeurUtile / nbCols));
+    if (cols.length === nbCols) {
+      var pcts = Array.prototype.map.call(cols, function(c) {
+        return parseFloat((_styleMap(c)['width'] || '').replace('%', '')) || 0;
+      });
+      var somme = pcts.reduce(function(a, b) { return a + b; }, 0);
+      if (somme > 0) largeurs = pcts.map(function(p) { return Math.max(400, Math.round(largeurUtile * p / somme)); });
+    }
+
+    var opts = { rows: rows, columnWidths: largeurs, borders: _bordureFine() };
+    if (docx.WidthType) opts.width = { size: largeurUtile, type: docx.WidthType.DXA };
+    return new docx.Table(opts);
+  }
+
   function exporterRapportMensuelDocx(htmlContent, titreDoc) {
     if (typeof docx === 'undefined') { exporterDocx(htmlContent); return; }
     try {
-      var session = window.IG.auth ? window.IG.auth.getSession() : {};
       var docHtml = new DOMParser().parseFromString(htmlContent, 'text/html');
-      var children = [
-        new docx.Paragraph({ text: titreDoc || ((session.nomCabinet || 'ImmoGest') + ' — ' + t('Rapport mensuel')), heading: docx.HeadingLevel.HEADING_1 }),
-        new docx.Paragraph({ text: t('Généré le') + ' ' + new Date().toLocaleDateString('fr-FR') }),
-        new docx.Paragraph({ text: '' })
-      ];
+      var racine = docHtml.body.firstElementChild || docHtml.body;
+      var children = [];
 
-      // Ne garder que les tableaux de premier niveau : un tableau imbriqué
-      // serait sinon exporté deux fois (et son contenu dupliqué).
-      var tables = Array.prototype.filter.call(docHtml.body.querySelectorAll('table'), function(tbl) {
-        return !(tbl.parentElement && tbl.parentElement.closest('table'));
-      });
+      // On parcourt les blocs de premier niveau DANS L'ORDRE du document, pour
+      // que le Word reprenne l'enchaînement de l'écran : en-tête, titre,
+      // bandeau de section, tableau, bandeau, tableau, signatures, pied.
+      Array.prototype.forEach.call(racine.children, function(bloc) {
+        var tag = (bloc.tagName || '').toUpperCase();
 
-      tables.forEach(function(tbl) {
-        // 1re passe : extraire le texte et les colspan, ligne par ligne
-        var brut = [];
-        Array.prototype.forEach.call(tbl.querySelectorAll('tr'), function(tr) {
-          var ligne = [];
-          Array.prototype.forEach.call(tr.children, function(td) {
-            if (td.tagName !== 'TD' && td.tagName !== 'TH') return;
-            ligne.push({
-              texte: (td.textContent || '').replace(/\s+/g, ' ').trim(),
-              span:  Math.max(1, parseInt(td.getAttribute('colspan')) || 1)
-            });
-          });
-          if (ligne.length) brut.push(ligne);
-        });
-        if (!brut.length) return;
-
-        // Word refuse une grille irrégulière : toutes les lignes doivent
-        // totaliser le même nombre de colonnes.
-        var nbCols = brut.reduce(function(max, ligne) {
-          var total = ligne.reduce(function(s, c) { return s + c.span; }, 0);
-          return Math.max(max, total);
-        }, 0);
-        if (!nbCols) return;
-
-        var rows = brut.map(function(ligne) {
-          var cells = ligne.map(function(c) {
-            var opts = { children: [new docx.Paragraph({ text: c.texte })] };
-            if (c.span > 1) opts.columnSpan = c.span;
-            return new docx.TableCell(opts);
-          });
-          // Compléter la ligne si elle est plus courte que la grille
-          var total = ligne.reduce(function(s, c) { return s + c.span; }, 0);
-          for (var k = total; k < nbCols; k++) {
-            cells.push(new docx.TableCell({ children: [new docx.Paragraph({ text: '' })] }));
-          }
-          return new docx.TableRow({ children: cells });
-        });
-
-        var largeurCol = Math.floor(9360 / nbCols); // largeur page utile en twips
-        var tableOpts = { rows: rows, columnWidths: new Array(nbCols).fill(largeurCol) };
-        if (docx.WidthType && docx.WidthType.PERCENTAGE) {
-          tableOpts.width = { size: 100, type: docx.WidthType.PERCENTAGE };
+        if (tag === 'TABLE') {
+          var t = _tableDocx(bloc);
+          if (t) { children.push(t); children.push(new docx.Paragraph({ text: '', spacing: { after: 120 } })); }
+          return;
         }
-        children.push(new docx.Table(tableOpts));
-        children.push(new docx.Paragraph({ text: '' }));
+
+        var st = _styleMap(bloc);
+        var fond = _hexDocx(st['background'] || st['background-color']);
+        var align = _alignDocx(st['text-align']);
+        var fmt = _fmtHerite(bloc, { bold: false, italics: false, color: null, size: null });
+
+        // Un bandeau de section porte un fond plein sur toute la largeur.
+        _parasDepuisHtml(bloc, fmt, align, fond).forEach(function(p) { children.push(p); });
       });
 
-      docx.Packer.toBlob(new docx.Document({ sections: [{ children: children }] })).then(function(blob) {
+      if (!children.length) { exporterDocx(htmlContent); return; }
+
+      var doc = new docx.Document({
+        sections: [{
+          properties: { page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } },
+          children: children
+        }]
+      });
+
+      docx.Packer.toBlob(doc).then(function(blob) {
         _telechargerBlob(blob, 'rapport-immogest-' + Date.now() + '.docx');
         window.IG.utils.showToast(t('Rapport DOCX téléchargé') + ' ✓', 'green');
       }).catch(function(e) {
@@ -1736,7 +1899,7 @@ window.IG.rapports = (function() {
   }
 
   return {
-    genererRapportMensuelHTML, afficherRapportMensuel, exporterDocx,
+    genererRapportMensuelHTML, afficherRapportMensuel, exporterDocx, exporterRapportMensuelDocx,
     genererRapportAnnuelHTML,
     afficherRapportAnnuel, ouvrirDetailAnnuel, imprimerDetailAnnuel, exporterRapportAnnuelDocx,
     afficherRapportRelances, afficherEtatLieux, _exportRelancesDocx,
