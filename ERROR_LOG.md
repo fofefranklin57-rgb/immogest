@@ -1002,3 +1002,35 @@ doublon si deux sections étaient enregistrées en concurrence AVANT que la 1èr
   `333333`, `666666` présentes ; fonds `0E6AAF`, `D6E9F6`, `EEF6FC`, `F5F5F5` ;
   39 passages en gras ; 4 tableaux avec bordures ; enchaînement en-tête → titre
   → bandeau → tableau → bandeau → tableau + récapitulatif → signatures → pied.
+
+---
+
+## 2026-08-13 — Locataires occupés restaient étiquetés « Libre »
+
+### `js/locataires.js` — le formulaire d'édition ne quittait jamais le statut « libre »
+
+- **Erreur** : sur l'immeuble PK8, des locataires avec nom, téléphone, loyer
+  renseignés (NYEMB Moise, Emile, NDIGOLO Marthe…) s'affichaient « Libre »,
+  avec « Reste dû : – » — aucune dette suivie, aucune apparition dans les
+  rapports, le dashboard, les relances.
+- **Cause** : `immeubles.js` crée automatiquement un placeholder par local
+  (« Local A1 », `statut: 'libre'`, `loyer: 0`) à la création de l'immeuble.
+  Éditer ce placeholder — y saisir le nom du locataire, son loyer, sa date
+  d'entrée — est le geste naturel pour emménager un locataire. Mais le
+  formulaire d'édition (`_afficherFormulaireEdition`) construit
+  `data = { ...loc }` et ne touche jamais `data.statut` : il restait figé à
+  `'libre'` indéfiniment, quoi qu'on saisisse par ailleurs.
+- **Portée** : `statut !== 'libre'` est le filtre utilisé PARTOUT pour
+  compter un locataire comme occupé — dashboard, rapports mensuel/annuel/
+  portefeuille, relances, score juridique, dette. Un local dans cet état
+  était donc invisible à la gestion tout en semblant normalement rempli
+  dans la liste.
+- **Solution** : remplir ce formulaire EST l'action d'emménagement. Si
+  `data.statut === 'libre'` au moment de la sauvegarde, il passe à `'actif'`.
+  Le sens inverse (occupé → libre) reste exclusivement le fait du bouton
+  « Libérer », qui archive et supprime l'enregistrement — jamais une
+  simple sauvegarde de formulaire.
+- **À retenir** : un champ qui n'apparaît pas dans un formulaire n'est pas
+  neutre pour autant — `{ ...loc }` le fait survivre silencieusement à
+  chaque sauvegarde. Quand un formulaire est LE moyen de faire basculer un
+  état (ici vacant → occupé), l'état doit basculer avec lui, explicitement.

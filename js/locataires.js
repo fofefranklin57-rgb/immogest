@@ -773,6 +773,15 @@ window.IG.locataires = (function() {
       e.preventDefault();
       var fd = new FormData(e.target);
       var data = { ...loc };
+      // Ce formulaire sert aussi à transformer un local vacant (placeholder
+      // "Local A1", statut 'libre', auto-créé par la numérotation) en
+      // locataire réel : on y saisit nom, téléphone, loyer... mais rien ne
+      // touchait `statut`, qui restait figé à 'libre'. Le local occupé
+      // continuait alors d'être compté comme vacant partout — dette non
+      // suivie, absent des rapports, badge "Libre" malgré un nom et un loyer.
+      // Remplir ce formulaire EST l'action d'emménagement ; le passage
+      // inverse (occupé → libre) se fait exclusivement via « Libérer ».
+      if (data.statut === 'libre') data.statut = 'actif';
       data.nom          = fd.get('nom');
       data.telephone    = window.IG.utils.phoneFieldValue('telephone');
       data.whatsapp     = window.IG.utils.phoneFieldValue('whatsapp');
